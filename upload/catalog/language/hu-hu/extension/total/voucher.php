@@ -1,0 +1,1 @@
+<?php// Heading$_['heading_title']	= 'Utalvány beváltása';// Text$_['text_voucher']	= 'Utalvány (%s)';$_['text_success']	= 'Az utalvány beváltásra került!';// Entry$_['entry_voucher']	= 'Ide be az utalvány kódot';// Error$_['error_voucher']	= 'Az utalvány kód érvénytelen vagy már fel lett használva!';$_['error_empty']	= 'Mégis csak írd be az utalvány kódot!';

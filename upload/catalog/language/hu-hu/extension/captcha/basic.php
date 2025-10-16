@@ -1,0 +1,1 @@
+<?php// Text$_['text_captcha']	= 'Captcha';// Entry$_['entry_captcha']	= 'Írd be a szöveget a mezőbe';// Error$_['error_captcha']	= 'A beírt szöveg nem egyezik meg a képen láthatóval!';

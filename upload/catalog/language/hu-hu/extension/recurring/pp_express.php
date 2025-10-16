@@ -1,0 +1,1 @@
+<?php// Text$_['text_title']			= 'PayPal Express Fizetés';$_['text_canceled']			= 'Sikeresen törölted ezt az előfizetést!';// Button$_['button_cancel']			= 'Előfizetés törlése';// Error$_['error_not_cancelled']	= 'Hiba: %s';$_['error_not_found']		= 'Nem sikerült törölni az előfizetést';

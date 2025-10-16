@@ -1,0 +1,263 @@
+
+
+<?php
+
+/*
+Translated with
+Массовый автоматический перевод текстов, товаров, категорий, статей и тд с Google translate API
+https://translator.codeguild.com.ua/
+*/
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) bei unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";
+
+$_['text_subject'] = "%s - Danke für die Registrierung";
+$_['text_welcome'] = "Willkommen und vielen Dank für Ihre Registrierung bei %s!";
+$_['text_login'] = "Ihr Benutzerkonto wurde erstellt und Sie können sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_approval'] = "Ihr Konto muss genehmigt werden, bevor Sie sich anmelden können. Sobald Ihr Konto genehmigt wurde, können Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort oder über die folgende URL (Link) in unserem Online-Shop anmelden:";
+$_['text_services'] = "Nach der Anmeldung (Anmeldung) können Sie auf andere Dienste zugreifen, z. B. frühere Bestellungen anzeigen, Rechnungen ausdrucken und Ihre Kontoinformationen aktualisieren.";
+$_['text_thanks'] = "Danke schön,";
+$_['text_new_customer'] = "Neuer Kunde";
+$_['text_signup'] = "Ein neuer Kunde hat sich registriert:";
+$_['text_website'] = "Webseite:";
+$_['text_customer_group'] = "Käufergruppe:";
+$_['text_firstname'] = "Name:";
+$_['text_lastname'] = "Nachname:";
+$_['text_email'] = "E-Mail:";
+$_['text_telephone'] = "Telefon:";

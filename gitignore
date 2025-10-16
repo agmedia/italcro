@@ -1,0 +1,14 @@
+# OpenCart
+/system/storage/cache/
+/system/storage/logs/
+/image/cache/
+/admin/config.php
+/config.php
+
+# IDE / PhpStorm
+.idea/
+*.iml
+
+# Composer / Node
+/vendor/
+/node_modules/

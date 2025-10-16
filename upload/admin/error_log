@@ -1,0 +1,66 @@
+[11-Jun-2025 09:13:23 Europe/Zagreb] PHP Fatal error:  Uncaught Exception: Error: Unknown column 'md.name' in 'ORDER BY'<br />Error No: 1054<br />SELECT m.*, md.* FROM `oc_manufacturer` m LEFT JOIN `oc_manufacturer_description` md ON (m.manufacturer_id = md.manufacturer_id) WHERE md.language_id = '3' ORDER BY md.name DESC LIMIT 0,100 in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php:51
+Stack trace:
+#0 /home/luxnatur/storagekozmetika/modification/system/library/db.php(51): DB\MySQLi->query('SELECT m.*, md....')
+#1 /home/luxnatur/new.lux-kozmetika.hr/admin/model/extension/hbseo/hb_aigen.php(140): DB->query('SELECT m.*, md....')
+#2 /home/luxnatur/storagekozmetika/modification/system/engine/loader.php(248): ModelExtensionHbseoHbAigen->getManufacturers(Array)
+#3 /home/luxnatur/new.lux-kozmetika.hr/system/engine/proxy.php(47): Loader->{closure}(Array, Array)
+#4 /home/luxnatur/new.lux-kozmetika.hr/admin/controller/extension/hbseo/hb_aigen.php(238): Proxy->__call('getManufacturer...', Array)
+#5 /home/luxnatur/storagekozmetika/modification/syste in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php on line 51
+[13-Jun-2025 11:31:46 Europe/Zagreb] PHP Fatal error:  Uncaught Exception: Error: Unknown column 'md.name' in 'ORDER BY'<br />Error No: 1054<br />SELECT m.*, md.* FROM `oc_manufacturer` m LEFT JOIN `oc_manufacturer_description` md ON (m.manufacturer_id = md.manufacturer_id) WHERE md.language_id = '3' ORDER BY md.name DESC LIMIT 0,100 in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php:51
+Stack trace:
+#0 /home/luxnatur/storagekozmetika/modification/system/library/db.php(51): DB\MySQLi->query('SELECT m.*, md....')
+#1 /home/luxnatur/new.lux-kozmetika.hr/admin/model/extension/hbseo/hb_aigen.php(140): DB->query('SELECT m.*, md....')
+#2 /home/luxnatur/storagekozmetika/modification/system/engine/loader.php(248): ModelExtensionHbseoHbAigen->getManufacturers(Array)
+#3 /home/luxnatur/new.lux-kozmetika.hr/system/engine/proxy.php(47): Loader->{closure}(Array, Array)
+#4 /home/luxnatur/new.lux-kozmetika.hr/admin/controller/extension/hbseo/hb_aigen.php(238): Proxy->__call('getManufacturer...', Array)
+#5 /home/luxnatur/storagekozmetika/modification/syste in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php on line 51
+[13-Jun-2025 11:32:59 Europe/Zagreb] PHP Fatal error:  Uncaught Exception: Error: Unknown column 'md.name' in 'ORDER BY'<br />Error No: 1054<br />SELECT m.*, md.* FROM `oc_manufacturer` m LEFT JOIN `oc_manufacturer_description` md ON (m.manufacturer_id = md.manufacturer_id) WHERE md.language_id = '3' ORDER BY md.name DESC LIMIT 0,100 in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php:51
+Stack trace:
+#0 /home/luxnatur/storagekozmetika/modification/system/library/db.php(51): DB\MySQLi->query('SELECT m.*, md....')
+#1 /home/luxnatur/new.lux-kozmetika.hr/admin/model/extension/hbseo/hb_aigen.php(140): DB->query('SELECT m.*, md....')
+#2 /home/luxnatur/storagekozmetika/modification/system/engine/loader.php(248): ModelExtensionHbseoHbAigen->getManufacturers(Array)
+#3 /home/luxnatur/new.lux-kozmetika.hr/system/engine/proxy.php(47): Loader->{closure}(Array, Array)
+#4 /home/luxnatur/new.lux-kozmetika.hr/admin/controller/extension/hbseo/hb_aigen.php(238): Proxy->__call('getManufacturer...', Array)
+#5 /home/luxnatur/storagekozmetika/modification/syste in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php on line 51
+[13-Jun-2025 11:44:21 Europe/Zagreb] PHP Fatal error:  Uncaught Exception: Error: Unknown column 'md.name' in 'ORDER BY'<br />Error No: 1054<br />SELECT m.*, md.* FROM `oc_manufacturer` m LEFT JOIN `oc_manufacturer_description` md ON (m.manufacturer_id = md.manufacturer_id) WHERE md.language_id = '3' ORDER BY md.name DESC LIMIT 0,100 in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php:51
+Stack trace:
+#0 /home/luxnatur/storagekozmetika/modification/system/library/db.php(51): DB\MySQLi->query('SELECT m.*, md....')
+#1 /home/luxnatur/new.lux-kozmetika.hr/admin/model/extension/hbseo/hb_aigen.php(140): DB->query('SELECT m.*, md....')
+#2 /home/luxnatur/storagekozmetika/modification/system/engine/loader.php(248): ModelExtensionHbseoHbAigen->getManufacturers(Array)
+#3 /home/luxnatur/new.lux-kozmetika.hr/system/engine/proxy.php(47): Loader->{closure}(Array, Array)
+#4 /home/luxnatur/new.lux-kozmetika.hr/admin/controller/extension/hbseo/hb_aigen.php(238): Proxy->__call('getManufacturer...', Array)
+#5 /home/luxnatur/storagekozmetika/modification/syste in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php on line 51
+[13-Jun-2025 11:47:58 Europe/Zagreb] PHP Fatal error:  Uncaught Exception: Error: Unknown column 'md.name' in 'ORDER BY'<br />Error No: 1054<br />SELECT m.*, md.* FROM `oc_manufacturer` m LEFT JOIN `oc_manufacturer_description` md ON (m.manufacturer_id = md.manufacturer_id) WHERE md.language_id = '3' ORDER BY md.name DESC LIMIT 0,100 in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php:51
+Stack trace:
+#0 /home/luxnatur/storagekozmetika/modification/system/library/db.php(51): DB\MySQLi->query('SELECT m.*, md....')
+#1 /home/luxnatur/new.lux-kozmetika.hr/admin/model/extension/hbseo/hb_aigen.php(140): DB->query('SELECT m.*, md....')
+#2 /home/luxnatur/storagekozmetika/modification/system/engine/loader.php(248): ModelExtensionHbseoHbAigen->getManufacturers(Array)
+#3 /home/luxnatur/new.lux-kozmetika.hr/system/engine/proxy.php(47): Loader->{closure}(Array, Array)
+#4 /home/luxnatur/new.lux-kozmetika.hr/admin/controller/extension/hbseo/hb_aigen.php(238): Proxy->__call('getManufacturer...', Array)
+#5 /home/luxnatur/storagekozmetika/modification/syste in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php on line 51
+[13-Jun-2025 12:09:46 Europe/Zagreb] PHP Fatal error:  Uncaught Exception: Error: Unknown column 'md.name' in 'ORDER BY'<br />Error No: 1054<br />SELECT m.*, md.* FROM `oc_manufacturer` m LEFT JOIN `oc_manufacturer_description` md ON (m.manufacturer_id = md.manufacturer_id) WHERE md.language_id = '3' ORDER BY md.name DESC LIMIT 0,100 in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php:51
+Stack trace:
+#0 /home/luxnatur/storagekozmetika/modification/system/library/db.php(51): DB\MySQLi->query('SELECT m.*, md....')
+#1 /home/luxnatur/new.lux-kozmetika.hr/admin/model/extension/hbseo/hb_aigen.php(140): DB->query('SELECT m.*, md....')
+#2 /home/luxnatur/storagekozmetika/modification/system/engine/loader.php(248): ModelExtensionHbseoHbAigen->getManufacturers(Array)
+#3 /home/luxnatur/new.lux-kozmetika.hr/system/engine/proxy.php(47): Loader->{closure}(Array, Array)
+#4 /home/luxnatur/new.lux-kozmetika.hr/admin/controller/extension/hbseo/hb_aigen.php(238): Proxy->__call('getManufacturer...', Array)
+#5 /home/luxnatur/storagekozmetika/modification/syste in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php on line 51
+[23-Jun-2025 10:02:39 Europe/Zagreb] PHP Fatal error:  Uncaught Exception: Error: Unknown column 'h1' in 'WHERE'<br />Error No: 1054<br />SELECT COUNT(*) as total FROM `oc_manufacturer_description` WHERE `language_id` = '3' AND `h1` <> '' in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php:51
+Stack trace:
+#0 /home/luxnatur/storagekozmetika/modification/system/library/db.php(51): DB\MySQLi->query('SELECT COUNT(*)...')
+#1 /home/luxnatur/new.lux-kozmetika.hr/admin/model/extension/hbseo/hb_onpage.php(269): DB->query('SELECT COUNT(*)...')
+#2 /home/luxnatur/storagekozmetika/modification/system/engine/loader.php(248): ModelExtensionHbseoHbOnpage->getCount('manufacturer', 'h1', '3')
+#3 /home/luxnatur/new.lux-kozmetika.hr/system/engine/proxy.php(47): Loader->{closure}(Array, Array)
+#4 /home/luxnatur/new.lux-kozmetika.hr/admin/controller/extension/hbseo/hb_onpage.php(200): Proxy->__call('getCount', Array)
+#5 /home/luxnatur/storagekozmetika/modification/system/engine/action.php(79): ControllerExtensionHbseoHbOnpage->dashboard()
+#6 /home/luxnatur/new in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php on line 51
+[23-Jun-2025 10:02:46 Europe/Zagreb] PHP Fatal error:  Uncaught Exception: Error: Unknown column 'h1' in 'WHERE'<br />Error No: 1054<br />SELECT COUNT(*) as total FROM `oc_manufacturer_description` WHERE `language_id` = '3' AND `h1` <> '' in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php:51
+Stack trace:
+#0 /home/luxnatur/storagekozmetika/modification/system/library/db.php(51): DB\MySQLi->query('SELECT COUNT(*)...')
+#1 /home/luxnatur/new.lux-kozmetika.hr/admin/model/extension/hbseo/hb_onpage.php(269): DB->query('SELECT COUNT(*)...')
+#2 /home/luxnatur/storagekozmetika/modification/system/engine/loader.php(248): ModelExtensionHbseoHbOnpage->getCount('manufacturer', 'h1', '3')
+#3 /home/luxnatur/new.lux-kozmetika.hr/system/engine/proxy.php(47): Loader->{closure}(Array, Array)
+#4 /home/luxnatur/new.lux-kozmetika.hr/admin/controller/extension/hbseo/hb_onpage.php(200): Proxy->__call('getCount', Array)
+#5 /home/luxnatur/storagekozmetika/modification/system/engine/action.php(79): ControllerExtensionHbseoHbOnpage->dashboard()
+#6 /home/luxnatur/new in /home/luxnatur/storagekozmetika/modification/system/library/db/mysqli.php on line 51

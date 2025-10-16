@@ -1,0 +1,1 @@
+<?php// Text$_['text_title']  = 'Súly alapú szállítási díj';$_['text_weight'] = 'Súly';

@@ -1,0 +1,1 @@
+<?php// Text$_['text_title']		= 'Átutalás';$_['text_instruction']	= 'Átutalási utasítások';$_['text_description']	= 'Kérlek, utald át a teljes összeget az alábbi számlára.';$_['text_payment']		= 'A rendelésed az összeg megérkezése után lesz teljesítve.';

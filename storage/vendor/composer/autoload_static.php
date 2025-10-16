@@ -13,7 +13,6 @@ class ComposerStaticInita8cb75283b86ff94542c6f1327c4ce59
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '2cffec82183ee1cea088009cef9a6fc3' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
-        '25072dd6e2470089de65ae7bf11d3109' => __DIR__ . '/..' . '/symfony/polyfill-php72/bootstrap.php',
         '868c42ea3be4e1fbf28ccdb1f52f56d7' => __DIR__ . '/..' . '/agmedia/opencart-eloquent/src/Helpers/helpers.php',
     );
 
@@ -33,7 +32,6 @@ class ComposerStaticInita8cb75283b86ff94542c6f1327c4ce59
         'S' => 
         array (
             'Symfony\\Polyfill\\Php80\\' => 23,
-            'Symfony\\Polyfill\\Php72\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Ctype\\' => 23,
             'Symfony\\Component\\Validator\\' => 28,
@@ -82,12 +80,14 @@ class ComposerStaticInita8cb75283b86ff94542c6f1327c4ce59
         ),
         'C' => 
         array (
+            'Composer\\Pcre\\' => 14,
             'Complex\\' => 8,
             'Cardinity\\' => 10,
         ),
         'A' => 
         array (
-            'Agmedia\\Api\\' => 12,
+            'Agmedia\\Luceed\\' => 15,
+            'Agmedia\\LuceedOpencartWrapper\\' => 30,
             'Agmedia\\' => 8,
         ),
     );
@@ -108,10 +108,6 @@ class ComposerStaticInita8cb75283b86ff94542c6f1327c4ce59
         'Symfony\\Polyfill\\Php80\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
-        ),
-        'Symfony\\Polyfill\\Php72\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/symfony/polyfill-php72',
         ),
         'Symfony\\Polyfill\\Mbstring\\' => 
         array (
@@ -222,6 +218,10 @@ class ComposerStaticInita8cb75283b86ff94542c6f1327c4ce59
         array (
             0 => __DIR__ . '/..' . '/doctrine/inflector/lib/Doctrine/Common/Inflector',
         ),
+        'Composer\\Pcre\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/composer/pcre/src',
+        ),
         'Complex\\' => 
         array (
             0 => __DIR__ . '/..' . '/markbaker/complex/classes/src',
@@ -230,9 +230,13 @@ class ComposerStaticInita8cb75283b86ff94542c6f1327c4ce59
         array (
             0 => __DIR__ . '/..' . '/cardinity/cardinity-sdk-php/src',
         ),
-        'Agmedia\\Api\\' => 
+        'Agmedia\\Luceed\\' => 
         array (
-            0 => __DIR__ . '/..' . '/agmedia/api/src',
+            0 => __DIR__ . '/..' . '/agmedia/luceed/src',
+        ),
+        'Agmedia\\LuceedOpencartWrapper\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/agmedia/luceed-opencart-wrapper/src',
         ),
         'Agmedia\\' => 
         array (

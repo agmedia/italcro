@@ -2,12 +2,50 @@
 <module type="WEB_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/storage/modification/system/library" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/upload/admin/view/javascript/hb_filemanager/include" isTestSource="false" packagePrefix="FtpClient" />
-      <sourceFolder url="file://$MODULE_DIR$/upload/system/library" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/upload/system/library" isTestSource="false" packagePrefix="modulepoints" />
-      <sourceFolder url="file://$MODULE_DIR$/upload/system/library/leanpay/classes" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/upload/system/storage/modification/system/library" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/./storage/vendor/agmedia/luceed-opencart-wrapper/src" isTestSource="false" packagePrefix="Agmedia\LuceedOpencartWrapper\" />
+      <sourceFolder url="file://$MODULE_DIR$/./storage/vendor/agmedia/luceed/src" isTestSource="false" packagePrefix="Agmedia\Luceed\" />
+      <sourceFolder url="file://$MODULE_DIR$/upload/system/library/leanpay/classes/Mojakoda" isTestSource="false" packagePrefix="Mojakoda\" />
+      <excludeFolder url="file://$MODULE_DIR$/storage/__MACOSX" />
+      <excludeFolder url="file://$MODULE_DIR$/storage/cache" />
+      <excludeFolder url="file://$MODULE_DIR$/storage/download" />
+      <excludeFolder url="file://$MODULE_DIR$/storage/modification" />
+      <excludeFolder url="file://$MODULE_DIR$/storage/session" />
+      <excludeFolder url="file://$MODULE_DIR$/storage/vendor" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/composer" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/firebase/php-jwt" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/google/auth" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/google/cloud-core" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/google/cloud-translate" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/google/common-protos" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/google/gax" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/google/grpc-gcp" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/google/protobuf" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/grpc/grpc" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/guzzlehttp/guzzle" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/guzzlehttp/promises" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/guzzlehttp/psr7" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/monolog/monolog" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/psr/cache" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/psr/http-client" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/psr/http-factory" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/psr/http-message" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/psr/log" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/ralouphie/getallheaders" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/rize/uri-template" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/google-cloud-translate/vendor/symfony/deprecation-contracts" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/leanpay/vendor/composer" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/composer" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/ezyang/htmlpurifier" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/maennchen/zipstream-php" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/markbaker/complex" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/markbaker/matrix" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/myclabs/php-enum" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/phpoffice/phpspreadsheet" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/psr/http-client" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/psr/http-factory" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/psr/http-message" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/psr/simple-cache" />
+      <excludeFolder url="file://$MODULE_DIR$/upload/system/library/mpimporterexporter/composer/vendor/symfony/polyfill-mbstring" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -1,10 +1,12 @@
 <?php
+
+use Agmedia\Api\Connection\Soap\Qiqo;
+
 class ModelExtensionModuleQiqo extends Model
 {
     public function importArticles(): int
     {
-        require_once DIR_SYSTEM . 'library/Agmedia/Api/Connection/Soap/Qiqo.php';
-        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $qiqo = new Qiqo();
         
         $groups   = collect($qiqo->getGroups());
         $articles = collect($qiqo->getArticles());
@@ -50,22 +52,8 @@ class ModelExtensionModuleQiqo extends Model
     
     private function resolveOrCreateCategory(int $gid): int
     {
-        // Kategorije se definiraju u env.php ili configu
-        $map = agconf('qiqo.categories', [
-            1 => 'Proizvodi od žice',
-            2 => 'Vijčana roba',
-            3 => 'Željezarija',
-            4 => 'Alati',
-            5 => 'Građevinski alati',
-            6 => 'Agrokultura',
-            7 => 'Silikoni i ljepila',
-            8 => 'Dimovodne cijevi',
-            9 => 'Kućne potrepštine',
-            10 => 'Elektromaterijal',
-            800 => 'Rasprodaja',
-            801 => 'Rasprodaja 2',
-            850 => 'Akcijski artikli'
-        ]);
+        // Kategorije se definiraju u env.php
+        $map = agconf('qiqo.categories');
         
         $category_name = $map[$gid] ?? 'Nepoznata kategorija';
         

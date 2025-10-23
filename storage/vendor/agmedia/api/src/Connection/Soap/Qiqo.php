@@ -26,8 +26,8 @@ class Qiqo
     
     public function __construct(?string $korisnik = null, ?string $lozinka = null)
     {
-        $this->korisnik = $korisnik ?: agconf('qiqo.username', 'AGMedia');
-        $this->lozinka  = $lozinka  ?: agconf('qiqo.password', 'TUde23!$zS');
+        $this->korisnik = $korisnik ?: agconf('qiqo.username');
+        $this->lozinka  = $lozinka  ?: agconf('qiqo.password');
     }
     
     
@@ -58,19 +58,19 @@ class Qiqo
         $soapAction = "http://www.qiqo.hr/{$method}";
         
         $xml = <<<XML
-<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-               xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <{$method} xmlns="http://www.qiqo.hr/">
-      <korisnik>{$this->korisnik}</korisnik>
-      <lozinka>{$this->lozinka}</lozinka>
-      <datum>{$datum}</datum>
-    </{$method}>
-  </soap:Body>
-</soap:Envelope>
-XML;
+                <?xml version="1.0" encoding="utf-8"?>
+                <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                               xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                  <soap:Body>
+                    <{$method} xmlns="http://www.qiqo.hr/">
+                      <korisnik>{$this->korisnik}</korisnik>
+                      <lozinka>{$this->lozinka}</lozinka>
+                      <datum>{$datum}</datum>
+                    </{$method}>
+                  </soap:Body>
+                </soap:Envelope>
+                XML;
         
         $response = $this->send($soapAction, $xml);
         if (!$response) {

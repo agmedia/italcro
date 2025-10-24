@@ -6,7 +6,7 @@ use Agmedia\Helpers\Log;
 use Exception;
 use SimpleXMLElement;
 
-require_once __DIR__ . '/../../../upload/config.php';
+require_once __DIR__ . '/../../../../../../../upload/config.php';
 
 class Qiqo
 {
@@ -58,6 +58,10 @@ class Qiqo
     {
         $datum = date('Y-m-d\TH:i:s', strtotime($since));
         $soapAction = "http://www.qiqo.hr/{$method}";
+
+        Log::store('1', 'qiqo');
+        Log::store(DIR_LOGS, 'qiqo');
+        Log::store($soapAction, 'qiqo');
         
         $xml = <<<XML
                 <?xml version="1.0" encoding="utf-8"?>

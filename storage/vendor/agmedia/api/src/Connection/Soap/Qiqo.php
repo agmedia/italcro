@@ -6,6 +6,8 @@ use Agmedia\Helpers\Log;
 use Exception;
 use SimpleXMLElement;
 
+require_once __DIR__ . '/../../../upload/config.php';
+
 class Qiqo
 {
     /**
@@ -79,7 +81,7 @@ class Qiqo
         }
         
         $response = $this->sanitize($response);
-        file_put_contents(storage_path("logs/qiqo_{$method}_raw.xml"), $response);
+        file_put_contents(DIR_LOGS . "/qiqo_{$method}_raw.xml", $response);
         
         return $this->parse($response, $method, $node);
     }

@@ -6,7 +6,7 @@ use Agmedia\Helpers\Log;
 use Exception;
 use SimpleXMLElement;
 
-require_once __DIR__ . '/../../../../../../../upload/config.php';
+//require_once __DIR__ . '/../../../../../../../upload/config.php';
 
 class Qiqo
 {

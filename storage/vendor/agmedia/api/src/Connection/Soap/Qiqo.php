@@ -28,11 +28,11 @@ class Qiqo
     
     public function __construct(?string $korisnik = null, ?string $lozinka = null)
     {
-        Log::store('1', 'qiqo');
+        Log::store('1 construct', 'qiqo');
         if (file_exists(__DIR__ . '/../../../../../../../upload/config.php')) {
             Log::store('2', 'qiqo');
         } else {
-            Log::store(folder_info(__DIR__ . '/../../../../../../');, 'qiqo');
+            Log::store(folder_info(__DIR__ . '/../../../../../../'), 'qiqo');
         }
 
         $this->korisnik = $korisnik ?: agconf('qiqo.username');

@@ -1,6 +1,6 @@
 <?php
 
-require_once DIR_STORAGE . 'vendor/agmedia/api/Connection/Soap/Qiqo.php';
+require_once DIR_STORAGE . 'vendor/agmedia/api/src/Connection/Soap/Qiqo.php';
 
 class ModelExtensionModuleQiqo extends Model
 {

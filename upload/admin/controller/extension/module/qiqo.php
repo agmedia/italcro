@@ -14,7 +14,9 @@ class ControllerExtensionModuleQiqo extends Controller
 
         // 🔹 Ručni import
         if ($this->request->server['REQUEST_METHOD'] == 'POST' && isset($this->request->post['action']) && $this->request->post['action'] == 'import') {
+            \Agmedia\Helpers\Log::store('1', 'qiqo');
             $count                          = $this->model_extension_module_qiqo->importArticles();
+            \Agmedia\Helpers\Log::store('2', 'qiqo');
             $this->session->data['success'] = "Import završen. Uvezeno {$count} novih artikala.";
             $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
         }

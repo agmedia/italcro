@@ -7,10 +7,20 @@ class ModelExtensionModuleQiqo extends Model
 
     public function importArticles(): int
     {
+        \Agmedia\Helpers\Log::store('Qiqo importArticles()', 'qiqo');
+        \Agmedia\Helpers\Log::store('1.', 'qiqo');
+
         $qiqo = new Qiqo();
 
+        \Agmedia\Helpers\Log::store('2.', 'qiqo');
+
         $groups   = collect($qiqo->getGroups());
+
+        \Agmedia\Helpers\Log::store('3.', 'qiqo');
+
         $articles = collect($qiqo->getArticles());
+
+        \Agmedia\Helpers\Log::store('4.', 'qiqo');
 
         $imported = 0;
 

@@ -1,6 +1,6 @@
 <?php
 
-use Agmedia\Api\Connection\Soap\Qiqo;
+require_once DIR_SYSTEM . 'vendor/agmedia/api/Connection/Soap/Qiqo.php';
 
 class ModelExtensionModuleQiqo extends Model
 {
@@ -10,7 +10,7 @@ class ModelExtensionModuleQiqo extends Model
         \Agmedia\Helpers\Log::store('Qiqo importArticles()', 'qiqo');
         \Agmedia\Helpers\Log::store('1.', 'qiqo');
 
-        $qiqo = new Qiqo();
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
 
         \Agmedia\Helpers\Log::store('2.', 'qiqo');
 

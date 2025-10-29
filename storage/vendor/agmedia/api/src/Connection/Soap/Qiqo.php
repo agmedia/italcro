@@ -168,22 +168,49 @@ class Qiqo
         $result = $body->children($nsQIQO)
             ->{$method . 'Response'}
             ->{$method . 'Result'};
-        
-        $diffgram = $result->children($nsDIFF)->diffgram ?? $result->diffgram ?? null;
-        if (!$diffgram || !$diffgram->NewDataSet) {
-            Log::store("⚠️ No diffgram in {$method}", 'qiqo_empty');
+
+        // Pokušaj dohvatiti diffgram s namespace-om
+        $diffgram = $result->children($nsDIFF)->diffgram ?? null;
+
+// Ako ga ne vidi, ručno pronađi čvor koji sadrži "diffgram" u nazivu
+        if (!$diffgram) {
+            foreach ($result->children() as $child) {
+                if (stripos($child->getName(), 'diffgram') !== false) {
+                    $diffgram = $child;
+                    break;
+                }
+            }
+        }
+
+// Ako ga i dalje nema — logiraj i vrati prazan array
+        if (!$diffgram) {
+            Log::store("❌ diffgram not found in {$method}", 'qiqo_error');
             return [];
         }
-        
+
+// Pokušaj dohvatiti NewDataSet — i ako namespace zeza, koristi fallback
+        $newDataSet = $diffgram->NewDataSet ?? null;
+        if (!$newDataSet) {
+            $newDataSet = $diffgram->children()->NewDataSet ?? null;
+        }
+
+        if (!$newDataSet) {
+            Log::store("⚠️ No NewDataSet in {$method}", 'qiqo_empty');
+            return [];
+        }
+
+
         $records = [];
-        foreach ($diffgram->NewDataSet->{$node} as $item) {
+        foreach ($newDataSet->{$node} as $item) {
             $row = [];
             foreach ($item as $key => $value) {
                 $row[$key] = trim((string) $value);
             }
             $records[] = $row;
         }
-        
+
+        Log::store('Children of result: ' . implode(', ', array_map(fn($x) => $x->getName(), iterator_to_array($result->children()))), 'qiqo_debug');
+
         Log::store("✅ Parsed " . count($records) . " records from {$method}", 'qiqo_info');
         return $records;
     }

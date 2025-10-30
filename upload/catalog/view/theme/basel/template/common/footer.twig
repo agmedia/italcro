@@ -143,6 +143,30 @@
 <script src="catalog/view/theme/basel/js/jquery.matchHeight.min.js"></script>
 <script src="catalog/view/theme/basel/js/countdown.js"></script>
 <script src="catalog/view/theme/basel/js/featherlight.js"></script>
+
+<script>
+    $(function() {
+        // Provjera ako je već skriveno
+        if (localStorage.getItem('hidePrices') === 'true') {
+            $('.price, .product-price, .product-thumb .price, .p-tax, .live-price-tax').hide();
+            $('#togglePrices').html('<i class="fa fa-eye"></i> ');
+        }
+
+        $('#togglePrices').click(function() {
+            if ($('.price, .product-price, .product-thumb .price, .p-tax, .live-price-tax').is(':visible')) {
+                $('.price, .product-price, .product-thumb .price, .p-tax, .live-price-tax').hide();
+                $(this).html('<i class="fa fa-eye"></i> ');
+                localStorage.setItem('hidePrices', 'true');
+            } else {
+                $('.price, .product-price, .product-thumb .price, .p-tax, .live-price-tax').show();
+                $(this).html('<i class="fa fa-eye-slash"></i> ');
+                localStorage.setItem('hidePrices', 'false');
+            }
+        });
+    });
+</script>
+
+
 {% if view_popup %}
     <!-- Popup -->
     <script>

@@ -24,6 +24,8 @@ class ControllerCommonHeader extends Controller {
 			$this->document->addLink($server . 'image/' . $this->config->get('config_icon'), 'icon');
 		}
 
+
+
 		$data['title'] = $this->document->getTitle();
 
 		$data['base'] = $server;
@@ -67,6 +69,11 @@ if (!isset($_GET['route']) || (isset($_GET['route']) && $_GET['route'] == 'commo
 		
 		$data['home'] = $this->url->link('common/home');
 		$data['wishlist'] = $this->url->link('account/wishlist', '', true);
+        if (isset($this->session->data['user_id'])) {
+            $data['is_admin_logged'] = true;
+        } else {
+            $data['is_admin_logged'] = false;
+        }
 		$data['logged'] = $this->customer->isLogged();
 		$data['account'] = $this->url->link('account/account', '', true);
 		$data['register'] = $this->url->link('account/register', '', true);

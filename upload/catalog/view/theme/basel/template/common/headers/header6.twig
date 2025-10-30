@@ -68,6 +68,14 @@
     <div class="table-cell w15 btns shortcuts text-right">
        
        <div class="font-zero">
+
+           {% if is_admin_logged %}
+               <button id="togglePrices" class="btn btn-outline" style="margin:5px;border-radius: 5px;padding:6px 10px">
+                   <i class="fa fa-eye-slash"></i>
+               </button>
+           {% endif %}
+
+
            <div class="icon-element is_wishlist">
 
                {% if logged %}
@@ -91,7 +99,7 @@
         <div id="cart" class="dropdown-wrapper from-top">
         <a href="{{ shopping_cart }}" class="shortcut-wrapper cart">
         <i id="cart-icon" class="global-cart icon"></i> <span id="cart-total" class="nowrap">
-        <span class="counter cart-total-items">{{ cart_items }}</span>
+                <span class="counter cart-total-items">{{ cart_items }}</span></span>
         </a>
         <div class="dropdown-content dropdown-right hidden-sm hidden-xs">
         {{ cart }}

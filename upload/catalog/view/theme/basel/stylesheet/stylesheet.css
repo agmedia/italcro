@@ -6059,11 +6059,12 @@ table p{margin-bottom:0px;}
 }
 .image-area .main-image {
 	display:inline-block;
-	padding-bottom:0px;
+	padding-bottom:0;
 	overflow:hidden;
 	position:relative;
 	margin:0 auto;
 	text-align:center;
+	border: 1px solid #e2e0db;
 }
 .quickview-info .image-area .main-image {
 	padding-bottom:0;

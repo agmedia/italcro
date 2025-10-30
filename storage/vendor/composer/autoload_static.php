@@ -88,6 +88,7 @@ class ComposerStaticInita8cb75283b86ff94542c6f1327c4ce59
         array (
             'Agmedia\\Luceed\\' => 15,
             'Agmedia\\LuceedOpencartWrapper\\' => 30,
+            'Agmedia\\Api\\' => 12,
             'Agmedia\\' => 8,
         ),
     );
@@ -237,6 +238,10 @@ class ComposerStaticInita8cb75283b86ff94542c6f1327c4ce59
         'Agmedia\\LuceedOpencartWrapper\\' => 
         array (
             0 => __DIR__ . '/..' . '/agmedia/luceed-opencart-wrapper/src',
+        ),
+        'Agmedia\\Api\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/agmedia/api/src',
         ),
         'Agmedia\\' => 
         array (

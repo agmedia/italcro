@@ -20,6 +20,19 @@
             <div class="panel-body">
                 <form action="{{ action }}" method="post">
                     <button type="submit" name="action" value="import" class="btn btn-primary"><i class="fa fa-download"></i> {{ button_import }}</button>
+                    <hr>
+
+                    <button type="submit" name="action" value="update_qty" class="btn btn-info">
+                        <i class="fa fa-cubes"></i> Ažuriraj količine
+                    </button>
+
+                    <button type="submit" name="action" value="update_price" class="btn btn-info">
+                        <i class="fa fa-euro"></i> Ažuriraj cijene
+                    </button>
+
+                    <button type="submit" name="action" value="update_image" class="btn btn-info">
+                        <i class="fa fa-image"></i> Ažuriraj slike
+                    </button>
                 </form>
 
                 <hr>

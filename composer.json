@@ -29,7 +29,8 @@
     "autoload": {
         "psr-4": {
             "Agmedia\\Luceed\\": "./storage/vendor/agmedia/luceed/src",
-            "Agmedia\\LuceedOpencartWrapper\\": "./storage/vendor/agmedia/luceed-opencart-wrapper/src"
+            "Agmedia\\LuceedOpencartWrapper\\": "./storage/vendor/agmedia/luceed-opencart-wrapper/src",
+            "Agmedia\\Api\\": "./storage/vendor/agmedia/api/src"
         }
     }
 }

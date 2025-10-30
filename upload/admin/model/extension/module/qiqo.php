@@ -7,20 +7,10 @@ class ModelExtensionModuleQiqo extends Model
 
     public function importArticles(): int
     {
-        \Agmedia\Helpers\Log::store('Qiqo importArticles()', 'qiqo');
-        \Agmedia\Helpers\Log::store('1.', 'qiqo');
-
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
 
-        \Agmedia\Helpers\Log::store('2.', 'qiqo');
-
         $groups   = collect($qiqo->getGroups());
-
-        \Agmedia\Helpers\Log::store('3.', 'qiqo');
-
         $articles = collect($qiqo->getArticles());
-
-        \Agmedia\Helpers\Log::store('4.', 'qiqo');
 
         $imported = 0;
 
@@ -61,6 +51,88 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
+    public function updateQuantities(): int
+    {
+        $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $articles = collect($qiqo->getArticles());
+        $updated  = 0;
+
+        foreach ($articles as $a) {
+            $sku = $this->db->escape($a['id']);
+            $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
+
+            if (! $exists->num_rows) continue;
+
+            $quantity = (float) ($a['zaliha'] ?? 0);
+
+            $this->db->query("UPDATE " . DB_PREFIX . "product 
+            SET quantity = '{$quantity}', date_modified = NOW() 
+            WHERE product_id = '" . (int) $exists->row['product_id'] . "'");
+
+            $updated++;
+        }
+
+        $this->log('Quantities', "{$updated} količina ažurirano.");
+        return $updated;
+    }
+
+
+    public function updatePrices(): int
+    {
+        $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $articles = collect($qiqo->getArticles());
+        $updated  = 0;
+
+        foreach ($articles as $a) {
+            $sku = $this->db->escape($a['id']);
+            $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
+
+            if (! $exists->num_rows) continue;
+
+            $price = (float) $a['cijena'];
+
+            $this->db->query("UPDATE " . DB_PREFIX . "product 
+            SET price = '{$price}', date_modified = NOW() 
+            WHERE product_id = '" . (int) $exists->row['product_id'] . "'");
+
+            $updated++;
+        }
+
+        $this->log('Prices', "{$updated} cijena ažurirano.");
+        return $updated;
+    }
+
+
+    public function updateImages(): int
+    {
+        $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $articles = collect($qiqo->getArticles());
+        $updated  = 0;
+
+        foreach ($articles as $a) {
+            $sku = $this->db->escape($a['id']);
+            $exists = $this->db->query("SELECT product_id, image FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
+
+            if (! $exists->num_rows) continue;
+
+            $new_image = $a['picpath'] ?? '';
+            if (empty($new_image)) continue;
+
+            if ($new_image) {
+                $this->db->query("UPDATE " . DB_PREFIX . "product 
+                    SET image = '" . $this->db->escape($new_image) . "', date_modified = NOW() 
+                    WHERE product_id = '" . (int) $exists->row['product_id'] . "'");
+
+                $updated++;
+            }
+        }
+
+        $this->log('Images', "{$updated} slika ažurirano.");
+        return $updated;
+    }
+
+
+
     private function resolveOrCreateCategory(int $gid): int
     {
         // Kategorije se definiraju u env.php
@@ -78,7 +150,7 @@ class ModelExtensionModuleQiqo extends Model
         $this->db->query("INSERT INTO " . DB_PREFIX . "category SET parent_id = 0, top = 1, status = 1, date_added = NOW(), date_modified = NOW()");
         $category_id = $this->db->getLastId();
 
-        $this->db->query("INSERT INTO " . DB_PREFIX . "category_description SET category_id = '" . (int) $category_id . "', language_id = 1, name = '" . $this->db->escape($category_name) . "', meta_title = '" . $this->db->escape($category_name) . "'");
+        $this->db->query("INSERT INTO " . DB_PREFIX . "category_description SET category_id = '" . (int) $category_id . "', language_id = 3, name = '" . $this->db->escape($category_name) . "', meta_title = '" . $this->db->escape($category_name) . "'");
         $this->db->query("INSERT INTO " . DB_PREFIX . "category_to_store SET category_id = '" . (int) $category_id . "', store_id = 0");
 
         $this->log('Category', "Nova kategorija '{$category_name}' (#{$category_id}) dodana.");

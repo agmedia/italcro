@@ -42,6 +42,7 @@ return array(
     'Cardinity\\' => array($vendorDir . '/cardinity/cardinity-sdk-php/src'),
     'Agmedia\\Luceed\\' => array($vendorDir . '/agmedia/luceed/src'),
     'Agmedia\\LuceedOpencartWrapper\\' => array($vendorDir . '/agmedia/luceed-opencart-wrapper/src'),
+    'Agmedia\\Api\\' => array($vendorDir . '/agmedia/api/src'),
     'Agmedia\\' => array($vendorDir . '/agmedia/opencart-eloquent/src'),
     '' => array($vendorDir . '/klarna/kco_rest/src', $vendorDir . '/nesbot/carbon/src'),
 );

@@ -12,23 +12,37 @@ class ControllerExtensionModuleQiqo extends Controller
         $this->document->setTitle($this->language->get('heading_title'));
         $this->load->model('extension/module/qiqo');
 
-        // 🔹 Ručni import
-        if ($this->request->server['REQUEST_METHOD'] == 'POST' && isset($this->request->post['action']) && $this->request->post['action'] == 'import') {
-            \Agmedia\Helpers\Log::store('1', 'qiqo');
-            $count                          = $this->model_extension_module_qiqo->importArticles();
-            \Agmedia\Helpers\Log::store('2', 'qiqo');
-            $this->session->data['success'] = "Import završen. Uvezeno {$count} novih artikala.";
+        if ($this->request->server['REQUEST_METHOD'] == 'POST' && isset($this->request->post['action'])) {
+
+            switch ($this->request->post['action']) {
+                case 'import':
+                    $count = $this->model_extension_module_qiqo->importArticles();
+                    $this->session->data['success'] = "Import završen. Uvezeno {$count} novih artikala.";
+                    break;
+
+                case 'update_qty':
+                    $count = $this->model_extension_module_qiqo->updateQuantities();
+                    $this->session->data['success'] = "Ažurirano količina: {$count} artikala.";
+                    break;
+
+                case 'update_price':
+                    $count = $this->model_extension_module_qiqo->updatePrices();
+                    $this->session->data['success'] = "Ažurirano cijena: {$count} artikala.";
+                    break;
+
+                case 'update_image':
+                    $count = $this->model_extension_module_qiqo->updateImages();
+                    $this->session->data['success'] = "Ažurirano slika: {$count} artikala.";
+                    break;
+            }
+
             $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
         }
 
-        // 🔹 View podaci
         $data['heading_title'] = $this->language->get('heading_title');
-        $data['text_edit']     = $this->language->get('text_edit');
-        $data['button_import'] = $this->language->get('button_import');
         $data['action']        = $this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true);
         $data['cancel']        = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=module', true);
-
-        $data['success'] = $this->session->data['success'] ?? '';
+        $data['success']       = $this->session->data['success'] ?? '';
         unset($this->session->data['success']);
 
         $data['last_log'] = $this->model_extension_module_qiqo->getLastLog();
@@ -40,4 +54,5 @@ class ControllerExtensionModuleQiqo extends Controller
 
         $this->response->setOutput($this->load->view('extension/module/qiqo', $data));
     }
+
 }

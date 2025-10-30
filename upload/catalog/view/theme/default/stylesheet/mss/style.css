@@ -67,17 +67,17 @@
 .msmart-search-live-filter .mss-button-more {
 	display: block;
 	text-align: center;
-	font-weight: bold;
-	padding: 5px 0;
+	/*! font-weight: bold; */
+	padding: 8px 0;
 	border: 1px solid #ccc;
 	border-top: none;
 	border-bottom-left-radius: 3px;
 	border-bottom-right-radius: 3px;
-	color: #d10015;
+	color: #00adee;
 	background: #f8f8f8;
 }
 .msmart-search-live-filter .mss-button-more:hover{
-    color: #00243d;
+	color: #00243d;
 }
 .msmart-search-live-filter .mss-header {
 	text-align: center;
@@ -115,36 +115,36 @@
 	margin-right: 0px;
 	border-left: 10px solid transparent;
 }
-.msmart-search-language-direction-rtl .tt-input { 
+.msmart-search-language-direction-rtl .tt-input {
 	text-align: right;
 }
-.msmart-search-language-direction-rtl .tt-menu .tt-suggestion .mslf-price { 
+.msmart-search-language-direction-rtl .tt-menu .tt-suggestion .mslf-price {
 	padding-right: 10px;
 	padding-left: 0;
 }
-.msmart-search-language-direction-rtl .mslf-loading { 
+.msmart-search-language-direction-rtl .mslf-loading {
 	right: auto;
 	left: 7px;
 }
 .tt-menu .tt-dataset-products tr td:first-child {
-    padding-left: 5px;
-    padding-right: 1px;
+	padding-left: 5px;
+	padding-right: 1px;
 }
 
 .tt-menu .tt-dataset-products tr td:nth-child(2) {
-    padding-left: 10px;
-    border-left: 1px solid #e9e4e4;
-    text-align: left;
+	padding-left: 10px;
+	border-left: 1px solid #e9e4e4;
+	text-align: left;
 }
 
 .tt-menu .tt-dataset-categories tr td:first-child {
-    padding-left: 5px;
-    padding-right: 3px;
+	padding-left: 5px;
+	padding-right: 3px;
 }
 
 .tt-menu .tt-dataset-categories tr td:nth-child(2) {
-    padding-left: 11px;
-    border-left: 1px solid #e9e4e4;
+	padding-left: 11px;
+	border-left: 1px solid #e9e4e4;
 }
 .mslf-product-list .product-name {
 	height: 35px;
@@ -181,9 +181,9 @@
 }
 .mslf-product-list a img {
 	border: 1px solid #d5d5d5;
-    max-width: 100%;
-    height: auto;
-    border: none;
+	max-width: 100%;
+	height: auto;
+	border: none;
 }
 .msmart-search-live-filter .mslf-product-list {
 	position: absolute;
@@ -203,7 +203,7 @@
 	left: auto;
 	right: 215px;
 }
-.mslf-product-list .product-special-price, 
+.mslf-product-list .product-special-price,
 .mslf-product-list .product-price {
 	float: none;
 }

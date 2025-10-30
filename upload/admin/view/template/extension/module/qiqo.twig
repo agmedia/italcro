@@ -1,0 +1,33 @@
+{{ header }}{{ column_left }}
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+            <ul class="breadcrumb">
+                <li><a href="{{ cancel }}">Modules</a></li>
+                <li>{{ heading_title }}</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        {% if success %}
+            <div class="alert alert-success"><i class="fa fa-check-circle"></i> {{ success }}</div>
+        {% endif %}
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">{{ text_edit }}</h3></div>
+            <div class="panel-body">
+                <form action="{{ action }}" method="post">
+                    <button type="submit" name="action" value="import" class="btn btn-primary"><i class="fa fa-download"></i> {{ button_import }}</button>
+                </form>
+
+                <hr>
+                <h4>Zadnji log</h4>
+                <pre style="background:#f8f8f8; padding:10px; max-height:300px; overflow:auto;">{{ last_log }}</pre>
+            </div>
+        </div>
+    </div>
+
+    {{ footer }}
+</div>

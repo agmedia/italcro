@@ -123,8 +123,32 @@ class Api
             return false;
         }
     }
-
-
+    
+    
+    /**
+     * @param string      $type
+     * @param string|null $name
+     *
+     * @return mixed
+     * @throws \Exception
+     */
+    public function connection(string $type, string $name = null)
+    {
+        $class = "\\Agmedia\\Api\\Connection\\" . ucfirst($type);
+        
+        if ($name) {
+            $class .= "\\" . ucfirst($name);
+        }
+        
+        if (class_exists($class)) {
+            return new $class();
+        }
+        
+        throw new \Exception("API connection not found: {$type}/{$name}");
+    }
+    
+    
+    
     /**
      * @param string $sku
      *

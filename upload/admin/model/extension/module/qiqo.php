@@ -106,6 +106,7 @@ class ModelExtensionModuleQiqo extends Model
     public function updateImages(): int
     {
         $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $groups   = collect($qiqo->getGroups());
         $articles = collect($qiqo->getArticles());
         $updated  = 0;
 
@@ -115,15 +116,19 @@ class ModelExtensionModuleQiqo extends Model
 
             if (! $exists->num_rows) continue;
 
-            $new_image = $a['picpath'] ?? '';
-            if (empty($new_image)) continue;
+            $group = $groups->firstWhere('id', $a['kataloggrupa']);
 
-            if ($new_image) {
-                $this->db->query("UPDATE " . DB_PREFIX . "product 
+            if ($group) {
+                $new_image = $group['picpath'] ?? '';
+                if (empty($new_image)) continue;
+
+                if ($new_image) {
+                    $this->db->query("UPDATE " . DB_PREFIX . "product 
                     SET image = '" . $this->db->escape($new_image) . "', date_modified = NOW() 
                     WHERE product_id = '" . (int) $exists->row['product_id'] . "'");
 
-                $updated++;
+                    $updated++;
+                }
             }
         }
 

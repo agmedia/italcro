@@ -88,6 +88,16 @@
                 <hr>
                 <h4>Zadnji log</h4>
                 <pre style="background:#f8f8f8; padding:10px; max-height:300px; overflow:auto;">{{ last_log }}</pre>
+
+                <hr>
+                <form action="{{ action }}" method="post" class="d-flex align-items-center gap-2 mt-2">
+                    <button type="submit" name="action" value="clear_log" class="btn btn-outline-danger d-flex align-items-center gap-2"
+                            onclick="return confirm('Želite li zaista obrisati sadržaj qiqo.log datoteke?');">
+                        <i class="fa fa-trash"></i>
+                        <span>Obriši log</span>
+                    </button>
+                    <small class="text-muted">Ova akcija će isprazniti sistemski log: <code>system/storage/logs/qiqo.log</code></small>
+                </form>
             </div>
         </div>
     </div>

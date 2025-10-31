@@ -47,6 +47,17 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->session->data['success'] = "Povezano {$count} proizvoda ({$mode}).";
                     break;
 
+                case 'clear_log':
+                    $log_file = DIR_LOGS . 'qiqo.log';
+                    if (file_exists($log_file)) {
+                        file_put_contents($log_file, ''); // isprazni log
+                        $this->session->data['success'] = 'Log je uspješno obrisan.';
+                    } else {
+                        $this->session->data['error'] = 'Log datoteka ne postoji.';
+                    }
+                    $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+                    break;
+
             }
 
             $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));

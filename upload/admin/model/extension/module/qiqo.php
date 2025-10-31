@@ -214,52 +214,73 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
-    public function linkProductsToBrands(): int
+    public function linkProductsToBrands(bool $only_empty = true): int
     {
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
-        $groups = collect($qiqo->getGroups());
-        $linked = 0;
+        $groups   = collect($qiqo->getGroups());   // svaka ima id, naziv, logopath
+        $articles = collect($qiqo->getArticles()); // svaka ima id (SKU), kataloggrupa
+        $linked   = 0;
 
-        $this->log('Link', '=== START LINK PRODUCTS → BRANDS ===');
-        $this->log('Link', 'Ukupno grupa: ' . $groups->count());
+        $this->log('Link', '=== START LINK PRODUCTS ↔ BRANDS (via ERP) ===');
+        $this->log('Link', 'Grupe: ' . $groups->count() . ' | Artikli: ' . $articles->count());
 
+        // 🔹 1) Učitaj sve proizvođače iz OC-a u mapu name->id
+        $brands = $this->db->query("SELECT manufacturer_id, name FROM " . DB_PREFIX . "manufacturer");
+        $brandMap = [];
+        foreach ($brands->rows as $b) {
+            $brandMap[mb_strtolower($b['name'])] = (int)$b['manufacturer_id'];
+        }
+
+        // 🔹 2) Iteriraj ERP grupe i pronađi one s logopath
         foreach ($groups as $g) {
+            $gid = (int)$g['id'];
             $logopath = trim($g['logopath'] ?? '');
             if ($logopath === '') continue;
 
-            $basename = pathinfo($logopath, PATHINFO_FILENAME);  // npr. Logo/bosch.png → bosch
-            $brand_name = strtoupper(str_replace(['_', '-'], ' ', $basename));
+            // Naziv slike → ime brenda (npr. Logo/bosch.png → BOSCH)
+            $base = pathinfo($logopath, PATHINFO_FILENAME);
+            $base = preg_replace('/_?logo(_final)?$/i', '', $base);
+            $brand_name = strtoupper(str_replace(['_', '-'], ' ', $base));
 
-            // 🔍 pronađi brand u bazi
-            $brand = $this->db->query("SELECT manufacturer_id FROM " . DB_PREFIX . "manufacturer 
-            WHERE LCASE(name) = '" . $this->db->escape(mb_strtolower($brand_name)) . "' LIMIT 1");
-
-            if (!$brand->num_rows) {
-                $this->log('Link', "⚠️ Nema proizvođača za {$brand_name}");
+            $brand_id = $brandMap[mb_strtolower($brand_name)] ?? 0;
+            if (!$brand_id) {
+                $this->log('Link', "⚠️ Brand nije pronađen u OC: {$brand_name} (grupa #{$gid})");
                 continue;
             }
 
-            $manufacturer_id = (int)$brand->row['manufacturer_id'];
-
-            // 🔍 pronađi proizvode iz te grupe (pretpostavlja se da product.sku = article.id i da article.kataloggrupa = group.id)
-            $gid = (int)$g['id'];
-            $products = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product_to_category 
-            WHERE category_id = '{$gid}'");
-
-            if (!$products->num_rows) {
-                $this->log('Link', "⚠️ Nema proizvoda za grupu {$g['naziv']} ({$gid})");
+            // 🔹 3) Nađi sve ERP artikle iz te grupe
+            $group_articles = $articles->where('kataloggrupa', $gid);
+            if ($group_articles->isEmpty()) {
+                $this->log('Link', "ℹ️ Nema artikala za grupu {$g['naziv']} (#{$gid})");
                 continue;
             }
 
-            foreach ($products->rows as $p) {
-                $pid = (int)$p['product_id'];
+            // 🔹 4) Prođi kroz artikle i spoji prema SKU
+            foreach ($group_articles as $a) {
+                $sku = (string) $a['id'];
+                if ($sku === '') continue;
+
+                $product = $this->db->query("SELECT product_id, manufacturer_id FROM " . DB_PREFIX . "product 
+                                         WHERE sku = '" . $this->db->escape($sku) . "' LIMIT 1");
+                if (!$product->num_rows) {
+                    $this->log('Link', "⚠️ Nema product za SKU {$sku}");
+                    continue;
+                }
+
+                $pid = (int) $product->row['product_id'];
+                $currentMid = (int) $product->row['manufacturer_id'];
+
+                if ($only_empty && $currentMid > 0) continue;
+                if ($currentMid === $brand_id) continue;
+
                 $this->db->query("UPDATE " . DB_PREFIX . "product 
-                SET manufacturer_id = '{$manufacturer_id}'
-                WHERE product_id = '{$pid}'");
+                              SET manufacturer_id = '{$brand_id}', date_modified = NOW()
+                              WHERE product_id = '{$pid}'");
+
                 $linked++;
             }
 
-            $this->log('Link', "✅ {$g['naziv']} → {$brand_name} ({$manufacturer_id}) | {$products->num_rows} proizvoda povezanih");
+            $this->log('Link', "✅ Grupa {$g['naziv']} → Brand {$brand_name} (ID {$brand_id}) | {$group_articles->count()} artikala");
         }
 
         $this->log('Link', "=== END LINK | Povezano: {$linked} proizvoda ===");

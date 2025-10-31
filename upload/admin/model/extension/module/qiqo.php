@@ -273,6 +273,15 @@ class ModelExtensionModuleQiqo extends Model
                 if ($only_empty && $currentMid > 0) continue;
                 if ($currentMid === $brand_id) continue;
 
+                if ($only_empty && $currentMid > 0) {
+                    $this->log('Link', "⏩ Preskočeno (ima brand {$currentMid}) SKU {$sku} → target {$brand_id}");
+                    continue;
+                }
+                if ($currentMid === $brand_id) {
+                    $this->log('Link', "⏭️ Već ispravno: SKU {$sku}, brand {$brand_id}");
+                    continue;
+                }
+
                 $this->db->query("UPDATE " . DB_PREFIX . "product 
                               SET manufacturer_id = '{$brand_id}', date_modified = NOW()
                               WHERE product_id = '{$pid}'");

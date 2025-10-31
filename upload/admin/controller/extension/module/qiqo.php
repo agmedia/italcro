@@ -39,6 +39,12 @@ class ControllerExtensionModuleQiqo extends Controller
                     $count = $this->model_extension_module_qiqo->importBrands();
                     $this->session->data['success'] = "Dodano {$count} novih proizvođača (brendova).";
                     break;
+
+                case 'link_brands':
+                    $count = $this->model_extension_module_qiqo->linkProductsToBrands();
+                    $this->session->data['success'] = "Povezano {$count} proizvoda s proizvođačima.";
+                    break;
+
             }
 
             $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));

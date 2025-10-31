@@ -214,6 +214,58 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
+    public function linkProductsToBrands(): int
+    {
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $groups = collect($qiqo->getGroups());
+        $linked = 0;
+
+        $this->log('Link', '=== START LINK PRODUCTS → BRANDS ===');
+        $this->log('Link', 'Ukupno grupa: ' . $groups->count());
+
+        foreach ($groups as $g) {
+            $logopath = trim($g['logopath'] ?? '');
+            if ($logopath === '') continue;
+
+            $basename = pathinfo($logopath, PATHINFO_FILENAME);  // npr. Logo/bosch.png → bosch
+            $brand_name = strtoupper(str_replace(['_', '-'], ' ', $basename));
+
+            // 🔍 pronađi brand u bazi
+            $brand = $this->db->query("SELECT manufacturer_id FROM " . DB_PREFIX . "manufacturer 
+            WHERE LCASE(name) = '" . $this->db->escape(mb_strtolower($brand_name)) . "' LIMIT 1");
+
+            if (!$brand->num_rows) {
+                $this->log('Link', "⚠️ Nema proizvođača za {$brand_name}");
+                continue;
+            }
+
+            $manufacturer_id = (int)$brand->row['manufacturer_id'];
+
+            // 🔍 pronađi proizvode iz te grupe (pretpostavlja se da product.sku = article.id i da article.kataloggrupa = group.id)
+            $gid = (int)$g['id'];
+            $products = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product_to_category 
+            WHERE category_id = '{$gid}'");
+
+            if (!$products->num_rows) {
+                $this->log('Link', "⚠️ Nema proizvoda za grupu {$g['naziv']} ({$gid})");
+                continue;
+            }
+
+            foreach ($products->rows as $p) {
+                $pid = (int)$p['product_id'];
+                $this->db->query("UPDATE " . DB_PREFIX . "product 
+                SET manufacturer_id = '{$manufacturer_id}'
+                WHERE product_id = '{$pid}'");
+                $linked++;
+            }
+
+            $this->log('Link', "✅ {$g['naziv']} → {$brand_name} ({$manufacturer_id}) | {$products->num_rows} proizvoda povezanih");
+        }
+
+        $this->log('Link', "=== END LINK | Povezano: {$linked} proizvoda ===");
+        return $linked;
+    }
+
 
 
     private function resolveOrCreateCategory(int $gid): int

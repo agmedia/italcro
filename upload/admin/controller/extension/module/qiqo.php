@@ -41,8 +41,10 @@ class ControllerExtensionModuleQiqo extends Controller
                     break;
 
                 case 'link_brands':
-                    $count = $this->model_extension_module_qiqo->linkProductsToBrands();
-                    $this->session->data['success'] = "Povezano {$count} proizvoda s proizvođačima.";
+                    $only_empty = !empty($this->request->post['only_empty']); // true ako je checkbox označen
+                    $count = $this->model_extension_module_qiqo->linkProductsToBrands($only_empty);
+                    $mode  = $only_empty ? 'samo prazni' : 'svi proizvodi (force)';
+                    $this->session->data['success'] = "Povezano {$count} proizvoda ({$mode}).";
                     break;
 
             }

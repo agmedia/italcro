@@ -267,6 +267,8 @@ class ModelExtensionModuleQiqo extends Model
                     continue;
                 }
 
+                $this->log('Link', "🎯 FOUND SKU={$sku}, PID={$product->row['product_id']}, CURR={$product->row['manufacturer_id']}, NEW={$brand_id}");
+
                 $pid = (int) $product->row['product_id'];
                 $currentMid = (int) $product->row['manufacturer_id'];
 

@@ -137,6 +137,84 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
+    public function importBrands(): int
+    {
+        $src_dir = rtrim(DIR_STORAGE, '/\\') . '/upload/logo-brands/';
+        $dst_dir = rtrim(DIR_IMAGE, '/\\')   . '/catalog/brands/';
+
+        if (!is_dir($src_dir)) mkdir($src_dir, 0755, true);
+        if (!is_dir($dst_dir)) mkdir($dst_dir, 0755, true);
+
+        $this->log('Brands', '=== START LOCAL BRAND IMPORT ===');
+        $this->log('Brands', 'Source: ' . $src_dir);
+        $this->log('Brands', 'Destination: ' . $dst_dir);
+
+        $files = glob($src_dir . '*.{jpg,jpeg,png}', GLOB_BRACE);
+        $imported = 0;
+
+        foreach ($files as $file) {
+            $basename  = pathinfo($file, PATHINFO_FILENAME);
+            $ext       = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+            $brandName = strtoupper(str_replace(['_', '-'], ' ', $basename)); // "bosch_tools" → "BOSCH TOOLS"
+            $slug      = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $brandName));
+
+            $dst_rel  = 'catalog/brands/' . $slug . '.' . $ext;
+            $dst_full = $dst_dir . $slug . '.' . $ext;
+
+            // Provjeri postoji li već
+            $exists = $this->db->query("SELECT manufacturer_id, image FROM " . DB_PREFIX . "manufacturer 
+            WHERE LCASE(name) = '" . $this->db->escape(mb_strtolower($brandName)) . "' LIMIT 1");
+
+            if ($exists->num_rows) {
+                // UPDATE slike ako je druga
+                $manufacturer_id = (int)$exists->row['manufacturer_id'];
+                $existingImage = DIR_IMAGE . $exists->row['image'];
+
+                if (file_exists($existingImage)) {
+                    $oldHash = sha1_file($existingImage);
+                    $newHash = sha1_file($file);
+
+                    if ($oldHash !== $newHash) {
+                        copy($file, $dst_full);
+                        $this->db->query("UPDATE " . DB_PREFIX . "manufacturer 
+                        SET image = '" . $this->db->escape($dst_rel) . "'
+                        WHERE manufacturer_id = '" . (int)$manufacturer_id . "'");
+                        $this->log('Brand', "🔁 Slika ažurirana za {$brandName}");
+                    } else {
+                        $this->log('Brand', "✔️ {$brandName} - slika identična, preskočeno");
+                    }
+                } else {
+                    // ako nema stare slike, samo dodaj
+                    copy($file, $dst_full);
+                    $this->db->query("UPDATE " . DB_PREFIX . "manufacturer 
+                    SET image = '" . $this->db->escape($dst_rel) . "'
+                    WHERE manufacturer_id = '" . (int)$manufacturer_id . "'");
+                    $this->log('Brand', "📷 Slika dodana za {$brandName}");
+                }
+                continue;
+            }
+
+            // Novi brand
+            copy($file, $dst_full);
+            $this->db->query("INSERT INTO " . DB_PREFIX . "manufacturer SET 
+            name = '" . $this->db->escape($brandName) . "',
+            image = '" . $this->db->escape($dst_rel) . "',
+            sort_order = 0");
+
+            $manufacturer_id = $this->db->getLastId();
+            $this->db->query("INSERT INTO " . DB_PREFIX . "manufacturer_to_store 
+            SET manufacturer_id = '" . (int)$manufacturer_id . "', store_id = 0");
+
+            $this->log('Brand', "➕ Dodano: {$brandName}");
+            $imported++;
+        }
+
+        $this->log('Brands', "=== END LOCAL IMPORT | Ukupno: {$imported} novih ===");
+        return $imported;
+    }
+
+
+
 
     private function resolveOrCreateCategory(int $gid): int
     {

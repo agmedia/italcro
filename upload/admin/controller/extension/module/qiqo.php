@@ -34,6 +34,11 @@ class ControllerExtensionModuleQiqo extends Controller
                     $count = $this->model_extension_module_qiqo->updateImages();
                     $this->session->data['success'] = "Ažurirano slika: {$count} artikala.";
                     break;
+
+                case 'import_brands':
+                    $count = $this->model_extension_module_qiqo->importBrands();
+                    $this->session->data['success'] = "Dodano {$count} novih proizvođača (brendova).";
+                    break;
             }
 
             $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
@@ -46,6 +51,7 @@ class ControllerExtensionModuleQiqo extends Controller
         unset($this->session->data['success']);
 
         $data['last_log'] = $this->model_extension_module_qiqo->getLastLog();
+        $data['upload_action'] = $this->url->link('extension/module/qiqo/uploadLogos', 'user_token=' . $this->session->data['user_token'], true);
 
         // Layout
         $data['header']      = $this->load->controller('common/header');
@@ -54,5 +60,59 @@ class ControllerExtensionModuleQiqo extends Controller
 
         $this->response->setOutput($this->load->view('extension/module/qiqo', $data));
     }
+
+
+    public function uploadLogos()
+    {
+        $this->load->language('extension/module/qiqo');
+        $this->load->model('extension/module/qiqo');
+
+        $upload_dir = DIR_STORAGE . 'upload/logo-brands/';
+
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+
+        // ZIP upload
+        if (!empty($this->request->files['zip_file']['name'])) {
+            $zip = new ZipArchive();
+            $tmp_name = $this->request->files['zip_file']['tmp_name'];
+
+            if ($zip->open($tmp_name) === true) {
+                $zip->extractTo($upload_dir);
+                $zip->close();
+                $this->session->data['success'] = 'ZIP datoteka uspješno raspakirana u ' . $upload_dir;
+            } else {
+                $this->session->data['error'] = 'Ne mogu otvoriti ZIP datoteku.';
+            }
+        }
+
+        // Multiple file upload
+        if (!empty($this->request->files['images'])) {
+            foreach ($this->request->files['images']['tmp_name'] as $i => $tmp) {
+                $name = $this->request->files['images']['name'][$i];
+                $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                if (!in_array($ext, ['jpg','jpeg','png'])) continue;
+
+                $dest = $upload_dir . basename($name);
+
+                // Ako već postoji, provjeri hash
+                if (file_exists($dest)) {
+                    $old_hash = sha1_file($dest);
+                    $new_hash = sha1_file($tmp);
+                    if ($old_hash === $new_hash) {
+                        continue; // ista slika, preskoči
+                    }
+                }
+
+                move_uploaded_file($tmp, $dest);
+            }
+
+            $this->session->data['success'] = 'Slike uspješno uploadane u ' . $upload_dir;
+        }
+
+        $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+    }
+
 
 }

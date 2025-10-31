@@ -6758,6 +6758,8 @@ a.label-link:not(:hover) {
 #gmap .address-holder a:hover {
 	border-color:#ffffff;
 }
+
+
 @media (min-width: 768px) {
 	.information-contact .left-side {
 		padding-right:30px;
@@ -6796,14 +6798,22 @@ a.label-link:not(:hover) {
 }
 .widget.contrast-bg {
 	position:relative;
-	background:#fdf7f0;
-	padding:60px 0 80px;
 	background-color: rgb(247, 247, 247);
-	padding: 10px 0px 0px;
-	background-image: url("http://reprograv.test/upload/image/catalog/placeholders/white.png");
-	background-position: 50% 33px;
-	background-repeat: repeat;
-	background-attachment: fixed;
+	padding:40px 0px;
+
+}
+
+
+.widget.contrast-bg::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -9999px;
+	right: 0;
+	border-left: 9999px solid #f7f7f7;
+	box-shadow: 9999px 0 0 #f7f7f7;
+	z-index: -1;
 }
 .widget.carousel-widget.contrast-bg {
 	padding:35px 0px 40px 15px;

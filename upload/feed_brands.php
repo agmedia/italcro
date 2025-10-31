@@ -3,7 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: text/plain; charset=utf-8');
 
-echo "===== FEED PARTNER DEBUG START =====\n";
+echo "===== FEED KATALOG GRUPA DEBUG START =====\n";
 
 // 🔹 Postavke
 $korisnik = 'AGMedia';
@@ -17,11 +17,11 @@ $xml = '<?xml version="1.0" encoding="utf-8"?>
                xmlns:xsd="http://www.w3.org/2001/XMLSchema"
                xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
   <soap:Body>
-    <qPartnerWeb xmlns="http://www.qiqo.hr/">
+    <qKatalogGrupaWeb xmlns="http://www.qiqo.hr/">
       <korisnik>' . htmlspecialchars($korisnik) . '</korisnik>
       <lozinka>' . htmlspecialchars($lozinka) . '</lozinka>
       <datum>' . $datum . '</datum>
-    </qPartnerWeb>
+    </qKatalogGrupaWeb>
   </soap:Body>
 </soap:Envelope>';
 
@@ -37,7 +37,7 @@ curl_setopt_array($ch, [
     CURLOPT_CONNECTTIMEOUT  => 10,
     CURLOPT_HTTPHEADER      => [
         'Content-Type: text/xml; charset=utf-8',
-        'SOAPAction: "http://www.qiqo.hr/qPartnerWeb"',
+        'SOAPAction: "http://www.qiqo.hr/qKatalogGrupaWeb"',
     ],
 ]);
 $response  = curl_exec($ch);
@@ -54,18 +54,15 @@ if ($response === false || trim($response) === '') {
     exit;
 }
 
-// 🔹 Očisti XML od neispravnih znakova i entiteta
-$response = preg_replace('/[\x00-\x1F\x7F]/u', '', $response); // ukloni control charove
-$response = preg_replace('/&#x[0-9A-F]+;/i', '', $response);   // ukloni hexa entitete
-$response = preg_replace('/&#[0-9]+;/', '', $response);        // ukloni decimalne entitete
-
-// fallback za specijalne slučajeve (neprintabilni, 0x1F i slični)
+// 🔹 Očisti XML od loših znakova
+$response = preg_replace('/[\x00-\x1F\x7F]/u', '', $response);
+$response = preg_replace('/&#x[0-9A-F]+;/i', '', $response);
+$response = preg_replace('/&#[0-9]+;/', '', $response);
 $response = str_replace(["\x1F", "\x1E", "\x1D", "\x1C"], '', $response);
-
 $response = mb_convert_encoding($response, 'UTF-8', 'UTF-8');
-file_put_contents('debug_feed_partner_clean.xml', $response);
 
-echo "XML očišćen i spremljen u debug_feed_partner_clean.xml\n\n";
+file_put_contents('debug_feed_group_raw.xml', $response);
+echo "XML očišćen i spremljen u debug_feed_group_raw.xml\n\n";
 
 // 🔹 Parsiranje XML-a
 libxml_use_internal_errors(true);
@@ -84,8 +81,8 @@ $nsDIFF = 'urn:schemas-microsoft-com:xml-diffgram-v1';
 $body   = $xmlResponse->children($nsSOAP)->Body ?? null;
 if (!$body) { echo "❌ Nema SOAP Body.\n"; exit; }
 
-$result = $body->children($nsQIQO)->qPartnerWebResponse->qPartnerWebResult ?? null;
-if (!$result) { echo "❌ Nema qPartnerWebResult čvora.\n"; exit; }
+$result = $body->children($nsQIQO)->qKatalogGrupaWebResponse->qKatalogGrupaWebResult ?? null;
+if (!$result) { echo "❌ Nema qKatalogGrupaWebResult čvora.\n"; exit; }
 
 $diffgram = $result->diffgram ?? $result->children($nsDIFF)->diffgram ?? null;
 if (!$diffgram) { echo "❌ Nema diffgram čvora.\n"; exit; }
@@ -93,23 +90,22 @@ if (!$diffgram) { echo "❌ Nema diffgram čvora.\n"; exit; }
 $newDataSet = $diffgram->NewDataSet ?? $diffgram->children()->NewDataSet ?? null;
 if (!$newDataSet) { echo "❌ Nema NewDataSet čvora.\n"; exit; }
 
-// 🔹 Ispis partnera
+// 🔹 Parsiraj <KatalogGrupa>
 $records = [];
-foreach ($newDataSet->Partner as $p) {
+foreach ($newDataSet->KatalogGrupa as $g) {
     $records[] = [
-        'id'      => (int) $p->id,
-        'naziv'   => (string) $p->naziv,
-        'oib'     => (string) $p->oib,
-        'adresa'  => (string) $p->adresa,
-        'mjesto'  => (string) $p->mjesto,
-        'rabat'   => (float) $p->rabat,
-        'aktivan' => ((string) $p->aktivan === 'true'),
-        'izmjena' => (string) $p->izmjena,
+        'id'        => (int) $g->id,
+        'naziv'     => trim((string) $g->naziv),
+        'podnaziv'  => trim((string) $g->podnaziv),
+        'opis'      => trim((string) $g->opis),
+        'picpath'   => trim((string) $g->picpath),
+        'logopath'  => trim((string) $g->logopath),
+        'blister'   => (int) $g->blister,
+        'izmjena'   => (string) $g->izmjena
     ];
 }
 
-echo "✅ Parsirano partnera: " . count($records) . "\n\n";
-//print_r(array_slice($records, 0, 50)); // prva 50 za pregled
-print_r($records); // sve
+echo "✅ Parsirano grupa: " . count($records) . "\n\n";
+print_r(array_slice($records, 0, 5)); // prva 5 radi pregleda
 
-echo "\n===== FEED PARTNER DEBUG END =====\n";
+echo "\n===== FEED KATALOG GRUPA DEBUG END =====\n";

@@ -7,6 +7,16 @@ class ControllerCommonDashboard extends Controller {
 
 		$data['user_token'] = $this->session->data['user_token'];
 
+
+        $data['link_home_slider'] = $this->url->link('extension/module/basel_layerslider',
+                'user_token=' . $this->session->data['user_token'], true).'&module_id=126';
+
+
+
+
+        $data['link_sync_manager'] = $this->url->link('extension/module/qiqo',
+            'user_token=' . $this->session->data['user_token'], true);
+
 		$data['breadcrumbs'] = array();
 
 		$data['breadcrumbs'][] = array(

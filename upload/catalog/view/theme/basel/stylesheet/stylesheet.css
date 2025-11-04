@@ -4594,7 +4594,7 @@ a.scroll-to-top:hover {
 
 .btn-default,
 a.btn-default {
-	background-color:#006FB9;
+	background-color:#BDBDBD;
 	border-color:transparent;
 	color:#fff;
 	/*! border-radius: 10px; */
@@ -4628,7 +4628,7 @@ a.btn-primary,
 	background-color:#00243d;
 	border-color:transparent;
 	color:#ffffff;
-	border-radius: 5px!important;
+	border-radius: 0px !important;
 }
 .btn-primary:hover,
 .btn-primary.active:hover,
@@ -5219,11 +5219,11 @@ a.button-circle {
 	position:absolute;
 	z-index:3;
 	display:table;
-	top: 0px;
-	left: 0px;
+	top: 10px;
+	left: 10px;
 	height:25px;
 	width:50px;
-	border-radius:10px;
+	border-radius:0px;
 }
 /* // PRICE_EUR */
 .single-product .image .badge.eur_badge , .single-product .badge.eur_badge{
@@ -5362,6 +5362,7 @@ a.button-circle {
 
 	transition:margin-top 300ms;
 	font-family: 'Montserrat', sans-serif;
+	padding: 10px 5px;
 }
 
 .grid .single-product .pwrap {
@@ -5955,6 +5956,21 @@ a.button-circle {
 	color: #1b1919;
 
 	border-radius: 5px;
+}
+
+.single-product .input-group.addtocart{
+	max-width:200px;
+	float:right;
+}
+.input-group.addtocart .btn{
+	padding: 8px 10px;
+	min-height: 40px;
+}
+
+.price-wrapper .form-control {
+	padding: 8px 14px;
+	font-size: 15px;
+	/*! min-height: 40px !important; */
 }
 
 table p{margin-bottom:0px;}

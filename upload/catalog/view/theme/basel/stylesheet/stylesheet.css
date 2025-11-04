@@ -5352,6 +5352,7 @@ a.button-circle {
 	text-overflow: ellipsis;
 	font-weight: 500;
 
+	min-height: 42px;
 }
 .single-product .rating {
 	margin-bottom:9px;

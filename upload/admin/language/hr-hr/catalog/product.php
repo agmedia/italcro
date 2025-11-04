@@ -18,7 +18,7 @@ $_['text_amount']            = 'Fiksni iznos';
 
 // Column
 $_['column_name']            = 'Naziv artikla';
-$_['column_model']           = 'Šifra';
+$_['column_model']           = 'Model';
 $_['column_image']           = 'Slika';
 $_['column_price']           = 'Cijena';
 $_['column_quantity']        = 'Količina';
@@ -34,7 +34,7 @@ $_['entry_meta_title'] 	     = 'Meta Tag (oznaka) - naziv';
 $_['entry_meta_keyword'] 	 = 'Meta Tag (oznaka) - ključne riječi';
 $_['entry_meta_description'] = 'Meta Tag (oznaka) - opis';
 $_['entry_keyword']          = 'SEO URL';
-$_['entry_model']            = 'Šifra';
+$_['entry_model']            = 'Model';
 $_['entry_sku']              = 'Šifra';
 $_['entry_upc']              = 'UPC (Universal Product Code - bar code)';
 $_['entry_ean']              = 'EAN (bar code)';
@@ -43,7 +43,7 @@ $_['entry_isbn']             = 'Rok isporuke)';
 $_['entry_mpn']              = 'Jamstvo';
 $_['entry_location']         = 'Jeftinije.hr';
 $_['entry_shipping']         = 'Zahtijeva isporuku';
-$_['entry_manufacturer']     = 'Proizvođač';
+$_['entry_manufacturer']     = 'Brand';
 $_['entry_store']            = 'Web trgovine';
 $_['entry_date_available']   = 'Dostupan od';
 $_['entry_quantity']         = 'Količina';

@@ -1,4 +1,5 @@
 <div class="item single-product">
+    <div class="edge">
     <div class="image" {% if columns == 'list' %}style="width:{{ img_width }}px"{% endif %}>
         <a href="{{ product.href }}">
             <img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" />
@@ -21,12 +22,7 @@
         {% endif %}
 
         <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');">{{ button_cart }}</a></div>
-        <div class="icons-wrapper">
-            <a class="icon is-cart catalog_hide" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ button_cart }}" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');"><span class="global-cart"></span></a>
-            <a class="icon is_wishlist" data-toggle="tooltip" data-placement="{{ tooltip_align }}"  data-title="{{ button_wishlist }}" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart"></span></a>
-            <a class="icon is_compare" onclick="compare.add('{{ product.product_id }}');" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ button_compare }}"><span class="icon-refresh"></span></a>
-            <a class="icon is_quickview hidden-xs" onclick="quickview('{{ product.product_id }}');" data-toggle="tooltip" data-placement="{{ tooltip_align }}" data-title="{{ basel_button_quickview }}"><span class="icon-magnifier-add"></span></a>
-        </div> <!-- .icons-wrapper -->
+
     </div><!-- .image ends -->
     <div class="caption">
         <h3 class="product-name" > <a href="{{ product.href }}">{{ product.name }}</a></h3>
@@ -42,7 +38,7 @@
             {% if product.price %}
 
             <div class="row">
-                <div class="col-xs-5">
+                <div class="col-md-6">
                     <div class="price">
                         {% if product.special %}
                             <span class="price-old"> {{ product.price }}</span><span class="price-new"> {{ product.special }} </span>
@@ -59,7 +55,7 @@
                 </div>
 
 
-                <div class="col-xs-7 noplxs">
+                <div class="col-md-6 ">
 
                         <div class="input-group addtocart" >
 
@@ -118,4 +114,5 @@
             });
         </script>
     {% endif %}
+    </div>
 </div><!-- .single-product ends -->

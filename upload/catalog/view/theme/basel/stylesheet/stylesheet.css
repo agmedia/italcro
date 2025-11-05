@@ -5359,10 +5359,10 @@ a.button-circle {
 	margin-top:3px;
 }
 .grid .single-product .price {
-	font-size:15px!important;
+	font-size:16px!important;
 
 	transition:margin-top 300ms;
-	font-family: 'Montserrat', sans-serif;
+	font-family: "Source Sans 3", sans-serif;
 	padding: 10px 5px;
 }
 
@@ -5385,7 +5385,7 @@ a.button-circle {
 
 
 .grid .single-product .price span:not(.price-old) {
-	color: #00adee;
+	color: #000;
 	font-weight: 400;
 }
 .single-product .price .price-old {
@@ -5960,7 +5960,7 @@ a.button-circle {
 }
 
 .single-product .input-group.addtocart{
-	max-width:200px;
+
 	float:right;
 }
 .input-group.addtocart .btn{
@@ -5972,6 +5972,8 @@ a.button-circle {
 	padding: 8px 14px;
 	font-size: 15px;
 	/*! min-height: 40px !important; */
+	width: 100%;
+	min-width: 50px;
 }
 
 table p{margin-bottom:0px;}
@@ -6220,7 +6222,7 @@ table p{margin-bottom:0px;}
 	}
 
 	.product-info .table-cell.right h1#page-title {
-		font-family: 'Montserrat', sans-serif;
+		font-family: "Source Sans 3", sans-serif;
 		font-size: 21px!important;
 		font-weight: 600;
 		text-transform: none;

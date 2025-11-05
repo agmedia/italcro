@@ -81,8 +81,8 @@
       var subtotal = (item.price_raw || 0) * qty;
       var subtotalCell = '<span class="qo-subtotal" data-sub="'+subtotal+'">...</span>';
       var actions = added
-          ? '<button class="btn btn-default qo-remove" title="Ukloni">✕</button> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>'
-          : '<button class="btn btn-primary qo-add">+ Dodaj</button>';
+          ? '<a class="btn btn-default qo-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>'
+          : '<button class="btn btn-primary qo-add"><span class="global-cart"></span></button>';
 
       return '\
         <tr data-id="'+item.product_id+'" data-price="'+(item.price_raw || 0)+'" '+(added?'data-added="1"':'')+'>\
@@ -119,7 +119,7 @@
         if(item.quantity){ $existing.find('.qo-qty').val(item.quantity); }
         if(added){
           $existing.attr('data-added','1').addClass('success')
-              .find('.qo-actions').html('<button class="btn btn-default qo-remove" title="Ukloni">✕</button> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
+              .find('.qo-actions').html('<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
         }
         // osvježi SKU celiju čak i ako cartState ne šalje sku
         if(item.sku){ $existing.find('td').eq(2).text(item.sku); }
@@ -175,17 +175,42 @@
       $.get('index.php?route=extension/module/quick_order/autocomplete', { term: term }, function(items){
         $list.empty();
         if(!items || !items.length){ $list.hide(); return; }
+
         items.forEach(function(it){
-          var html = '<a class="list-group-item qo-suggest" href="#" data-item=\''+JSON.stringify(it)+'\'>' +
-              it.name +
-              (it.sku ? ' — <small>' + it.sku + '</small>' : '') +
-              (it.price ? '&nbsp; <b>' + it.price + '</b>' : '') +
-              '</a>';
+          var img = it.thumb
+              ? `<img src="${it.thumb}" alt="${it.name}" class="qo-thumb">`
+              : `<div class="qo-thumb" style="display:flex;justify-content:center;align-items:center;color:#bbb;"><i class="fa fa-box"></i></div>`;
+
+          var html = `
+        <div class="list-group-item qo-suggest">
+          <div class="qo-suggest-inner">
+            ${img}
+            <div class="qo-info">
+              <div class="name">${it.name || ''}</div>
+              <div class="meta">
+                ${(it.sku ? `<span>Šifra: ${it.sku}</span>` : '')}
+                ${(it.price ? `<span class="price">${it.price}</span>` : '')}
+              </div>
+            </div>
+            <button class="qo-add-btn" data-item='${JSON.stringify(it)}'><span class="global-cart"></span></button>
+          </div>
+        </div>`;
           $list.append(html);
         });
         $list.show();
       }, 'json');
     }
+
+// Dodaj iz autocompletea direktno u tablicu
+    $(document).on('click', '.qo-add-btn', function(e){
+      e.preventDefault();
+      var item = $(this).data('item');
+      $list.hide();
+      $('#qo-search').val('');
+      ensureRow(item, false);
+      recomputeTotal();
+    });
+
     $(document).on('input', '#qo-search', function(){
       clearTimeout(timer);
       var term = $(this).val().trim();
@@ -239,7 +264,7 @@
       $.post('index.php?route=extension/module/quick_order/fastAdd', { product_id: pid, quantity: qty }, function(res){
         if(res && res.success){
           $tr.attr('data-added','1').addClass('success')
-              .find('.qo-actions').html('<button class="btn btn-default qo-remove" title="Ukloni">✕</button> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
+              .find('.qo-actions').html('<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
           toast('ok', 'Dodano u košaricu');
           // upiši cijeli red (sa SKU) u LS
           var data = getRowData($tr);
@@ -278,7 +303,7 @@
               var $tr = $table.find('tr[data-id="'+a.product_id+'"]');
               $tr.attr('data-added','1').addClass('success')
                   .find('.qo-actions')
-                  .html('<button class="btn btn-default qo-remove" title="Ukloni">✕</button> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
+                  .html('<a class=" qo-remove product-remove" title="Ukloni">✕</button> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
               // spremi cijeli red (sa SKU) u LS
               var data = getRowData($tr);
               data.added = true;

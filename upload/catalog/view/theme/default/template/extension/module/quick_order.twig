@@ -1,15 +1,18 @@
 <div class="quick-order box" data-text-add="{{ text_add }}">
-  <h3>{{ heading_title }}</h3>
 
-  <input id="qo-search" class="form-control" type="text" placeholder="{{ text_search }}" autocomplete="off" />
+  <div id="qo-toast" class="alert" style="display:none;"></div>
+  <h3>Pretraga artikala</h3>
 
-  <div id="qo-suggestions" class="list-group" style="margin-top:8px; display:none;"></div>
+  <div class="quick-order-search">
+    <input id="qo-search" class="form-control qo-input" type="text" placeholder="{{ text_search }}" autocomplete="off" />
+    <div id="qo-suggestions" class="list-group" style="display:none;"></div>
+  </div>
 
   <div class="table-responsive quick-order-responsive">
     <table class="table table-striped" id="qo-table" style="margin-top:10px;">
     <thead>
       <tr>
-        <th></th>
+        <th>Slika</th>
         <th>{{ text_name }}</th>
         <th>{{ text_sku }}</th>
         <th>{{ text_price }}</th>
@@ -22,8 +25,18 @@
   </table>
   </div>
 
+
+
+  <!-- Novi blok samo za total -->
+  <div id="qo-total-block" class=" quick-order-total">
+    <div class="inner">
+      <strong>Ukupno:</strong>
+      <span id="qo-total">0</span>
+    </div>
+  </div>
+
   <!-- Blok s gumbima -->
-  <div id="qo-actions" class="well" style="margin-top:10px; text-align:right;">
+  <div id="qo-actions"  style="margin-top:10px; text-align:right;">
     <div class="btn-group">
       <button class="btn btn-danger" style="margin-right:10px" id="qo-clear-all">{{ text_clear_all }}</button>
 
@@ -31,15 +44,7 @@
     </div>
   </div>
 
-  <!-- Novi blok samo za total -->
-  <div id="qo-total-block" class="well quick-order-total">
-    <div class="inner">
-      <strong>Ukupno:</strong>
-      <span id="qo-total">0</span>
-    </div>
-  </div>
 
-  <div id="qo-toast" class="alert" style="display:none;"></div>
 </div>
 <style>
   /* Vertikalno poravnanje u sredinu za sve ćelije */
@@ -122,8 +127,6 @@
     padding: 10px 15px;
     text-align: right;
     background: #fff;
-    border: 1px solid #ddd;
-
     font-size: 1.8rem;
 
     color: #000;
@@ -146,5 +149,185 @@
       text-align: center;
     }
   }
+
+  /* Quick Order autocomplete styling */
+  #qo-suggestions {
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .qo-suggest-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .qo-thumb {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e5e5e5;
+  }
+
+  .qo-thumb.placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f8f8f8;
+    color: #aaa;
+    font-size: 20px;
+  }
+
+  .qo-suggest-info {
+    flex-grow: 1;
+    line-height: 1.2;
+  }
+
+  .qo-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+  }
+
+  .qo-meta {
+    font-size: 13px;
+    color: #777;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .qo-price {
+    font-weight: 500;
+    color: #000;
+    font-size: 15px;
+  }
+
+  .qo-suggest:hover {
+    background-color: #f0f7ff;
+    text-decoration: none;
+  }
+
+  /* Container */
+  .quick-order-search {
+    position: relative;
+    max-width: 640px;
+    margin-bottom: 15px;
+  }
+
+  /* Search input */
+  .qo-input {
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid #ccc;
+    transition: all 0.2s;
+    font-size: 15px;
+  }
+  .qo-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 6px rgba(0,123,255,0.25);
+  }
+
+  /* Suggestions dropdown */
+  #qo-suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 99;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    overflow-y: auto;
+    max-height: 350px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+
+  /* Each suggestion row */
+  .qo-suggest {
+    display: block;
+    padding: 8px 12px;
+    color: #333;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .qo-suggest:hover {
+    background: #f7faff;
+    text-decoration: none;
+  }
+
+  /* Inner layout */
+  .qo-suggest-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Thumbnail */
+  .qo-thumb {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #eee;
+    background: #fafafa;
+  }
+
+  /* Info block */
+  .qo-info {
+    flex: 1;
+    line-height: 1.25;
+  }
+  .qo-info .name {
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 3px;
+    font-size: 15px;
+  }
+  .qo-info .meta {
+    display: flex;
+    justify-content: normal ;
+    font-size: 13px;
+    color: #777;
+  }
+  .qo-info .price {
+    font-weight: 600;
+    color: #000;
+    margin-left: 10px;
+  }
+
+  /* Add button */
+  .qo-add-btn {
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .qo-add-btn:hover {
+    background: #0069d9;
+  }
+  .qo-add-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* Responsive tweaks */
+  @media (max-width: 576px) {
+    .qo-suggest-inner { flex-direction: row; align-items: flex-start; }
+    .qo-thumb { width: 44px; height: 44px; }
+    .qo-info .meta { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .qo-add-btn { padding: 5px 8px; }
+  }
+
+
 
 </style>

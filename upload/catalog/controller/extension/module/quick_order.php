@@ -20,10 +20,16 @@ class ControllerExtensionModuleQuickOrder extends Controller {
     public function index() {
         if (!$this->config->get('module_quick_order_status')) return;
 
-        // 🔐 zahtijevaj login za pristup modulu
         if (!$this->customer->isLogged()) {
-            // nakon logina vrati korisnika na quick order
-            $this->session->data['redirect'] = $this->url->link('extension/module/quick_order', '', true);
+            // baza (SSL ako je uključeno)
+            $base = (!empty($this->request->server['HTTPS']) && $this->request->server['HTTPS'] != 'off')
+                ? $this->config->get('config_ssl')
+                : $this->config->get('config_url');
+
+            // 🔁 nakon logina ide na information id=30 (tvoj "brza narudžba")
+            $this->session->data['redirect'] = $this->url->link('information/information', 'information_id=30', true);
+
+            // redirect na login
             $this->response->redirect($this->url->link('account/login', '', true));
             return;
         }
@@ -47,6 +53,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
         return $this->load->view('extension/module/quick_order', $data);
     }
+
 
     /* ========= DATA: search ========= */
     public function autocomplete() {

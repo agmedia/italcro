@@ -91,7 +91,7 @@
           <td>'+(item.sku || '')+'</td>\n\
           <td>'+(item.price || '')+'</td>\n\
           <td>'+subtotalCell+'</td>\n\
-          <td><input type="number" class="form-control qo-qty" min="1" value="'+qty+'" style="max-width:90px;text-align:right;"></td>\n\
+          <td><input type="number" class="form-control qo-qty" min="1" value="'+qty+'" style="max-width:90px;text-align:left;"></td>\n\
           <td class="qo-actions">'+actions+'</td>\n\
         </tr>';
     }

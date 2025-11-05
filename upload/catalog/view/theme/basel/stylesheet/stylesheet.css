@@ -2654,7 +2654,7 @@ div.required .control-label:after {
 	}
 }
 #content {
-	min-height: 600px;
+
 	margin-bottom:50px;
 }
 
@@ -4576,7 +4576,7 @@ a.scroll-to-top:hover {
 	border-radius:0;
 	max-width:100%;
 	white-space:normal;
-	background-color:#333333;
+
 	border-color:transparent;
 	color:#ffffff;
 	outline:none !important;

@@ -1,0 +1,150 @@
+<div class="quick-order box" data-text-add="{{ text_add }}">
+  <h3>{{ heading_title }}</h3>
+
+  <input id="qo-search" class="form-control" type="text" placeholder="{{ text_search }}" autocomplete="off" />
+
+  <div id="qo-suggestions" class="list-group" style="margin-top:8px; display:none;"></div>
+
+  <div class="table-responsive quick-order-responsive">
+    <table class="table table-striped" id="qo-table" style="margin-top:10px;">
+    <thead>
+      <tr>
+        <th></th>
+        <th>{{ text_name }}</th>
+        <th>{{ text_sku }}</th>
+        <th>{{ text_price }}</th>
+        <th>Ukupno</th>
+        <th style="width:110px">{{ text_qty }}</th>
+        <th>Uredi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  </div>
+
+  <!-- Blok s gumbima -->
+  <div id="qo-actions" class="well" style="margin-top:10px; text-align:right;">
+    <div class="btn-group">
+      <button class="btn btn-danger" style="margin-right:10px" id="qo-clear-all">{{ text_clear_all }}</button>
+
+      <a href="index.php?route=checkout/checkout" class="btn btn-success" id="qo-checkout">{{ text_checkout }}</a>
+    </div>
+  </div>
+
+  <!-- Novi blok samo za total -->
+  <div id="qo-total-block" class="well quick-order-total">
+    <div class="inner">
+      <strong>Ukupno:</strong>
+      <span id="qo-total">0</span>
+    </div>
+  </div>
+
+  <div id="qo-toast" class="alert" style="display:none;"></div>
+</div>
+<style>
+  /* Vertikalno poravnanje u sredinu za sve ćelije */
+  .quick-order #qo-table.table > thead > tr > th,
+  .quick-order #qo-table.table > tbody > tr > td {
+    vertical-align: middle !important;
+  }
+
+  /* Zebra pruge (Basel zna ugasiti default .table-striped) */
+  .quick-order #qo-table.table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: #f7f7f7; /* po želji */
+  }
+
+  /* Ako koristiš .success na retku, da ostane čitljivo */
+  .quick-order #qo-table tbody tr.success td {
+    background-color: #e9f7ef !important;
+  }
+
+  /* Centriraj prvu kolonu (slika) */
+  .quick-order #qo-table td:first-child,
+  .quick-order #qo-table th:first-child {
+    width: 80px;
+    text-align: center;
+  }
+
+  /* Slika uredna i poravnata */
+  .quick-order #qo-table td img {
+    display: inline-block;
+    width: 602px;
+    height: 602px;
+    object-fit: cover;
+  }
+
+  /* Količina da ne skače visinom */
+  .quick-order #qo-table .qo-qty {
+    height: 34px;
+    line-height: 34px;
+    padding: 4px 8px;
+  }
+  .quick-order #qo-table td:last-child,
+  .quick-order #qo-table th:last-child {
+    text-align: right;
+  }
+
+  /* Akcije poravnane u sredinu */
+  .quick-order #qo-table .qo-actions {
+    white-space: nowrap;
+  }
+
+  /* zadrži zebra + vertikalno centriranje (iz ranije poruke) */
+  .quick-order #qo-table.table > thead > tr > th,
+  .quick-order #qo-table.table > tbody > tr > td { vertical-align: middle !important; }
+
+  .quick-order #qo-table.table-striped > tbody > tr:nth-of-type(odd) { background:#f7f7f7; }
+
+  /* responsive container */
+  .quick-order-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* sitna UX poboljšanja na uskim ekranima */
+  @media (max-width: 575.98px) {
+    .quick-order #qo-table td img { width:28px; height:28px; }
+    .quick-order #qo-table .qo-qty { max-width:72px; }
+    /* po želji sakrij SKU na XS da stane sve */
+    .quick-order #qo-table th:nth-child(3),
+    .quick-order #qo-table td:nth-child(3) { display:none; }
+  }
+
+  /* količina desno poravnata (kako si tražio) */
+  .quick-order #qo-table th:nth-child(6),
+  .quick-order #qo-table td:nth-child(6) { text-align:right; }
+  .quick-order #qo-table .qo-qty { text-align:right; }
+
+  /* zaseban total blok ispod tablice */
+  .quick-order-total {
+    margin-top: 15px;
+    padding: 10px 15px;
+    text-align: right;
+    background: #fff;
+    border: 1px solid #ddd;
+
+    font-size: 1.8rem;
+
+    color: #000;
+  }
+
+  /* dodatni kontrast ako želiš */
+  .quick-order-total strong {
+    color: #000;
+    font-weight:500
+  }
+
+  /* malo razmaka od gumba iznad */
+  #qo-actions {
+    margin-bottom: 10px;
+  }
+
+  /* responsive prilagodba */
+  @media (max-width: 575.98px) {
+    .quick-order-total {
+      text-align: center;
+    }
+  }
+
+</style>

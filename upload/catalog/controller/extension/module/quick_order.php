@@ -1,9 +1,33 @@
 <?php
 class ControllerExtensionModuleQuickOrder extends Controller {
 
-    // ---------- VIEW ----------
+    /* ========= AUTH HELPERS ========= */
+    /** Guard for JSON endpoints */
+    private function requireLoginJson() {
+        if (!$this->customer->isLogged()) {
+            $this->response->addHeader('Content-Type: application/json');
+            $this->response->addHeader('HTTP/1.1 401 Unauthorized');
+            $this->response->setOutput(json_encode([
+                'error'   => 'login_required',
+                'message' => 'Morate biti prijavljeni.'
+            ]));
+            return false;
+        }
+        return true;
+    }
+
+    /* ========= VIEW ========= */
     public function index() {
         if (!$this->config->get('module_quick_order_status')) return;
+
+        // 🔐 zahtijevaj login za pristup modulu
+        if (!$this->customer->isLogged()) {
+            // nakon logina vrati korisnika na quick order
+            $this->session->data['redirect'] = $this->url->link('extension/module/quick_order', '', true);
+            $this->response->redirect($this->url->link('account/login', '', true));
+            return;
+        }
+
         $this->load->language('extension/module/quick_order');
         $this->document->addScript('catalog/view/javascript/quick_order.js');
 
@@ -24,8 +48,10 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         return $this->load->view('extension/module/quick_order', $data);
     }
 
-    // ---------- DATA: search ----------
+    /* ========= DATA: search ========= */
     public function autocomplete() {
+        if (!$this->requireLoginJson()) return; // 🔐
+
         $this->response->addHeader('Content-Type: application/json');
         $term = isset($this->request->get['term']) ? trim($this->request->get['term']) : '';
         if (utf8_strlen($term) < 2) {
@@ -53,9 +79,9 @@ class ControllerExtensionModuleQuickOrder extends Controller {
             $product_info = $this->model_catalog_product->getProduct((int)$row['product_id']);
             if (!$product_info) continue;
 
-            $price_float = (float)$product_info['price'];
+            $price_float   = (float)$product_info['price'];
             $special_float = isset($product_info['special']) ? (float)$product_info['special'] : 0;
-            $effective = $special_float > 0 ? $special_float : $price_float;
+            $effective     = $special_float > 0 ? $special_float : $price_float;
 
             $taxed = $this->tax->calculate($effective, $product_info['tax_class_id'], (bool)$this->config->get('config_tax'));
 
@@ -82,8 +108,10 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $this->response->setOutput(json_encode($results));
     }
 
-    // ---------- CART ops ----------
+    /* ========= CART ops ========= */
     public function fastAdd() {
+        if (!$this->requireLoginJson()) return; // 🔐
+
         $this->response->addHeader('Content-Type: application/json');
         $product_id = (int)($this->request->post['product_id'] ?? 0);
         $qty        = (int)($this->request->post['quantity'] ?? 1);
@@ -94,6 +122,8 @@ class ControllerExtensionModuleQuickOrder extends Controller {
     }
 
     public function fastAddAll() {
+        if (!$this->requireLoginJson()) return; // 🔐
+
         $this->response->addHeader('Content-Type: application/json');
         $items_json = $this->request->post['items'] ?? '[]';
         $items = json_decode($items_json, true);
@@ -117,6 +147,8 @@ class ControllerExtensionModuleQuickOrder extends Controller {
     }
 
     public function removeItem() {
+        if (!$this->requireLoginJson()) return; // 🔐
+
         $this->response->addHeader('Content-Type: application/json');
         $pid = (int)($this->request->post['product_id'] ?? 0);
         if (!$pid) { $this->response->setOutput(json_encode(['success'=>false])); return; }
@@ -134,6 +166,8 @@ class ControllerExtensionModuleQuickOrder extends Controller {
     }
 
     public function clearAll() {
+        if (!$this->requireLoginJson()) return; // 🔐
+
         $this->response->addHeader('Content-Type: application/json');
         $this->cart->clear();
         $this->response->setOutput(json_encode(['success'=>true]));
@@ -141,6 +175,8 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
     // Update qty by product_id: remove all entries then add one with new qty (assumes no required options)
     public function updateQty() {
+        if (!$this->requireLoginJson()) return; // 🔐
+
         $this->response->addHeader('Content-Type: application/json');
         $pid = (int)($this->request->post['product_id'] ?? 0);
         $qty = (int)($this->request->post['quantity'] ?? 1);
@@ -176,8 +212,10 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         return ['success'=>true,'message'=>$this->language->get('text_success')];
     }
 
-    // ---------- HELPERS ----------
+    /* ========= HELPERS ========= */
     public function format() {
+        if (!$this->requireLoginJson()) return; // 🔐
+
         $this->response->addHeader('Content-Type: application/json');
         $amount = (float)($this->request->post['amount'] ?? 0);
         $this->response->setOutput(json_encode([
@@ -186,25 +224,23 @@ class ControllerExtensionModuleQuickOrder extends Controller {
     }
 
     public function cartState() {
+        if (!$this->requireLoginJson()) return; // 🔐
+
         $this->response->addHeader('Content-Type: application/json');
 
-        // Ako već nije:
         $this->load->model('catalog/product');
         $this->load->model('tool/image');
-        $this->load->language('product/product'); // ako treba za valutu/format
+        $this->load->language('product/product');
 
         $items = array();
         foreach ($this->cart->getProducts() as $product) {
-            // Dohvati product_info da dobijemo SKU
             $product_info = $this->model_catalog_product->getProduct($product['product_id']);
 
-            // Thumb (po želji – ako već vraćaš image u cartState, zadrži svoj kod)
             $thumb = '';
             if (!empty($product_info['image'])) {
                 $thumb = $this->model_tool_image->resize($product_info['image'], 60, 60);
             }
 
-            // Cijena “raw” + formatirana (uskladi s ostatkom modula)
             $price_raw = (float)$product['price'];
             $price_txt = $this->currency->format(
                 $this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')),
@@ -214,7 +250,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
             $items[] = array(
                 'product_id' => (int)$product['product_id'],
                 'name'       => $product['name'],
-                'sku'        => isset($product_info['sku']) ? $product_info['sku'] : '', // ← KLJUČNO
+                'sku'        => isset($product_info['sku']) ? $product_info['sku'] : '', // KLJUČNO
                 'price_raw'  => $price_raw,
                 'price'      => $price_txt,
                 'quantity'   => (int)$product['quantity'],
@@ -223,8 +259,6 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         }
 
         $json = array('items' => $items);
-
         $this->response->setOutput(json_encode($json));
     }
-
 }

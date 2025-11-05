@@ -187,38 +187,44 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
     public function cartState() {
         $this->response->addHeader('Content-Type: application/json');
+
+        // Ako već nije:
+        $this->load->model('catalog/product');
         $this->load->model('tool/image');
+        $this->load->language('product/product'); // ako treba za valutu/format
 
-        // consolidate per product_id (no options assumed)
-        $accum = [];
-        foreach ($this->cart->getProducts() as $p) {
-            $pid = (int)$p['product_id'];
-            if (!isset($accum[$pid])) {
-                $accum[$pid] = $p;
-            } else {
-                $accum[$pid]['quantity'] += $p['quantity'];
+        $items = array();
+        foreach ($this->cart->getProducts() as $product) {
+            // Dohvati product_info da dobijemo SKU
+            $product_info = $this->model_catalog_product->getProduct($product['product_id']);
+
+            // Thumb (po želji – ako već vraćaš image u cartState, zadrži svoj kod)
+            $thumb = '';
+            if (!empty($product_info['image'])) {
+                $thumb = $this->model_tool_image->resize($product_info['image'], 60, 60);
             }
-        }
 
-        $items = [];
-        foreach ($accum as $p) {
-            $thumb = isset($p['image']) && $p['image'] ? $this->model_tool_image->resize($p['image'], 60, 60) : '';
+            // Cijena “raw” + formatirana (uskladi s ostatkom modula)
+            $price_raw = (float)$product['price'];
+            $price_txt = $this->currency->format(
+                $this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')),
+                $this->session->data['currency']
+            );
 
-            $price_taxed = $this->tax->calculate($p['price'], $p['tax_class_id'], (bool)$this->config->get('config_tax'));
-            $price_display = $this->currency->format($price_taxed, $this->session->data['currency']);
-
-            $items[] = [
-                'product_id' => (int)$p['product_id'],
-                'name'       => html_entity_decode($p['name'], ENT_QUOTES, 'UTF-8'),
-                'model'      => $p['model'],
-                'sku'        => isset($p['sku']) ? $p['sku'] : '',
-                'quantity'   => (int)$p['quantity'],
-                'price'      => $price_display,
-                'price_raw'  => (float)$price_taxed,
+            $items[] = array(
+                'product_id' => (int)$product['product_id'],
+                'name'       => $product['name'],
+                'sku'        => isset($product_info['sku']) ? $product_info['sku'] : '', // ← KLJUČNO
+                'price_raw'  => $price_raw,
+                'price'      => $price_txt,
+                'quantity'   => (int)$product['quantity'],
                 'thumb'      => $thumb
-            ];
+            );
         }
 
-        $this->response->setOutput(json_encode(['items' => array_values($items)]));
+        $json = array('items' => $items);
+
+        $this->response->setOutput(json_encode($json));
     }
+
 }

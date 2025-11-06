@@ -360,7 +360,7 @@ class ModelExtensionModuleQiqo extends Model
                                      LEFT JOIN " . DB_PREFIX . "product_description pd 
                                      ON p.product_id = pd.product_id 
                                      WHERE p.sku = '" . $this->db->escape($sku) . "' 
-                                     AND pd.language_id = 1
+                                     AND pd.language_id = 3
                                      LIMIT 1");
 
             if (!$product->num_rows) {
@@ -380,7 +380,7 @@ class ModelExtensionModuleQiqo extends Model
 
             $this->db->query("UPDATE " . DB_PREFIX . "product_description 
                           SET name = '" . $this->db->escape($newName) . "'
-                          WHERE product_id = {$pid} AND language_id = 1");
+                          WHERE product_id = {$pid} AND language_id = 3");
 
             $updated++;
             $this->log('NameUpdate', "✅ SKU {$sku} | {$oldName} → {$newName}");

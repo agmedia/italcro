@@ -30,8 +30,11 @@
                         <i class="fa fa-euro"></i> Ažuriraj cijene
                     </button>
 
-                    <button type="submit" name="action" value="update_image" class="btn btn-info">
-                        <i class="fa fa-image"></i> Ažuriraj slike
+                    <hr>
+
+                    <button type="submit" name="action" value="update_assets" class="btn btn-secondary d-flex align-items-center gap-2">
+                        <i class="fa fa-sync"></i>
+                        <span>Sinkroniziraj slike, logotipe i dokumente (ERP + lokalno)</span>
                     </button>
 
                     <hr>
@@ -43,11 +46,25 @@
 
                 <hr>
 
+                <form action="{{ action }}" method="post" class="mt-2">
+                    <button type="submit" name="action" value="update_names" class="btn btn-secondary d-flex align-items-center gap-2">
+                        <i class="fa fa-font"></i>
+                        <span>Ažuriraj nazive artikala (ERP dimmodel)</span>
+                    </button>
+
+                    <button type="submit" name="action" value="link_related" class="btn btn-info d-flex align-items-center gap-2">
+                        <i class="fa fa-object-group"></i>
+                        <span>Poveži proizvode s istim slikama (ERP picpath)</span>
+                    </button>
+                </form>
+
+                <hr>
+
                 <form action="{{ action }}" method="post" class="mt-3">
                     <div class="row">
                         <div class="col-md-3">
                             <button type="submit" name="action" value="link_brands_erp" class="btn btn-primary">
-                                <i class="fa fa-link"></i> Poveži proizvode s brendovima (prema ERP logopath)
+                                <i class="fa fa-link"></i> Poveži proizvode s brendovima (ERP logopath)
                             </button>
                         </div>
                         <div class="col-md-3" style="padding-top:10px;">

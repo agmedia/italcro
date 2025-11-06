@@ -103,37 +103,76 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
-    public function updateImages(): int
+    public function updateAssets(): int
     {
         $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
         $groups   = collect($qiqo->getGroups());
         $articles = collect($qiqo->getArticles());
-        $updated  = 0;
 
+        $updated_images  = 0;
+        $uploaded_logos  = 0;
+        $uploaded_docs   = 0;
+
+        $this->log('Assets', '=== START SYNC (images, logos, documents) ===');
+
+        // 🔹 1) UPDATE glavne slike proizvoda iz ERP-a (picpath)
         foreach ($articles as $a) {
             $sku = $this->db->escape($a['id']);
-            $exists = $this->db->query("SELECT product_id, image FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
-
-            if (! $exists->num_rows) continue;
+            $product = $this->db->query("SELECT product_id, image FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
+            if (!$product->num_rows) continue;
 
             $group = $groups->firstWhere('id', $a['kataloggrupa']);
+            if (!$group) continue;
 
-            if ($group) {
-                $new_image = $group['picpath'] ?? '';
-                if (empty($new_image)) continue;
+            $picpath = trim($group['picpath'] ?? '');
+            if ($picpath === '') continue;
 
-                if ($new_image) {
-                    $this->db->query("UPDATE " . DB_PREFIX . "product 
-                    SET image = '" . $this->db->escape($new_image) . "', date_modified = NOW() 
-                    WHERE product_id = '" . (int) $exists->row['product_id'] . "'");
+            // napravi lokalni put do slike (možda s FTP syncom)
+            $new_image = $this->syncFileFromSource($picpath, 'catalog/products/');
 
-                    $updated++;
-                }
+            if ($new_image && $new_image !== $product->row['image']) {
+                $this->db->query("UPDATE " . DB_PREFIX . "product 
+                SET image = '" . $this->db->escape($new_image) . "', date_modified = NOW() 
+                WHERE product_id = " . (int)$product->row['product_id']);
+                $updated_images++;
             }
         }
 
-        $this->log('Images', "{$updated} slika ažurirano.");
-        return $updated;
+        // 🔹 2) SYNC logotipi brendova (samo oni s logopath u ERP-u)
+        foreach ($groups as $g) {
+            $brand_name = trim($g['naziv'] ?? '');
+            $logopath   = trim($g['logopath'] ?? '');
+            if ($brand_name === '' || $logopath === '') continue;
+
+            // put do logotipa
+            $new_logo = $this->syncFileFromSource($logopath, 'catalog/brands/');
+            if (!$new_logo) continue;
+
+            // nađi manufacturer
+            $m = $this->db->query("SELECT manufacturer_id FROM " . DB_PREFIX . "manufacturer 
+                               WHERE LCASE(name) = '" . $this->db->escape(mb_strtolower($brand_name)) . "' LIMIT 1");
+            if (!$m->num_rows) continue;
+
+            // ažuriraj logo
+            $this->db->query("UPDATE " . DB_PREFIX . "manufacturer 
+                          SET image = '" . $this->db->escape($new_logo) . "' 
+                          WHERE manufacturer_id = " . (int)$m->row['manufacturer_id']);
+            $uploaded_logos++;
+        }
+
+        // 🔹 3) SYNC dokumenata iz \\SRV-TS01\Svasta\Italcro\_Database\
+        $source_root = '\\\\SRV-TS01\\Svasta\\Italcro\\_Database\\';
+        $target_root = DIR_DOWNLOAD; // npr. image/download ili storage/download, po strukturi
+
+        $this->log('Assets', "📂 Sync docs from {$source_root}");
+        $uploaded_docs = $this->syncDocumentsFromLocal($source_root, $target_root);
+
+        $this->log('Assets', "Images updated: {$updated_images}");
+        $this->log('Assets', "Logos synced: {$uploaded_logos}");
+        $this->log('Assets', "Documents synced: {$uploaded_docs}");
+        $this->log('Assets', '=== END SYNC ===');
+
+        return $updated_images + $uploaded_logos + $uploaded_docs;
     }
 
 
@@ -298,6 +337,178 @@ class ModelExtensionModuleQiqo extends Model
         return $linked;
     }
 
+
+    public function updateProductNamesFromERP(): int
+    {
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $articles = $qiqo->getArticles();
+
+        $this->log('NameUpdate', '=== START UPDATE PRODUCT NAMES (dimmodel) ===');
+        $updated = 0;
+
+        foreach ($articles as $a) {
+            $sku = trim((string)($a['id'] ?? ''));
+            $dimmodel = trim((string)($a['dimmodel'] ?? ''));
+
+            if ($sku === '' || $dimmodel === '' || $dimmodel === '-') {
+                continue; // preskoči ako nema dimmodel
+            }
+
+            // nađi proizvod
+            $product = $this->db->query("SELECT p.product_id, pd.name 
+                                     FROM " . DB_PREFIX . "product p
+                                     LEFT JOIN " . DB_PREFIX . "product_description pd 
+                                     ON p.product_id = pd.product_id 
+                                     WHERE p.sku = '" . $this->db->escape($sku) . "' 
+                                     AND pd.language_id = 1
+                                     LIMIT 1");
+
+            if (!$product->num_rows) {
+                continue; // ne postoji u OC
+            }
+
+            $pid = (int)$product->row['product_id'];
+            $oldName = trim($product->row['name']);
+
+            // Ako naziv već sadrži dimmodel, preskoči
+            if (stripos($oldName, $dimmodel) !== false) {
+                continue;
+            }
+
+            // Novi naziv (možeš promijeniti logiku ako želiš drugačiji format)
+            $newName = "{$oldName} {$dimmodel}";
+
+            $this->db->query("UPDATE " . DB_PREFIX . "product_description 
+                          SET name = '" . $this->db->escape($newName) . "'
+                          WHERE product_id = {$pid} AND language_id = 1");
+
+            $updated++;
+            $this->log('NameUpdate', "✅ SKU {$sku} | {$oldName} → {$newName}");
+        }
+
+        $this->log('NameUpdate', "=== END UPDATE | Ažurirano: {$updated} proizvoda ===");
+        return $updated;
+    }
+
+
+    public function linkRelatedByPicpath(): int
+    {
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $groups   = $qiqo->getGroups();    // svaka ima id, picpath
+        $articles = $qiqo->getArticles();  // svaka ima id (sku), kataloggrupa
+
+        $this->log('Related', '=== START LINK RELATED PRODUCTS (by picpath) ===');
+
+        // 1️⃣ Mapiraj grupa_id -> picpath
+        $groupPicMap = [];
+        foreach ($groups as $g) {
+            $gid = (int)($g['id'] ?? 0);
+            $pic = trim($g['picpath'] ?? '');
+            if ($pic === '') continue;
+            $groupPicMap[$gid] = $pic;
+        }
+
+        // 2️⃣ Mapiraj picpath -> [sku1, sku2, ...]
+        $picGroups = [];
+        foreach ($articles as $a) {
+            $sku = trim((string)($a['id'] ?? ''));
+            $gid = (int)($a['kataloggrupa'] ?? 0);
+            if ($sku === '' || empty($groupPicMap[$gid])) continue;
+
+            $pic = $groupPicMap[$gid];
+            $picGroups[$pic][] = $sku;
+        }
+
+        $relatedCount = 0;
+        $this->log('Related', 'Generirano grupa s istim slikama: ' . count($picGroups));
+
+        // 3️⃣ Obradi svaku picpath grupu (samo ako ima 2+ artikla)
+        foreach ($picGroups as $pic => $skus) {
+            if (count($skus) < 2) continue;
+
+            // pronađi product_id-eve po SKU
+            $placeholders = implode("','", array_map([$this->db, 'escape'], $skus));
+            $query = $this->db->query("SELECT product_id, sku FROM " . DB_PREFIX . "product 
+                                   WHERE sku IN ('{$placeholders}')");
+
+            $ids = array_column($query->rows, 'product_id');
+            if (count($ids) < 2) continue;
+
+            // 4️⃣ Poveži svaki s ostalima obostrano
+            foreach ($ids as $pid) {
+                foreach ($ids as $rid) {
+                    if ($pid == $rid) continue;
+                    // provjeri postoji li već
+                    $exists = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_related 
+                    WHERE product_id = '{$pid}' AND related_id = '{$rid}' LIMIT 1");
+                    if ($exists->num_rows) continue;
+
+                    $this->db->query("INSERT INTO " . DB_PREFIX . "product_related 
+                    SET product_id = '{$pid}', related_id = '{$rid}'");
+                    $relatedCount++;
+                }
+            }
+
+            $this->log('Related', "✅ Picpath: {$pic} | SKU count: " . count($ids) . " | povezano: " . ($relatedCount));
+        }
+
+        $this->log('Related', "=== END LINK RELATED | ukupno {$relatedCount} poveznica ===");
+        return $relatedCount;
+    }
+
+
+    private function syncFileFromSource(string $relativePath, string $targetSubdir): string
+    {
+        $base_source = '\\\\SRV-TS01\\Svasta\\Italcro\\Photo\\';
+        $target_dir  = DIR_IMAGE . $targetSubdir;
+
+        if (!is_dir($target_dir)) mkdir($target_dir, 0755, true);
+
+        $filename = basename($relativePath);
+        $source   = $base_source . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath);
+        $target   = $target_dir . $filename;
+
+        if (!file_exists($source)) {
+            $this->log('Assets', "⚠️ Source file not found: {$source}");
+            return '';
+        }
+
+        // Kopiraj samo ako ne postoji ili je izmijenjen
+        if (!file_exists($target) || sha1_file($source) !== sha1_file($target)) {
+            copy($source, $target);
+            $this->log('Assets', "✅ Copied: {$source} → {$target}");
+        }
+
+        return $targetSubdir . $filename;
+    }
+
+
+    private function syncDocumentsFromLocal(string $sourceRoot, string $targetRoot): int
+    {
+        $synced = 0;
+
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($sourceRoot));
+        foreach ($iterator as $file) {
+            if ($file->isDir()) continue;
+
+            $basename = $file->getBasename();
+            if (!preg_match('/_(man|skl|web)\.(pdf|jpg|jpeg|png)$/i', $basename)) continue;
+
+            $relPath = str_replace($sourceRoot, '', $file->getPathname());
+            $targetPath = $targetRoot . str_replace(['\\','/'], DIRECTORY_SEPARATOR, $relPath);
+            $targetDir = dirname($targetPath);
+
+            if (!is_dir($targetDir)) mkdir($targetDir, 0755, true);
+
+            if (!file_exists($targetPath) || sha1_file($file->getPathname()) !== sha1_file($targetPath)) {
+                copy($file->getPathname(), $targetPath);
+                $synced++;
+                $this->log('Assets', "📄 Copied doc: {$basename}");
+            }
+        }
+
+        return $synced;
+    }
 
 
     private function resolveOrCreateCategory(int $gid): int

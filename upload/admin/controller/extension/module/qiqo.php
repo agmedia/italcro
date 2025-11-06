@@ -30,9 +30,10 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->session->data['success'] = "Ažurirano cijena: {$count} artikala.";
                     break;
 
-                case 'update_image':
-                    $count = $this->model_extension_module_qiqo->updateImages();
-                    $this->session->data['success'] = "Ažurirano slika: {$count} artikala.";
+                case 'update_assets':
+                    $count = $this->model_extension_module_qiqo->updateAssets();
+                    $this->session->data['success'] = "Sinkronizacija dovršena ({$count} datoteka).";
+                    $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
                     break;
 
                 case 'import_brands':
@@ -46,6 +47,19 @@ class ControllerExtensionModuleQiqo extends Controller
                     $mode  = $only_empty ? 'samo prazni' : 'svi proizvodi (force)';
                     $this->session->data['success'] = "Povezano {$count} proizvoda ({$mode}).";
                     break;
+
+                case 'update_names':
+                    $count = $this->model_extension_module_qiqo->updateProductNamesFromERP();
+                    $this->session->data['success'] = "Nazivi artikala ažurirani za {$count} proizvoda (dimmodel).";
+                    $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+                    break;
+
+                case 'link_related':
+                    $count = $this->model_extension_module_qiqo->linkRelatedByPicpath();
+                    $this->session->data['success'] = "Dodano {$count} povezanih proizvoda (prema istom picpath).";
+                    $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+                    break;
+
 
                 case 'clear_log':
                     $log_file = DIR_LOGS . 'qiqo.log';

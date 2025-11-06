@@ -120,10 +120,10 @@
 
                         {% if review_status and (review_qty > 0) %}
                             <div class="rating">
-    <span class="rating_stars rating r{{ rating }}">
-    <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
-    </span>
-                            </div>
+                                <span class="rating_stars rating r{{ rating }}">
+                                <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
+                                </span>
+                             </div>
                             <span class="review_link">(<a class="hover_uline to_tabs" onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;">{{ reviews }}</a>)</span>
                         {% endif %}
 
@@ -140,11 +140,7 @@
 
 
                             </ul>
-
-
-
-
-
+                            
                             {% if price and tax %}
                                 <p class="info p-tax"><b>{{ text_tax }}</b> <span class="live-price-tax">{{ tax }}</span></p>
                             {% endif %}
@@ -442,17 +438,17 @@
                             <p class="info"><i class="icon-support"></i> {{ text_jamstvo }}</p>
 
                             <p class="info"><i class="icon-badge"></i>  {{ text_ovlasteno }} </p>
+                            {% if price %}
+                                {% if  qty > 0 %}
 
-                            {% if  qty > 0 %}
+                                    <p class="info {% if qty > 0 %}in_stock{% endif %}"><b>{{ text_stock }}</b> {{ qty }}</p>
 
-                                <p class="info {% if qty > 0 %}in_stock{% endif %}"><b>{{ text_stock }}</b> {{ qty }}</p>
+                                {% else %}
 
-                            {% else %}
+                                    <p class="info {% if qty > 0 %}in_stock{% endif %}"><b>{{ text_stock }}</b> Po narudžbi</p>
 
-                                <p class="info {% if qty > 0 %}in_stock{% endif %}"><b>{{ text_stock }}</b> Po narudžbi</p>
-
+                                {% endif %}
                             {% endif %}
-
                             {% if manufacturer %}
                                 <p class="info"><b>{{ text_manufacturer }}</b> <a class="hover_uline" href="{{ manufacturers }}">{{ manufacturer }}</a></p>
                             {% endif %}

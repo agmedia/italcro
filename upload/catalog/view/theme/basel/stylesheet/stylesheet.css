@@ -7720,12 +7720,12 @@ div.ui-slider-range.ui-widget-header, .ui-state-default, .ui-widget-content .ui-
 }
 @media (max-width: 576px) {
 	.slick-list {
-		padding: 0 20% 0 0 !important;
+		padding: 0 !important;
 	}
 }
 
 .full .slick-list {
-	padding: 0 20% 0 0 !important;
+	padding: 0 !important;
 }
 
 /* Cart icon */

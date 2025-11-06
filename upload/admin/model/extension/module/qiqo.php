@@ -28,6 +28,13 @@ class ModelExtensionModuleQiqo extends Model
             // ⚙️ Nađi ili kreiraj kategoriju
             $category_id = $this->resolveOrCreateCategory((int) $a['gid']);
 
+            $name = trim((string) ($a['naziv'] ?? 'Artikl ' . $a['id']));
+            $dimmodel = trim((string)($a['dimmodel'] ?? ''));
+
+            if ($dimmodel != '' || $dimmodel != '-') {
+                $name = $name . ' ' . $dimmodel;
+            }
+
             // ⚙️ Kreiraj proizvod
             $data = [
                 'model'       => $a['barcode'],
@@ -37,7 +44,7 @@ class ModelExtensionModuleQiqo extends Model
                 'status'      => $a['aktivan'] === 'true' ? 1 : 0,
                 'image'       => $group['picpath'] ?? '',
                 'category_id' => $category_id,
-                'name'        => trim($group['naziv'] ?? 'Artikl ' . $a['id']),
+                'name'        => $name,
                 'description' => trim($group['opis'] ?? ''),
             ];
 

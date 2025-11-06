@@ -2592,7 +2592,7 @@ div.required .control-label:after {
 		position:static !important;
 	}
 
-	.caption .price-wrapper{padding-left:6px}
+	.caption .price-wrapper{/*! padding-left:6px; */}
 
 	.header-main .table-cell.logo {
 		width: 40%!important;
@@ -2914,12 +2914,12 @@ body.offset250 .header-bottom, .menu-style {
 	font-size: 16px;
 	display: inline-block;
 	vertical-align: top;
-	padding: 10px;
+	padding: 5px;
 	/*! border: 1px solid #F0F0F0; */
 	margin: 0px;
 	margin-bottom: 0px;
 	margin-left: 0px;
-	margin-left: -1px;
+	/*! margin-left: -1px; */
 }
 
 
@@ -2970,8 +2970,8 @@ body.offset250 .header-bottom, .menu-style {
 
 	.header-style{margin-bottom:0px}
 	.grid-holder .item {
-		padding-left:9px;
-		padding-right:9px;
+		padding-left:5px;
+		padding-right:5px;
 	}
 	.grid-holder.md-grid6 .item {width:16.66%;}
 	.grid-holder.md-grid5 .item {width:20%;}
@@ -6681,7 +6681,7 @@ a.label-link:not(:hover) {
 
 @media (max-width: 737px) {
 	.grid-holder.grid3 .item {
-		width: calc(49% + 1px);
+		width: 50%;
 	}
 }
 
@@ -8391,14 +8391,25 @@ html.fl-anim .featherlight .featherlight-content {
 	}
 
 	.grid-holder .item .edge {
-		padding: 10px 3px;
+		padding: 5px;
 
+	}
+	.price-wrapper .form-control {
+		padding: 8px 14px;
+		font-size: 14px;
+		min-height: 40px !important;
+		width: 100%;
+		min-width: 40px;
+	}
+
+	.single-product .input-group.addtocart {
+		float: none;
 	}
 
 	.grid .single-product .product-name, .grid .single-product .product-name:hover, .list .single-product .product-name {
 		display: inline-block;
 		color: #00243d;
-		font-size: 14px !important;
+		font-size: 15px !important;
 		padding: 1px 5px;
 		margin-bottom: 8px;
 		overflow: hidden;
@@ -8409,7 +8420,7 @@ html.fl-anim .featherlight .featherlight-content {
 		-webkit-box-orient: vertical;
 		text-overflow: ellipsis;
 		font-weight: 500;
-		min-height: 45px;
+		/*! min-height: 45px; */
 		line-height: 22px;
 	}
 

@@ -212,6 +212,38 @@
       qty = parseInt(qty || item.quantity || 1, 10);
       if(isNaN(qty) || qty < 1) qty = 1;
 
+      // NOVO: ako red već postoji i već je dodan, povećaj količinu (updateQty)
+      var $rowExisting = $table.find('tr[data-id="'+item.product_id+'"]');
+      var alreadyAdded = $rowExisting.length && $rowExisting.is('[data-added]');
+      if (alreadyAdded) {
+        var current = parseInt($rowExisting.find('.qo-qty').val() || '1', 10);
+        if (isNaN(current) || current < 1) current = 1;
+        var newQty = current + qty;
+
+        var lockKey = String(item.product_id) + '::update';
+        if (ADD_LOCK[lockKey]){ return $.Deferred().resolve().promise(); }
+        ADD_LOCK[lockKey] = true;
+
+        return $.post('index.php?route=extension/module/quick_order/updateQty', {
+          product_id: item.product_id, quantity: newQty
+        }, function(res){
+          // ažuriraj UI na novu količinu
+          $rowExisting.find('.qo-qty').val(newQty);
+          recomputeRow($rowExisting);
+          recomputeTotal();
+          var data = getRowData($rowExisting);
+          data.added = true;
+          upsertLS(data);
+          baselHeaderRefreshDebounced();
+          toast('ok', 'Količina ažurirana');
+        }, 'json').fail(function(){
+          toast('err', 'Greška pri ažuriranju količine');
+        }).always(function(){
+          delete ADD_LOCK[lockKey];
+        });
+      }
+
+      // inače – prvi put dodaj (fastAdd)
       var key = String(item.product_id) + '::' + String(qty);
       if(ADD_LOCK[key]){ return $.Deferred().resolve().promise(); }
       ADD_LOCK[key] = true;

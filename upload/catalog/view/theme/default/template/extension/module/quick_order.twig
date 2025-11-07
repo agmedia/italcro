@@ -10,7 +10,7 @@
 
   <div class="table-responsive quick-order-responsive">
     <table class="table table-striped" id="qo-table" style="margin-top:10px;">
-    <thead>
+      <thead>
       <tr>
         <th>Slika</th>
         <th>{{ text_name }}</th>
@@ -20,314 +20,104 @@
         <th style="width:110px">{{ text_qty }}</th>
         <th>Uredi</th>
       </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
-
-
-  <!-- Novi blok samo za total -->
-  <div id="qo-total-block" class=" quick-order-total">
+  <!-- Total blok -->
+  <div id="qo-total-block" class="quick-order-total">
     <div class="inner">
       <strong>Ukupno:</strong>
       <span id="qo-total">0</span>
     </div>
   </div>
 
-  <!-- Blok s gumbima -->
-  <div id="qo-actions"  style="margin-top:10px; text-align:right;">
+  <!-- Akcije -->
+  <div id="qo-actions" style="margin-top:10px; text-align:right;">
     <div class="btn-group">
       <button class="btn btn-danger" style="margin-right:10px" id="qo-clear-all">{{ text_clear_all }}</button>
-
       <a href="index.php?route=checkout/checkout" class="btn btn-success" id="qo-checkout">{{ text_checkout }}</a>
     </div>
   </div>
 
-
 </div>
+
 <style>
-  /* Vertikalno poravnanje u sredinu za sve ćelije */
-  .quick-order #qo-table.table > thead > tr > th,
-  .quick-order #qo-table.table > tbody > tr > td {
-    vertical-align: middle !important;
-  }
-
-  /* Zebra pruge (Basel zna ugasiti default .table-striped) */
-  .quick-order #qo-table.table-striped > tbody > tr:nth-of-type(odd) {
-    background-color: #f7f7f7; /* po želji */
-  }
-
-  /* Ako koristiš .success na retku, da ostane čitljivo */
-  .quick-order #qo-table tbody tr.success td {
-    background-color: #e9f7ef !important;
-  }
-
-  /* Centriraj prvu kolonu (slika) */
-  .quick-order #qo-table td:first-child,
-  .quick-order #qo-table th:first-child {
-    width: 80px;
-    text-align: center;
-  }
-
-  /* Slika uredna i poravnata */
-  .quick-order #qo-table td img {
-    display: inline-block;
-    width: 602px;
-    height: 602px;
-    object-fit: cover;
-  }
-
-  /* Količina da ne skače visinom */
-  .quick-order #qo-table .qo-qty {
-    height: 34px;
-    line-height: 34px;
-    padding: 4px 8px;
-  }
-  .quick-order #qo-table td:last-child,
-  .quick-order #qo-table th:last-child {
-    text-align: right;
-  }
-
-  /* Akcije poravnane u sredinu */
-  .quick-order #qo-table .qo-actions {
-    white-space: nowrap;
-  }
-
-  /* zadrži zebra + vertikalno centriranje (iz ranije poruke) */
+  /* Tablica */
   .quick-order #qo-table.table > thead > tr > th,
   .quick-order #qo-table.table > tbody > tr > td { vertical-align: middle !important; }
+  .quick-order #qo-table.table-striped > tbody > tr:nth-of-type(odd) { background-color: #f7f7f7; }
+  .quick-order #qo-table tbody tr.success td { background-color: #e9f7ef !important; }
+  .quick-order #qo-table td:first-child,
+  .quick-order #qo-table th:first-child { width: 80px; text-align: center; }
+  .quick-order #qo-table td img { display:inline-block; width:60px; height:60px; object-fit:cover; }
+  .quick-order #qo-table .qo-qty { height:34px; line-height:34px; padding:4px 8px; text-align:right; }
+  .quick-order #qo-table td:last-child,
+  .quick-order #qo-table th:last-child { text-align:right; }
+  .quick-order #qo-table .qo-actions { white-space:nowrap; }
+  .quick-order-responsive { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
-  .quick-order #qo-table.table-striped > tbody > tr:nth-of-type(odd) { background:#f7f7f7; }
-
-  /* responsive container */
-  .quick-order-responsive {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* sitna UX poboljšanja na uskim ekranima */
-  @media (max-width: 575.98px) {
+  @media (max-width:575.98px){
     .quick-order #qo-table td img { width:28px; height:28px; }
     .quick-order #qo-table .qo-qty { max-width:72px; }
-    /* po želji sakrij SKU na XS da stane sve */
     .quick-order #qo-table th:nth-child(3),
-    .quick-order #qo-table td:nth-child(3) { display:none; }
+    .quick-order #qo-table td:nth-child(3) { display:none; } /* sakrij SKU na XS */
   }
-
-  /* količina desno poravnata (kako si tražio) */
   .quick-order #qo-table th:nth-child(6),
   .quick-order #qo-table td:nth-child(6) { text-align:right; }
-  .quick-order #qo-table .qo-qty { text-align:right; }
 
-  /* zaseban total blok ispod tablice */
-  .quick-order-total {
-    margin-top: 15px;
-    padding: 10px 15px;
-    text-align: right;
-    background: #fff;
-    font-size: 1.8rem;
+  /* Total */
+  .quick-order-total { margin-top:15px; padding:10px 15px; text-align:right; background:#fff; font-size:1.8rem; color:#000; }
+  .quick-order-total strong { color:#000; font-weight:500; }
+  #qo-actions { margin-bottom:10px; }
 
-    color: #000;
-  }
+  /* Autocomplete */
+  .quick-order-search { position:relative; max-width:640px; margin-bottom:15px; }
+  .qo-input { border-radius:10px; padding:10px 14px; border:1px solid #ccc; transition:all .2s; font-size:15px; }
+  .qo-input:focus { border-color:#007bff; box-shadow:0 0 6px rgba(0,123,255,.25); }
 
-  /* dodatni kontrast ako želiš */
-  .quick-order-total strong {
-    color: #000;
-    font-weight:500
-  }
-
-  /* malo razmaka od gumba iznad */
-  #qo-actions {
-    margin-bottom: 10px;
-  }
-
-  /* responsive prilagodba */
-  @media (max-width: 575.98px) {
-    .quick-order-total {
-      text-align: center;
-    }
-  }
-
-  /* Quick Order autocomplete styling */
   #qo-suggestions {
-    max-height: 350px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:99; background:#fff;
+    border:1px solid #e5e5e5; border-radius:10px; overflow-y:auto; max-height:350px;
+    box-shadow:0 6px 18px rgba(0,0,0,.08);
+  }
+  .qo-suggest { display:block; padding:8px 12px; color:#333; text-decoration:none; transition:background .15s; outline:none; }
+  .qo-suggest:hover, .qo-suggest:focus { background:#f7faff; text-decoration:none; }
+  .qo-suggest-inner { display:flex; align-items:center; gap:12px; }
+  .qo-thumb { flex-shrink:0; width:52px; height:52px; border-radius:8px; object-fit:cover; border:1px solid #eee; background:#fafafa; }
+  .qo-thumb.placeholder { display:flex; justify-content:center; align-items:center; color:#bbb; }
+  .qo-info { flex:1; line-height:1.25; }
+  .qo-info .name { font-weight:600; color:#222; margin-bottom:3px; font-size:15px; }
+  .qo-info .meta { display:flex; justify-content:normal; font-size:13px; color:#777; gap:10px; }
+  .qo-info .price { font-weight:600; color:#000; }
+
+  /* Dvokorak: qty i gumb skriveni dok sugestija nema .qty-mode */
+  .qo-suggest-qty,
+  .qo-add-btn { display:none; }
+
+  .qo-suggest.qty-mode .qo-suggest-qty,
+  .qo-suggest.qty-mode .qo-add-btn { display:inline-block; }
+
+  .qo-suggest-qty { width:72px; padding:6px 8px; border:1px solid #ccc; border-radius:6px; text-align:right; margin-left:auto; }
+  .qo-add-btn { background:#000; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:13px; cursor:pointer; transition:all .2s; }
+  .qo-add-btn:hover { background:#0069d9; }
+  .qo-add-btn:active { transform:scale(0.96); }
+
+  @media (max-width:576px){
+    .qo-suggest-inner { gap:8px; }
+    .qo-thumb { width:44px; height:44px; }
+    .qo-info .meta { flex-direction:column; align-items:flex-start; gap:2px; }
+    .qo-suggest-qty { width:64px; }
+    .qo-add-btn { padding:5px 8px; }
   }
 
-  .qo-suggest-inner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .qo-thumb {
-    flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-    object-fit: cover;
-    border-radius: 6px;
-    border: 1px solid #e5e5e5;
-  }
-
-  .qo-thumb.placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #f8f8f8;
-    color: #aaa;
-    font-size: 20px;
-  }
-
-  .qo-suggest-info {
-    flex-grow: 1;
-    line-height: 1.2;
-  }
-
-  .qo-name {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 2px;
-  }
-
-  .qo-meta {
-    font-size: 13px;
-    color: #777;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .qo-price {
-    font-weight: 500;
-    color: #000;
-    font-size: 15px;
-  }
-
-  .qo-suggest:hover {
-    background-color: #f0f7ff;
-    text-decoration: none;
-  }
-
-  /* Container */
-  .quick-order-search {
-    position: relative;
-    max-width: 640px;
-    margin-bottom: 15px;
-  }
-
-  /* Search input */
-  .qo-input {
-    border-radius: 10px;
-    padding: 10px 14px;
-    border: 1px solid #ccc;
-    transition: all 0.2s;
-    font-size: 15px;
-  }
-  .qo-input:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 6px rgba(0,123,255,0.25);
-  }
-
-  /* Suggestions dropdown */
-  #qo-suggestions {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
-    z-index: 99;
-    background: #fff;
-    border: 1px solid #e5e5e5;
-    border-radius: 10px;
-    overflow-y: auto;
-    max-height: 350px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  }
-
-  /* Each suggestion row */
-  .qo-suggest {
-    display: block;
-    padding: 8px 12px;
-    color: #333;
-    text-decoration: none;
-    transition: background 0.15s;
-  }
-  .qo-suggest:hover {
+  #qo-suggestions .qo-suggest:focus {
+    outline: none;
     background: #f7faff;
-    text-decoration: none;
+    box-shadow: inset 0 0 0 2px #e6f0ff;
   }
-
-  /* Inner layout */
-  .qo-suggest-inner {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  /* Thumbnail */
-  .qo-thumb {
-    flex-shrink: 0;
-    width: 52px;
-    height: 52px;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 1px solid #eee;
-    background: #fafafa;
-  }
-
-  /* Info block */
-  .qo-info {
-    flex: 1;
-    line-height: 1.25;
-  }
-  .qo-info .name {
-    font-weight: 600;
-    color: #222;
-    margin-bottom: 3px;
-    font-size: 15px;
-  }
-  .qo-info .meta {
-    display: flex;
-    justify-content: normal ;
-    font-size: 13px;
-    color: #777;
-  }
-  .qo-info .price {
-    font-weight: 600;
-    color: #000;
-    margin-left: 10px;
-  }
-
-  /* Add button */
-  .qo-add-btn {
-    background: #000;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .qo-add-btn:hover {
-    background: #0069d9;
-  }
-  .qo-add-btn:active {
-    transform: scale(0.96);
-  }
-
-  /* Responsive tweaks */
-  @media (max-width: 576px) {
-    .qo-suggest-inner { flex-direction: row; align-items: flex-start; }
-    .qo-thumb { width: 44px; height: 44px; }
-    .qo-info .meta { flex-direction: column; align-items: flex-start; gap: 2px; }
-    .qo-add-btn { padding: 5px 8px; }
-  }
-
-
 
 </style>
+
+{# U footer layoutu dodaj <script src="catalog/view/javascript/quick_order.js"></script> #}

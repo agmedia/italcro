@@ -440,19 +440,22 @@ class ModelExtensionModuleQiqo extends Model
     public function linkRelatedByGroup(): int
     {
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
-        $groups   = $qiqo->getGroups();   // svaka ima id, opis (grupni opis)
+        $groups   = $qiqo->getGroups();   // svaka ima id, naziv, opis (grupni opis)
         $articles = $qiqo->getArticles(); // svaki ima id (sku), kataloggrupa, dimmodel, opiskatalog
         $updated  = 0;
 
-        $this->log('Related', '=== START LINK PRODUCTS BY kataloggrupa → MPN + name_add + description_add ===');
+        $this->log('Related', '=== START LINK PRODUCTS BY kataloggrupa → MPN + name + name_add + description_add ===');
         $this->log('Related', 'Grupe: ' . count($groups) . ' | Artikli: ' . count($articles));
 
-        // 1️⃣ Mapiraj grupu → opis (grupni)
-        $groupDescMap = [];
+        // 1️⃣ Mapiraj grupu → naziv i opis
+        $groupInfoMap = [];
         foreach ($groups as $g) {
             $gid = (int)($g['id'] ?? 0);
             if ($gid === 0) continue;
-            $groupDescMap[$gid] = trim((string)($g['opis'] ?? ''));
+            $groupInfoMap[$gid] = [
+                'naziv' => trim((string)($g['naziv'] ?? '')),
+                'opis'  => trim((string)($g['opis'] ?? ''))
+            ];
         }
 
         // 2️⃣ Iteriraj kroz sve artikle
@@ -463,7 +466,8 @@ class ModelExtensionModuleQiqo extends Model
 
             $dimmodel     = trim((string)($a['dimmodel'] ?? ''));
             $opiskatalog  = trim((string)($a['opiskatalog'] ?? ''));
-            $group_opis   = $groupDescMap[$gid] ?? '';
+            $group_naziv  = $groupInfoMap[$gid]['naziv'] ?? '';
+            $group_opis   = $groupInfoMap[$gid]['opis']  ?? '';
 
             $exists = $this->db->query("SELECT p.product_id, pd.language_id 
                                     FROM " . DB_PREFIX . "product p 
@@ -473,7 +477,7 @@ class ModelExtensionModuleQiqo extends Model
 
             if (!$exists->num_rows) continue;
 
-            $pid = (int)$exists->row['product_id'];
+            $pid  = (int)$exists->row['product_id'];
             $lang = (int)$exists->row['language_id'];
 
             // 🔹 Upis u oc_product (mpn = kataloggrupa)
@@ -485,19 +489,24 @@ class ModelExtensionModuleQiqo extends Model
             $name_add = $dimmodel;
             $desc_add = trim($opiskatalog . ($group_opis ? "\n\n" . $group_opis : ''));
 
+            // 🔹 Novi glavni naziv proizvoda (naziv grupe + dimmodel ako postoji)
+            $new_name = trim($group_naziv . ($dimmodel ? ' ' . $dimmodel : ''));
+
             // 🔹 Update u oc_product_description
             $this->db->query("UPDATE " . DB_PREFIX . "product_description 
-                          SET name_add = '" . $this->db->escape($name_add) . "',
+                          SET name = '" . $this->db->escape($new_name) . "',
+                              name_add = '" . $this->db->escape($name_add) . "',
                               description_add = '" . $this->db->escape($desc_add) . "'
                           WHERE product_id = {$pid} AND language_id = {$lang}");
 
             $updated++;
-            $this->log('Related', "✅ SKU {$sku} → group={$gid}, name_add='{$name_add}'");
+            $this->log('Related', "✅ SKU {$sku} → group={$gid}, name='{$new_name}', name_add='{$name_add}'");
         }
 
         $this->log('Related', "=== END LINK PRODUCTS BY GROUP | Ažurirano: {$updated} proizvoda ===");
         return $updated;
     }
+
 
 
     private function syncFileFromSource(string $relativePath, string $targetSubdir): string

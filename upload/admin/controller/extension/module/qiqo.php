@@ -54,9 +54,9 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
                     break;
 
-                case 'link_related':
-                    $count = $this->model_extension_module_qiqo->linkRelatedByPicpath();
-                    $this->session->data['success'] = "Dodano {$count} povezanih proizvoda (prema istom picpath).";
+                case 'link_related_group':
+                    $count = $this->model_extension_module_qiqo->linkRelatedByGroup();
+                    $this->session->data['success'] = "Povezano {$count} proizvoda prema ERP grupama (kataloggrupa).";
                     $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
                     break;
 

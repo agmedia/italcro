@@ -30,22 +30,35 @@ class ModelExtensionModuleQiqo extends Model
 
             $name = trim((string) ($a['naziv'] ?? 'Artikl ' . $a['id']));
             $dimmodel = trim((string)($a['dimmodel'] ?? ''));
+            $opiskatalog  = trim((string)($a['opiskatalog'] ?? ''));
+            $price = (float)($a['cijena'] ?? 0);
+            $cent  = trim((string)($a['cent'] ?? null));
 
-            if ($dimmodel != '' || $dimmodel != '-') {
-                $name = $name . ' ' . $dimmodel;
+            // Ako ERP šalje "C-100", cijenu dijelimo sa 100
+            if ($cent && strtoupper($cent) === 'C-100') {
+                $price = $price / 100;
+            } else {
+                $cent = null;
             }
+
+            /*if ($dimmodel != '' || $dimmodel != '-') {
+                $name = $name . ' ' . $dimmodel;
+            }*/
 
             // ⚙️ Kreiraj proizvod
             $data = [
                 'model'       => $a['barcode'],
                 'sku'         => $a['id'],
                 'quantity'    => (float) ($a['zaliha'] ?? 0),
-                'price'       => (float) $a['cijena'],
+                'price'       => $price,
+                'cent'        => $cent,
                 'status'      => $a['aktivan'] === 'true' ? 1 : 0,
                 'image'       => $group['picpath'] ?? '',
                 'category_id' => $category_id,
                 'name'        => $name,
+                'name_add'    => $dimmodel,
                 'description' => trim($group['opis'] ?? ''),
+                'description_add' => $opiskatalog
             ];
 
             $this->createProduct($data);
@@ -64,24 +77,39 @@ class ModelExtensionModuleQiqo extends Model
         $articles = collect($qiqo->getArticles());
         $updated  = 0;
 
+        $this->log('Quantities', '=== START UPDATE QUANTITIES (with pak/pakkol) ===');
+
         foreach ($articles as $a) {
             $sku = $this->db->escape($a['id']);
-            $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
+            $exists = $this->db->query("SELECT product_id, quantity, minimum FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
 
             if (! $exists->num_rows) continue;
 
-            $quantity = (float) ($a['zaliha'] ?? 0);
+            $product_id = (int)$exists->row['product_id'];
+            $quantity   = (float)($a['zaliha'] ?? 0);
+            $pak        = (int)($a['pak'] ?? 0);
+            $pakkol     = (float)($a['pakkol'] ?? 0);
 
-            $this->db->query("UPDATE " . DB_PREFIX . "product 
-            SET quantity = '{$quantity}', date_modified = NOW() 
-            WHERE product_id = '" . (int) $exists->row['product_id'] . "'");
+            // Ako je pak=1 → postavi minimum = pakkol
+            if ($pak === 1 && $pakkol > 0) {
+                $this->db->query("UPDATE " . DB_PREFIX . "product 
+                              SET quantity = '{$quantity}', minimum = '{$pakkol}', date_modified = NOW()
+                              WHERE product_id = '{$product_id}'");
+                $this->log('Quantities', "SKU {$sku} → pak=1, količina={$quantity}, minimum={$pakkol}");
+            } else {
+                // standardno ažuriranje
+                $this->db->query("UPDATE " . DB_PREFIX . "product 
+                              SET quantity = '{$quantity}', minimum = 1, date_modified = NOW()
+                              WHERE product_id = '{$product_id}'");
+            }
 
             $updated++;
         }
 
-        $this->log('Quantities', "{$updated} količina ažurirano.");
+        $this->log('Quantities', "=== END UPDATE | Ažurirano {$updated} proizvoda ===");
         return $updated;
     }
+
 
 
     public function updatePrices(): int
@@ -90,24 +118,35 @@ class ModelExtensionModuleQiqo extends Model
         $articles = collect($qiqo->getArticles());
         $updated  = 0;
 
+        $this->log('Prices', '=== START UPDATE PRICES (with cent factor) ===');
+
         foreach ($articles as $a) {
             $sku = $this->db->escape($a['id']);
-            $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
+            $exists = $this->db->query("SELECT product_id, price FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
+            if (!$exists->num_rows) continue;
 
-            if (! $exists->num_rows) continue;
+            $product_id = (int)$exists->row['product_id'];
+            $price = (float)($a['cijena'] ?? 0);
+            $cent  = trim((string)($a['cent'] ?? null));
 
-            $price = (float) $a['cijena'];
+            // Ako ERP šalje "C-100", cijenu dijelimo sa 100
+            if ($cent && strtoupper($cent) === 'C-100') {
+                $price = $price / 100;
+            } else {
+                $cent = null;
+            }
 
             $this->db->query("UPDATE " . DB_PREFIX . "product 
-            SET price = '{$price}', date_modified = NOW() 
-            WHERE product_id = '" . (int) $exists->row['product_id'] . "'");
+                          SET price = '{$price}', cent = '{$cent}', date_modified = NOW()
+                          WHERE product_id = '{$product_id}'");
 
             $updated++;
         }
 
-        $this->log('Prices', "{$updated} cijena ažurirano.");
+        $this->log('Prices', "=== END UPDATE | Ažurirano {$updated} proizvoda ===");
         return $updated;
     }
+
 
 
     public function updateAssets(): int
@@ -398,69 +437,66 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
-    public function linkRelatedByPicpath(): int
+    public function linkRelatedByGroup(): int
     {
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
-        $groups   = $qiqo->getGroups();    // svaka ima id, picpath
-        $articles = $qiqo->getArticles();  // svaka ima id (sku), kataloggrupa
+        $groups   = $qiqo->getGroups();   // svaka ima id, opis (grupni opis)
+        $articles = $qiqo->getArticles(); // svaki ima id (sku), kataloggrupa, dimmodel, opiskatalog
+        $updated  = 0;
 
-        $this->log('Related', '=== START LINK RELATED PRODUCTS (by picpath) ===');
+        $this->log('Related', '=== START LINK PRODUCTS BY kataloggrupa → MPN + name_add + description_add ===');
+        $this->log('Related', 'Grupe: ' . count($groups) . ' | Artikli: ' . count($articles));
 
-        // 1️⃣ Mapiraj grupa_id -> picpath
-        $groupPicMap = [];
+        // 1️⃣ Mapiraj grupu → opis (grupni)
+        $groupDescMap = [];
         foreach ($groups as $g) {
             $gid = (int)($g['id'] ?? 0);
-            $pic = trim($g['picpath'] ?? '');
-            if ($pic === '') continue;
-            $groupPicMap[$gid] = $pic;
+            if ($gid === 0) continue;
+            $groupDescMap[$gid] = trim((string)($g['opis'] ?? ''));
         }
 
-        // 2️⃣ Mapiraj picpath -> [sku1, sku2, ...]
-        $picGroups = [];
+        // 2️⃣ Iteriraj kroz sve artikle
         foreach ($articles as $a) {
             $sku = trim((string)($a['id'] ?? ''));
             $gid = (int)($a['kataloggrupa'] ?? 0);
-            if ($sku === '' || empty($groupPicMap[$gid])) continue;
+            if ($sku === '' || $gid === 0) continue;
 
-            $pic = $groupPicMap[$gid];
-            $picGroups[$pic][] = $sku;
+            $dimmodel     = trim((string)($a['dimmodel'] ?? ''));
+            $opiskatalog  = trim((string)($a['opiskatalog'] ?? ''));
+            $group_opis   = $groupDescMap[$gid] ?? '';
+
+            $exists = $this->db->query("SELECT p.product_id, pd.language_id 
+                                    FROM " . DB_PREFIX . "product p 
+                                    LEFT JOIN " . DB_PREFIX . "product_description pd ON p.product_id = pd.product_id 
+                                    WHERE p.sku = '" . $this->db->escape($sku) . "' 
+                                    LIMIT 1");
+
+            if (!$exists->num_rows) continue;
+
+            $pid = (int)$exists->row['product_id'];
+            $lang = (int)$exists->row['language_id'];
+
+            // 🔹 Upis u oc_product (mpn = kataloggrupa)
+            $this->db->query("UPDATE " . DB_PREFIX . "product 
+                          SET mpn = '" . $this->db->escape($gid) . "', date_modified = NOW()
+                          WHERE product_id = {$pid}");
+
+            // 🔹 Priprema dodatnih polja
+            $name_add = $dimmodel;
+            $desc_add = trim($opiskatalog . ($group_opis ? "\n\n" . $group_opis : ''));
+
+            // 🔹 Update u oc_product_description
+            $this->db->query("UPDATE " . DB_PREFIX . "product_description 
+                          SET name_add = '" . $this->db->escape($name_add) . "',
+                              description_add = '" . $this->db->escape($desc_add) . "'
+                          WHERE product_id = {$pid} AND language_id = {$lang}");
+
+            $updated++;
+            $this->log('Related', "✅ SKU {$sku} → group={$gid}, name_add='{$name_add}'");
         }
 
-        $relatedCount = 0;
-        $this->log('Related', 'Generirano grupa s istim slikama: ' . count($picGroups));
-
-        // 3️⃣ Obradi svaku picpath grupu (samo ako ima 2+ artikla)
-        foreach ($picGroups as $pic => $skus) {
-            if (count($skus) < 2) continue;
-
-            // pronađi product_id-eve po SKU
-            $placeholders = implode("','", array_map([$this->db, 'escape'], $skus));
-            $query = $this->db->query("SELECT product_id, sku FROM " . DB_PREFIX . "product 
-                                   WHERE sku IN ('{$placeholders}')");
-
-            $ids = array_column($query->rows, 'product_id');
-            if (count($ids) < 2) continue;
-
-            // 4️⃣ Poveži svaki s ostalima obostrano
-            foreach ($ids as $pid) {
-                foreach ($ids as $rid) {
-                    if ($pid == $rid) continue;
-                    // provjeri postoji li već
-                    $exists = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_related 
-                    WHERE product_id = '{$pid}' AND related_id = '{$rid}' LIMIT 1");
-                    if ($exists->num_rows) continue;
-
-                    $this->db->query("INSERT INTO " . DB_PREFIX . "product_related 
-                    SET product_id = '{$pid}', related_id = '{$rid}'");
-                    $relatedCount++;
-                }
-            }
-
-            $this->log('Related', "✅ Picpath: {$pic} | SKU count: " . count($ids) . " | povezano: " . ($relatedCount));
-        }
-
-        $this->log('Related', "=== END LINK RELATED | ukupno {$relatedCount} poveznica ===");
-        return $relatedCount;
+        $this->log('Related', "=== END LINK PRODUCTS BY GROUP | Ažurirano: {$updated} proizvoda ===");
+        return $updated;
     }
 
 
@@ -559,6 +595,7 @@ class ModelExtensionModuleQiqo extends Model
         sku = '" . $this->db->escape($data['sku']) . "',
         quantity = '" . (float) $data['quantity'] . "',
         price = '" . (float) $data['price'] . "',
+        cent = '" . $this->db->escape($data['cent']) . "',
         status = '" . (int) $data['status'] . "',
         image = '" . $this->db->escape($image_path) . "',
         date_added = NOW(),
@@ -571,7 +608,9 @@ class ModelExtensionModuleQiqo extends Model
         product_id = '" . (int) $product_id . "',
         language_id = 1,
         name = '" . $this->db->escape($data['name']) . "',
+        name_add = '" . $this->db->escape($data['name_add']) . "',
         description = '" . $this->db->escape($data['description']) . "',
+        description_add = '" . $this->db->escape($data['description_add']) . "',
         meta_title = '" . $this->db->escape($data['name']) . "'");
 
         // 🔹 Poveži kategoriju

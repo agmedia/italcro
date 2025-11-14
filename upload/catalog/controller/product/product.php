@@ -602,6 +602,9 @@ class ControllerProductProduct extends Controller {
                         'stock'          => $result['quantity'],
                         'minimum'          => $result['minimum'],
 
+                        'mpn_count'       => $result['mpn_count'],
+                        'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+
                         // formatirano za prikaz
                         'price'          => $this->currency->format($price_value, $this->session->data['currency']),
                         'special'        => $result['special'] ? $this->currency->format($special_value, $this->session->data['currency']) : false,
@@ -843,4 +846,23 @@ class ControllerProductProduct extends Controller {
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
+
+    function artiklLabel($broj) {
+        $broj = abs($broj) % 100;
+        $jedinica = $broj % 10;
+
+        if ($broj > 10 && $broj < 20) {
+            return "artikala";
+        }
+
+        if ($jedinica == 1) {
+            return "artikl";
+        }
+
+        if ($jedinica >= 2 && $jedinica <= 4) {
+            return "artikla";
+        }
+
+        return "artikala";
+    }
 }

@@ -25,7 +25,7 @@
 
     </div><!-- .image ends -->
     <div class="caption">
-        <h3 class="product-name" > <a href="{{ product.href }}">{{ product.name }}</a></h3>
+        <h3 class="product-name" > <a href="{{ product.href }}">{{ product.name }}  </a></h3>
 
         {% if product.rating %}
             <div class="rating">
@@ -35,7 +35,7 @@
             </div>
         {% endif %}
         <div class="price-wrapper">
-            {% if product.price %}
+            {% if product.price and product.mpn_count == 1 %}
 
             <div class="row">
                 <div class="col-md-6">
@@ -79,6 +79,16 @@
                        </span>
                         </div><!-- /input-group -->
 
+                </div>
+            </div>
+
+            {% else %}
+
+                <div class="row">
+                <div class="col-md- 12">
+                    <div class="big-btn">
+                    <a class="btn btn-block btn-neutral" href="{{ product.href }}">{{ product.mpn_count }} {{ product.mpn_artikl }}</a>
+                    </div>
                 </div>
             </div>
 

@@ -67,7 +67,7 @@
                         </div>
                     {% endif %}
                     <div class="price-wrapper">
-                        {% if product.price %}
+                        {% if product.price and product.mpn_count == 1 %}
 
                         <div class="row">
                             <div class="col-md-6">
@@ -113,6 +113,16 @@
 
                             </div>
                         </div>
+
+                        {% else %}
+
+                            <div class="row">
+                                <div class="col-md- 12">
+                                    <div class="big-btn">
+                                        <a class="btn btn-block btn-neutral" href="{{ product.href }}">{{ product.mpn_count }} {{ product.mpn_artikl }}</a>
+                                    </div>
+                                </div>
+                            </div>
 
                         {% endif %}
 

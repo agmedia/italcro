@@ -14,7 +14,7 @@ class ModelExtensionMazaTfProduct extends Model {
                 
                 // Create temporary table if require for some filters
                 if(isset($data['filter_special']) || !empty($data['filter_min_special_perc']) || !empty($data['filter_rating']) || !empty($data['filter_min_rating']) || !empty($data['filter_max_rating']) || !empty($data['filter_min_price']) || !empty($data['filter_max_price'])){
-                        $additional_field = array('p.sort_order');
+                    $additional_field = array('p.sort_order', 'p.mpn');
 
                         if(in_array('pd.name', $sort)){
                             $additional_field[] = 'pd.name';
@@ -55,8 +55,8 @@ class ModelExtensionMazaTfProduct extends Model {
                         $this->createTempTable(DB_PREFIX . 'tf_product_result', $additional_field, $data);
                         
                         $temp_table = true;
-                        
-                        $sql = 'SELECT product_id FROM ' . DB_PREFIX . 'tf_product_result';
+
+                    $sql = 'SELECT MIN(product_id) AS product_id FROM ' . DB_PREFIX . 'tf_product_result GROUP BY mpn';
                 } else {
                         $sql = "SELECT p.product_id";
 
@@ -250,7 +250,7 @@ class ModelExtensionMazaTfProduct extends Model {
                                 $sql .= " AND p.date_added <= '" . $this->db->escape($data['filter_date_add_end']) . "'";
                         }
 
-                        $sql .= " GROUP BY p.product_id";
+                    $sql .= " GROUP BY p.mpn";
                 }
                 
                 $sort_data = array(
@@ -337,12 +337,12 @@ class ModelExtensionMazaTfProduct extends Model {
                 // Create temporary table if require for some filters
                 $temp_table = false;
                 if(isset($data['filter_special']) || !empty($data['filter_min_special_perc']) || !empty($data['filter_rating']) || !empty($data['filter_min_rating']) || !empty($data['filter_max_rating']) || !empty($data['filter_min_price']) || !empty($data['filter_max_price'])){
-                        $this->createTempTable(DB_PREFIX . 'tf_product_result', array(), $data);
+                    $this->createTempTable(DB_PREFIX . 'tf_product_result', array('p.mpn'), $data);
                         $temp_table = true;
 
-                        $sql = 'SELECT COUNT(DISTINCT product_id) AS total FROM ' . DB_PREFIX . 'tf_product_result';
+                    $sql = 'SELECT COUNT(DISTINCT mpn) AS total FROM ' . DB_PREFIX . 'tf_product_result';
                 } else {
-                        $sql = "SELECT COUNT(DISTINCT p.product_id) AS total";
+                    $sql = "SELECT COUNT(DISTINCT p.mpn) AS total";
 
                         if (!empty($data['filter_category_id'])) {
                                 if (!empty($data['filter_sub_category'])) {

@@ -194,14 +194,14 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						'name'    	 => $result['name'],
 						'price'   	 => $price,
 						'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),
-						  'priceeur'       => $priceeur,
-                    'specialeur'     => $specialeur,
+
                         'attention'     => $data['attention'],
 						'new_label'  => $is_new,
 						'sale_badge' => $sale_badge,
 						'special' 	 => $special,
 
-
+                        'mpn_count'       => $result['mpn_count'],
+                        'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
 						'tax'        => $tax,
 						'minimum'    => $result['minimum'] > 0 ? $result['minimum'] : 1,
 						'rating'     => $rating,
@@ -288,5 +288,24 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 
 		return $results;
   	}
+
+    function artiklLabel($broj) {
+        $broj = abs($broj) % 100;
+        $jedinica = $broj % 10;
+
+        if ($broj > 10 && $broj < 20) {
+            return "artikala";
+        }
+
+        if ($jedinica == 1) {
+            return "artikl";
+        }
+
+        if ($jedinica >= 2 && $jedinica <= 4) {
+            return "artikla";
+        }
+
+        return "artikala";
+    }
 
 }

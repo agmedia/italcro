@@ -162,6 +162,9 @@ class ControllerProductProduct extends Controller {
 
 		$product_info = $this->model_catalog_product->getProduct($product_id);
 
+
+        //$same_mpn_products = $this->model_catalog_product->getProductsByMPN($product_info['mpn'], $product_id);
+
 		//check product page open from cateory page
 		/*if (isset($this->request->get['path'])) {
 			$parts = explode('_', (string)$this->request->get['path']);
@@ -189,7 +192,9 @@ class ControllerProductProduct extends Controller {
         if ($product_info) {
 			$url = '';
 
-			if (isset($this->request->get['path'])) {
+
+
+            if (isset($this->request->get['path'])) {
 				$url .= '&path=' . $this->request->get['path'];
 			}
 
@@ -573,6 +578,42 @@ class ControllerProductProduct extends Controller {
 					);
 				}
 			}
+
+            // proizvodi s istim MPN-om (osim trenutnog)
+            $mpn_products = $this->model_catalog_product->getProductsByMPN(
+                $product_info['mpn'],
+                $product_id
+            );
+
+// želimo prikaz samo ako ima više od 1 (dakle barem 2 proizvoda s tim MPN-om)
+            if (count($mpn_products) > 0) {
+                $data['same_mpn_products'] = array();
+
+                foreach ($mpn_products as $result) {
+                    $price_value  = (float)$result['price'];
+                    $special_value = $result['special'] ? (float)$result['special'] : 0;
+
+                    $data['same_mpn_products'][] = [
+                        'product_id'     => $result['product_id'],
+                        'code'           => $result['sku'],
+                        'barcode'        => $result['model'],
+                        'name_add'       => $result['name_add'],          // tvoj custom naziv / atribut
+                        'description_add'=> $result['description_add'],    // opis
+                        'stock'          => $result['quantity'],
+                        'minimum'          => $result['minimum'],
+
+                        // formatirano za prikaz
+                        'price'          => $this->currency->format($price_value, $this->session->data['currency']),
+                        'special'        => $result['special'] ? $this->currency->format($special_value, $this->session->data['currency']) : false,
+
+                        // numeričke vrijednosti za JS
+                        'price_value'    => $price_value,
+                        'special_value'  => $special_value,
+                    ];
+                }
+            } else {
+                $data['same_mpn_products'] = false;
+            }
 
 			$data['recurrings'] = $this->model_catalog_product->getProfiles($this->request->get['product_id']);
 

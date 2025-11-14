@@ -217,8 +217,8 @@ class ControllerProductManufacturer extends Controller {
 					'price'       => $price,
 					'special'     => $special,
                     'attention'     => $data['attention'],
-					   'priceeur'       => $priceeur,
-                    'specialeur'     => $specialeur,
+                    'mpn_count'       => $result['mpn_count'],
+                    'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
 					'tax'         => $tax,
 					'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
 					'rating'      => $result['rating'],
@@ -415,4 +415,22 @@ class ControllerProductManufacturer extends Controller {
 			$this->response->setOutput($this->load->view('error/not_found', $data));
 		}
 	}
+    function artiklLabel($broj) {
+        $broj = abs($broj) % 100;
+        $jedinica = $broj % 10;
+
+        if ($broj > 10 && $broj < 20) {
+            return "artikala";
+        }
+
+        if ($jedinica == 1) {
+            return "artikl";
+        }
+
+        if ($jedinica >= 2 && $jedinica <= 4) {
+            return "artikla";
+        }
+
+        return "artikala";
+    }
 }

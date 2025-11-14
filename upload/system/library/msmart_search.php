@@ -191,37 +191,61 @@ class Msmart_Search {
 				$count += $sql;
 			} else {
 				$sql = preg_replace( '/\s+LIMIT\s+[0-9]+(,\s*[0-9]+)?$/i', '', trim( $sql ) );
-				$count += $this->cacheQuery( "SELECT COUNT( DISTINCT `product_id` ) AS `total` FROM(" . $sql . ") AS `tmp`" )->row['total'];
+                $count += $this->cacheQuery(
+                    "SELECT COUNT(DISTINCT mpn) AS total 
+     FROM (" . $sql . ") AS tmp 
+     WHERE mpn IS NOT NULL AND mpn <> ''"
+                )->row['total'];
 			}
 		}
 		
 		return $count;
 	}
-	
-	public function getProducts() {
-		$this->prepare();
-		
-		if( empty( $this->_results ) ) {
-			return array();
-		}
-		
-		$this->load->model('catalog/product');
-		
-		/* @var $results array */
-		$results = array();
-		
-		foreach( $this->_results as $result ) {
-			$results[] = $this->model_catalog_product->getProduct( $result['product_id'] );
-			
-			if( $this->_limit !== null && count( $results ) >= $this->_limit ) break;
-		}
-		
-		if( isset( $this->_data['sort'] ) && $this->_data['order'] ) {
-			usort( $results, array( $this, '__sortResults' ) );
-		}
-		
-		return $results;
-	}
+
+    public function getProducts() {
+        $this->prepare();
+
+        if (empty($this->_results)) {
+            return array();
+        }
+
+        $this->load->model('catalog/product');
+
+        $results   = array();
+        $seen_mpn  = array(); // za praćenje koje smo mpn već dodali
+
+        foreach ($this->_results as $result) {
+            $product_info = $this->model_catalog_product->getProduct($result['product_id']);
+
+            if (!$product_info) {
+                continue;
+            }
+
+            $mpn = isset($product_info['mpn']) ? $product_info['mpn'] : '';
+
+            // ako MPN postoji i već je dodat – preskoči
+            if ($mpn !== '' && isset($seen_mpn[$mpn])) {
+                continue;
+            }
+
+            if ($mpn !== '') {
+                $seen_mpn[$mpn] = true;
+            }
+
+            $results[] = $product_info;
+
+            if ($this->_limit !== null && count($results) >= $this->_limit) {
+                break;
+            }
+        }
+
+        if (isset($this->_data['sort']) && $this->_data['order']) {
+            usort($results, array($this, '__sortResults'));
+        }
+
+        return $results;
+    }
+
 	
 	public function __sortResults( $a, $b ) {
 		foreach( array( 'special', 'discount', 'model', 'name', 'rating', 'sort_order' ) as $n ) {
@@ -387,7 +411,8 @@ class Msmart_Search {
 		
 		/* @var $columns array */
 		$columns = array(
-			"`p`.`product_id`",
+            "`p`.`product_id`",
+            "`p`.`mpn`",
 		);
 		
 		if( isset( $this->_data['sort'] ) ) {

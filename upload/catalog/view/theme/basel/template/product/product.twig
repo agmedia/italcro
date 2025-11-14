@@ -134,7 +134,7 @@
                         {% if same_mpn_products is defined and same_mpn_products|length > 1 %}
 
 
-                        {% if price %}
+
                             <div class="mpn-variants table-responsive">
                                 <table class="table table-bordered table-striped">
                                     <thead>
@@ -142,10 +142,12 @@
                                         <th>Šifra</th>
                                         <th>Barcode</th>
                                         <th>Atribut</th>
+                                        {% if price %}
                                         <th class="text-right">Zaliha</th>
                                         <th class="text-right">Cijena</th>
                                         <th class="text-right">Ukupno</th>
                                         <th class="text-right">Dodaj</th>
+                                        {% endif %}
                                     </tr>
                                     </thead>
 
@@ -156,75 +158,81 @@
                                             <td>{{ p.barcode }}</td>
 
                                             <td>{{ p.name_add }}</td>
-                                            <td class="text-right">{{ p.stock }}</td>
 
-                                            {# -------- CIJENA / SPECIAL -------- #}
-                                            <td class="text-right">
-                                                {% if p.special %}
-                                                    <span style="color:#d9534f; font-weight:bold;">{{ p.special }}</span><br>
-                                                    <span style="text-decoration: line-through; color:#777;">{{ p.price }}</span>
-                                                {% else %}
-                                                    {{ p.price }}
-                                                {% endif %}
-                                            </td>
+                                            {% if price %}
+                                                        <td class="text-right">{{ p.stock }}</td>
 
-                                            {# -------- UKUPNO (cijena * količina) -------- #}
-                                                                        <td class="text-right">
-                                                <span class="mpn-total" id="mpn_total_{{ p.product_id }}">
-                                                    {# početno: 1 * cijena #}
-                                                    {% if p.special_value is defined and p.special_value %}
-                                                        {{ p.special_value|number_format(2, '.', '') }}
-                                                    {% elseif p.price_value is defined %}
-                                                        {{ p.price_value|number_format(2, '.', '') }}
-                                                    {% else %}
-                                                        0.00
-                                                    {% endif %}
-                                                </span>
-                                                                        </td>
+                                                        {# -------- CIJENA / SPECIAL -------- #}
+                                                        <td class="text-right">
+                                                            {% if p.special %}
+                                                                <span style="color:#d9534f; font-weight:bold;">{{ p.special }}</span><br>
+                                                                <span style="text-decoration: line-through; color:#777;">{{ p.price }}</span>
+                                                            {% else %}
+                                                                {{ p.price }}
+                                                            {% endif %}
+                                                        </td>
 
-                                                                        <td class="text-right">
-                                                                            <div class="input-group addtocart" style="max-width:180px; margin-left:auto;">
+                                                        {# -------- UKUPNO (cijena * količina) -------- #}
+                                                                                    <td class="text-right">
+                                                            <span class="mpn-total" id="mpn_total_{{ p.product_id }}">
+                                                                {# početno: 1 * cijena #}
+                                                                {% if p.special_value is defined and p.special_value %}
+                                                                    {{ p.special_value|number_format(2, '.', '') }}
+                                                                {% elseif p.price_value is defined %}
+                                                                    {{ p.price_value|number_format(2, '.', '') }}
+                                                                {% else %}
+                                                                    0.00
+                                                                {% endif %}
+                                                            </span>
+                                                                                    </td>
 
-                                                    <span class="input-group-btn">
-                                                        <button type="button"
-                                                                class="btn btn-default btn-number"
-                                                                data-type="minus"
-                                                                onclick="descrement($(this).closest('.addtocart')); updateMpnTotal($(this).closest('.addtocart').find('.input-number')); ">
-                                                            <span class="glyphicon glyphicon-minus"></span>
-                                                        </button>
-                                                    </span>
+                                                                                    <td class="text-right">
+                                                                                        <div class="input-group addtocart" style="max-width:180px; margin-left:auto;">
 
-                                                    <input type="text"
-                                                           name="quantity_{{ p.product_id }}"
-                                                           class="form-control input-number"
-                                                           value="1"
-                                                           max="{{ p.stock }}"
-                                                           min="1"
-                                                           data-id="{{ p.product_id }}"
-                                                           data-price="{% if p.special_value is defined and p.special_value %}{{ p.special_value }}{% elseif p.price_value is defined %}{{ p.price_value }}{% else %}0{% endif %}"
-                                                           onkeyup="updateMpnTotal(this)"
-                                                           onchange="updateMpnTotal(this)">
+                                                                <span class="input-group-btn">
+                                                                    <button type="button"
+                                                                            class="btn btn-default btn-number"
+                                                                            data-type="minus"
+                                                                            onclick="descrement($(this).closest('.addtocart')); updateMpnTotal($(this).closest('.addtocart').find('.input-number')); ">
+                                                                        <span class="glyphicon glyphicon-minus"></span>
+                                                                    </button>
+                                                                </span>
 
-                                                 <span class="input-group-btn">
-                                                    <button type="button"
-                                                            class="btn btn-default btn-number"
-                                                            data-type="plus"
-                                                            onclick="increment($(this).closest('.addtocart')); updateMpnTotal($(this).closest('.addtocart').find('.input-number')); ">
-                                                        <span class="glyphicon glyphicon-plus"></span>
-                                                    </button>
-                                                </span>
+                                                                <input type="text"
+                                                                       name="quantity_{{ p.product_id }}"
+                                                                       class="form-control input-number"
+                                                                       value="1"
+                                                                       max="{{ p.stock }}"
+                                                                       min="1"
+                                                                       data-id="{{ p.product_id }}"
+                                                                       data-price="{% if p.special_value is defined and p.special_value %}{{ p.special_value }}{% elseif p.price_value is defined %}{{ p.price_value }}{% else %}0{% endif %}"
+                                                                       onkeyup="updateMpnTotal(this)"
+                                                                       onchange="updateMpnTotal(this)">
 
-                                                                            <span class="input-group-btn">
-                                                    <button type="button"
-                                                            class="btn btn-neutral"
-                                                            {% if p.stock < 1 %}disabled{% endif %}
-                                                            onclick="cart.add('{{ p.product_id }}', $(this).closest('.addtocart').find('.input-number').val());">
-                                                        <span class="global-cart"></span>
-                                                    </button>
-                                                </span>
+                                                             <span class="input-group-btn">
+                                                                <button type="button"
+                                                                        class="btn btn-default btn-number"
+                                                                        data-type="plus"
+                                                                        onclick="increment($(this).closest('.addtocart')); updateMpnTotal($(this).closest('.addtocart').find('.input-number')); ">
+                                                                    <span class="glyphicon glyphicon-plus"></span>
+                                                                </button>
+                                                            </span>
 
-                                                </div>
-                                            </td>
+                                                                                        <span class="input-group-btn">
+                                                                <button type="button"
+                                                                        class="btn btn-neutral"
+                                                                        {% if p.stock < 1 %}disabled{% endif %}
+                                                                        onclick="cart.add('{{ p.product_id }}', $(this).closest('.addtocart').find('.input-number').val());">
+                                                                    <span class="global-cart"></span>
+                                                                </button>
+                                                            </span>
+
+                                                            </div>
+                                                        </td>
+
+                                            {% endif %}
+
+
                                         </tr>
                                         <tr>
                                             <td colspan="7"><small>{{ p.description_add }}</small></td>
@@ -234,7 +242,7 @@
 
                                 </table>
                             </div>
-                        {% endif %}
+
                             {% if manufacturer %}
                                 <p class="info"><b>{{ text_manufacturer }}</b> <a class="hover_uline" href="{{ manufacturers }}">{{ manufacturer }}</a></p>
                             {% endif %}

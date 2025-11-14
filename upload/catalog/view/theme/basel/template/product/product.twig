@@ -235,9 +235,11 @@
 
 
                                         </tr>
+                                        {% if p.description_add !='' %}
                                         <tr>
                                             <td colspan="7"><small>{{ p.description_add }}</small></td>
                                         </tr>
+                                        {% endif %}
                                     {% endfor %}
                                     </tbody>
 

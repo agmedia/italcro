@@ -59,24 +59,31 @@
 
                         <div class="input-group addtocart" >
 
-                      <span class="input-group-btn ">
-                          <button type="button" class="btn btn-default btn-number" data-type="minus" data-field="category" onclick="descrement($(this).parent().parent())")>
-                            <span class="glyphicon glyphicon-minus"></span>
-                            </button>
-                         </span>
-                            <input type="text" name="quantity" class="form-control input-number" id="category" max="{{ product.quantity }}" value="1">
+                              <span class="input-group-btn ">
+                                  <button type="button" class="btn btn-default btn-number" data-type="minus" data-field="category" onclick="descrement($(this).parent().parent())">
+                                    <span class="glyphicon glyphicon-minus"></span>
+                                    </button>
+                                 </span>
+                            <input type="text"
+                                   name="quantity"
+                                   class="form-control input-number"
+                                   id="category"
+                                   max="{{ product.quantity }}"
+                                   min="{{ product.minimum }}"
+                                   min-step="{{ product.minimum }}"
+                                   value="{{ product.minimum }}" readonly>
                             <span class="input-group-btn">
-                          <button type="button" class="btn btn-default btn-number" data-type="plus" data-field="category" onclick="increment($(this).parent().parent())">
-                            <span class="glyphicon glyphicon-plus"></span>
-                          </button>
-                        </span>
+                                  <button type="button" class="btn btn-default btn-number" data-type="plus" data-field="category" onclick="increment($(this).parent().parent())">
+                                    <span class="glyphicon glyphicon-plus"></span>
+                                  </button>
+                                </span>
 
-                            <span class="input-group-btn">
-                        <button type="button" class="btn btn-neutral"    {% if (product.quantity < 1) %} disabled  {% endif %}
-                                onclick="cart.add('{{ product.product_id }}', $(this).parent().parent().find('.input-number').val());">
-                            <span class="global-cart"></span> <span class="hidden-xs hidden-sm hidden-md"></span>
-                        </button>
-                       </span>
+                                    <span class="input-group-btn">
+                                <button type="button" class="btn btn-neutral"    {% if (product.quantity < 1) %} disabled  {% endif %}
+                                        onclick="cart.add('{{ product.product_id }}', $(this).parent().parent().find('.input-number').val());">
+                                    <span class="global-cart"></span> <span class="hidden-xs hidden-sm hidden-md"></span>
+                                </button>
+                               </span>
                         </div><!-- /input-group -->
 
                 </div>
@@ -87,7 +94,14 @@
                 <div class="row">
                 <div class="col-md- 12">
                     <div class="big-btn">
-                    <a class="btn btn-block btn-neutral" href="{{ product.href }}">{{ product.mpn_count }} {{ product.mpn_artikl }}</a>
+                    <a class="btn btn-block btn-neutral" href="{{ product.href }}">
+                        {% if product.price %}
+                        {{ product.mpn_count }} {{ product.mpn_artikl }}
+                        {% else %}
+                           Opširnije
+                        {% endif %}
+
+                    </a>
                     </div>
                 </div>
             </div>
@@ -126,3 +140,4 @@
     {% endif %}
     </div>
 </div><!-- .single-product ends -->
+

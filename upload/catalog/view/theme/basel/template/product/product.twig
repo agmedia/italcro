@@ -187,7 +187,7 @@
                                                                                     </td>
 
                                                                                     <td class="text-right">
-                                                                                        <div class="input-group addtocart" style="max-width:180px; margin-left:auto;">
+                                                           <div class="input-group addtocart" style="max-width:180px; margin-left:auto;">
 
                                                                 <span class="input-group-btn">
                                                                     <button type="button"
@@ -198,16 +198,17 @@
                                                                     </button>
                                                                 </span>
 
-                                                                <input type="text"
-                                                                       name="quantity_{{ p.product_id }}"
-                                                                       class="form-control input-number"
-                                                                       value="1"
-                                                                       max="{{ p.stock }}"
-                                                                       min="1"
-                                                                       data-id="{{ p.product_id }}"
-                                                                       data-price="{% if p.special_value is defined and p.special_value %}{{ p.special_value }}{% elseif p.price_value is defined %}{{ p.price_value }}{% else %}0{% endif %}"
-                                                                       onkeyup="updateMpnTotal(this)"
-                                                                       onchange="updateMpnTotal(this)">
+                                                               <input type="text"
+                                                                      name="quantity_{{ p.product_id }}"
+                                                                      class="form-control input-number"
+                                                                      value="{{ p.minimum }}"
+                                                                      max="{{ p.stock }}"
+                                                                      min="{{ p.minimum }}"
+                                                                      min-step="{{ p.minimum }}"
+                                                                      data-id="{{ p.product_id }}"
+                                                                      data-price="{% if p.special_value is defined and p.special_value %}{{ p.special_value }}{% elseif p.price_value is defined %}{{ p.price_value }}{% else %}0{% endif %}"
+                                                                      onkeyup="updateMpnTotal(this)"
+                                                                      onchange="updateMpnTotal(this)" readonly>
 
                                                              <span class="input-group-btn">
                                                                 <button type="button"

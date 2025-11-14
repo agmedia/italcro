@@ -556,9 +556,10 @@ class ControllerProductProduct extends Controller {
 					     'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),
 					'price'       => $price,
 					'special'     => $special,
-					     'priceeur'       => $priceeur,
+                    'mpn_count'       => $result['mpn_count'],
+                    'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
                     'attention'     => $data['attention'],
-                    'specialeur'     => $specialeur,
+
 					'tax'         => $tax,
 					'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
 					'rating'      => $rating,
@@ -601,9 +602,6 @@ class ControllerProductProduct extends Controller {
                         'description_add'=> $result['description_add'],    // opis
                         'stock'          => $result['quantity'],
                         'minimum'          => $result['minimum'],
-
-                        'mpn_count'       => $result['mpn_count'],
-                        'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
 
                         // formatirano za prikaz
                         'price'          => $this->currency->format($price_value, $this->session->data['currency']),

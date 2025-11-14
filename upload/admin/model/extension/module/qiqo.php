@@ -490,7 +490,7 @@ class ModelExtensionModuleQiqo extends Model
             $desc_add = trim($opiskatalog . ($group_opis ? "\n\n" . $group_opis : ''));
 
             // 🔹 Novi glavni naziv proizvoda (naziv grupe + dimmodel ako postoji)
-            $new_name = trim($group_naziv . ($dimmodel ? ' ' . $dimmodel : ''));
+            $new_name = trim($group_naziv);
 
             // 🔹 Update u oc_product_description
             $this->db->query("UPDATE " . DB_PREFIX . "product_description 

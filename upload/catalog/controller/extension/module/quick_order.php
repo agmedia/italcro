@@ -69,16 +69,41 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $this->load->model('catalog/product');
         $this->load->model('tool/image');
 
+        $term = isset($this->request->get['term']) ? trim($this->request->get['term']) : '';
+
+// normaliziraj višak razmaka: više spaceova -> jedan
+        $term_normalized = preg_replace('/\s+/', ' ', $term);
+        $term_esc        = $this->db->escape($term_normalized);
+
+// verzija bez razmaka za “grubo” pretraživanje
+        $term_nospace    = preg_replace('/\s+/', '', mb_strtolower($term_normalized));
+        $term_nospace_esc = $this->db->escape($term_nospace);
+
+
+
         $sql = "SELECT p.product_id 
-                FROM " . DB_PREFIX . "product p 
-                JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
-                WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'
-                  AND p.status = 1
-                  AND (pd.name LIKE '%" . $this->db->escape($term) . "%'
-                    OR p.sku LIKE '%" . $this->db->escape($term) . "%'
-                    OR p.model LIKE '%" . $this->db->escape($term) . "%')
-                ORDER BY pd.name ASC
-                LIMIT 15";
+        FROM " . DB_PREFIX . "product p 
+        JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
+        WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'
+          AND p.status = 1
+          AND (
+                pd.name LIKE '%" . $term_esc . "%'
+             OR pd.name_add LIKE '%" . $term_esc . "%'
+             OR CONCAT(pd.name, ' ', pd.name_add) LIKE '%" . $term_esc . "%'
+             OR p.sku LIKE '" . $term_esc . "%'
+             OR p.model LIKE '" . $term_esc . "%'
+
+             /* IGNORIRAJ RAZMAKE u kombiniranom nazivu (name + name_add) */
+             OR REPLACE(LOWER(CONCAT(pd.name, ' ', pd.name_add)), ' ', '') LIKE '%" . $term_nospace_esc . "%'
+          )
+        ORDER BY pd.name ASC
+        LIMIT 30";
+
+        $query = $this->db->query($sql);
+
+
+
+
         $query = $this->db->query($sql);
 
         $results = [];
@@ -108,6 +133,10 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 'sku'        => $product_info['sku'],
                 'price'      => $price_display,
                 'price_raw'  => $show_price ? (float)$taxed : 0.0,
+                'name_add'       => $product_info['name_add'],          // tvoj custom naziv / atribut
+                'description_add'=> $product_info['description_add'],    // opis
+                'stock'          => $product_info['quantity'],
+                'minimum'          => $product_info['minimum'],
                 'thumb'      => $thumb
             ];
         }

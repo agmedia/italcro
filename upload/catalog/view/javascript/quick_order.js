@@ -65,28 +65,62 @@
 
     /* ===================== Table rendering ===================== */
     function rowHtml(item, added){
-      var qty = item.quantity || 1;
+      var min = item.minimum && item.minimum > 0 ? item.minimum : 1;
+      var qty = item.quantity || min;
+      if (qty < min) qty = min;
+
       var subtotal = (item.price_raw || 0) * qty;
       var subtotalCell = '<span class="qo-subtotal" data-sub="'+subtotal+'">...</span>';
       var actions = added
           ? '<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>'
           : '<button class="btn btn-primary qo-add" title="Dodaj"><span class="global-cart"></span></button>';
 
+      var qtyHtml =
+          '<div class="input-group addtocart qo-qty-group" style="max-width:180px; margin-left:auto;">' +
+          '  <span class="input-group-btn">' +
+          '    <button type="button" class="btn btn-default btn-number qo-qty-minus" data-type="minus">' +
+          '      <span class="glyphicon glyphicon-minus"></span>' +
+          '    </button>' +
+          '  </span>' +
+          '  <input type="text"' +
+          '         class="form-control input-number qo-qty"' +
+          '         value="'+qty+'"' +
+          '         min="'+min+'"' +
+          '         data-minstep="'+min+'"' +
+          '         readonly' +
+          '         style="text-align:right;">' +
+          '  <span class="input-group-btn">' +
+          '    <button type="button" class="btn btn-default btn-number qo-qty-plus" data-type="plus">' +
+          '      <span class="glyphicon glyphicon-plus"></span>' +
+          '    </button>' +
+          '  </span>' +
+          '</div>';
+
       return '\
         <tr data-id="'+item.product_id+'" data-price="'+(item.price_raw || 0)+'" '+(added?'data-added="1"':'')+'>\
           <td>'+(item.thumb ? '<img src="'+item.thumb+'" style="width:60px;height:60px;object-fit:cover">' : '')+'</td>\n\
           <td>'+(item.name || '')+'</td>\n\
+          <td>'+(item.name_add || '')+'</td>\n\
+              <td>'+min+'</td>\n\
           <td>'+(item.sku || '')+'</td>\n\
           <td>'+(item.price || '')+'</td>\n\
           <td>'+subtotalCell+'</td>\n\
-          <td><input type="number" class="form-control qo-qty" min="1" value="'+qty+'" style="max-width:90px;text-align:right;"></td>\n\
+          <td>'+qtyHtml+'</td>\n\
           <td class="qo-actions">'+actions+'</td>\n\
         </tr>';
     }
+
     function recomputeRow($tr){
       var price = parseFloat($tr.attr('data-price') || '0');
-      var qty = parseInt($tr.find('.qo-qty').val() || '1', 10);
-      if(isNaN(qty) || qty < 1){ qty = 1; $tr.find('.qo-qty').val(1); }
+      var $input = $tr.find('.qo-qty');
+      var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
+      if (isNaN(step) || step < 1) step = 1;
+
+      var qty = parseInt($input.val() || step, 10);
+      if(isNaN(qty) || qty < step){
+        qty = step;
+        $input.val(step);
+      }
       var subtotal = price * qty;
       var $cell = $tr.find('.qo-subtotal');
       $cell.attr('data-sub', subtotal);
@@ -99,15 +133,25 @@
       });
       formatCurrency(total, function(txt){ $('#qo-total').text(txt); });
     }
+
     function ensureRow(item, added){
       var $existing = $table.find('tr[data-id="'+item.product_id+'"]');
       if($existing.length){
-        if(item.quantity){ $existing.find('.qo-qty').val(item.quantity); }
+        var min = item.minimum && item.minimum > 0 ? item.minimum : parseInt($existing.find('.qo-qty').attr('data-minstep') || '1', 10) || 1;
+        if(item.quantity){
+          if (item.quantity < min) item.quantity = min;
+          $existing.find('.qo-qty').val(item.quantity).attr('data-minstep', min).attr('min', min);
+        }
         if(added){
           $existing.attr('data-added','1').addClass('success')
               .find('.qo-actions').html('<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
         }
-        if(item.sku){ $existing.find('td').eq(2).text(item.sku); }
+        if (item.minimum) {
+          $existing.find('td').eq(3).text(item.minimum);
+        }
+        if (item.sku) {
+          $existing.find('td').eq(4).text(item.sku);
+        }
         recomputeRow($existing);
         return $existing;
       } else {
@@ -117,67 +161,134 @@
         return $row;
       }
     }
+
     function getRowData($tr){
       var pid  = String($tr.data('id'));
-      var qty  = parseInt($tr.find('.qo-qty').val() || '1', 10);
+      var $input = $tr.find('.qo-qty');
+      var minStep = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
+      if (isNaN(minStep) || minStep < 1) minStep = 1;
+
+      var qty  = parseInt($input.val() || minStep, 10);
+      if (isNaN(qty) || qty < minStep) qty = minStep;
+
       var pRaw = parseFloat($tr.attr('data-price') || '0');
       var tds  = $tr.find('td');
+
+      var minimumText = tds.eq(3).text().trim();
+      var minimumVal = parseInt(minimumText || minStep, 10);
+      if (isNaN(minimumVal) || minimumVal < 1) minimumVal = minStep;
+
       return {
         product_id: pid,
         name: tds.eq(1).text().trim(),
-        sku:  tds.eq(2).text().trim(),
-        price: tds.eq(3).text().trim(),
+        name_add: tds.eq(2).text().trim(),      // Atribut (name_add)
+        // td(3) = Pakiranje (minimum)
+        sku:  tds.eq(4).text().trim(),          // Šifra
+        price: tds.eq(5).text().trim(),         // Cijena
         price_raw: isNaN(pRaw) ? 0 : pRaw,
-        quantity: isNaN(qty) ? 1 : qty,
-        thumb: (function(){ var img=$tr.find('td:first img'); return img.length ? img.attr('src') : ''; })()
+        quantity: qty,
+        minimum: minimumVal,
+        thumb: (function(){
+          var img = $tr.find('td:first img');
+          return img.length ? img.attr('src') : '';
+        })()
       };
+
     }
 
     /* ===================== Autocomplete rendering ===================== */
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
     function suggestionHtml(it){
+      var min = it.minimum && it.minimum > 0 ? it.minimum : 1;
+      var qtyVal = it.quantity && it.quantity >= min ? it.quantity : min;
+
       var img = it.thumb
           ? `<img src="${esc(it.thumb)}" alt="${esc(it.name)}" class="qo-thumb">`
           : `<div class="qo-thumb placeholder"><i class="fa fa-box"></i></div>`;
+
       return `
-        <div class="list-group-item qo-suggest"
-             tabindex="0"
-             data-pid="${esc(it.product_id)}"
-             data-name="${esc(it.name||'')}"
-             data-sku="${esc(it.sku||'')}"
-             data-price="${esc(it.price||'')}"
-             data-priceraw="${Number(it.price_raw||0)}"
-             data-thumb="${esc(it.thumb||'')}">
-          <div class="qo-suggest-inner">
-            ${img}
-            <div class="qo-info">
-              <div class="name">${esc(it.name || '')}</div>
-              <div class="meta">
-                ${(it.sku ? `<span>Šifra: ${esc(it.sku)}</span>` : '')}
-                ${(it.price ? `<span class="price">${esc(it.price)}</span>` : '')}
-              </div>
-            </div>
-            <input type="number" class="qo-suggest-qty" min="1" value="${it.quantity || 1}" tabindex="0" aria-label="Količina">
-            <button class="qo-add-btn" tabindex="0" title="Dodaj"><span class="global-cart"></span></button>
+    <div class="list-group-item qo-suggest"
+         tabindex="0"
+         data-pid="${esc(it.product_id)}"
+         data-name="${esc(it.name||'')}"
+         data-name_add="${esc(it.name_add||'')}"
+         data-minimum="${min}"
+         data-sku="${esc(it.sku||'')}"
+         data-price="${esc(it.price||'')}"
+         data-priceraw="${Number(it.price_raw||0)}"
+         data-thumb="${esc(it.thumb||'')}">
+      <div class="qo-suggest-inner">
+        ${img}
+        <div class="qo-info">
+          <div class="name">
+            ${esc(it.name || '')}
+            <small style="color:#777; margin-left:6px;">${esc(it.name_add || '')}</small>
           </div>
-        </div>`;
+          <div class="meta">
+            ${(it.sku ? `<span>Šifra: ${esc(it.sku)}</span>` : '')}
+            ${(it.price ? `<span class="price">${esc(it.price)}</span>` : '')}
+          </div>
+        </div>
+
+        <div class="qo-suggest-qty-wrap">
+          <button type="button"
+                  class="btn btn-default btn-number qo-suggest-btn qo-suggest-minus"
+                  data-type="minus"
+                  tabindex="0"
+                  aria-label="Smanji količinu">
+            <span class="glyphicon glyphicon-minus"></span>
+          </button>
+
+          <input type="text"
+                 class="qo-suggest-qty input-number"
+                 min="${min}"
+                 data-minstep="${min}"
+                 value="${qtyVal}"
+                 tabindex="0"
+                 aria-label="Količina"
+                 readonly>
+
+          <button type="button"
+                  class="btn btn-default btn-number qo-suggest-btn qo-suggest-plus"
+                  data-type="plus"
+                  tabindex="0"
+                  aria-label="Povećaj količinu">
+            <span class="glyphicon glyphicon-plus"></span>
+          </button>
+
+          <button class="qo-add-btn btn btn-neutral"
+                  tabindex="0"
+                  title="Dodaj">
+            <span class="global-cart"></span>
+          </button>
+        </div>
+      </div>
+    </div>`;
     }
+
 
     function itemFromSuggest($s){
       if(!$s || !$s.length) return null;
       var pid = $s.attr('data-pid');
       if(!pid) return null;
-      var q = parseInt($s.find('.qo-suggest-qty').val() || '1', 10);
-      if(isNaN(q) || q < 1) q = 1;
+      var $qty = $s.find('.qo-suggest-qty');
+      var min = parseInt($s.attr('data-minimum') || $qty.attr('data-minstep') || $qty.attr('min') || '1', 10);
+      if(isNaN(min) || min < 1) min = 1;
+
+      var q = parseInt($qty.val() || min, 10);
+      if(isNaN(q) || q < min) q = min;
+
       return {
         product_id: pid,
         name: $s.attr('data-name') || '',
+        name_add: $s.attr('data-name_add') || '',
         sku: $s.attr('data-sku') || '',
         price: $s.attr('data-price') || '',
         price_raw: parseFloat($s.attr('data-priceraw') || '0') || 0,
         thumb: $s.attr('data-thumb') || '',
-        quantity: q
+        quantity: q,
+        minimum: min
       };
     }
 
@@ -191,17 +302,64 @@
       }
     }
 
-    // promjena količine ↑/↓
+    // promjena količine ↑/↓ u autosuggestu – po koraku minimuma
     function bumpQty($s, delta){
       if(!$s || !$s.length) return;
       openQtyMode($s, true);
       var $qty = $s.find('.qo-suggest-qty');
-      var v = parseInt($qty.val() || '1', 10);
-      if(isNaN(v) || v < 1) v = 1;
-      v += delta;
-      if(v < 1) v = 1;
+      var step = parseInt($qty.attr('data-minstep') || $qty.attr('min') || '1', 10);
+      if(isNaN(step) || step < 1) step = 1;
+
+      var v = parseInt($qty.val() || step, 10);
+      if(isNaN(v) || v < step) v = step;
+
+      v += delta * step;
+      if(v < step) v = step;
       $qty.val(v);
     }
+
+    /* ===================== Tablica qty plus/minus ===================== */
+    function changeQtyByStep($input, direction){
+      var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
+      if (isNaN(step) || step < 1) step = 1;
+
+      var v = parseInt($input.val() || step, 10);
+      if (isNaN(v) || v < step) v = step;
+
+      if (direction === 'up') {
+        v += step;
+      } else if (direction === 'down') {
+        v -= step;
+        if (v < step) v = step;
+      }
+
+      $input.val(v).trigger('input');
+    }
+
+    $(document).on('click', '.qo-qty-plus', function(){
+      var $input = $(this).closest('.qo-qty-group').find('.qo-qty');
+      changeQtyByStep($input, 'up');
+    });
+
+    $(document).on('click', '.qo-qty-minus', function(){
+      var $input = $(this).closest('.qo-qty-group').find('.qo-qty');
+      changeQtyByStep($input, 'down');
+    });
+
+    /* ===== Plus/minus u AUTOSUGGESTU ===== */
+    $(document).on('click', '.qo-suggest-plus', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      var $s = $(this).closest('.qo-suggest');
+      bumpQty($s, +1);
+    });
+
+    $(document).on('click', '.qo-suggest-minus', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      var $s = $(this).closest('.qo-suggest');
+      bumpQty($s, -1);
+    });
 
     /* ===================== Add u košaricu ===================== */
     function addToCartAndRender(item, qty){
@@ -209,16 +367,22 @@
         toast('err', 'Nije odabran valjan artikl.');
         return $.Deferred().resolve().promise();
       }
-      qty = parseInt(qty || item.quantity || 1, 10);
-      if(isNaN(qty) || qty < 1) qty = 1;
+      var min = item.minimum && item.minimum > 0 ? item.minimum : 1;
+      qty = parseInt(qty || item.quantity || min, 10);
+      if(isNaN(qty) || qty < min) qty = min;
 
-      // NOVO: ako red već postoji i već je dodan, povećaj količinu (updateQty)
+      // ako red već postoji i već je dodan, povećaj količinu (updateQty)
       var $rowExisting = $table.find('tr[data-id="'+item.product_id+'"]');
       var alreadyAdded = $rowExisting.length && $rowExisting.is('[data-added]');
       if (alreadyAdded) {
-        var current = parseInt($rowExisting.find('.qo-qty').val() || '1', 10);
-        if (isNaN(current) || current < 1) current = 1;
+        var $input = $rowExisting.find('.qo-qty');
+        var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
+        if(isNaN(step) || step < 1) step = 1;
+
+        var current = parseInt($input.val() || step, 10);
+        if (isNaN(current) || current < step) current = step;
         var newQty = current + qty;
+        if(newQty < step) newQty = step;
 
         var lockKey = String(item.product_id) + '::update';
         if (ADD_LOCK[lockKey]){ return $.Deferred().resolve().promise(); }
@@ -227,8 +391,7 @@
         return $.post('index.php?route=extension/module/quick_order/updateQty', {
           product_id: item.product_id, quantity: newQty
         }, function(res){
-          // ažuriraj UI na novu količinu
-          $rowExisting.find('.qo-qty').val(newQty);
+          $input.val(newQty);
           recomputeRow($rowExisting);
           recomputeTotal();
           var data = getRowData($rowExisting);
@@ -318,7 +481,6 @@
 
     function focusSuggest($it){
       if(!$it || !$it.length) return;
-      // fokus ostaje na .qo-suggest (ne na qty input) – Tab neće preskakati
       $it.focus();
       var el = $it.get(0);
       if(el && el.scrollIntoView){ el.scrollIntoView({ block: 'nearest' }); }
@@ -332,7 +494,7 @@
       var next = idx + delta;
       if(next < 0) next = 0;
       if(next >= $items.length) next = $items.length - 1;
-      openQtyMode($items.eq(next), false); // samo otvori, ne fokusiraj qty
+      openQtyMode($items.eq(next), false);
       focusSuggest($items.eq(next));
     }
 
@@ -340,17 +502,14 @@
     $(document).on('keydown', '#qo-search', function(e){
       var key = e.key;
 
-      // ESC iz searcha -> zatvori listu
       if (key === 'Escape') {
         $list.hide();
         $list.find('.qo-suggest.qty-mode').removeClass('qty-mode');
         return;
       }
 
-      // ArrowUp/Down u searchu više NE navigiraju (ništa ne radimo)
       if(key === 'ArrowDown' || key === 'ArrowUp'){ return; }
 
-      // Tab iz searcha → fokusiraj prvi prijedlog
       if(key === 'Tab'){
         if(!$list.is(':visible')) return;
         var $itemsT = getSuggestItems();
@@ -362,7 +521,6 @@
         return;
       }
 
-      // Enter dvokorak samo kad je točno 1 rezultat
       if(key !== 'Enter') return;
       var proceed = function(){
         var $items = getSuggestItems();
@@ -370,7 +528,7 @@
         var $only = $items.eq(0);
         e.preventDefault(); e.stopPropagation();
         if(!$only.hasClass('qty-mode')){
-          openQtyMode($only, true); // otvori i fokusiraj qty
+          openQtyMode($only, true);
         } else {
           var item = itemFromSuggest($only);
           if(!item){ toast('err','Ne mogu očitati artikl.'); return; }
@@ -395,7 +553,6 @@
     $(document).on('keydown', '#qo-suggestions .qo-suggest, #qo-suggestions .qo-suggest-qty, #qo-suggestions .qo-add-btn', function(e){
       var key = e.key;
 
-      // ESC unutar liste -> zatvori listu i vrati fokus na search
       if (key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
@@ -405,28 +562,25 @@
         return;
       }
 
-      // Tab / Shift+Tab: sljedeći / prethodni prijedlog
       if(key === 'Tab'){
         e.preventDefault(); e.stopPropagation();
         moveSuggest(e.shiftKey ? -1 : 1);
         return;
       }
 
-      // Strelice: NE navigiraju – mijenjaju količinu na selektiranom
       if(key === 'ArrowDown'){
         e.preventDefault(); e.stopPropagation();
         var $sD = $(this).closest('.qo-suggest');
-        bumpQty($sD, -1); // ↓ smanji
+        bumpQty($sD, -1); // po step-u
         return;
       }
       if(key === 'ArrowUp'){
         e.preventDefault(); e.stopPropagation();
         var $sU = $(this).closest('.qo-suggest');
-        bumpQty($sU, +1); // ↑ povećaj
+        bumpQty($sU, +1); // po step-u
         return;
       }
 
-      // Enter: ako nije qty-mode → otvori + fokusiraj qty; inače → dodaj
       if(key === 'Enter'){
         e.preventDefault(); e.stopPropagation();
         var $s = $(this).closest('.qo-suggest');
@@ -467,24 +621,27 @@
 
     // Klik na cijeli prijedlog: otvori qty-mode i fokusiraj qty
     $(document).on('click', '.qo-suggest', function(e){
-      if($(e.target).closest('.qo-suggest-qty, .qo-add-btn').length) return;
+      if($(e.target).closest('.qo-suggest-qty, .qo-add-btn, .qo-suggest-plus, .qo-suggest-minus').length) return;
       openQtyMode($(this), true);
     });
 
     /* ===================== Tablica: add/qty/remove/clear ===================== */
     $(document).on('click', '.qo-add', function(){
       var $tr = $(this).closest('tr');
-      var pid = $tr.data('id');
-      var qty = parseInt($tr.find('.qo-qty').val() || '1', 10);
-      if(qty < 1) qty = 1;
+      var data = getRowData($tr);
+      var pid = data.product_id;
+      var qty = data.quantity;
+      var min = data.minimum && data.minimum > 0 ? data.minimum : 1;
+      if(qty < min) qty = min;
 
       $.post('index.php?route=extension/module/quick_order/fastAdd', { product_id: pid, quantity: qty }, function(res){
         if(res && res.success){
           $tr.attr('data-added','1').addClass('success')
               .find('.qo-actions').html('<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
           toast('ok', 'Dodano u košaricu');
-          var data = getRowData($tr);
-          data.added = true; data.quantity = qty; upsertLS(data);
+          data.added = true;
+          data.quantity = qty;
+          upsertLS(data);
           baselHeaderRefreshDebounced();
         } else {
           toast('err', (res && res.message) || 'Greška pri dodavanju');
@@ -495,8 +652,14 @@
     $(document).on('change input', '.qo-qty', function(){
       var $tr = $(this).closest('tr');
       var pid = $tr.data('id');
-      var qty = parseInt($(this).val() || '1', 10);
-      if(qty < 1) qty = 1;
+
+      var $input = $(this);
+      var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
+      if(isNaN(step) || step < 1) step = 1;
+
+      var qty = parseInt($input.val() || step, 10);
+      if(qty < step) qty = step;
+      $input.val(qty);
 
       recomputeRow($tr);
       recomputeTotal();

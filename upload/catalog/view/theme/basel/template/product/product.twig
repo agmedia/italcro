@@ -142,6 +142,7 @@
                                         <th>Šifra</th>
                                         <th>Barcode</th>
                                         <th>Atribut</th>
+                                        <th>Pakiranje</th>
                                         {% if price %}
                                         <th class="text-right">Zaliha</th>
                                         <th class="text-right">Cijena</th>
@@ -158,6 +159,7 @@
                                             <td>{{ p.barcode }}</td>
 
                                             <td>{{ p.name_add }}</td>
+                                            <td>{{ p.minimum }}</td>
 
                                             {% if price %}
                                                         <td class="text-right">{{ p.stock }}</td>

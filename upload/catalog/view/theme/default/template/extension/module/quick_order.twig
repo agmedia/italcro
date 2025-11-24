@@ -14,6 +14,8 @@
       <tr>
         <th>Slika</th>
         <th>{{ text_name }}</th>
+        <th>Atribut</th>
+        <th>Pakiranje</th>
         <th>{{ text_sku }}</th>
         <th>{{ text_price }}</th>
         <th>Ukupno</th>
@@ -52,7 +54,7 @@
   .quick-order #qo-table td:first-child,
   .quick-order #qo-table th:first-child { width: 80px; text-align: center; }
   .quick-order #qo-table td img { display:inline-block; width:60px; height:60px; object-fit:cover; }
-  .quick-order #qo-table .qo-qty { height:34px; line-height:34px; padding:4px 8px; text-align:right; }
+  .quick-order #qo-table .qo-qty { height:34px; line-height:34px; padding:4px 8px; text-align:right;min-width: 50px; }
   .quick-order #qo-table td:last-child,
   .quick-order #qo-table th:last-child { text-align:right; }
   .quick-order #qo-table .qo-actions { white-space:nowrap; }
@@ -73,7 +75,7 @@
   #qo-actions { margin-bottom:10px; }
 
   /* Autocomplete */
-  .quick-order-search { position:relative; max-width:640px; margin-bottom:15px; }
+  .quick-order-search { position:relative;  margin-bottom:15px; }
   .qo-input { border-radius:10px; padding:10px 14px; border:1px solid #ccc; transition:all .2s; font-size:15px; }
   .qo-input:focus { border-color:#007bff; box-shadow:0 0 6px rgba(0,123,255,.25); }
 
@@ -92,14 +94,12 @@
   .qo-info .meta { display:flex; justify-content:normal; font-size:13px; color:#777; gap:10px; }
   .qo-info .price { font-weight:600; color:#000; }
 
-  /* Dvokorak: qty i gumb skriveni dok sugestija nema .qty-mode */
-  .qo-suggest-qty,
-  .qo-add-btn { display:none; }
+
 
   .qo-suggest.qty-mode .qo-suggest-qty,
   .qo-suggest.qty-mode .qo-add-btn { display:inline-block; }
 
-  .qo-suggest-qty { width:72px; padding:6px 8px; border:1px solid #ccc; border-radius:6px; text-align:right; margin-left:auto; }
+  .qo-suggest-qty { width:72px; padding:6px 8px; border:1px solid #ccc; border-radius:0px; text-align:right;  }
   .qo-add-btn { background:#000; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:13px; cursor:pointer; transition:all .2s; }
   .qo-add-btn:hover { background:#0069d9; }
   .qo-add-btn:active { transform:scale(0.96); }
@@ -117,6 +117,34 @@
     background: #f7faff;
     box-shadow: inset 0 0 0 2px #e6f0ff;
   }
+
+  /* Qty blok u autosuggestu – da se sve lijepo stisne i da se input vidi */
+  .quick-order .qo-suggest-qty-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-left: auto;
+    flex: 0 0 190px;          /* rezervira širinu desno za qty + gumbe */
+    justify-content: flex-end;
+  }
+
+  .quick-order .qo-suggest-qty {
+    width: 70px;
+    min-width: 70px;
+    text-align: right;
+    height: 32px;
+    padding: 3px 6px;
+    font-size: 13px;
+  }
+
+  /* manji plus/minus u autosuggestu */
+  .quick-order .qo-suggest-btn {
+    padding: 8px 7px;
+    min-width: 30px;
+    font-size: 12px;
+    line-height: 1;
+  }
+
 
 </style>
 

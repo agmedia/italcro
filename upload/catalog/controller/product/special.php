@@ -139,10 +139,11 @@ class ControllerProductSpecial extends Controller {
 				'description' => utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
 				'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),
 				'price'       => $price,
+                'sku'  => $result['sku'],
 				'special'     => $special,
-
-				 'priceeur'       => $priceeur,
-                    'specialeur'     => $specialeur,
+                'mpn_count'       => $result['mpn_count'],
+                'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+                'cent'  => $result['cent'],
 				'tax'         => $tax,
 				'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
 				'rating'      => $result['rating'],
@@ -292,4 +293,22 @@ class ControllerProductSpecial extends Controller {
 
 		$this->response->setOutput($this->load->view('product/special', $data));
 	}
+    function artiklLabel($broj) {
+        $broj = abs($broj) % 100;
+        $jedinica = $broj % 10;
+
+        if ($broj > 10 && $broj < 20) {
+            return "artikala";
+        }
+
+        if ($jedinica == 1) {
+            return "artikl";
+        }
+
+        if ($jedinica >= 2 && $jedinica <= 4) {
+            return "artikla";
+        }
+
+        return "artikala";
+    }
 }

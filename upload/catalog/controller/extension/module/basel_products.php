@@ -199,6 +199,8 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						'new_label'  => $is_new,
 						'sale_badge' => $sale_badge,
 						'special' 	 => $special,
+                        'cent'  => $result['cent'],
+                        'sku'  => $result['sku'],
 
                         'mpn_count'       => $result['mpn_count'],
                         'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),

@@ -238,6 +238,8 @@ class ControllerProductCategory extends Controller {
 					'price'       => $price,
                     'mpn_count'       => $result['mpn_count'],
                     'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+                    'cent'  => $result['cent'],
+                    'sku'  => $result['sku'],
 					'special'     => $special,
                     'attention'     => $data['attention'],
 					'tax'         => $tax,

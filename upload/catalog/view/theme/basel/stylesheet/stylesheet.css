@@ -68,6 +68,8 @@ img.ikona-black{
 	vertical-align: middle;
 }
 
+.gray{color:rgb(189, 189, 189)!important}
+
 .mgallery_info {color:#fff;}
 
 .mt-15{margin-top:15px}
@@ -166,6 +168,93 @@ p.footertitle{
 
 	padding-left: 20px;
 }
+
+/* GRID = flex, 3 stupca */
+.grid-holder.product-holder.grid3 {
+	display: flex;
+	flex-wrap: wrap;
+	margin-left: -15px;
+	margin-right: -15px;
+}
+
+.grid-holder.product-holder.grid3 .item.single-product {
+	box-sizing: border-box;
+	padding: 10px;
+	width: 33.3333%;
+	display: flex;         /* kartica je flex – da se rastegne u visinu */
+}
+
+/* Kartica unutra */
+.grid-holder.product-holder.grid3 .item.single-product .edge {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+/* Slika gore, caption se rasteže */
+.grid-holder.product-holder.grid3 .item.single-product .image {
+	flex: 0 0 auto;
+}
+
+.grid-holder.product-holder.grid3 .item.single-product .caption {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Price-wrapper pri dnu kartice */
+.grid-holder.product-holder.grid3 .item.single-product .price-wrapper {
+	margin-top: auto;
+}
+
+@media (max-width: 767.98px){
+	.grid-holder.product-holder.grid3 .item.single-product {
+		width: 50%;
+	}
+}
+
+@media (max-width: 575.98px){
+	.grid-holder.product-holder.grid3 .item.single-product {
+		width: 100%;
+	}
+}
+
+/* GRID 4 = 4 stupca */
+.grid-holder.product-holder.grid4 {
+	display: flex;
+	flex-wrap: wrap;
+	margin-left: -15px;
+	margin-right: -15px;
+}
+
+.grid-holder.product-holder.grid4 .item.single-product {
+	box-sizing: border-box;
+	padding: 10px;
+	width: 25%;            /* 4 u redu */
+	display: flex;         /* rastezanje visine */
+}
+
+.grid-holder.product-holder.grid4 .item.single-product .edge {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+.grid-holder.product-holder.grid4 .item.single-product .image {
+	flex: 0 0 auto;
+}
+
+.grid-holder.product-holder.grid4 .item.single-product .caption {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.grid-holder.product-holder.grid4 .item.single-product .price-wrapper {
+	margin-top: auto;      /* gura price-wrapper dolje */
+}
+
+
 
 .support .radno-vrijeme {
 	padding-left: 20px;
@@ -5225,7 +5314,7 @@ a.button-circle {
 	left: 10px;
 	height:25px;
 	width:50px;
-	border-radius:0px;
+	border-radius:0;
 }
 /* // PRICE_EUR */
 .single-product .image .badge.eur_badge , .single-product .badge.eur_badge{
@@ -5234,7 +5323,7 @@ a.button-circle {
 	width: auto;
 	background-color: #fff;
 	color: #999;
-	bottom: 0px;
+	bottom: 0;
 	margin-left: auto;
 	margin-right: auto;
 	left: 0;
@@ -5354,7 +5443,7 @@ a.button-circle {
 	text-overflow: ellipsis;
 	font-weight: 500;
 
-	min-height: 42px;
+	min-height: 48px;
 }
 .single-product .rating {
 	margin-bottom:9px;
@@ -8489,6 +8578,103 @@ html.fl-anim .featherlight .featherlight-content {
 	}
 }
 
+/* 1) Slick track kao flex da svi slideovi budu iste visine (po najvišem) */
+.grid-holder.related.carousel.grid4 .slick-track {
+	display: flex;
+	align-items: stretch;
+}
+
+/* 2) Svaki slide je flex-kontejner */
+.grid-holder.related.carousel.grid4 .slick-slide {
+	display: flex;
+	height: auto;
+}
+
+/* 3) Tvoja kartica (.edge) se rastegne unutar slidea */
+.grid-holder.related.carousel.grid4 .slick-slide > .edge {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+/* 4) Slika ostaje gore, caption ispunjava visinu */
+.grid-holder.related.carousel.grid4 .edge .image {
+	flex-shrink: 0;
+}
+
+.grid-holder.related.carousel.grid4 .edge .caption {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+}
+
+/* 5) Linkovi na dnu kartice */
+.grid-holder.related.carousel.grid4 .edge .caption .plain-links {
+	margin-top: auto;
+}
+
+/* Caption kao flex kolona preko cijele visine kartice */
+/* Slick track kao flex red – svi slideovi iste visine */
+.grid-holder.related.carousel .slick-track {
+	display: flex;
+	align-items: stretch;
+}
+
+/* Svaki slide je flex-kontejner */
+.grid-holder.related.carousel .slick-slide {
+	display: flex;
+	height: auto;
+}
+
+/* Tvoja kartica (.edge) ispunjava cijeli slide */
+.grid-holder.related.carousel .slick-slide > .edge {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+/* Caption ispunjava preostalu visinu ispod slike */
+.grid-holder.related .edge .caption {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.grid-holder.related .edge .caption .price-wrapper:has(.big-btn) {
+	margin-top: auto;
+}
+
+/* Linkovi ispod buttona, bez auto margine (ako si je prije stavljao) */
+.grid-holder.related .edge .caption .plain-links {
+	margin-top: 0;
+}
+
+.grid-holder.grid4.carousel .slick-track {
+	display: flex;
+	align-items: stretch;
+}
+
+.grid-holder.grid4.carousel .slick-slide {
+	display: flex;
+	height: auto !important;
+}
+
+.grid-holder.grid4.carousel .slick-slide > .edge {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+.grid-holder.grid4.carousel .edge .caption {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+}
+.grid-holder.grid4.carousel .edge .caption .price-wrapper:has(.big-btn) {
+	margin-top: auto;
+}
+.grid-holder.grid4.carousel .edge .caption .plain-links {
+	margin-top: 0;
+}
 
 .blog .date_added .day {
 	display: block;

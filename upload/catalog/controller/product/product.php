@@ -559,7 +559,8 @@ class ControllerProductProduct extends Controller {
                     'mpn_count'       => $result['mpn_count'],
                     'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
                     'attention'     => $data['attention'],
-
+                    'cent'  => $result['cent'],
+                    'sku'  => $result['sku'],
 					'tax'         => $tax,
 					'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
 					'rating'      => $rating,

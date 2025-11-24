@@ -712,6 +712,9 @@
                         {% endif %}
 
 
+                        {% if attachfile.tab_name %}
+                            {{ attachfile.content }}
+                        {% endif %}
 
                         {% if question_status %}
                             <div class="tab-pane" id="tab-questions">

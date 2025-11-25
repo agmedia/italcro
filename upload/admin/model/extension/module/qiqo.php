@@ -112,7 +112,6 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
-
     public function updatePrices(): int
     {
         $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
@@ -149,8 +148,269 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
-
     public function updateAssets(): int
+    {
+        $this->log('Assets', '=== START ASSETS RESCAN + SYNC (catalog/products/{sku}) ===');
+
+        // Root gdje očekujemo SKU foldere
+        $base_dir = rtrim(DIR_IMAGE, '/\\') . '/catalog/products/';
+
+        if (!is_dir($base_dir)) {
+            $this->log('Assets', "❌ Base dir ne postoji: {$base_dir}");
+            return 0;
+        }
+
+        // Svi SKU folderi: catalog/products/{sku}/
+        $sku_dirs = glob($base_dir . '*', GLOB_ONLYDIR);
+        if (!$sku_dirs) {
+            $this->log('Assets', "⚠ Nema SKU foldera u {$base_dir}");
+            return 0;
+        }
+
+        // Resetiramo "asset sync" tablicu
+        $this->db->query("TRUNCATE TABLE " . DB_PREFIX . "product_asset_sync");
+
+        $updated_products = 0;
+        $missing_product  = 0;
+        $missing_folder   = 0;
+        $partial_products = 0;
+
+        foreach ($sku_dirs as $sku_dir) {
+            $sku = basename($sku_dir);
+            if ($sku === '' || $sku === '.' || $sku === '..') {
+                continue;
+            }
+
+            $folder_path  = rtrim($sku_dir, '/\\') . '/';
+            $has_folder   = is_dir($folder_path) ? 1 : 0;
+            $has_product  = 0;
+            $missing_images   = 0;
+            $missing_price    = 0;
+            $missing_sku_data = 0;
+            $status           = 'ok';
+            $message          = '';
+
+            // 1) Prođi kroz fajlove da vidimo ima li uopće išta (slike/dokumenti)
+            $files          = glob($folder_path . '*');
+            $fs_image_count = 0;
+            $fs_doc_count   = 0;
+
+            foreach ((array)$files as $file) {
+                if (!is_file($file)) {
+                    continue;
+                }
+
+                $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+                if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                    $fs_image_count++;
+                } elseif ($ext === 'pdf') {
+                    $fs_doc_count++;
+                }
+            }
+
+            // 2) Ako nema ni slike ni dokumenta → obriši folder i zabilježi kao "prazan"
+            if ($has_folder && $fs_image_count === 0 && $fs_doc_count === 0) {
+                $this->log('Assets', "SKU {$sku}: folder je prazan (nema jpg/png/pdf) – brišem {$folder_path}");
+                $this->rrmdirAssets($folder_path);
+                $has_folder = 0;
+                $status     = 'missing_folder';
+                $message    = 'Prazan folder (bez slika/dokumenata) obrisan iz catalog/products.';
+
+                // pokušaj ipak naći product da upišemo info
+                $product_id = $this->getProductIdBySku($sku);
+                $has_product = $product_id ? 1 : 0;
+                if ($has_product) {
+                    $missing_folder++;
+                }
+
+                // upis u asset sync tablicu
+                $this->db->query("INSERT INTO " . DB_PREFIX . "product_asset_sync SET
+                sku               = '" . $this->db->escape($sku) . "',
+                product_id        = " . (int)$product_id . ",
+                has_product       = " . (int)$has_product . ",
+                has_folder        = " . (int)$has_folder . ",
+                missing_images    = 1,
+                missing_price     = 0,
+                missing_sku_data  = 0,
+                status            = '" . $this->db->escape($status) . "',
+                last_checked      = NOW(),
+                message           = '" . $this->db->escape($message) . "'
+            ");
+
+                // idemo na sljedeći SKU
+                continue;
+            }
+
+            // 3) Nađi product_id
+            $product_id = $this->getProductIdBySku($sku);
+            $has_product = $product_id ? 1 : 0;
+
+            if (!$has_product && $has_folder) {
+                // folder ima fajlove, ali nema proizvoda u bazi
+                $status  = 'missing_product';
+                $message = 'Folder sa slikama/dokumentima postoji, ali ne postoji proizvod s tim SKU u bazi.';
+                $missing_product++;
+
+                $this->log('Assets', "SKU {$sku}: folder ima fajlove ({$fs_image_count} slika / {$fs_doc_count} dokumenata), ali NEMA proizvoda u bazi.");
+
+                // upis u asset sync tablicu
+                $this->db->query("INSERT INTO " . DB_PREFIX . "product_asset_sync SET
+                sku               = '" . $this->db->escape($sku) . "',
+                product_id        = 0,
+                has_product       = 0,
+                has_folder        = 1,
+                missing_images    = 0,
+                missing_price     = 0,
+                missing_sku_data  = 0,
+                status            = '" . $this->db->escape($status) . "',
+                last_checked      = NOW(),
+                message           = '" . $this->db->escape($message) . "'
+            ");
+
+                continue;
+            }
+
+            if ($has_product && !$has_folder) {
+                // product postoji, ali folder (nakon brisanja) ne postoji
+                $status  = 'missing_folder';
+                $message = 'Produkt postoji u bazi, ali nema foldera u catalog/products/{sku}.';
+                $missing_folder++;
+
+                $this->log('Assets', "SKU {$sku}: proizvod postoji (product_id={$product_id}), ali folder ne postoji.");
+
+                $this->db->query("INSERT INTO " . DB_PREFIX . "product_asset_sync SET
+                sku               = '" . $this->db->escape($sku) . "',
+                product_id        = " . (int)$product_id . ",
+                has_product       = 1,
+                has_folder        = 0,
+                missing_images    = 1,
+                missing_price     = 0,
+                missing_sku_data  = 0,
+                status            = '" . $this->db->escape($status) . "',
+                last_checked      = NOW(),
+                message           = '" . $this->db->escape($message) . "'
+            ");
+
+                continue;
+            }
+
+            // 4) Imamo i product i folder s fajlovima → SYNC
+            $this->log('Assets', "SKU {$sku}: product_id={$product_id}, syncam fajlove ({$fs_image_count} slika / {$fs_doc_count} dokumenata).");
+
+            // ponovno prođi fajlove i pozovi sync metode
+            foreach ((array)$files as $file) {
+                if (!is_file($file)) {
+                    continue;
+                }
+
+                $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+                if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                    $this->syncProductImageFromFile($product_id, $sku, $file, $base_dir);
+                } elseif ($ext === 'pdf') {
+                    $this->syncProductDocumentFromFile($product_id, $sku, $file, $base_dir);
+                }
+            }
+
+            // 5) Provjera koliko slika imamo u bazi za ovaj SKU
+            $like_prefix = "catalog/products/" . $this->db->escape($sku) . "/%";
+
+            $img_main_q = $this->db->query("SELECT image 
+            FROM " . DB_PREFIX . "product 
+            WHERE product_id = '" . (int)$product_id . "' 
+              AND image LIKE '" . $like_prefix . "'");
+
+            $img_add_q = $this->db->query("SELECT COUNT(*) AS cnt 
+            FROM " . DB_PREFIX . "product_image 
+            WHERE product_id = '" . (int)$product_id . "' 
+              AND image LIKE '" . $like_prefix . "'");
+
+            $db_image_count = (int)$img_add_q->row['cnt'] + ($img_main_q->num_rows ? 1 : 0);
+
+            if ($fs_image_count > $db_image_count) {
+                $missing_images = 1;
+                $status         = 'partial';
+                $message       .= 'Nedostaju neke slike (FS: ' . $fs_image_count . ', DB: ' . $db_image_count . '). ';
+            }
+
+            // 6) Cijena
+            $price_q = $this->db->query("SELECT price FROM " . DB_PREFIX . "product WHERE product_id = '" . (int)$product_id . "'");
+            if ($price_q->num_rows && (float)$price_q->row['price'] <= 0) {
+                $missing_price = 1;
+                $status        = 'partial';
+                $message      .= 'Cijena nije postavljena (>0). ';
+            }
+
+            // 7) SKU data (npr. model)
+            $info_q = $this->db->query("SELECT model FROM " . DB_PREFIX . "product WHERE product_id = '" . (int)$product_id . "'");
+            if ($info_q->num_rows && ($info_q->row['model'] == '' || $info_q->row['model'] === null)) {
+                $missing_sku_data = 1;
+                $status           = 'partial';
+                $message         .= 'Nedostaje model artikla. ';
+            }
+
+            if ($status === 'ok') {
+                $message = 'Sve sinkano (slike + dokumenti + osnovni podaci).';
+                $updated_products++;
+            } else {
+                $partial_products++;
+            }
+
+            // 8) Upis u asset sync tablicu
+            $this->db->query("INSERT INTO " . DB_PREFIX . "product_asset_sync SET
+            sku               = '" . $this->db->escape($sku) . "',
+            product_id        = " . (int)$product_id . ",
+            has_product       = 1,
+            has_folder        = 1,
+            missing_images    = " . (int)$missing_images . ",
+            missing_price     = " . (int)$missing_price . ",
+            missing_sku_data  = " . (int)$missing_sku_data . ",
+            status            = '" . $this->db->escape($status) . "',
+            last_checked      = NOW(),
+            message           = '" . $this->db->escape($message) . "'
+        ");
+        }
+
+        $this->log('Assets', "✅ ASSETS RESCAN dovršen. Proizvoda potpuno OK: {$updated_products}");
+        $this->log('Assets', "Missing product: {$missing_product}");
+        $this->log('Assets', "Missing folder: {$missing_folder}");
+        $this->log('Assets', "Partial (problemi): {$partial_products}");
+        $this->log('Assets', '=== END ASSETS RESCAN + SYNC ===');
+
+        return $updated_products;
+    }
+
+    /**
+     * Rekurzivno brisanje foldera za assets (prazni SKU folderi)
+     */
+    protected function rrmdirAssets($dir)
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $items = scandir($dir);
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+
+            if (is_dir($path)) {
+                $this->rrmdirAssets($path);
+            } else {
+                @unlink($path);
+            }
+        }
+
+        @rmdir($dir);
+    }
+
+
+
+    /*public function updateAssets(): int
     {
         $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
         $groups   = collect($qiqo->getGroups());
@@ -220,7 +480,7 @@ class ModelExtensionModuleQiqo extends Model
         $this->log('Assets', '=== END SYNC ===');
 
         return $updated_images + $uploaded_logos + $uploaded_docs;
-    }
+    }*/
 
 
     public function importBrands(): int
@@ -509,8 +769,202 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
+    public function getProductIdBySku(string $sku)
+    {
+        $query = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '" . $this->db->escape($sku) . "'");
 
-    private function syncFileFromSource(string $relativePath, string $targetSubdir): string
+        if ($query->num_rows) {
+            return (int)$query->row['product_id'];
+        }
+
+        return 0;
+    }
+
+
+    public function syncProductImageFromFile(int $product_id, string $sku, string $src_file, string $base_dir)
+    {
+        // cilj: /upload/image/Slike/{sku}/{filename}
+        $filename   = basename($src_file);
+        $target_dir = rtrim($base_dir, '/\\') . '/' . $sku . '/';
+
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0755, true);
+        }
+
+        $dest = $target_dir . $filename;
+
+        /**
+         * 1) Ako je source = dest → ne pokušavamo copy
+         * ------------------------------------------------
+         * U updateAssets slučaju source i dest su identični.
+         * copy() bi failao i metoda bi prerano završila bez DB update-a.
+         */
+        $srcReal  = realpath($src_file);
+        $destReal = realpath($dest);
+
+// Ako je pravi fajl i već postoji dest i radi se o *istom* fajlu – preskoči copy
+        if ($srcReal !== false && $destReal !== false && $srcReal === $destReal) {
+            // OK → idemo dalje koristiti postojeći fajl
+        } else {
+            // Ako nisu isti fajl → treba kopirati (ZIP upload slučaj)
+            if (!@copy($src_file, $dest)) {
+                // Ako copy faila i dest NE postoji → nema s čim raditi → prekini
+                if (!file_exists($dest)) {
+                    $this->log('Assets', "copy FAIL: {$src_file} → {$dest}");
+                    return;
+                }
+                // Ako copy faila ali dest postoji → nastavljamo dalje (overwrite nije bitan)
+            }
+        }
+
+// Ako iz nekog razloga ni sad nema fajla – prekini
+        if (!file_exists($dest)) {
+            $this->log('Assets', "DEST ne postoji nakon copy-a: {$dest}");
+            return;
+        }
+
+        $hash = sha1_file($dest);
+
+        // putanja za bazu, relativno na DIR_IMAGE
+        $relative_path = 'catalog/products/' . $sku . '/' . $filename;
+
+        // 1) provjeri postoji li već kao glavna slika
+        $product = $this->db->query("SELECT image, image_hash FROM " . DB_PREFIX . "product WHERE product_id = '" . (int)$product_id . "'");
+
+        if ($product->num_rows) {
+            // ako je ista slika već postavljena kao glavna
+            if ($product->row['image'] == $relative_path) {
+                // hash isti → ništa
+                if (!empty($product->row['image_hash']) && $product->row['image_hash'] == $hash) {
+                    return;
+                }
+
+                // ažuriraj hash
+                $this->db->query("UPDATE " . DB_PREFIX . "product 
+                SET image_hash = '" . $this->db->escape($hash) . "'
+                WHERE product_id = '" . (int)$product_id . "'");
+                return;
+            }
+
+            // ako product nema glavnu sliku, možeš uzeti prvu kao glavnu
+            if (!$product->row['image'] || ($product->row['image'] != $relative_path)) {
+                $this->db->query("UPDATE " . DB_PREFIX . "product 
+                SET image = '" . $this->db->escape($relative_path) . "',
+                    image_hash = '" . $this->db->escape($hash) . "'
+                WHERE product_id = '" . (int)$product_id . "'");
+                return;
+            }
+        }
+
+        // 2) dodatna slika u oc_product_image
+        // provjeri postoji li već zapis s istom putanjom
+        $img_q = $this->db->query("SELECT product_image_id, image_hash
+        FROM " . DB_PREFIX . "product_image
+        WHERE product_id = '" . (int)$product_id . "'
+          AND image = '" . $this->db->escape($relative_path) . "'");
+
+        if ($img_q->num_rows) {
+            // ako je hash isti, ne radimo ništa
+            if (!empty($img_q->row['image_hash']) && $img_q->row['image_hash'] == $hash) {
+                return;
+            }
+
+            $this->db->query("UPDATE " . DB_PREFIX . "product_image
+            SET image_hash = '" . $this->db->escape($hash) . "'
+            WHERE product_image_id = '" . (int)$img_q->row['product_image_id'] . "'");
+        } else {
+            // insert nove dodatne slike
+            $this->db->query("INSERT INTO " . DB_PREFIX . "product_image 
+            SET product_id = '" . (int)$product_id . "',
+                image      = '" . $this->db->escape($relative_path) . "',
+                image_hash = '" . $this->db->escape($hash) . "',
+                sort_order = 0");
+        }
+    }
+
+
+    public function syncProductDocumentFromFile(int $product_id, string $sku, string $src_file, string $base_dir)
+    {
+        $filename   = basename($src_file);      // npr. 511541_skl.pdf
+        $name_noext = pathinfo($filename, PATHINFO_FILENAME); // 511541_skl
+        $ext        = strtolower(pathinfo($filename, PATHINFO_EXTENSION)); // pdf
+
+        if ($ext !== 'pdf') {
+            return;
+        }
+
+        // ispati dijelove po "_"
+        $parts = explode('_', $name_noext);
+        $suffix = isset($parts[1]) ? strtolower($parts[1]) : '';
+
+        // odredi "mask" (naziv prikaza) po suffixu
+        switch ($suffix) {
+            case 'skl':
+                $mask = 'Izjava o sukladnosti';
+                break;
+            case 'man':
+                $mask = 'Upute';
+                break;
+            // case 'stl': $mask = 'Sigurnosno-tehnički list'; break;  // ako promijeniš naming
+            default:
+                $mask = 'Dokument proizvoda';
+                break;
+        }
+
+        // Spremamo PDF-ove također pod /image/Slike/sku/
+        $target_dir = rtrim($base_dir, '/\\') . '/' . $sku . '/';
+
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0755, true);
+        }
+
+        $dest = $target_dir . $filename;
+
+        if (!@copy($src_file, $dest)) {
+            return;
+        }
+
+        $hash = sha1_file($dest);
+
+        // filename za attach modul – uzmi relativnu putanju
+        // (prilagodi kako tvoj ControllerExtensionModuleMmosAttachManager očekuje)
+        $relative_path = 'catalog/products/' . $sku . '/' . $filename;
+
+        // Je li već postoji zapis za ovaj proizvod + suffix?
+        // Ako nemaš stupac za suffix, možeš se držati kombinacije product_id + filename;
+        // ovdje pretpostavljam da je filename unique po proizvodu.
+        $q = $this->db->query("SELECT product_attach_file_id, hash
+        FROM " . DB_PREFIX . "product_attach_file
+        WHERE product_id = '" . (int)$product_id . "'
+          AND filename = '" . $this->db->escape($relative_path) . "'");
+
+        if ($q->num_rows) {
+            // hash isti → ništa
+            if (!empty($q->row['hash']) && $q->row['hash'] == $hash) {
+                return;
+            }
+
+            // update samo hash / mask po potrebi
+            $this->db->query("UPDATE " . DB_PREFIX . "product_attach_file
+            SET hash = '" . $this->db->escape($hash) . "',
+                mask = '" . $this->db->escape($mask) . "'
+            WHERE product_attach_file_id = '" . (int)$q->row['product_attach_file_id'] . "'");
+        } else {
+            // insert novog dokumenta
+            $this->db->query("INSERT INTO " . DB_PREFIX . "product_attach_file SET
+            product_id     = '" . (int)$product_id . "',
+            filename       = '" . $this->db->escape($relative_path) . "',
+            mask           = '" . $this->db->escape($mask) . "',
+            login_required = 0,
+            download       = 0,
+            sort_order     = 0,
+            hash           = '" . $this->db->escape($hash) . "'");
+        }
+    }
+
+
+
+    /*private function syncFileFromSource(string $relativePath, string $targetSubdir): string
     {
         $base_source = '\\\\SRV-TS01\\Svasta\\Italcro\\Photo\\';
         $target_dir  = DIR_IMAGE . $targetSubdir;
@@ -561,7 +1015,96 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         return $synced;
+    }*/
+
+
+    public function getProductAssetSync(array $data = [])
+    {
+        $sql = "SELECT * FROM " . DB_PREFIX . "product_asset_sync WHERE 1 ";
+
+        if (!empty($data['filter_sku'])) {
+            $sql .= " AND sku LIKE '%" . $this->db->escape($data['filter_sku']) . "%'";
+        }
+
+        if (!empty($data['filter_status'])) {
+            $sql .= " AND status = '" . $this->db->escape($data['filter_status']) . "'";
+        }
+
+        if (!empty($data['filter_has_product'])) {
+            $sql .= " AND has_product = 1";
+        }
+
+        if (!empty($data['filter_has_folder'])) {
+            $sql .= " AND has_folder = 1";
+        }
+
+        if (!empty($data['filter_missing_images'])) {
+            $sql .= " AND missing_images = 1";
+        }
+
+        if (!empty($data['filter_missing_price'])) {
+            $sql .= " AND missing_price = 1";
+        }
+
+        if (!empty($data['filter_missing_sku_data'])) {
+            $sql .= " AND missing_sku_data = 1";
+        }
+
+        $sql .= " ORDER BY last_checked DESC, sku ASC";
+
+        if (isset($data['start']) || isset($data['limit'])) {
+            $start = (int)($data['start'] ?? 0);
+            $limit = (int)($data['limit'] ?? 200);
+
+            if ($start < 0) $start = 0;
+            if ($limit < 1) $limit = 200;
+
+            $sql .= " LIMIT " . $start . "," . $limit;
+        }
+
+        $query = $this->db->query($sql);
+
+        return $query->rows;
     }
+
+
+    public function getProductAssetSyncStats(): array
+    {
+        $stats = [
+            'total'           => 0,
+            'ok'              => 0,
+            'missing_product' => 0,
+            'missing_folder'  => 0,
+            'partial'         => 0
+        ];
+
+        // ukupno
+        $q_total = $this->db->query("SELECT COUNT(*) AS cnt FROM " . DB_PREFIX . "product_asset_sync");
+        $stats['total'] = (int)$q_total->row['cnt'];
+
+        if ($stats['total'] === 0) {
+            return $stats;
+        }
+
+        // po statusu
+        $q_status = $this->db->query("
+        SELECT status, COUNT(*) AS cnt 
+        FROM " . DB_PREFIX . "product_asset_sync 
+        GROUP BY status
+    ");
+
+        foreach ($q_status->rows as $row) {
+            $status = $row['status'];
+            $cnt    = (int)$row['cnt'];
+
+            if (isset($stats[$status])) {
+                $stats[$status] = $cnt;
+            }
+        }
+
+        return $stats;
+    }
+
 
 
     private function resolveOrCreateCategory(int $gid): int

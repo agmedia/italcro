@@ -81,10 +81,95 @@ class ControllerExtensionModuleQiqo extends Controller
         $data['action']        = $this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true);
         $data['cancel']        = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=module', true);
         $data['success']       = $this->session->data['success'] ?? '';
+        $data['error']       = $this->session->data['error'] ?? '';
         unset($this->session->data['success']);
+        unset($this->session->data['error']);
 
         $data['last_log'] = $this->model_extension_module_qiqo->getLastLog();
         $data['upload_action'] = $this->url->link('extension/module/qiqo/uploadLogos', 'user_token=' . $this->session->data['user_token'], true);
+
+        // --- FILTERI ZA oc_product_asset_sync ---
+        $filter_status           = isset($this->request->get['filter_status']) ? $this->request->get['filter_status'] : '';
+        $filter_sku              = isset($this->request->get['filter_sku']) ? $this->request->get['filter_sku'] : '';
+        $filter_has_product      = isset($this->request->get['filter_has_product']) ? (int)$this->request->get['filter_has_product'] : 0;
+        $filter_has_folder       = isset($this->request->get['filter_has_folder']) ? (int)$this->request->get['filter_has_folder'] : 0;
+        $filter_missing_images   = isset($this->request->get['filter_missing_images']) ? (int)$this->request->get['filter_missing_images'] : 0;
+        $filter_missing_price    = isset($this->request->get['filter_missing_price']) ? (int)$this->request->get['filter_missing_price'] : 0;
+        $filter_missing_sku_data = isset($this->request->get['filter_missing_sku_data']) ? (int)$this->request->get['filter_missing_sku_data'] : 0;
+
+        $filter_data = [
+            'filter_status'           => $filter_status,
+            'filter_sku'              => $filter_sku,
+            'filter_has_product'      => $filter_has_product,
+            'filter_has_folder'       => $filter_has_folder,
+            'filter_missing_images'   => $filter_missing_images,
+            'filter_missing_price'    => $filter_missing_price,
+            'filter_missing_sku_data' => $filter_missing_sku_data,
+            'start'                   => 0,
+            'limit'                   => 200
+        ];
+
+        // dohvat podataka iz oc_product_asset_sync
+        $results = $this->model_extension_module_qiqo->getProductAssetSync($filter_data);
+
+        $data['asset_sync'] = [];
+
+        foreach ($results as $row) {
+            $product_link = '';
+
+            if (!empty($row['product_id'])) {
+                $product_link = $this->url->link(
+                    'catalog/product/edit',
+                    'user_token=' . $this->session->data['user_token'] . '&product_id=' . (int)$row['product_id'],
+                    true
+                );
+            }
+
+            $data['asset_sync'][] = [
+                'sku'              => $row['sku'],
+                'product_id'       => $row['product_id'],
+                'product_link'     => $product_link,
+                'has_product'      => (int)$row['has_product'],
+                'has_folder'       => (int)$row['has_folder'],
+                'missing_images'   => (int)$row['missing_images'],
+                'missing_price'    => (int)$row['missing_price'],
+                'missing_sku_data' => (int)$row['missing_sku_data'],
+                'status'           => $row['status'],
+                'last_checked'     => $row['last_checked'],
+                'message'          => $row['message'],
+            ];
+        }
+
+        // statistika za status tab
+        $data['asset_stats'] = $this->model_extension_module_qiqo->getProductAssetSyncStats();
+
+        // proslijedi filtere u view
+        $data['filter_status']           = $filter_status;
+        $data['filter_sku']              = $filter_sku;
+        $data['filter_has_product']      = $filter_has_product;
+        $data['filter_has_folder']       = $filter_has_folder;
+        $data['filter_missing_images']   = $filter_missing_images;
+        $data['filter_missing_price']    = $filter_missing_price;
+        $data['filter_missing_sku_data'] = $filter_missing_sku_data;
+
+        $data['user_token']    = $this->session->data['user_token'];
+        $data['filter_action'] = $this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true);
+
+        // Aktivni tab
+        $active_tab = 'sync';
+
+        // eksplicitno iz GET-a
+        if (!empty($this->request->get['tab'])) {
+            $active_tab = $this->request->get['tab'];
+        } else {
+            // ako postoji bilo koji filter → prebaci na status tab
+            if ($filter_status || $filter_sku || $filter_has_product || $filter_has_folder
+                || $filter_missing_images || $filter_missing_price || $filter_missing_sku_data) {
+                $active_tab = 'status';
+            }
+        }
+
+        $data['active_tab'] = $active_tab;
 
         // Layout
         $data['header']      = $this->load->controller('common/header');
@@ -100,52 +185,118 @@ class ControllerExtensionModuleQiqo extends Controller
         $this->load->language('extension/module/qiqo');
         $this->load->model('extension/module/qiqo');
 
-        $upload_dir = DIR_STORAGE . 'upload/logo-brands/';
+        // Gdje želimo završne slike/dokumente:
+        // fizički: /upload/image/Slike/...
+        $base_dir = rtrim(DIR_IMAGE, '/\\') . '/catalog/products/';
 
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
+        if (!is_dir($base_dir)) {
+            mkdir($base_dir, 0755, true);
         }
 
-        // ZIP upload
-        if (!empty($this->request->files['zip_file']['name'])) {
-            $zip = new ZipArchive();
-            $tmp_name = $this->request->files['zip_file']['tmp_name'];
+        // Ostavili smo samo ZIP upload
+        if (empty($this->request->files['zip_file']['name'])) {
+            $this->session->data['error'] = 'Nije odabran ZIP.';
+            $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+            return;
+        }
 
-            if ($zip->open($tmp_name) === true) {
-                $zip->extractTo($upload_dir);
-                $zip->close();
-                $this->session->data['success'] = 'ZIP datoteka uspješno raspakirana u ' . $upload_dir;
-            } else {
-                $this->session->data['error'] = 'Ne mogu otvoriti ZIP datoteku.';
+        $zip      = new ZipArchive();
+        $tmp_name = $this->request->files['zip_file']['tmp_name'];
+
+        if ($zip->open($tmp_name) !== true) {
+            $this->session->data['error'] = 'Ne mogu otvoriti ZIP datoteku.';
+            $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+            return;
+        }
+
+        // Privremeni dir gdje raspakiramo ZIP
+        $tmp_dir = rtrim(DIR_STORAGE, '/\\') . '/qiqo_zip_' . time() . '/';
+
+        if (!is_dir($tmp_dir)) {
+            mkdir($tmp_dir, 0755, true);
+        }
+
+        $zip->extractTo($tmp_dir);
+        $zip->close();
+
+        // Očekujemo root folder "Database"
+        $database_dir = $tmp_dir . 'Database/';
+
+        if (!is_dir($database_dir)) {
+            // fallback – možda je samo Database bez točnog imena
+            $this->session->data['error'] = 'U ZIP-u se ne nalazi "Database" folder.';
+            $this->rrmdir($tmp_dir);
+            $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+            return;
+        }
+
+        $processed_products = 0;
+
+        // Iteriramo sve SKU foldere unutar Database/
+        $sku_dirs = glob($database_dir . '*', GLOB_ONLYDIR);
+
+        foreach ($sku_dirs as $sku_dir) {
+            $sku = basename($sku_dir);
+
+            if (!$sku) {
+                continue;
             }
-        }
 
-        // Multiple file upload
-        if (!empty($this->request->files['images'])) {
-            foreach ($this->request->files['images']['tmp_name'] as $i => $tmp) {
-                $name = $this->request->files['images']['name'][$i];
-                $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                if (!in_array($ext, ['jpg','jpeg','png'])) continue;
+            // Nađi product_id po SKU
+            $product_id = $this->model_extension_module_qiqo->getProductIdBySku($sku);
 
-                $dest = $upload_dir . basename($name);
+            if (!$product_id) {
+                // nema proizvoda s tom šifrom – preskoči
+                continue;
+            }
 
-                // Ako već postoji, provjeri hash
-                if (file_exists($dest)) {
-                    $old_hash = sha1_file($dest);
-                    $new_hash = sha1_file($tmp);
-                    if ($old_hash === $new_hash) {
-                        continue; // ista slika, preskoči
-                    }
+            $processed_products++;
+
+            // Prođi sve fajlove u tom SKU folderu
+            $files = glob($sku_dir . '/*');
+
+            foreach ($files as $file) {
+                if (!is_file($file)) continue;
+
+                $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+                if (in_array($ext, ['jpg','jpeg','png'])) {
+                    // SLIKA
+                    $this->model_extension_module_qiqo->syncProductImageFromFile($product_id, $sku, $file, $base_dir);
+                } elseif ($ext === 'pdf') {
+                    // DOKUMENT
+                    $this->model_extension_module_qiqo->syncProductDocumentFromFile($product_id, $sku, $file, $base_dir);
                 }
-
-                move_uploaded_file($tmp, $dest);
             }
-
-            $this->session->data['success'] = 'Slike uspješno uploadane u ' . $upload_dir;
         }
 
+        // Po želji obriši privremeni folder
+        $this->rrmdir($tmp_dir);
+
+        $this->session->data['success'] = 'Obrađeno proizvoda: ' . $processed_products + 1;
         $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
     }
+
+    /**
+     * Rekurzivno briše folder.
+     */
+    protected function rrmdir($dir)
+    {
+        if (!is_dir($dir)) return;
+
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object == '.' || $object == '..') continue;
+            $path = $dir . '/' . $object;
+            if (is_dir($path)) {
+                $this->rrmdir($path);
+            } else {
+                @unlink($path);
+            }
+        }
+        @rmdir($dir);
+    }
+
 
 
 }

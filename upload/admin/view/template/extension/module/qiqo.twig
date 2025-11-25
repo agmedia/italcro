@@ -14,107 +14,330 @@
         {% if success %}
             <div class="alert alert-success"><i class="fa fa-check-circle"></i> {{ success }}</div>
         {% endif %}
+        {% if error %}
+            <div class="alert alert-danger"><i class="fa fa-exclamation-triangle"></i> {{ error }}</div>
+        {% endif %}
 
         <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title">{{ text_edit }}</h3></div>
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-plug"></i> {{ text_edit }}</h3>
+            </div>
             <div class="panel-body">
-                <form action="{{ action }}" method="post">
-                    <button type="submit" name="action" value="import" class="btn btn-primary"><i class="fa fa-download"></i> {{ button_import }}</button>
-                    <hr>
 
-                    <button type="submit" name="action" value="update_qty" class="btn btn-info">
-                        <i class="fa fa-cubes"></i> Ažuriraj količine
-                    </button>
+                <ul class="nav nav-tabs">
+                    <li class="{{ active_tab == 'sync' ? 'active' : '' }}">
+                        <a href="#tab-sync" data-toggle="tab">
+                            <i class="fa fa-refresh"></i> Sync artikala
+                        </a>
+                    </li>
+                    <li class="{{ active_tab == 'assets' ? 'active' : '' }}">
+                        <a href="#tab-assets" data-toggle="tab">
+                            <i class="fa fa-picture-o"></i> Slike &amp; dokumenti
+                        </a>
+                    </li>
+                    <li class="{{ active_tab == 'status' ? 'active' : '' }}">
+                        <a href="#tab-status" data-toggle="tab">
+                            <i class="fa fa-exclamation-triangle"></i> Status sinkronizacije
+                        </a>
+                    </li>
+                    <li class="{{ active_tab == 'log' ? 'active' : '' }}">
+                        <a href="#tab-log" data-toggle="tab">
+                            <i class="fa fa-file-text-o"></i> Log
+                        </a>
+                    </li>
+                </ul>
 
-                    <button type="submit" name="action" value="update_price" class="btn btn-info">
-                        <i class="fa fa-euro"></i> Ažuriraj cijene
-                    </button>
+                <div class="tab-content" style="margin-top:15px;">
 
-                    <hr>
-
-                    <button type="submit" name="action" value="update_assets" class="btn btn-secondary d-flex align-items-center gap-2">
-                        <i class="fa fa-sync"></i>
-                        <span>Sinkroniziraj slike, logotipe i dokumente (ERP + lokalno)</span>
-                    </button>
-
-                    <hr>
-
-                    <button type="submit" name="action" value="import_brands" class="btn btn-warning">
-                        <i class="fa fa-registered"></i> Kreiraj proizvođače (brendove)
-                    </button>
-                </form>
-
-                <hr>
-
-                <form action="{{ action }}" method="post" class="mt-2">
-                    {#<button type="submit" name="action" value="update_names" class="btn btn-secondary d-flex align-items-center gap-2">
-                        <i class="fa fa-font"></i>
-                        <span>Ažuriraj nazive artikala (ERP dimmodel)</span>
-                    </button>#}
-
-                    <button type="submit" name="action" value="link_related_group" class="btn btn-info d-flex align-items-center gap-2">
-                        <i class="fa fa-object-group"></i>
-                        <span>Poveži artikle prema ERP grupama (kataloggrupa / (isto kao picpath)</span>
-                    </button>
-                </form>
-
-                <hr>
-
-                <form action="{{ action }}" method="post" class="mt-3">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <button type="submit" name="action" value="link_brands_erp" class="btn btn-primary">
-                                <i class="fa fa-link"></i> Poveži proizvode s brendovima (ERP logopath)
+                    {# TAB 1: SYNC ARTIKALA #}
+                    <div class="tab-pane {{ active_tab == 'sync' ? 'active' : '' }}" id="tab-sync">
+                        <form action="{{ action }}" method="post">
+                            <button type="submit" name="action" value="import" class="btn btn-primary">
+                                <i class="fa fa-download"></i> {{ button_import }}
                             </button>
-                        </div>
-                        <div class="col-md-3" style="padding-top:10px;">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="only_empty" name="only_empty" value="1" checked>
-                                <label class="form-check-label" for="only_empty">
-                                    Ažuriraj <strong>samo proizvode bez proizvođača</strong>
+
+                            <hr>
+
+                            <button type="submit" name="action" value="update_qty" class="btn btn-info">
+                                <i class="fa fa-cubes"></i> Ažuriraj količine
+                            </button>
+
+                            <button type="submit" name="action" value="update_price" class="btn btn-info">
+                                <i class="fa fa-euro"></i> Ažuriraj cijene
+                            </button>
+
+                            <hr>
+
+                            <button type="submit" name="action" value="import_brands" class="btn btn-warning">
+                                <i class="fa fa-registered"></i> Kreiraj proizvođače (brendove)
+                            </button>
+                        </form>
+
+                        {# Ovdje možeš po želji vratiti i zakomentirane akcije (update_names, link_related_group, link_brands_erp...) #}
+                    </div>
+
+                    {# TAB 2: SLIKE & DOKUMENTI #}
+                    <div class="tab-pane {{ active_tab == 'assets' ? 'active' : '' }}" id="tab-assets">
+                        <h3>Upload &amp; sync slika i dokumenata</h3>
+
+                        <p class="text-muted">
+                            ZIP treba imati root folder <code>Database</code> i unutra SKU foldere:<br>
+                            <code>Database/{sku}/001_web.jpg, 002_web.jpg, {sku}_skl.pdf, {sku}_man.pdf, ...</code><br>
+                            Nakon uploada datoteke se spremaju u <code>catalog/products/{sku}/</code> i vežu na proizvode.
+                        </p>
+
+                        <form action="{{ upload_action }}" method="post" enctype="multipart/form-data" style="margin-top:10px;">
+                            <div class="form-group">
+                                <label><i class="fa fa-file-archive-o"></i> Upload ZIP datoteke</label>
+                                <input type="file" name="zip_file" class="form-control"/>
+                                <small class="text-muted">
+                                    ZIP može sadržavati više SKU foldera i dokumenata (JPG/PNG/PDF).
+                                </small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-upload"></i> Uploadaj ZIP
+                            </button>
+                        </form>
+
+                        <hr>
+
+                        <form action="{{ action }}" method="post">
+                            <button type="submit" name="action" value="update_assets" class="btn btn-success">
+                                <i class="fa fa-sync"></i>
+                                <span>Rescan &amp; sinkroniziraj slike i dokumente (catalog/products/{sku})</span>
+                            </button>
+                            <small class="text-muted" style="margin-left:10px;">
+                                Ponovno provjerava SKU foldere, puni slike/dokumente u proizvode i tablicu <code>oc_product_asset_sync</code>.
+                            </small>
+                        </form>
+                    </div>
+
+                    {# TAB 3: STATUS SINKRONIZACIJE #}
+                    <div class="tab-pane {{ active_tab == 'status' ? 'active' : '' }}" id="tab-status">
+                        <h3>Status sinkronizacije artikala</h3>
+                        <p class="text-muted">
+                            Pregled nesinkroniziranih artikala i problema sa slikama, cijenom ili podacima iz tablice
+                            <code>oc_product_asset_sync</code>.
+                        </p>
+
+                        {% if asset_stats.total > 0 %}
+                            <div class="alert alert-info" style="margin-bottom:15px;">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <strong>Ukupno zapisa:</strong>
+                                        <span class="badge">{{ asset_stats.total }}</span>
+                                    </div>
+
+                                    <div class="col-sm-3">
+                                        <strong>OK:</strong>
+                                        <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=ok"
+                                           class="badge" style="background-color:#5cb85c;">
+                                            {{ asset_stats.ok }}
+                                        </a>
+                                    </div>
+
+                                    <div class="col-sm-3">
+                                        <strong>Nedostaje proizvod:</strong>
+                                        <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=missing_product"
+                                           class="badge" style="background-color:#d9534f;">
+                                            {{ asset_stats.missing_product }}
+                                        </a>
+                                    </div>
+
+                                    <div class="col-sm-3">
+                                        <strong>Djelomično / problemi:</strong>
+                                        <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=partial"
+                                           class="badge" style="background-color:#f0ad4e;">
+                                            {{ asset_stats.partial }}
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="margin-top:18px;">
+                                    <div class="col-sm-3">
+                                        <strong>Nedostaje folder:</strong>
+                                        <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=missing_folder"
+                                           class="badge" style="background-color:#d9534f;">
+                                            {{ asset_stats.missing_folder }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+
+
+                        <form action="{{ filter_action }}" method="get" class="form-inline" style="margin-bottom:10px;">
+                            <input type="hidden" name="user_token" value="{{ user_token }}"/>
+
+                            <div class="form-group" style="margin-right:10px;">
+                                <label for="filter_sku">SKU</label>
+                                <input type="text" name="filter_sku" id="filter_sku" value="{{ filter_sku }}"
+                                       class="form-control" placeholder="npr. 300050"/>
+                            </div>
+
+                            <div class="form-group" style="margin-right:10px;">
+                                <label for="filter_status">Status</label>
+                                <select name="filter_status" id="filter_status" class="form-control">
+                                    <option value="">-- svi --</option>
+                                    <option value="ok" {{ filter_status == 'ok' ? 'selected' : '' }}>OK</option>
+                                    <option value="missing_product" {{ filter_status == 'missing_product' ? 'selected' : '' }}>Nedostaje proizvod</option>
+                                    <option value="missing_folder" {{ filter_status == 'missing_folder' ? 'selected' : '' }}>Nedostaje folder</option>
+                                    <option value="partial" {{ filter_status == 'partial' ? 'selected' : '' }}>Djelomično (problemi)</option>
+                                </select>
+                            </div>
+
+                            <div class="checkbox" style="margin-right:10px;">
+                                <label>
+                                    <input type="checkbox" name="filter_has_product" value="1" {{ filter_has_product ? 'checked' : '' }}/> s proizvodom
                                 </label>
                             </div>
-                        </div>
+
+                            <div class="checkbox" style="margin-right:10px;">
+                                <label>
+                                    <input type="checkbox" name="filter_has_folder" value="1" {{ filter_has_folder ? 'checked' : '' }}/> s folderom
+                                </label>
+                            </div>
+
+                            <div class="checkbox" style="margin-right:10px;">
+                                <label>
+                                    <input type="checkbox" name="filter_missing_images" value="1" {{ filter_missing_images ? 'checked' : '' }}/> nedostaju slike
+                                </label>
+                            </div>
+
+                            <div class="checkbox" style="margin-right:10px;">
+                                <label>
+                                    <input type="checkbox" name="filter_missing_price" value="1" {{ filter_missing_price ? 'checked' : '' }}/> nedostaje cijena
+                                </label>
+                            </div>
+
+                            <div class="checkbox" style="margin-right:10px;">
+                                <label>
+                                    <input type="checkbox" name="filter_missing_sku_data" value="1" {{ filter_missing_sku_data ? 'checked' : '' }}/> nedostaju podaci
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-default">
+                                <i class="fa fa-filter"></i> Filtriraj
+                            </button>
+                        </form>
+
+                        {% if asset_sync is empty %}
+                            <div class="alert alert-info">
+                                <i class="fa fa-info-circle"></i> Trenutno nema zapisa (ili filter ne vraća rezultate).
+                            </div>
+                        {% else %}
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Proizvod</th>
+                                        <th>Produkt</th>
+                                        <th>Folder</th>
+                                        <th>Slike</th>
+                                        <th>Cijena</th>
+                                        <th>Podaci</th>
+                                        <th>Status</th>
+                                        <th>Zadnja provjera</th>
+                                        <th>Detalji</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for row in asset_sync %}
+                                        <tr>
+                                            <td><code>{{ row.sku }}</code></td>
+                                            <td>
+                                                {% if row.product_link %}
+                                                    <a href="{{ row.product_link }}" target="_blank">
+                                                        ID: {{ row.product_id }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-danger">nije u bazi</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.has_product %}
+                                                    <span class="label label-success">DA</span>
+                                                {% else %}
+                                                    <span class="label label-default">NE</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.has_folder %}
+                                                    <span class="label label-success">DA</span>
+                                                {% else %}
+                                                    <span class="label label-default">NE</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.missing_images %}
+                                                    <span class="label label-warning">nedostaju</span>
+                                                {% else %}
+                                                    <span class="label label-success">OK</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.missing_price %}
+                                                    <span class="label label-warning">nedostaje</span>
+                                                {% else %}
+                                                    <span class="label label-success">OK</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.missing_sku_data %}
+                                                    <span class="label label-warning">nedostaju</span>
+                                                {% else %}
+                                                    <span class="label label-success">OK</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.status == 'ok' %}
+                                                    <span class="label label-success">OK</span>
+                                                {% elseif row.status == 'missing_product' %}
+                                                    <span class="label label-danger">nema proizvoda</span>
+                                                {% elseif row.status == 'missing_folder' %}
+                                                    <span class="label label-danger">nema foldera</span>
+                                                {% elseif row.status == 'partial' %}
+                                                    <span class="label label-warning">djelomično</span>
+                                                {% else %}
+                                                    <span class="label label-default">{{ row.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ row.last_checked }}</td>
+                                            <td style="max-width:300px;">
+                                                <small>{{ row.message }}</small>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
                     </div>
-                </form>
 
-                <hr>
+                    {# TAB 4: LOG #}
+                    <div class="tab-pane {{ active_tab == 'log' ? 'active' : '' }}" id="tab-log">
+                        <h3>Zadnji log</h3>
+                        <pre style="background:#f8f8f8; padding:10px; max-height:300px; overflow:auto;">{{ last_log }}</pre>
 
-                <h3>Upload logotipa brendova</h3>
-
-                <form action="{{ upload_action }}" method="post" enctype="multipart/form-data" style="margin-top:10px;">
-
-                    <div class="form-group">
-                        <label><i class="fa fa-file-archive-o"></i> Upload ZIP datoteke</label>
-                        <input type="file" name="zip_file" class="form-control"/>
-                        <small class="text-muted">ZIP može sadržavati više logotipa (jpg/png). Bit će raspakirani u /storega/upload/logo-brands/</small>
+                        <form action="{{ action }}" method="post" class="mt-2">
+                            <button type="submit" name="action" value="clear_log"
+                                    class="btn btn-outline-danger d-flex align-items-center gap-2"
+                                    onclick="return confirm('Želite li zaista obrisati sadržaj qiqo.log datoteke?');">
+                                <i class="fa fa-trash"></i>
+                                <span>Obriši log</span>
+                            </button>
+                            <small class="text-muted">
+                                Ova akcija će isprazniti sistemski log:
+                                <code>system/storage/logs/qiqo.log</code>
+                            </small>
+                        </form>
                     </div>
 
-                    <div class="form-group">
-                        <label><i class="fa fa-files-o"></i> Ili upload više slika odjednom</label>
-                        <input type="file" name="images[]" multiple class="form-control"/>
-                        <small class="text-muted">Dozvoljeni formati: JPG, PNG</small>
-                    </div>
+                </div> {# /.tab-content #}
 
-                    <button type="submit" class="btn btn-secondary">
-                        <i class="fa fa-upload"></i> Uploadaj logotipe
-                    </button>
-                </form>
-
-
-                <hr>
-                <h4>Zadnji log</h4>
-                <pre style="background:#f8f8f8; padding:10px; max-height:300px; overflow:auto;">{{ last_log }}</pre>
-
-                <hr>
-                <form action="{{ action }}" method="post" class="d-flex align-items-center gap-2 mt-2">
-                    <button type="submit" name="action" value="clear_log" class="btn btn-outline-danger d-flex align-items-center gap-2"
-                            onclick="return confirm('Želite li zaista obrisati sadržaj qiqo.log datoteke?');">
-                        <i class="fa fa-trash"></i>
-                        <span>Obriši log</span>
-                    </button>
-                    <small class="text-muted">Ova akcija će isprazniti sistemski log: <code>system/storage/logs/qiqo.log</code></small>
-                </form>
             </div>
         </div>
     </div>

@@ -73,6 +73,7 @@
                             </button>
                         </form>
 
+                        <hr>
                         {# Ovdje možeš po želji vratiti i zakomentirane akcije (update_names, link_related_group, link_brands_erp...) #}
                     </div>
 
@@ -115,61 +116,75 @@
 
                     {# TAB 3: STATUS SINKRONIZACIJE #}
                     <div class="tab-pane {{ active_tab == 'status' ? 'active' : '' }}" id="tab-status">
-                        <h3>Status sinkronizacije artikala</h3>
-                        <p class="text-muted">
-                            Pregled nesinkroniziranih artikala i problema sa slikama, cijenom ili podacima iz tablice
-                            <code>oc_product_asset_sync</code>.
-                        </p>
-
-                        {% if asset_stats.total > 0 %}
-                            <div class="alert alert-info" style="margin-bottom:15px;">
-                                <div class="row">
-                                    <div class="col-sm-3">
-                                        <strong>Ukupno zapisa:</strong>
-                                        <span class="badge">{{ asset_stats.total }}</span>
-                                    </div>
-
-                                    <div class="col-sm-3">
-                                        <strong>OK:</strong>
-                                        <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=ok"
-                                           class="badge" style="background-color:#5cb85c;">
-                                            {{ asset_stats.ok }}
-                                        </a>
-                                    </div>
-
-                                    <div class="col-sm-3">
-                                        <strong>Nedostaje proizvod:</strong>
-                                        <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=missing_product"
-                                           class="badge" style="background-color:#d9534f;">
-                                            {{ asset_stats.missing_product }}
-                                        </a>
-                                    </div>
-
-                                    <div class="col-sm-3">
-                                        <strong>Djelomično / problemi:</strong>
-                                        <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=partial"
-                                           class="badge" style="background-color:#f0ad4e;">
-                                            {{ asset_stats.partial }}
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div class="row" style="margin-top:18px;">
-                                    <div class="col-sm-3">
-                                        <strong>Nedostaje folder:</strong>
-                                        <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=missing_folder"
-                                           class="badge" style="background-color:#d9534f;">
-                                            {{ asset_stats.missing_folder }}
-                                        </a>
-                                    </div>
-                                </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h3>Status sinkronizacije artikala</h3>
+                                <p class="text-muted">
+                                    Pregled nesinkroniziranih artikala i problema sa slikama, cijenom ili podacima iz tablice
+                                    <code>oc_product_asset_sync</code>.
+                                </p>
                             </div>
-                        {% endif %}
+                            <div class="col-md-6">
+
+                                {% if asset_stats.total > 0 %}
+                                    <div class="row" style="margin-bottom:15px;">
+
+                                        <div class="col-sm-2">
+                                            <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status"
+                                               class="btn btn-default btn-block text-left"
+                                               style="padding:10px 12px;">
+                                                <strong>Ukupno</strong>
+                                                <span class="badge pull-right" style="background:#777;">{{ asset_stats.total }}</span>
+                                            </a>
+                                        </div>
+
+                                        <div class="col-sm-2">
+                                            <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=ok"
+                                               class="btn btn-success btn-block text-left"
+                                               style="padding:10px 12px;">
+                                                <strong>OK</strong>
+                                                <span class="badge pull-right" style="background:#fff; color:#5cb85c;">{{ asset_stats.ok }}</span>
+                                            </a>
+                                        </div>
+
+                                        <div class="col-sm-3">
+                                            <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=missing_product"
+                                               class="btn btn-danger btn-block text-left"
+                                               style="padding:10px 12px;">
+                                                <strong>Nedostaje proizvod</strong>
+                                                <span class="badge pull-right" style="background:#fff; color:#d9534f;">{{ asset_stats.missing_product }}</span>
+                                            </a>
+                                        </div>
+
+                                        <div class="col-sm-3">
+                                            <a href="{{ filter_action }}&tab=status&filter_status=partial"
+                                               class="btn btn-warning btn-block text-left"
+                                               style="padding:10px 12px;">
+                                                <strong>Djelomično / problemi</strong>
+                                                <span class="badge pull-right" style="background:#fff; color:#f0ad4e;">{{ asset_stats.partial }}</span>
+                                            </a>
+                                        </div>
+
+                                        <div class="col-sm-2">
+                                            <a href="{{ filter_action }}&user_token={{ user_token }}&tab=status&filter_status=missing_folder"
+                                               class="btn btn-danger btn-block text-left"
+                                               style="padding:10px 12px;">
+                                                <strong>Nedostaje folder</strong>
+                                                <span class="badge pull-right" style="background:#fff; color:#d9534f;">{{ asset_stats.missing_folder }}</span>
+                                            </a>
+                                        </div>
+
+                                    </div>
+                                {% endif %}
 
 
+                            </div>
+                        </div>
 
                         <form action="{{ filter_action }}" method="get" class="form-inline" style="margin-bottom:10px;">
                             <input type="hidden" name="user_token" value="{{ user_token }}"/>
+                            <input type="hidden" name="route" value="extension/module/qiqo"/>
+                            <input type="hidden" name="tab" value="status"/>
 
                             <div class="form-group" style="margin-right:10px;">
                                 <label for="filter_sku">SKU</label>

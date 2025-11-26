@@ -150,10 +150,10 @@ class ModelExtensionModuleQiqo extends Model
 
     public function updateAssets(): int
     {
-        $this->log('Assets', '=== START ASSETS RESCAN + SYNC (catalog/products/{sku}) ===');
+        $this->log('Assets', '=== START ASSETS RESCAN + SYNC (/Portals/0/Database/{sku}/) ===');
 
         // Root gdje očekujemo SKU foldere
-        $base_dir = rtrim(DIR_IMAGE, '/\\') . '/catalog/products/';
+        $base_dir = DIR_UPLOAD . 'Portals/0/Database/';
 
         if (!is_dir($base_dir)) {
             $this->log('Assets', "❌ Base dir ne postoji: {$base_dir}");
@@ -172,6 +172,7 @@ class ModelExtensionModuleQiqo extends Model
 
         $updated_products = 0;
         $missing_product  = 0;
+        $empty_folder     = 0;
         $missing_folder   = 0;
         $partial_products = 0;
 
@@ -212,16 +213,16 @@ class ModelExtensionModuleQiqo extends Model
             // 2) Ako nema ni slike ni dokumenta → obriši folder i zabilježi kao "prazan"
             if ($has_folder && $fs_image_count === 0 && $fs_doc_count === 0) {
                 $this->log('Assets', "SKU {$sku}: folder je prazan (nema jpg/png/pdf) – brišem {$folder_path}");
-                $this->rrmdirAssets($folder_path);
-                $has_folder = 0;
-                $status     = 'missing_folder';
-                $message    = 'Prazan folder (bez slika/dokumenata) obrisan iz catalog/products.';
+                //$this->rrmdirAssets($folder_path);
+                $has_folder = 1;
+                $status     = 'empty_folder';
+                $message    = 'Prazan folder (bez slika/dokumenata).';
 
                 // pokušaj ipak naći product da upišemo info
                 $product_id = $this->getProductIdBySku($sku);
                 $has_product = $product_id ? 1 : 0;
                 if ($has_product) {
-                    $missing_folder++;
+                    $empty_folder++;
                 }
 
                 // upis u asset sync tablicu
@@ -274,7 +275,7 @@ class ModelExtensionModuleQiqo extends Model
             if ($has_product && !$has_folder) {
                 // product postoji, ali folder (nakon brisanja) ne postoji
                 $status  = 'missing_folder';
-                $message = 'Produkt postoji u bazi, ali nema foldera u catalog/products/{sku}.';
+                $message = 'Produkt postoji u bazi, ali nema foldera u /Portals/0/Database/{sku}.';
                 $missing_folder++;
 
                 $this->log('Assets', "SKU {$sku}: proizvod postoji (product_id={$product_id}), ali folder ne postoji.");
@@ -374,6 +375,7 @@ class ModelExtensionModuleQiqo extends Model
 
         $this->log('Assets', "✅ ASSETS RESCAN dovršen. Proizvoda potpuno OK: {$updated_products}");
         $this->log('Assets', "Missing product: {$missing_product}");
+        $this->log('Assets', "Empty folder: {$empty_folder}");
         $this->log('Assets', "Missing folder: {$missing_folder}");
         $this->log('Assets', "Partial (problemi): {$partial_products}");
         $this->log('Assets', '=== END ASSETS RESCAN + SYNC ===');
@@ -381,36 +383,8 @@ class ModelExtensionModuleQiqo extends Model
         return $updated_products;
     }
 
-    /**
-     * Rekurzivno brisanje foldera za assets (prazni SKU folderi)
-     */
-    protected function rrmdirAssets($dir)
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
 
-        $items = scandir($dir);
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
-            }
-
-            $path = $dir . DIRECTORY_SEPARATOR . $item;
-
-            if (is_dir($path)) {
-                $this->rrmdirAssets($path);
-            } else {
-                @unlink($path);
-            }
-        }
-
-        @rmdir($dir);
-    }
-
-
-
-    /*public function updateAssets(): int
+    public function updateAssetsFromERP(): int
     {
         $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
         $groups   = collect($qiqo->getGroups());
@@ -468,19 +442,19 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         // 🔹 3) SYNC dokumenata iz \\SRV-TS01\Svasta\Italcro\_Database\
-        $source_root = '\\\\SRV-TS01\\Svasta\\Italcro\\_Database\\';
+        /*$source_root = '\\\\SRV-TS01\\Svasta\\Italcro\\_Database\\';
         $target_root = DIR_DOWNLOAD; // npr. image/download ili storage/download, po strukturi
 
         $this->log('Assets', "📂 Sync docs from {$source_root}");
-        $uploaded_docs = $this->syncDocumentsFromLocal($source_root, $target_root);
+        $uploaded_docs = $this->syncDocumentsFromLocal($source_root, $target_root);*/
 
         $this->log('Assets', "Images updated: {$updated_images}");
         $this->log('Assets', "Logos synced: {$uploaded_logos}");
-        $this->log('Assets', "Documents synced: {$uploaded_docs}");
+        //$this->log('Assets', "Documents synced: {$uploaded_docs}");
         $this->log('Assets', '=== END SYNC ===');
 
         return $updated_images + $uploaded_logos + $uploaded_docs;
-    }*/
+    }
 
 
     public function importBrands(): int
@@ -1105,6 +1079,33 @@ class ModelExtensionModuleQiqo extends Model
         return $stats;
     }
 
+
+    /**
+     * Rekurzivno brisanje foldera za assets (prazni SKU folderi)
+     */
+    protected function rrmdirAssets($dir)
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $items = scandir($dir);
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+
+            if (is_dir($path)) {
+                $this->rrmdirAssets($path);
+            } else {
+                @unlink($path);
+            }
+        }
+
+        @rmdir($dir);
+    }
 
 
     private function resolveOrCreateCategory(int $gid): int

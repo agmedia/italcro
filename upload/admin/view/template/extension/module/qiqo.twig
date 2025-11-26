@@ -27,7 +27,7 @@
                 <ul class="nav nav-tabs">
                     <li class="{{ active_tab == 'sync' ? 'active' : '' }}">
                         <a href="#tab-sync" data-toggle="tab">
-                            <i class="fa fa-refresh"></i> Sync artikala
+                            <i class="fa fa-refresh"></i> Sync kataloga
                         </a>
                     </li>
                     <li class="{{ active_tab == 'assets' ? 'active' : '' }}">
@@ -53,17 +53,17 @@
                     <div class="tab-pane {{ active_tab == 'sync' ? 'active' : '' }}" id="tab-sync">
                         <form action="{{ action }}" method="post">
                             <button type="submit" name="action" value="import" class="btn btn-primary">
-                                <i class="fa fa-download"></i> {{ button_import }}
+                                <i class="fa fa-download"></i> Pokreni import artikala
                             </button>
 
                             <hr>
 
-                            <button type="submit" name="action" value="update_qty" class="btn btn-info">
-                                <i class="fa fa-cubes"></i> Ažuriraj količine
+                            <button type="submit" name="action" value="update_qty" class="btn btn-secondary">
+                                <i class="fa fa-cubes"></i> Ažuriraj količine artikala
                             </button>
-
-                            <button type="submit" name="action" value="update_price" class="btn btn-info">
-                                <i class="fa fa-euro"></i> Ažuriraj cijene
+                            <hr>
+                            <button type="submit" name="action" value="update_price" class="btn btn-secondary">
+                                <i class="fa fa-euro"></i> Ažuriraj cijene artikala
                             </button>
 
                             <hr>
@@ -79,7 +79,7 @@
 
                     {# TAB 2: SLIKE & DOKUMENTI #}
                     <div class="tab-pane {{ active_tab == 'assets' ? 'active' : '' }}" id="tab-assets">
-                        <h3>Upload &amp; sync slika i dokumenata</h3>
+                        {#<h3>Upload &amp; sync slika i dokumenata</h3>
 
                         <p class="text-muted">
                             ZIP treba imati root folder <code>Database</code> i unutra SKU foldere:<br>
@@ -99,17 +99,31 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fa fa-upload"></i> Uploadaj ZIP
                             </button>
+                        </form>#}
+
+                        <h3>Sync slika i dokumenata</h3>
+
+                        <hr>
+
+                        <form action="{{ action }}" method="post">
+                            <button type="submit" name="action" value="update_assets_from_erp" class="btn btn-secondary">
+                                <i class="fa fa-sync"></i>
+                                <span>Rescan &amp; sinkroniziraj glavne slike -> ERP putanje</span>
+                            </button>
+                            <small class="text-muted" style="margin-left:10px;">
+                                Ponovno provjerava ERP putanje <code>picpath</code>, puni glavne slike u proizvode.
+                            </small>
                         </form>
 
                         <hr>
 
                         <form action="{{ action }}" method="post">
-                            <button type="submit" name="action" value="update_assets" class="btn btn-success">
+                            <button type="submit" name="action" value="update_assets" class="btn btn-secondary">
                                 <i class="fa fa-sync"></i>
-                                <span>Rescan &amp; sinkroniziraj slike i dokumente (catalog/products/{sku})</span>
+                                <span>Rescan &amp; sinkroniziraj slike i dokumente -> Folderi</span>
                             </button>
                             <small class="text-muted" style="margin-left:10px;">
-                                Ponovno provjerava SKU foldere, puni slike/dokumente u proizvode i tablicu <code>oc_product_asset_sync</code>.
+                                Ponovno provjerava <code>(upload/Portals/0/...)</code> foldere, puni slike/dokumente u proizvode i tablicu <code>oc_product_asset_sync</code>.
                             </small>
                         </form>
                     </div>

@@ -36,6 +36,12 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
                     break;
 
+                case 'update_assets_from_erp':
+                    $count = $this->model_extension_module_qiqo->updateAssetsFromERP();
+                    $this->session->data['success'] = "Sinkronizacija dovršena ({$count} datoteka).";
+                    $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+                    break;
+
                 case 'import_brands':
                     $count = $this->model_extension_module_qiqo->importBrands();
                     $this->session->data['success'] = "Dodano {$count} novih proizvođača (brendova).";

@@ -132,22 +132,34 @@ class ControllerToolFileUploader extends Controller {
         $zip = new ZipArchive();
         if ($zip->open($file) === TRUE) {
 
-            // umjesto vlastitog foldera, raspakiraj DIREKTNO u base_dir
             $extract_path = rtrim($base_dir, '/\\') . '/';
+            $folder_name_in_zip = pathinfo($file, PATHINFO_FILENAME);
 
-            $zip->extractTo($extract_path);
-            $zip->close();
+// ako folder već postoji – obriši ga
+            $target_subfolder = $extract_path . $folder_name_in_zip . '/';
 
-            return [
-                'success' => true,
-                'folder'  => $extract_path
-            ];
+            if (is_dir($target_subfolder)) {
+                $this->deleteDirectory($target_subfolder);
+            }
         }
 
         return [
             'success' => false,
             'error'   => 'Ne mogu otvoriti ZIP arhivu.'
         ];
+    }
+
+    private function deleteDirectory($dir) {
+        if (!file_exists($dir)) return true;
+
+        if (!is_dir($dir)) return unlink($dir);
+
+        foreach (scandir($dir) as $item) {
+            if ($item == '.' || $item == '..') continue;
+            if (!$this->deleteDirectory($dir . DIRECTORY_SEPARATOR . $item)) return false;
+        }
+
+        return rmdir($dir);
     }
 
 

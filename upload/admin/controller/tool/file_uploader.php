@@ -86,21 +86,23 @@ class ControllerToolFileUploader extends Controller {
             }
         }
 
-        // očisti ime, ali ga NE mijenjaj
+        // --- ORIGINALNI NAZIV FAJLA, BEZ PREFIXA ---
         $final_name = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $file['name']);
 
         $target_file = $target_dir . $final_name;
 
-// Ako fajl već postoji → pregazi ga
+// pregazi ako postoji
         if (file_exists($target_file)) {
             unlink($target_file);
         }
 
+// spremi fajl
         if (!move_uploaded_file($file['tmp_name'], $target_file)) {
-            $this->session->data['error'] = 'Ne mogu premjestiti uploadani fajl u: ' . $target_file;
+            $this->session->data['error'] = 'Ne mogu spremiti fajl u: ' . $target_file;
             $this->response->redirect($this->url->link('tool/file_uploader', 'user_token=' . $this->session->data['user_token'], true));
             return;
         }
+
 
         $ext = strtolower(pathinfo($final_name, PATHINFO_EXTENSION));
 

@@ -13,7 +13,6 @@ class ControllerToolFileUploader extends Controller {
         $data['entry_file']    = $this->language->get('entry_file');
         $data['button_upload'] = $this->language->get('button_upload');
 
-        // Error / success poruke
         if (isset($this->session->data['error'])) {
             $data['error_warning'] = $this->session->data['error'];
             unset($this->session->data['error']);
@@ -29,10 +28,9 @@ class ControllerToolFileUploader extends Controller {
         }
 
         $data['action_upload'] = $this->url->link('tool/file_uploader/upload', 'user_token=' . $this->session->data['user_token'], true);
-
+        $data['href_dashboard'] = $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true);
         $data['user_token'] = $this->session->data['user_token'];
 
-        // standardni layout
         $data['header']      = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
         $data['footer']      = $this->load->controller('common/footer');
@@ -63,7 +61,6 @@ class ControllerToolFileUploader extends Controller {
 
         $file = $this->request->files['file'];
 
-        // whitelist ekstenzija – po potrebi proširi/skini
         $allowed_ext = array('zip','rar','jpg','jpeg','png','pdf');
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
@@ -79,7 +76,6 @@ class ControllerToolFileUploader extends Controller {
             return;
         }
 
-        // Paziii: i dalje vrijede PHP/web limiti (upload_max_filesize itd.)
         $target_dir = rtrim(DIR_PORTALS, '/\\') . DIRECTORY_SEPARATOR;
 
         if (!is_dir($target_dir)) {
@@ -100,7 +96,8 @@ class ControllerToolFileUploader extends Controller {
             return;
         }
 
-        // ZIP -> raspakiraj
+        $ext = strtolower(pathinfo($final_name, PATHINFO_EXTENSION));
+
         if ($ext === 'zip') {
             $result = $this->extractZip($target_file, $target_dir);
             if ($result['success']) {
@@ -108,9 +105,7 @@ class ControllerToolFileUploader extends Controller {
             } else {
                 $this->session->data['error'] = $result['error'];
             }
-        }
-        // RAR -> raspakiraj preko unrar
-        elseif ($ext === 'rar') {
+        } elseif ($ext === 'rar') {
             $result = $this->extractRar($target_file, $target_dir);
             if ($result['success']) {
                 $this->session->data['success'] = sprintf($this->language->get('text_rar_success'), $final_name, $result['folder']);
@@ -118,7 +113,6 @@ class ControllerToolFileUploader extends Controller {
                 $this->session->data['error'] = $result['error'];
             }
         } else {
-            // običan fajl (jpg, png, pdf…)
             $this->session->data['success'] = sprintf($this->language->get('text_file_success'), $final_name);
         }
 
@@ -158,7 +152,6 @@ class ControllerToolFileUploader extends Controller {
     }
 
     private function extractRar($file, $base_dir) {
-        // provjera postoji li unrar
         $unrar_path = trim(@shell_exec('which unrar'));
 
         if (!$unrar_path) {
@@ -175,11 +168,9 @@ class ControllerToolFileUploader extends Controller {
             mkdir($extract_path, 0755, true);
         }
 
-        // sastavi i izvrši komandu
         $cmd = escapeshellcmd($unrar_path . ' x -o+ ' . $file . ' ' . $extract_path);
         @shell_exec($cmd);
 
-        // ne znamo baš 100% je li uspjelo, pa barem provjeri ima li išta unutra
         $has_files = false;
         if (is_dir($extract_path)) {
             $files = scandir($extract_path);

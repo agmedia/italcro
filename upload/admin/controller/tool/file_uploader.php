@@ -86,9 +86,15 @@ class ControllerToolFileUploader extends Controller {
             }
         }
 
-        $safe_name   = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $file['name']);
-        $final_name  = uniqid() . '_' . $safe_name;
+        // očisti ime, ali ga NE mijenjaj
+        $final_name = preg_replace('/[^a-zA-Z0-9_\.\-]/', '_', $file['name']);
+
         $target_file = $target_dir . $final_name;
+
+// Ako fajl već postoji → pregazi ga
+        if (file_exists($target_file)) {
+            unlink($target_file);
+        }
 
         if (!move_uploaded_file($file['tmp_name'], $target_file)) {
             $this->session->data['error'] = 'Ne mogu premjestiti uploadani fajl u: ' . $target_file;

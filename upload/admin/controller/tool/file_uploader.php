@@ -131,19 +131,13 @@ class ControllerToolFileUploader extends Controller {
 
         $zip = new ZipArchive();
 
+        // Pokušaj otvoriti ZIP arhivu
         if ($zip->open($file) === TRUE) {
 
-            // base_dir = DIR_PORTALS
+            // Folder u koji raspakiravamo
             $extract_path = rtrim($base_dir, '/\\') . '/';
 
-            // ime root foldera u ZIP-u (Products, itd.)
-            $folder_name_in_zip = pathinfo($file, PATHINFO_FILENAME);
-            $target_subfolder   = $extract_path . $folder_name_in_zip . '/';
-
-            // ako već postoji Portals/0/Products/ -> pobriši ga
-
-
-            // sad normalno raspakiraj ZIP
+            // Normalno raspakiravanje
             if (!$zip->extractTo($extract_path)) {
                 $zip->close();
                 return [
@@ -160,12 +154,13 @@ class ControllerToolFileUploader extends Controller {
             ];
         }
 
-        // ako uopće nije uspio otvoriti ZIP
+        // Ako ZIP ne može biti otvoren
         return [
             'success' => false,
             'error'   => 'Ne mogu otvoriti ZIP arhivu.'
         ];
     }
+
 
     private function deleteDirectory($dir) {
         if (!file_exists($dir)) return true;
@@ -192,25 +187,19 @@ class ControllerToolFileUploader extends Controller {
             ];
         }
 
-        // npr. /home/.../Portals/0/
+        // gdje raspakiravamo
         $extract_path = rtrim($base_dir, '/\\') . '/';
 
-        // ime root foldera kao i kod ZIP-a
-        $folder_name_in_rar = pathinfo($file, PATHINFO_FILENAME);
-        $target_subfolder   = $extract_path . $folder_name_in_rar . '/';
-
-        // ako folder već postoji, obriši ga (kao kod ZIP-a)
-
-
         // izvrši unrar
-        $cmd = "$unrar_path x -o+ '" . escapeshellcmd($file) . "' '" . escapeshellcmd($extract_path) . "'";
+        $cmd = $unrar_path . " x -o+ '" . escapeshellcmd($file) . "' '" . escapeshellcmd($extract_path) . "'";
         @shell_exec($cmd);
 
-        // provjeri je li ekstrakcija uspjela (folder mora postojati)
-        if (!is_dir($target_subfolder)) {
+        // Provjera osnovnog uspjeha – barem ZIP folder root da postoji
+        $root_folder = pathinfo($file, PATHINFO_FILENAME);
+        if (!is_dir($extract_path . $root_folder)) {
             return [
                 'success' => false,
-                'error'   => 'RAR je raspakiran, ali folder nije pronađen (moguća greška u arhivi).'
+                'error'   => 'RAR raspakiran, ali glavni folder nije pronađen.'
             ];
         }
 
@@ -219,6 +208,7 @@ class ControllerToolFileUploader extends Controller {
             'folder'  => $extract_path
         ];
     }
+
 
 
 }

@@ -104,4 +104,6 @@ $_['text_paypal']                    = 'PayPal';
 $_['text_paypal_search']             = 'Pretraživanje transakcija';
 $_['text_complete_status']           = 'Dovršene narudžbe'; 
 $_['text_processing_status']         = 'Narudžbe u obradi'; 
-$_['text_other_status']              = 'Drugi statusi'; 
+$_['text_other_status']              = 'Drugi statusi';
+
+$_['text_file_uploader'] = 'Uploader fajlova';

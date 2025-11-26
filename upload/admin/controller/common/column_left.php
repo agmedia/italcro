@@ -606,6 +606,14 @@ class ControllerCommonColumnLeft extends Controller {
 				);
 			}
 
+            if ($this->user->hasPermission('access', 'tool/file_uploader')) {
+                $maintenance[] = array(
+                    'name'     => $this->language->get('text_file_uploader'),
+                    'href'     => $this->url->link('tool/file_uploader', 'user_token=' . $this->session->data['user_token'], true),
+                    'children' => array()
+                );
+            }
+
 			if ($this->user->hasPermission('access', 'tool/log')) {
 				$maintenance[] = array(
 					'name'	   => $this->language->get('text_log'),

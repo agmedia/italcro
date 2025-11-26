@@ -11,6 +11,8 @@ class ControllerCommonDashboard extends Controller {
         $data['link_home_slider'] = $this->url->link('extension/module/basel_layerslider',
                 'user_token=' . $this->session->data['user_token'], true).'&module_id=126';
 
+        $data['link_file_uploader'] = $this->url->link('tool/file_uploader',
+            'user_token=' . $this->session->data['user_token'], true);
 
 
 

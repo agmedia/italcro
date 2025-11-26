@@ -128,78 +128,46 @@ class ControllerToolFileUploader extends Controller {
     }
 
     private function extractZip($file, $base_dir) {
-        if (!class_exists('ZipArchive')) {
-            return array(
-                'success' => false,
-                'error'   => 'ZipArchive ekstenzija nije dostupna na serveru.'
-            );
-        }
 
         $zip = new ZipArchive();
         if ($zip->open($file) === TRUE) {
-            $folder_name  = pathinfo($file, PATHINFO_FILENAME);
-            $extract_path = rtrim($base_dir, '/\\') . DIRECTORY_SEPARATOR . $folder_name . DIRECTORY_SEPARATOR;
 
-            if (!is_dir($extract_path)) {
-                mkdir($extract_path, 0755, true);
-            }
+            // umjesto vlastitog foldera, raspakiraj DIREKTNO u base_dir
+            $extract_path = rtrim($base_dir, '/\\') . '/';
 
             $zip->extractTo($extract_path);
             $zip->close();
 
-            return array(
+            return [
                 'success' => true,
                 'folder'  => $extract_path
-            );
-        } else {
-            return array(
-                'success' => false,
-                'error'   => 'Ne mogu otvoriti ZIP arhivu: ' . basename($file)
-            );
+            ];
         }
+
+        return [
+            'success' => false,
+            'error'   => 'Ne mogu otvoriti ZIP arhivu.'
+        ];
     }
+
 
     private function extractRar($file, $base_dir) {
+
         $unrar_path = trim(@shell_exec('which unrar'));
-
         if (!$unrar_path) {
-            return array(
-                'success' => false,
-                'error'   => 'UNRAR alat nije instaliran na serveru ili "which unrar" ne vraća putanju.'
-            );
+            return ['success'=>false,'error'=>'UNRAR nije instaliran.'];
         }
 
-        $folder_name  = pathinfo($file, PATHINFO_FILENAME);
-        $extract_path = rtrim($base_dir, '/\\') . DIRECTORY_SEPARATOR . $folder_name . DIRECTORY_SEPARATOR;
+        // raspakiraj DIREKTNO u base_dir
+        $extract_path = rtrim($base_dir, '/\\') . '/';
 
-        if (!is_dir($extract_path)) {
-            mkdir($extract_path, 0755, true);
-        }
-
-        $cmd = escapeshellcmd($unrar_path . ' x -o+ ' . $file . ' ' . $extract_path);
+        $cmd = escapeshellcmd("$unrar_path x -o+ '$file' '$extract_path'");
         @shell_exec($cmd);
 
-        $has_files = false;
-        if (is_dir($extract_path)) {
-            $files = scandir($extract_path);
-            foreach ($files as $f) {
-                if ($f != '.' && $f != '..') {
-                    $has_files = true;
-                    break;
-                }
-            }
-        }
-
-        if ($has_files) {
-            return array(
-                'success' => true,
-                'folder'  => $extract_path
-            );
-        } else {
-            return array(
-                'success' => false,
-                'error'   => 'Pokušao sam raspakirati RAR, ali izgleda da nije uspjelo ili je arhiva prazna.'
-            );
-        }
+        return [
+            'success' => true,
+            'folder'  => $extract_path
+        ];
     }
+
 }

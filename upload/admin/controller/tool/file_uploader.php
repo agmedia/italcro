@@ -130,19 +130,37 @@ class ControllerToolFileUploader extends Controller {
     private function extractZip($file, $base_dir) {
 
         $zip = new ZipArchive();
+
         if ($zip->open($file) === TRUE) {
 
+            // base_dir = DIR_PORTALS
             $extract_path = rtrim($base_dir, '/\\') . '/';
+
+            // ime root foldera u ZIP-u (Products, itd.)
             $folder_name_in_zip = pathinfo($file, PATHINFO_FILENAME);
+            $target_subfolder   = $extract_path . $folder_name_in_zip . '/';
 
-// ako folder već postoji – obriši ga
-            $target_subfolder = $extract_path . $folder_name_in_zip . '/';
+            // ako već postoji Portals/0/Products/ -> pobriši ga
 
-            if (is_dir($target_subfolder)) {
-                $this->deleteDirectory($target_subfolder);
+
+            // sad normalno raspakiraj ZIP
+            if (!$zip->extractTo($extract_path)) {
+                $zip->close();
+                return [
+                    'success' => false,
+                    'error'   => 'Greška pri raspakiravanju ZIP arhive.'
+                ];
             }
+
+            $zip->close();
+
+            return [
+                'success' => true,
+                'folder'  => $extract_path
+            ];
         }
 
+        // ako uopće nije uspio otvoriti ZIP
         return [
             'success' => false,
             'error'   => 'Ne mogu otvoriti ZIP arhivu.'
@@ -165,21 +183,42 @@ class ControllerToolFileUploader extends Controller {
 
     private function extractRar($file, $base_dir) {
 
+        // pronađi unrar alat
         $unrar_path = trim(@shell_exec('which unrar'));
         if (!$unrar_path) {
-            return ['success'=>false,'error'=>'UNRAR nije instaliran.'];
+            return [
+                'success' => false,
+                'error'   => 'UNRAR nije instaliran na serveru.'
+            ];
         }
 
-        // raspakiraj DIREKTNO u base_dir
+        // npr. /home/.../Portals/0/
         $extract_path = rtrim($base_dir, '/\\') . '/';
 
-        $cmd = escapeshellcmd("$unrar_path x -o+ '$file' '$extract_path'");
+        // ime root foldera kao i kod ZIP-a
+        $folder_name_in_rar = pathinfo($file, PATHINFO_FILENAME);
+        $target_subfolder   = $extract_path . $folder_name_in_rar . '/';
+
+        // ako folder već postoji, obriši ga (kao kod ZIP-a)
+
+
+        // izvrši unrar
+        $cmd = "$unrar_path x -o+ '" . escapeshellcmd($file) . "' '" . escapeshellcmd($extract_path) . "'";
         @shell_exec($cmd);
+
+        // provjeri je li ekstrakcija uspjela (folder mora postojati)
+        if (!is_dir($target_subfolder)) {
+            return [
+                'success' => false,
+                'error'   => 'RAR je raspakiran, ali folder nije pronađen (moguća greška u arhivi).'
+            ];
+        }
 
         return [
             'success' => true,
             'folder'  => $extract_path
         ];
     }
+
 
 }

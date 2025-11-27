@@ -837,7 +837,6 @@ class ModelExtensionModuleQiqo extends Model
 
         if ($srcReal === false || $destReal === false || $srcReal !== $destReal) {
             if (!@copy($src_file, $dest)) {
-                // ako copy faila i dest ne postoji – nema s čim raditi
                 if (!file_exists($dest)) {
                     $this->log('Assets', "copy FAIL: {$src_file} → {$dest}");
                     return;
@@ -852,8 +851,24 @@ class ModelExtensionModuleQiqo extends Model
 
         $hash = sha1_file($dest);
 
-        // putanja za bazu
-        $relative_path = 'catalog/products/' . $sku . '/' . $filename;
+        // --- RELATIVNI PATH ZA BAZU: source minus DIR_IMAGE ---
+        $full_src   = str_replace('\\', '/', $src_file);
+        $image_root = str_replace('\\', '/', rtrim(DIR_IMAGE, '/\\')) . '/';
+
+        if (strpos($full_src, $image_root) === 0) {
+            // npr. "/.../upload/image/Portals/0/Photo/2VijcanaRoba/0200.jpg"
+            //  => "Portals/0/Photo/2VijcanaRoba/0200.jpg"
+            $relative_path = ltrim(substr($full_src, strlen($image_root)), '/');
+        } else {
+            // fallback – ako source nije ispod DIR_IMAGE, pokušaj s dest
+            $full_dest = str_replace('\\', '/', $dest);
+            if (strpos($full_dest, $image_root) === 0) {
+                $relative_path = ltrim(substr($full_dest, strlen($image_root)), '/');
+            } else {
+                // zadnja linija obrane – upiši barem filename
+                $relative_path = $filename;
+            }
+        }
 
         // 1) PROVJERI GLAVNU SLIKU PROIZVODA
         $product = $this->db->query("SELECT image, image_hash 
@@ -872,7 +887,7 @@ class ModelExtensionModuleQiqo extends Model
                 return;
             }
 
-            // 1b) ako je trenutna glavna slika već ova ista putanja → samo osvježi hash (ako se promijenio)
+            // 1b) ako je trenutna glavna slika već ova ista putanja → samo osvježi hash
             if ($current_image === $relative_path) {
                 if (empty($product->row['image_hash']) || $product->row['image_hash'] !== $hash) {
                     $this->db->query("UPDATE " . DB_PREFIX . "product 
@@ -882,8 +897,7 @@ class ModelExtensionModuleQiqo extends Model
                 return;
             }
 
-            // 1c) ako glavna slika postoji i različita je → NE diramo je, idemo na dodatne slike
-            // (nema nikakvog UPDATE-a nad product.image tu)
+            // 1c) ima već neku drugu glavnu sliku → ne diramo je, idemo na dodatne
         }
 
         // 2) DODATNA SLIKA U oc_product_image
@@ -914,18 +928,16 @@ class ModelExtensionModuleQiqo extends Model
     public function syncProductDocumentFromFile(int $product_id, string $sku, string $src_file, string $base_dir)
     {
         $filename   = basename($src_file);      // npr. 511541_skl.pdf
-        $name_noext = pathinfo($filename, PATHINFO_FILENAME); // 511541_skl
-        $ext        = strtolower(pathinfo($filename, PATHINFO_EXTENSION)); // pdf
+        $name_noext = pathinfo($filename, PATHINFO_FILENAME);
+        $ext        = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
         if ($ext !== 'pdf') {
             return;
         }
 
-        // ispati dijelove po "_"
-        $parts = explode('_', $name_noext);
+        $parts  = explode('_', $name_noext);
         $suffix = isset($parts[1]) ? strtolower($parts[1]) : '';
 
-        // odredi "mask" (naziv prikaza) po suffixu
         switch ($suffix) {
             case 'skl':
                 $mask = 'Izjava o sukladnosti';
@@ -933,13 +945,11 @@ class ModelExtensionModuleQiqo extends Model
             case 'man':
                 $mask = 'Upute';
                 break;
-            // case 'stl': $mask = 'Sigurnosno-tehnički list'; break;  // ako promijeniš naming
             default:
                 $mask = 'Dokument proizvoda';
                 break;
         }
 
-        // Spremamo PDF-ove također pod /image/Slike/sku/
         $target_dir = rtrim($base_dir, '/\\') . '/' . $sku . '/';
 
         if (!is_dir($target_dir)) {
@@ -949,36 +959,47 @@ class ModelExtensionModuleQiqo extends Model
         $dest = $target_dir . $filename;
 
         if (!@copy($src_file, $dest)) {
+            if (!file_exists($dest)) {
+                $this->log('Assets', "DOC copy FAIL: {$src_file} → {$dest}");
+                return;
+            }
+        }
+
+        if (!file_exists($dest)) {
+            $this->log('Assets', "DOC DEST ne postoji nakon copy-a: {$dest}");
             return;
         }
 
         $hash = sha1_file($dest);
 
-        // filename za attach modul – uzmi relativnu putanju
-        // (prilagodi kako tvoj ControllerExtensionModuleMmosAttachManager očekuje)
-        $relative_path = 'catalog/products/' . $sku . '/' . $filename;
+        // relativna putanja za attach modul – source minus DIR_IMAGE
+        $full_src   = str_replace('\\', '/', $src_file);
+        $image_root = str_replace('\\', '/', rtrim(DIR_IMAGE, '/\\')) . '/';
 
-        // Je li već postoji zapis za ovaj proizvod + suffix?
-        // Ako nemaš stupac za suffix, možeš se držati kombinacije product_id + filename;
-        // ovdje pretpostavljam da je filename unique po proizvodu.
+        if (strpos($full_src, $image_root) === 0) {
+            $relative_path = ltrim(substr($full_src, strlen($image_root)), '/');
+        } else {
+            $full_dest = str_replace('\\', '/', $dest);
+            if (strpos($full_dest, $image_root) === 0) {
+                $relative_path = ltrim(substr($full_dest, strlen($image_root)), '/');
+            } else {
+                $relative_path = $filename;
+            }
+        }
+
         $q = $this->db->query("SELECT product_attach_file_id, hash
         FROM " . DB_PREFIX . "product_attach_file
         WHERE product_id = '" . (int)$product_id . "'
           AND filename = '" . $this->db->escape($relative_path) . "'");
 
         if ($q->num_rows) {
-            // hash isti → ništa
-            if (!empty($q->row['hash']) && $q->row['hash'] == $hash) {
-                return;
+            if (empty($q->row['hash']) || $q->row['hash'] !== $hash) {
+                $this->db->query("UPDATE " . DB_PREFIX . "product_attach_file
+                SET hash = '" . $this->db->escape($hash) . "',
+                    mask = '" . $this->db->escape($mask) . "'
+                WHERE product_attach_file_id = '" . (int)$q->row['product_attach_file_id'] . "'");
             }
-
-            // update samo hash / mask po potrebi
-            $this->db->query("UPDATE " . DB_PREFIX . "product_attach_file
-            SET hash = '" . $this->db->escape($hash) . "',
-                mask = '" . $this->db->escape($mask) . "'
-            WHERE product_attach_file_id = '" . (int)$q->row['product_attach_file_id'] . "'");
         } else {
-            // insert novog dokumenta
             $this->db->query("INSERT INTO " . DB_PREFIX . "product_attach_file SET
             product_id     = '" . (int)$product_id . "',
             filename       = '" . $this->db->escape($relative_path) . "',

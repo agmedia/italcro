@@ -428,8 +428,27 @@ class ModelExtensionModuleQiqo extends Model
             $source_file = rtrim(DIR_PORTALS, '/\\') . '/' . ltrim($relativePhoto, '/\\');
 
             if (!file_exists($source_file)) {
-                $this->log('Assets', "SKU {$sku}: picpath '{$picpath}' → nema fajla: {$source_file}");
-                continue;
+                // 2) fallback: ignoriraj case ekstenzije (JPG vs jpg)
+                $dir       = dirname($source_file);
+                $basename  = pathinfo($source_file, PATHINFO_FILENAME); // 0400434500
+                $fallbacks = array_merge(
+                    glob($dir . '/' . $basename . '.jpg'),
+                    glob($dir . '/' . $basename . '.JPG'),
+                    glob($dir . '/' . $basename . '.jpeg'),
+                    glob($dir . '/' . $basename . '.JPEG'),
+                    glob($dir . '/' . $basename . '.png'),
+                    glob($dir . '/' . $basename . '.PNG')
+                );
+
+                if (!empty($fallbacks)) {
+                    // uzmi prvi match (npr. 0400434500.JPG ili 0400434500.jpg)
+                    $real = $fallbacks[0];
+                    $this->log('Assets', "SKU {$sku}: picpath '{$picpath}' → fallback pronašao fajl: {$real}");
+                    $source_file = $real;
+                } else {
+                    $this->log('Assets', "SKU {$sku}: picpath '{$picpath}' → nema fajla (ni sa fallbackom): {$source_file}");
+                    continue;
+                }
             }
 
             $filename   = basename($source_file);

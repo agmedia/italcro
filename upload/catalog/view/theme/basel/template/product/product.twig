@@ -94,7 +94,7 @@
                         {% endif %}
 
                         {% if images %}
-                            <ul class="image-additional" style="display:none">
+                            <ul class="image-additional" >
                                 {% for image in images %}
                                     <li>
                                         <a class="link {% if product_layout != 'full-width' %}cloud-zoom-gallery locked{% endif %}" href="{{ image.popup }}" rel="useZoom: 'main-image', smallImage: '{{ image.thumb_lg }}'"><img src="{{ image.thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>

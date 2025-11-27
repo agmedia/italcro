@@ -89,21 +89,19 @@
                                     <span class="badge out_of_stock_badge"><i>{{ basel_text_out_of_stock}}</i></span>
                                 {% endif %}
 
-                                <a class="{% if not images %}link cloud-zoom{% endif %} {% if product_layout == 'full-width' %}link{% else %}cloud-zoom{% endif %}" id="main-image" href="{{ popup }}" rel="position:'inside', showTitle: false"><img src="{{ thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>
+                                <a class="{% if not images %}link cloud-zoom{% endif %} {% if product_layout == 'full-width' %}link{% else %}link cloud-zoom{% endif %}" id="main-image" href="image/{{ popup }}" rel="position:'inside', showTitle: false"><img src="{{ thumb }}" style="" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>
                             </div>
                         {% endif %}
 
-
-
                         {% if images %}
-                            <ul class="image-additional">
+                            <ul class="image-additional" >
                                 {% for image in images %}
                                     <li>
-                                        <a class="link {% if product_layout != 'full-width' %}cloud-zoom-gallery locked{% endif %}" href="{{ image.popup }}" rel="useZoom: 'main-image', smallImage: '{{ image.thumb_lg }}'"><img src="{{ image.thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>
+                                        <a class="link {% if product_layout != 'full-width' %}cloud-zoom-gallery locked{% endif %}" href="{{ image.fulsize }}" rel="useZoom: 'main-image', smallImage: '{{ image.popup }}'"><img src="{{ image.thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>
                                     </li>
                                 {% endfor %}
                                 {% if thumb and (product_layout != "full-width") %}
-                                    <li><a class="link cloud-zoom-gallery locked active" href="{{ popup }}" rel="useZoom: 'main-image', smallImage: '{{ thumb }}'"><img src="{{ thumb_sm }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a></li>
+                                    <li><a class="link cloud-zoom-gallery locked active" href="image/{{ popup }}" rel="useZoom: 'main-image', smallImage: '{{ thumb }}'"><img src="{{ thumb_sm }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a></li>
                                 {% endif %}
                             </ul>
                         {% endif %}

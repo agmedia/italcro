@@ -66,6 +66,10 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
                     break;
 
+                case 'disable_missing':
+                    $count = $this->model_extension_module_qiqo->disableMissingArticles();
+                    $this->session->data['success'] = "Onemogućeno {$count} proizvoda koji ne postoje u ERP-u.";
+                    break;
 
                 case 'clear_log':
                     $log_file = DIR_LOGS . 'qiqo.log';

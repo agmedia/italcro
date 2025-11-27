@@ -1224,6 +1224,49 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
+    public function disableMissingArticles(): int
+    {
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $articles = $qiqo->getArticles();
+
+        // 1) SKU-ovi iz API-ja
+        $api_skus = [];
+        foreach ($articles as $a) {
+            $sku = trim($a['id'] ?? '');
+            if ($sku !== '') {
+                $api_skus[$sku] = true;
+            }
+        }
+
+        // 2) SKU-ovi iz OC baze
+        $db = $this->db->query("SELECT product_id, sku 
+        FROM " . DB_PREFIX . "product 
+        WHERE sku <> ''");
+
+        $disabled = 0;
+
+        foreach ($db->rows as $row) {
+            $sku = trim($row['sku']);
+            $product_id = (int)$row['product_id'];
+
+            // 3) Ako SKU iz baze NE postoji u API-ju → disable
+            if (!isset($api_skus[$sku])) {
+                $this->db->query("UPDATE " . DB_PREFIX . "product 
+                SET status = 0, date_modified = NOW() 
+                WHERE product_id = " . (int)$product_id);
+
+                $disabled++;
+                $this->log('DisableCheck', "SKU {$sku} / product_id={$product_id}: DISABLED (nema u ERP API).");
+            }
+        }
+
+        $this->log('DisableCheck', "Gotovo. Disabled proizvoda: {$disabled}");
+
+        return $disabled;
+    }
+
+
+
     /**
      * Rekurzivno brisanje foldera za assets (prazni SKU folderi)
      */

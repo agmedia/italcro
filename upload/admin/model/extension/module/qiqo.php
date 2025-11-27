@@ -495,21 +495,82 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         // 🔹 2) SYNC logotipi brendova (ostavljam kao što je bilo – po potrebi možeš isto mappirati)
+        // 🔹 2) SYNC logotipi brendova (logopath → DIR_UPLOAD/Portals/0/Photo/... → DIR_IMAGE/catalog/brands/)
         foreach ($groups as $g) {
             $brand_name = trim($g['naziv'] ?? '');
             $logopath   = trim($g['logopath'] ?? '');
-            if ($brand_name === '' || $logopath === '') continue;
 
-            $new_logo = $this->syncFileFromSource($logopath, 'catalog/brands/');
-            if (!$new_logo) continue;
+            if ($brand_name === '' || $logopath === '') {
+                continue;
+            }
 
-            $m = $this->db->query("SELECT manufacturer_id FROM " . DB_PREFIX . "manufacturer 
-                               WHERE LCASE(name) = '" . $this->db->escape(mb_strtolower($brand_name)) . "' LIMIT 1");
-            if (!$m->num_rows) continue;
+            // normaliziraj putanju iz ERP-a
+            $relative = ltrim(str_replace('\\', '/', $logopath), '/'); // npr. "Slike/Brendovi/LogoXY.png"
+
+            // Slike/... → Photo/...
+            if (strpos($relative, 'Slike/') === 0) {
+                $relativePhoto = 'Photo/' . substr($relative, strlen('Slike/'));
+            } else {
+                $relativePhoto = 'Photo/' . $relative;
+            }
+
+            // fizički source: DIR_UPLOAD/Portals/0/Photo/...
+            $source_file = rtrim(DIR_UPLOAD, '/\\') . '/Portals/0/' . $relativePhoto;
+
+            // ako nema fajla, probaj fallback zbog ekstenzije (JPG/jpg itd.)
+            if (!file_exists($source_file)) {
+                $dir      = dirname($source_file);
+                $basename = pathinfo($source_file, PATHINFO_FILENAME);
+
+                $fallbacks = array_merge(
+                    glob($dir . '/' . $basename . '.png'),
+                    glob($dir . '/' . $basename . '.PNG'),
+                    glob($dir . '/' . $basename . '.jpg'),
+                    glob($dir . '/' . $basename . '.JPG'),
+                    glob($dir . '/' . $basename . '.jpeg'),
+                    glob($dir . '/' . $basename . '.JPEG')
+                );
+
+                if (!empty($fallbacks)) {
+                    $source_file = $fallbacks[0];
+                    $this->log('Assets', "LOGO fallback za '{$logopath}' → {$source_file}");
+                } else {
+                    $this->log('Assets', "LOGO ne postoji za '{$logopath}' → {$source_file}");
+                    continue;
+                }
+            }
+
+            $filename   = basename($source_file);
+            $target_dir = rtrim(DIR_IMAGE, '/\\') . '/catalog/brands/';
+
+            if (!is_dir($target_dir)) {
+                mkdir($target_dir, 0755, true);
+            }
+
+            $dest = $target_dir . $filename;
+
+            if (!@copy($source_file, $dest)) {
+                $this->log('Assets', "LOGO copy FAIL: {$source_file} → {$dest}");
+                continue;
+            }
+
+            // relativna putanja za bazu
+            $relative_logo = 'catalog/brands/' . $filename;
+
+            // nađi manufacturer
+            $m = $this->db->query("SELECT manufacturer_id 
+        FROM " . DB_PREFIX . "manufacturer 
+        WHERE LCASE(name) = '" . $this->db->escape(mb_strtolower($brand_name)) . "' 
+        LIMIT 1");
+
+            if (!$m->num_rows) {
+                continue;
+            }
 
             $this->db->query("UPDATE " . DB_PREFIX . "manufacturer 
-                          SET image = '" . $this->db->escape($new_logo) . "' 
-                          WHERE manufacturer_id = " . (int)$m->row['manufacturer_id']);
+        SET image = '" . $this->db->escape($relative_logo) . "' 
+        WHERE manufacturer_id = " . (int)$m->row['manufacturer_id']);
+
             $uploaded_logos++;
         }
 

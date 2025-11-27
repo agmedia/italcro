@@ -313,10 +313,21 @@ class ControllerProductProduct extends Controller {
 
 			foreach ($results as $result) {
 				$data['images'][] = array(
-					'popup' => $result['image'],
-					'thumb' => $this->model_tool_image->resize($result['image'], $this->config->get('theme_' . $this->config->get('config_theme') . '_image_additional_width'), $this->config->get('theme_' . $this->config->get('config_theme') . '_image_additional_height'))
+                    'popup'    => $result['image'],
+                    'thumb'    => $this->model_tool_image->resize(
+                        $result['image'],
+                        $this->config->get('theme_' . $this->config->get('config_theme') . '_image_additional_width'),
+                        $this->config->get('theme_' . $this->config->get('config_theme') . '_image_additional_height')
+                    ),
+                    'thumb_lg' => $this->model_tool_image->resize(
+                        $result['image'],
+                        $this->config->get('theme_' . $this->config->get('config_theme') . '_image_popup_width'),
+                        $this->config->get('theme_' . $this->config->get('config_theme') . '_image_popup_height')
+                    )
 				);
 			}
+
+
 
 
 			if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {

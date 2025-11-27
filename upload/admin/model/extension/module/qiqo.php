@@ -901,7 +901,7 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         // 2) DODATNA SLIKA U oc_product_image
-        $img_q = $this->db->query("SELECT product_image_id, image_hash
+        /*$img_q = $this->db->query("SELECT product_image_id, image_hash
         FROM " . DB_PREFIX . "product_image
         WHERE product_id = '" . (int)$product_id . "'
           AND image = '" . $this->db->escape($relative_path) . "'");
@@ -920,7 +920,15 @@ class ModelExtensionModuleQiqo extends Model
                 image      = '" . $this->db->escape($relative_path) . "',
                 image_hash = '" . $this->db->escape($hash) . "',
                 sort_order = 0");
-        }
+        }*/
+
+        $this->db->query("TRUNCATE TABLE " . DB_PREFIX . "product_image");
+
+        $this->db->query("INSERT INTO " . DB_PREFIX . "product_image 
+            SET product_id = '" . (int)$product_id . "',
+                image      = '" . $this->db->escape($relative_path) . "',
+                image_hash = '" . $this->db->escape($hash) . "',
+                sort_order = 0");
     }
 
 

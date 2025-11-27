@@ -429,7 +429,7 @@ class ModelExtensionModuleQiqo extends Model
             }
 
             // Fizička lokacija izvora: DIR_UPLOAD/Portals/0/Photo/...
-            $source_file = rtrim(DIR_PORTALS, '/\\') . $relativePhoto;
+            $source_file = DIR_PORTALS . $relativePhoto;
 
             if (!file_exists($source_file)) {
                 $this->log('Assets', "SKU {$sku}: picpath '{$picpath}' → nema fajla: {$source_file}");

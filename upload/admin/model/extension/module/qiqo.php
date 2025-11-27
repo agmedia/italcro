@@ -394,13 +394,22 @@ class ModelExtensionModuleQiqo extends Model
         $uploaded_logos  = 0;
         $uploaded_docs   = 0;
 
-        $this->log('Assets', '=== START SYNC (images, logos, documents) ===');
+        $this->log('Assets', '=== START SYNC (ERP images + logos) ===');
 
-        // 🔹 1) UPDATE glavne slike proizvoda iz ERP-a (picpath)
+        // 🔹 1) UPDATE glavne slike proizvoda iz ERP-a (picpath → DIR_UPLOAD/Portals/0/Photo/...)
         foreach ($articles as $a) {
             $sku = $this->db->escape($a['id']);
-            $product = $this->db->query("SELECT product_id, image FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
-            if (!$product->num_rows) continue;
+
+            $product = $this->db->query("SELECT product_id, image, image_hash 
+            FROM " . DB_PREFIX . "product 
+            WHERE sku = '{$sku}' 
+            LIMIT 1");
+
+            if (!$product->num_rows) {
+                continue;
+            }
+
+            $product_id = (int)$product->row['product_id'];
 
             $group = $groups->firstWhere('id', $a['kataloggrupa']);
             if (!$group) continue;
@@ -408,53 +417,94 @@ class ModelExtensionModuleQiqo extends Model
             $picpath = trim($group['picpath'] ?? '');
             if ($picpath === '') continue;
 
-            // napravi lokalni put do slike (možda s FTP syncom)
-            $new_image = $this->syncFileFromSource($picpath, 'catalog/products/');
+            // Normaliziraj / i makni leading slash
+            $relative = ltrim(str_replace('\\', '/', $picpath), '/');  // npr. "Slike/9KucnePotrepstine/09000407720.jpg"
 
-            if ($new_image && $new_image !== $product->row['image']) {
-                $this->db->query("UPDATE " . DB_PREFIX . "product 
-                SET image = '" . $this->db->escape($new_image) . "', date_modified = NOW() 
-                WHERE product_id = " . (int)$product->row['product_id']);
-                $updated_images++;
+            // Zamijeni "Slike/" sa "Photo/"
+            if (strpos($relative, 'Slike/') === 0) {
+                $relativePhoto = 'Photo/' . substr($relative, strlen('Slike/')); // "Photo/9KucnePotrepstine/09000407720.jpg"
+            } else {
+                // fallback – ako ikad dođe nešto bez "Slike/", samo ga dodaj iza Photo/
+                $relativePhoto = 'Photo/' . $relative;
             }
+
+            // Fizička lokacija izvora: DIR_UPLOAD/Portals/0/Photo/...
+            $source_file = rtrim(DIR_UPLOAD, '/\\') . '/Portals/0/' . $relativePhoto;
+
+            if (!file_exists($source_file)) {
+                $this->log('Assets', "SKU {$sku}: picpath '{$picpath}' → nema fajla: {$source_file}");
+                continue;
+            }
+
+            $filename   = basename($source_file);
+            $target_dir = rtrim(DIR_IMAGE, '/\\') . '/catalog/products/' . $a['id'] . '/'; // folder po SKU
+
+            if (!is_dir($target_dir)) {
+                mkdir($target_dir, 0755, true);
+            }
+
+            $dest = $target_dir . $filename;
+
+            if (!@copy($source_file, $dest)) {
+                $this->log('Assets', "SKU {$sku}: copy FAIL {$source_file} → {$dest}");
+                continue;
+            }
+
+            if (!file_exists($dest)) {
+                $this->log('Assets', "SKU {$sku}: dest ne postoji nakon copy-a: {$dest}");
+                continue;
+            }
+
+            $hash          = sha1_file($dest);
+            $relative_dest = 'catalog/products/' . $a['id'] . '/' . $filename;
+
+            // Ako je već ista slika postavljena
+            if ($product->row['image'] === $relative_dest) {
+                if (empty($product->row['image_hash']) || $product->row['image_hash'] !== $hash) {
+                    $this->db->query("UPDATE " . DB_PREFIX . "product 
+                    SET image_hash = '" . $this->db->escape($hash) . "',
+                        date_modified = NOW()
+                    WHERE product_id = " . $product_id);
+                }
+                continue;
+            }
+
+            // Inače postavi ovu sliku kao glavnu iz ERP-a
+            $this->db->query("UPDATE " . DB_PREFIX . "product 
+            SET image       = '" . $this->db->escape($relative_dest) . "',
+                image_hash  = '" . $this->db->escape($hash) . "',
+                date_modified = NOW()
+            WHERE product_id = " . $product_id);
+
+            $updated_images++;
         }
 
-        // 🔹 2) SYNC logotipi brendova (samo oni s logopath u ERP-u)
+        // 🔹 2) SYNC logotipi brendova (ostavljam kao što je bilo – po potrebi možeš isto mappirati)
         foreach ($groups as $g) {
             $brand_name = trim($g['naziv'] ?? '');
             $logopath   = trim($g['logopath'] ?? '');
             if ($brand_name === '' || $logopath === '') continue;
 
-            // put do logotipa
             $new_logo = $this->syncFileFromSource($logopath, 'catalog/brands/');
             if (!$new_logo) continue;
 
-            // nađi manufacturer
             $m = $this->db->query("SELECT manufacturer_id FROM " . DB_PREFIX . "manufacturer 
                                WHERE LCASE(name) = '" . $this->db->escape(mb_strtolower($brand_name)) . "' LIMIT 1");
             if (!$m->num_rows) continue;
 
-            // ažuriraj logo
             $this->db->query("UPDATE " . DB_PREFIX . "manufacturer 
                           SET image = '" . $this->db->escape($new_logo) . "' 
                           WHERE manufacturer_id = " . (int)$m->row['manufacturer_id']);
             $uploaded_logos++;
         }
 
-        // 🔹 3) SYNC dokumenata iz \\SRV-TS01\Svasta\Italcro\_Database\
-        /*$source_root = '\\\\SRV-TS01\\Svasta\\Italcro\\_Database\\';
-        $target_root = DIR_DOWNLOAD; // npr. image/download ili storage/download, po strukturi
-
-        $this->log('Assets', "📂 Sync docs from {$source_root}");
-        $uploaded_docs = $this->syncDocumentsFromLocal($source_root, $target_root);*/
-
-        $this->log('Assets', "Images updated: {$updated_images}");
+        $this->log('Assets', "Images updated from ERP: {$updated_images}");
         $this->log('Assets', "Logos synced: {$uploaded_logos}");
-        //$this->log('Assets', "Documents synced: {$uploaded_docs}");
-        $this->log('Assets', '=== END SYNC ===');
+        $this->log('Assets', '=== END SYNC (ERP) ===');
 
         return $updated_images + $uploaded_logos + $uploaded_docs;
     }
+
 
 
     public function importBrands(): int
@@ -757,7 +807,6 @@ class ModelExtensionModuleQiqo extends Model
 
     public function syncProductImageFromFile(int $product_id, string $sku, string $src_file, string $base_dir)
     {
-        // cilj: /upload/image/Slike/{sku}/{filename}
         $filename   = basename($src_file);
         $target_dir = rtrim($base_dir, '/\\') . '/' . $sku . '/';
 
@@ -767,31 +816,20 @@ class ModelExtensionModuleQiqo extends Model
 
         $dest = $target_dir . $filename;
 
-        /**
-         * 1) Ako je source = dest → ne pokušavamo copy
-         * ------------------------------------------------
-         * U updateAssets slučaju source i dest su identični.
-         * copy() bi failao i metoda bi prerano završila bez DB update-a.
-         */
+        // --- copy only if source != dest (updateAssets slučaj ima isti path) ---
         $srcReal  = realpath($src_file);
         $destReal = realpath($dest);
 
-// Ako je pravi fajl i već postoji dest i radi se o *istom* fajlu – preskoči copy
-        if ($srcReal !== false && $destReal !== false && $srcReal === $destReal) {
-            // OK → idemo dalje koristiti postojeći fajl
-        } else {
-            // Ako nisu isti fajl → treba kopirati (ZIP upload slučaj)
+        if ($srcReal === false || $destReal === false || $srcReal !== $destReal) {
             if (!@copy($src_file, $dest)) {
-                // Ako copy faila i dest NE postoji → nema s čim raditi → prekini
+                // ako copy faila i dest ne postoji – nema s čim raditi
                 if (!file_exists($dest)) {
                     $this->log('Assets', "copy FAIL: {$src_file} → {$dest}");
                     return;
                 }
-                // Ako copy faila ali dest postoji → nastavljamo dalje (overwrite nije bitan)
             }
         }
 
-// Ako iz nekog razloga ni sad nema fajla – prekini
         if (!file_exists($dest)) {
             $this->log('Assets', "DEST ne postoji nakon copy-a: {$dest}");
             return;
@@ -799,55 +837,55 @@ class ModelExtensionModuleQiqo extends Model
 
         $hash = sha1_file($dest);
 
-        // putanja za bazu, relativno na DIR_IMAGE
+        // putanja za bazu
         $relative_path = 'catalog/products/' . $sku . '/' . $filename;
 
-        // 1) provjeri postoji li već kao glavna slika
-        $product = $this->db->query("SELECT image, image_hash FROM " . DB_PREFIX . "product WHERE product_id = '" . (int)$product_id . "'");
+        // 1) PROVJERI GLAVNU SLIKU PROIZVODA
+        $product = $this->db->query("SELECT image, image_hash 
+        FROM " . DB_PREFIX . "product 
+        WHERE product_id = '" . (int)$product_id . "'");
 
         if ($product->num_rows) {
-            // ako je ista slika već postavljena kao glavna
-            if ($product->row['image'] == $relative_path) {
-                // hash isti → ništa
-                if (!empty($product->row['image_hash']) && $product->row['image_hash'] == $hash) {
-                    return;
-                }
+            $current_image = $product->row['image'];
 
-                // ažuriraj hash
-                $this->db->query("UPDATE " . DB_PREFIX . "product 
-                SET image_hash = '" . $this->db->escape($hash) . "'
-                WHERE product_id = '" . (int)$product_id . "'");
-                return;
-            }
-
-            // ako product nema glavnu sliku, možeš uzeti prvu kao glavnu
-            if (!$product->row['image'] || ($product->row['image'] != $relative_path)) {
+            // 1a) ako još uopće nema glavne slike → ova postaje glavna
+            if ($current_image === '' || $current_image === null) {
                 $this->db->query("UPDATE " . DB_PREFIX . "product 
                 SET image = '" . $this->db->escape($relative_path) . "',
                     image_hash = '" . $this->db->escape($hash) . "'
                 WHERE product_id = '" . (int)$product_id . "'");
                 return;
             }
+
+            // 1b) ako je trenutna glavna slika već ova ista putanja → samo osvježi hash (ako se promijenio)
+            if ($current_image === $relative_path) {
+                if (empty($product->row['image_hash']) || $product->row['image_hash'] !== $hash) {
+                    $this->db->query("UPDATE " . DB_PREFIX . "product 
+                    SET image_hash = '" . $this->db->escape($hash) . "'
+                    WHERE product_id = '" . (int)$product_id . "'");
+                }
+                return;
+            }
+
+            // 1c) ako glavna slika postoji i različita je → NE diramo je, idemo na dodatne slike
+            // (nema nikakvog UPDATE-a nad product.image tu)
         }
 
-        // 2) dodatna slika u oc_product_image
-        // provjeri postoji li već zapis s istom putanjom
+        // 2) DODATNA SLIKA U oc_product_image
         $img_q = $this->db->query("SELECT product_image_id, image_hash
         FROM " . DB_PREFIX . "product_image
         WHERE product_id = '" . (int)$product_id . "'
           AND image = '" . $this->db->escape($relative_path) . "'");
 
         if ($img_q->num_rows) {
-            // ako je hash isti, ne radimo ništa
-            if (!empty($img_q->row['image_hash']) && $img_q->row['image_hash'] == $hash) {
-                return;
+            // postoji zapis za tu sliku – ažuriraj hash ako treba
+            if (empty($img_q->row['image_hash']) || $img_q->row['image_hash'] !== $hash) {
+                $this->db->query("UPDATE " . DB_PREFIX . "product_image
+                SET image_hash = '" . $this->db->escape($hash) . "'
+                WHERE product_image_id = '" . (int)$img_q->row['product_image_id'] . "'");
             }
-
-            $this->db->query("UPDATE " . DB_PREFIX . "product_image
-            SET image_hash = '" . $this->db->escape($hash) . "'
-            WHERE product_image_id = '" . (int)$img_q->row['product_image_id'] . "'");
         } else {
-            // insert nove dodatne slike
+            // nema dodatne slike – insert
             $this->db->query("INSERT INTO " . DB_PREFIX . "product_image 
             SET product_id = '" . (int)$product_id . "',
                 image      = '" . $this->db->escape($relative_path) . "',
@@ -855,6 +893,7 @@ class ModelExtensionModuleQiqo extends Model
                 sort_order = 0");
         }
     }
+
 
 
     public function syncProductDocumentFromFile(int $product_id, string $sku, string $src_file, string $base_dir)

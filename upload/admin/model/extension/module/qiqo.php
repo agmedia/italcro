@@ -153,7 +153,7 @@ class ModelExtensionModuleQiqo extends Model
         $this->log('Assets', '=== START ASSETS RESCAN + SYNC (/Portals/0/Database/{sku}/) ===');
 
         // Root gdje očekujemo SKU foldere
-        $base_dir = DIR_UPLOAD . 'Portals/0/Database/';
+        $base_dir = DIR_PORTALS . 'Database/';
 
         if (!is_dir($base_dir)) {
             $this->log('Assets', "❌ Base dir ne postoji: {$base_dir}");

@@ -97,7 +97,7 @@
                             <ul class="image-additional" >
                                 {% for image in images %}
                                     <li>
-                                        <a class="link {% if product_layout != 'full-width' %}cloud-zoom-gallery locked{% endif %}" href="{{ image.fulsize }}" rel="useZoom: 'main-image', smallImage: '{{ image.popup }}'"><img src="{{ image.thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>
+                                        <a class="link {% if product_layout != 'full-width' %}cloud-zoom-gallery locked{% endif %}" href="{{ image.fulsize }}" rel="useZoom: 'main-image', smallImage: 'image/{{ image.popup }}'"><img src="{{ image.thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a>
                                     </li>
                                 {% endfor %}
                                 {% if thumb and (product_layout != "full-width") %}

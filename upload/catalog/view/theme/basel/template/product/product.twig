@@ -103,7 +103,7 @@
                                     </li>
                                 {% endfor %}
                                 {% if thumb and (product_layout != "full-width") %}
-                                    <li><a class="link cloud-zoom-gallery locked active" href="{{ popup }}" rel="useZoom: 'main-image', smallImage: '{{ thumb }}'"><img src="{{ thumb_sm }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a></li>
+                                    <li><a class="link cloud-zoom-gallery locked active" href="image/{{ popup }}" rel="useZoom: 'main-image', smallImage: '{{ thumb }}'"><img src="{{ thumb_sm }}" title="{{ heading_title }}" alt="{{ heading_title }}" /></a></li>
                                 {% endif %}
                             </ul>
                         {% endif %}

@@ -418,18 +418,14 @@ class ModelExtensionModuleQiqo extends Model
             if ($picpath === '') continue;
 
             // Normaliziraj / i makni leading slash
-            $relative = ltrim(str_replace('\\', '/', $picpath), '/');  // npr. "Slike/9KucnePotrepstine/09000407720.jpg"
-
-            // Zamijeni "Slike/" sa "Photo/"
+            $relative = ltrim(str_replace('\\', '/', $picpath), '/');  // Slike/...
             if (strpos($relative, 'Slike/') === 0) {
-                $relativePhoto = 'Photo/' . substr($relative, strlen('Slike/')); // "Photo/9KucnePotrepstine/09000407720.jpg"
+                $relativePhoto = 'Photo/' . substr($relative, strlen('Slike/'));
             } else {
-                // fallback – ako ikad dođe nešto bez "Slike/", samo ga dodaj iza Photo/
                 $relativePhoto = 'Photo/' . $relative;
             }
 
-            // Fizička lokacija izvora: DIR_UPLOAD/Portals/0/Photo/...
-            $source_file = DIR_PORTALS . $relativePhoto;
+            $source_file = rtrim(DIR_PORTALS, '/\\') . '/' . ltrim($relativePhoto, '/\\');
 
             if (!file_exists($source_file)) {
                 $this->log('Assets', "SKU {$sku}: picpath '{$picpath}' → nema fajla: {$source_file}");

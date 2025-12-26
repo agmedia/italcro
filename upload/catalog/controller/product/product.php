@@ -167,6 +167,8 @@ class ControllerProductProduct extends Controller {
         $price_raw   = (float)$product_info['price'];
         $special_raw = (float)$product_info['special'];
 
+
+
 // default
         $data['preview_price_old'] = false;
         $data['preview_price_new'] = false;
@@ -190,6 +192,17 @@ class ControllerProductProduct extends Controller {
                     $this->session->data['currency']
                 );
             }
+
+            $data['preview_text_tax_included'] = false;
+
+// samo ako imamo preview_price_new
+            if ($new_total > 0) {
+                $data['preview_text_tax_included'] = $this->currency->format(
+                    $new_total, // ⬅️ BEZ PDV-a
+                    $this->session->data['currency']
+                );
+            }
+
         }
 
 

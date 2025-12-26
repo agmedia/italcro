@@ -312,9 +312,21 @@
 
                             {% endif %}
 
+                                {% if minimum > 1 and preview_price_new %}
+
                                 {% if price and tax %}
-                                    <p class="info p-tax"><b>{{ text_tax }}</b> <span class="live-price-tax">{{ tax }}</span></p>
+                                    <p class="info p-tax"><b>{{ text_tax }}</b> <span class="live-price-tax">{{ preview_text_tax_included }}</span></p>
                                 {% endif %}
+
+                                {% else %}
+
+                                    {% if price and tax %}
+                                        <p class="info p-tax"><b>{{ text_tax }}</b> <span class="live-price-tax">{{ tax }}</span></p>
+                                    {% endif %}
+
+                            {% endif %}
+
+
 
                                 {% if discounts %}
                                     <p class="discount">

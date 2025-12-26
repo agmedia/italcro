@@ -167,27 +167,42 @@
                                                         <td class="text-right">{{ p.stock }}</td>
 
                                                         {# -------- CIJENA / SPECIAL -------- #}
-                                                        <td class="text-right">
-                                                            {% if p.special %}
-                                                                <span style="color:#d9534f; font-weight:bold;">{{ p.special }}</span><br>
-                                                                <span style="text-decoration: line-through; color:#777;">{{ p.price }}</span>
-                                                            {% else %}
-                                                                {{ p.price }}
-                                                            {% endif %}
-                                                        </td>
+                                                <td class="text-right">
+                                                    {% set min_qty = (p.minimum is defined and p.minimum > 1) ? p.minimum : 1 %}
 
-                                                        {# -------- UKUPNO (cijena * količina) -------- #}
+                                                    {% if min_qty > 1 %}
+                                                        {# prikaz za minimum (× minimum) #}
+                                                        {% if p.preview_price_old %}
+                                                            <span style="color:#d9534f; font-weight:bold;">{{ p.preview_price_new }}</span><br>
+                                                            <span style="text-decoration: line-through; color:#777;">{{ p.preview_price_old }}</span>
+                                                        {% else %}
+                                                            <span style="font-weight:bold;">{{ p.preview_price_new }}</span>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        {# standardni prikaz po komadu #}
+                                                        {% if p.special %}
+                                                            <span style="color:#d9534f; font-weight:bold;">{{ p.special }}</span><br>
+                                                            <span style="text-decoration: line-through; color:#777;">{{ p.price }}</span>
+                                                        {% else %}
+                                                            {{ p.price }}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </td>
+
+
+                                                {# -------- UKUPNO (cijena * količina) -------- #}
                                                                                     <td class="text-right">
-                                                            <span class="mpn-total" id="mpn_total_{{ p.product_id }}">
-                                                                {# početno: 1 * cijena #}
-                                                                {% if p.special_value is defined and p.special_value %}
-                                                                    {{ p.special_value|number_format(2, '.', '') }}
-                                                                {% elseif p.price_value is defined %}
-                                                                    {{ p.price_value|number_format(2, '.', '') }}
-                                                                {% else %}
-                                                                    0.00
-                                                                {% endif %}
-                                                            </span>
+                                                       <span class="mpn-total" id="mpn_total_{{ p.product_id }}">
+                                                          {% set min_qty = (p.minimum is defined and p.minimum) ? p.minimum : 1 %}
+
+                                                           {% if p.special_value is defined and p.special_value %}
+                                                               {{ (p.special_value * min_qty)|number_format(2, '.', '') }}
+                                                           {% elseif p.price_value is defined %}
+                                                               {{ (p.price_value * min_qty)|number_format(2, '.', '') }}
+                                                           {% else %}
+                                                               0.00
+                                                           {% endif %}
+</span>
                                                                                     </td>
 
                                                                                     <td class="text-right">
@@ -882,7 +897,7 @@
                     <p class="widget-title-separator"><i class="icon-line-cross"></i></p>
                 </div>
 
-                <div class="grid grid-holder related carousel grid{{ basel_rel_prod_grid }}">
+                <div class="grid grid-holder related carousel grid5">
                     {% for product in products %}
                         {% include 'basel/template/product/single_product.twig' %}
                     {% endfor %}

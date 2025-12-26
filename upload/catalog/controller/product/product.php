@@ -691,27 +691,54 @@ class ControllerProductProduct extends Controller {
                 $data['same_mpn_products'] = array();
 
                 foreach ($mpn_products as $result) {
-                    $price_value  = (float)$result['price'];
-                    $special_value = $result['special'] ? (float)$result['special'] : 0;
+
+                    $minimum = ($result['minimum'] > 0) ? (int)$result['minimum'] : 1;
+
+                    $price_raw   = (float)$result['price'];
+                    $special_raw = (float)$result['special'];
+
+                    // novo = special ako postoji, inače regular
+                    $unit_new = ($special_raw > 0) ? $special_raw : $price_raw;
+                    $new_total = $unit_new * $minimum;
+
+                    // staro samo ako postoji special
+                    $old_total = ($special_raw > 0) ? ($price_raw * $minimum) : false;
 
                     $data['same_mpn_products'][] = [
-                        'product_id'     => $result['product_id'],
-                        'code'           => $result['sku'],
-                        'barcode'        => $result['model'],
-                        'name_add'       => $result['name_add'],          // tvoj custom naziv / atribut
-                        'description_add'=> $result['description_add'],    // opis
-                        'stock'          => $result['quantity'],
-                        'minimum'          => $result['minimum'],
+                        'product_id' => $result['product_id'],
+                        'code'       => $result['sku'],
+                        'barcode'    => $result['model'],
+                        'name_add'   => $result['name_add'],
+                        'description_add' => $result['description_add'],
+                        'stock'      => $result['quantity'],
+                        'minimum'    => $minimum,
 
-                        // formatirano za prikaz
-                        'price'          => $this->currency->format($price_value, $this->session->data['currency']),
-                        'special'        => $result['special'] ? $this->currency->format($special_value, $this->session->data['currency']) : false,
+                        // standardne cijene (po komadu)
+                        'price'   => $this->currency->format($price_raw, $this->session->data['currency']),
+                        'special' => ($special_raw > 0)
+                            ? $this->currency->format($special_raw, $this->session->data['currency'])
+                            : false,
 
-                        // numeričke vrijednosti za JS
-                        'price_value'    => $price_value,
-                        'special_value'  => $special_value,
+                        // === PREVIEW (× minimum) ===
+                        'preview_price_new' => ($new_total > 0)
+                            ? $this->currency->format($new_total, $this->session->data['currency'])
+                            : false,
+
+                        'preview_price_old' => ($old_total)
+                            ? $this->currency->format($old_total, $this->session->data['currency'])
+                            : false,
+
+                        // bez PDV-a (isti iznos, ali eksplicitno)
+                        'preview_price_ex_tax' => ($new_total > 0)
+                            ? $this->currency->format($new_total, $this->session->data['currency'])
+                            : false,
+
+                        // raw vrijednosti (za JS ako treba)
+                        'price_value'   => $price_raw,
+                        'special_value' => $special_raw,
                     ];
                 }
+
             } else {
                 $data['same_mpn_products'] = false;
             }

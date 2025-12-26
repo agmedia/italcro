@@ -162,6 +162,36 @@ class ControllerProductProduct extends Controller {
 
 		$product_info = $this->model_catalog_product->getProduct($product_id);
 
+        $minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
+
+        $price_raw   = (float)$product_info['price'];
+        $special_raw = (float)$product_info['special'];
+
+// default
+        $data['preview_price_old'] = false;
+        $data['preview_price_new'] = false;
+
+        if ($price_raw > 0) {
+            // uvijek izračunaj "novo" (ako nema special, novo je regular)
+            $new_unit = ($special_raw > 0) ? $special_raw : $price_raw;
+            $new_total = $new_unit * $minimum;
+
+            $data['preview_price_new'] = $this->currency->format(
+                $this->tax->calculate($new_total, $product_info['tax_class_id'], $this->config->get('config_tax')),
+                $this->session->data['currency']
+            );
+
+            // ako ima special, izračunaj i "staro"
+            if ($special_raw > 0) {
+                $old_total = $price_raw * $minimum;
+
+                $data['preview_price_old'] = $this->currency->format(
+                    $this->tax->calculate($old_total, $product_info['tax_class_id'], $this->config->get('config_tax')),
+                    $this->session->data['currency']
+                );
+            }
+        }
+
 
         //$same_mpn_products = $this->model_catalog_product->getProductsByMPN($product_info['mpn'], $product_id);
 
@@ -470,24 +500,7 @@ class ControllerProductProduct extends Controller {
 			}
 
 
-            $minimum = ($result['minimum'] > 0) ? (int)$result['minimum'] : 1;
 
-// RAW (special ako postoji, inače price) × minimum
-            if (!is_null($result['special']) && (float)$result['special'] >= 0) {
-                $preview_price_raw = (float)$result['special'] * $minimum;
-            } else {
-                $preview_price_raw = (float)$result['price'] * $minimum;
-            }
-
-// format u aktivnoj valuti (s tax logikom kao i drugdje)
-            $data['preview_price'] = $this->currency->format(
-                $this->tax->calculate(
-                    $preview_price_raw,
-                    $result['tax_class_id'],
-                    $this->config->get('config_tax')
-                ),
-                $this->session->data['currency']
-            );
 
 			$data['review_status'] = $this->config->get('config_review_status');
 
@@ -580,16 +593,39 @@ class ControllerProductProduct extends Controller {
                     $data['attention'] = '';
                 }
 
+                $minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+                // RAW cijena (bez formata) × minimum
+                if (!is_null($result['special']) && (float)$result['special'] >= 0) {
+                    $preview_price_raw = (float)$result['special'] * $minimum;
+                } else {
+                    $preview_price_raw = (float)$result['price'] * $minimum;
+                }
+
+// Formatirana preview cijena u aktivnoj valuti
+                $preview_price = $this->currency->format(
+                    $this->tax->calculate(
+                        $preview_price_raw,
+                        $result['tax_class_id'],
+                        $this->config->get('config_tax')
+                    ),
+                    $this->session->data['currency']
+                );
+
 				$data['products'][] = array(
 					'product_id'  => $result['product_id'],
 					'thumb'       => $image,
 					'name'        => $result['name'],
+                    'name_add'        => $result['name_add'],
 					'description' => utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
 					     'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),
 					'price'       => $price,
 					'special'     => $special,
                     'mpn_count'       => $result['mpn_count'],
                     'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+
+                    // NEW
+                    'preview_price'     => $preview_price,
+                    'preview_price_alt' => $preview_price_alt,
                     'attention'     => $data['attention'],
                     'cent'  => $result['cent'],
                     'sku'  => $result['sku'],

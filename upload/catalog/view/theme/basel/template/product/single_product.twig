@@ -104,7 +104,7 @@
                                 </span>
 
                                     <span class="input-group-btn">
-                                <button type="button" class="btn btn-neutral"    {% if (product.quantity < 1) %} disabled  {% endif %}
+                                <button type="button" class="btn btn-neutral"
                                         onclick="cart.add('{{ product.product_id }}', $(this).parent().parent().find('.input-number').val());">
                                     <span class="global-cart"></span> <span class="hidden-xs hidden-sm hidden-md"></span>
                                 </button>

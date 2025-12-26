@@ -115,12 +115,12 @@ $(document).ready(function() {
 	window.increment = function(el) {
 		let input = el.find('.input-number');
 		let step = parseInt(input.attr('min-step')) || 1;
-		let max = parseInt(input.attr('max'));
+		//let max = parseInt(input.attr('max'));
 		let value = parseInt(input.val());
 
-		if (value + step <= max) {
+
 			input.val(value + step);
-		}
+
 	};
 
 	window.descrement = function(el) {

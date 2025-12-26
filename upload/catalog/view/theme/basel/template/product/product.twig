@@ -206,7 +206,7 @@
                                                                       name="quantity_{{ p.product_id }}"
                                                                       class="form-control input-number"
                                                                       value="{{ p.minimum }}"
-                                                                      max="{{ p.stock }}"
+
                                                                       min="{{ p.minimum }}"
                                                                       min-step="{{ p.minimum }}"
                                                                       data-id="{{ p.product_id }}"
@@ -226,7 +226,7 @@
                                                                                         <span class="input-group-btn">
                                                                 <button type="button"
                                                                         class="btn btn-neutral"
-                                                                        {% if p.stock < 1 %}disabled{% endif %}
+
                                                                         onclick="cart.add('{{ p.product_id }}', $(this).closest('.addtocart').find('.input-number').val());">
                                                                     <span class="global-cart"></span>
                                                                 </button>
@@ -533,7 +533,7 @@
                                     <div class="form-group quantity buttons_added buy catalog_hide">
 
                                         <button type="button" class="minus"> <i class="fa fa-minus-circle" aria-hidden="true"></i> </button>
-                                        <input type="text" step="{{ minimum }}" min="{{ minimum }}" max="{{ quantity }}" id="input-quantity" name="quantity" value="{{ minimum }}" title="Qty" class="input-text qty text put-qty" size="4" pattern="" inputmode="">
+                                        <input type="text" step="{{ minimum }}" min="{{ minimum }}"  id="input-quantity" name="quantity" value="{{ minimum }}" title="Qty" class="input-text qty text put-qty" size="4" pattern="" inputmode="">
                                         <button type="button"  class="plus"> <i class="fa fa-plus-circle" aria-hidden="true"></i> </button>
                                         <input type="hidden" name="product_id" value="{{ product_id }}" />
 

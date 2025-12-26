@@ -120,7 +120,14 @@
                             <span class="glyphicon glyphicon-minus"></span>
                             </button>
                          </span>
-                                    <input type="text" name="quantity" class="form-control input-number" id="category" max="{{ product.quantity }}" value="1">
+                                    <input type="text"
+                                           name="quantity"
+                                           class="form-control input-number"
+                                           id="category"
+
+                                           min="{{ product.minimum }}"
+                                           min-step="{{ product.minimum }}"
+                                           value="{{ product.minimum }}" >
                                     <span class="input-group-btn">
                           <button type="button" class="btn btn-default btn-number" data-type="plus" data-field="category" onclick="increment($(this).parent().parent())">
                             <span class="glyphicon glyphicon-plus"></span>

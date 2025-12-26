@@ -18,7 +18,7 @@ $_['text_amount']            = 'Fiksni iznos';
 
 // Column
 $_['column_name']            = 'Naziv artikla';
-$_['column_model']           = 'Model';
+$_['column_model']           = 'Barcode';
 $_['column_image']           = 'Slika';
 $_['column_price']           = 'Cijena';
 $_['column_quantity']        = 'Količina';

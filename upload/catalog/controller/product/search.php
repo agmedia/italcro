@@ -254,24 +254,43 @@ class ControllerProductSearch extends Controller {
                 }
 
                 $minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
-                // RAW cijena (bez formata) × minimum
-                if (!is_null($result['special']) && (float)$result['special'] >= 0) {
-                    $preview_price_raw = (float)$result['special'] * $minimum;
+
+                $price_raw   = (float)$result['price'];
+                $special_raw = (float)$result['special'];
+
+// default: nema "stare" cijene
+                $preview_price_alt = false;
+
+// NOVO: ako ima special (>0) onda je novo = special, staro = price
+                if ($special_raw > 0) {
+                    $preview_price_raw = $special_raw * $minimum;
+                    $preview_price_alt_raw = $price_raw * $minimum;
+
+                    $preview_price_alt = $this->currency->format(
+                        $this->tax->calculate(
+                            $preview_price_alt_raw,
+                            $result['tax_class_id'],
+                            $this->config->get('config_tax')
+                        ),
+                        $this->session->data['currency']
+                    );
                 } else {
-                    $preview_price_raw = (float)$result['price'] * $minimum;
+                    // nema akcije: novo = regular
+                    $preview_price_raw = $price_raw * $minimum;
                 }
 
-// Formatirana preview cijena u aktivnoj valuti
-                $preview_price = $this->currency->format(
+// NOVA (glavna) preview cijena
+                $preview_price = ($preview_price_raw > 0) ? $this->currency->format(
                     $this->tax->calculate(
                         $preview_price_raw,
                         $result['tax_class_id'],
                         $this->config->get('config_tax')
                     ),
                     $this->session->data['currency']
-                );
+                ) : false;
 
-				$data['products'][] = array(
+
+                $data['products'][] = array(
 					'product_id'  => $result['product_id'],
 					'thumb'       => $image,
 					'name'        => $result['name'],

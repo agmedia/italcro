@@ -469,6 +469,26 @@ class ControllerProductProduct extends Controller {
 				$data['minimum'] = 1;
 			}
 
+
+            $minimum = ($result['minimum'] > 0) ? (int)$result['minimum'] : 1;
+
+// RAW (special ako postoji, inače price) × minimum
+            if (!is_null($result['special']) && (float)$result['special'] >= 0) {
+                $preview_price_raw = (float)$result['special'] * $minimum;
+            } else {
+                $preview_price_raw = (float)$result['price'] * $minimum;
+            }
+
+// format u aktivnoj valuti (s tax logikom kao i drugdje)
+            $data['preview_price'] = $this->currency->format(
+                $this->tax->calculate(
+                    $preview_price_raw,
+                    $result['tax_class_id'],
+                    $this->config->get('config_tax')
+                ),
+                $this->session->data['currency']
+            );
+
 			$data['review_status'] = $this->config->get('config_review_status');
 
 			if ($this->config->get('config_review_guest') || $this->customer->isLogged()) {

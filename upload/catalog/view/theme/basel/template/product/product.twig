@@ -270,9 +270,30 @@
                             <!-- end -->
 
                             {% if price %}
+
+                                {% if minimum > 1 and preview_price %}
+
+
+
+                                    <ul class="list-unstyled price">
+                                        {% if not preview_price_alt %}
+                                            <li><span class="live-price">{{ preview_price }} </span>   <small>{{ text_tax_included }} </small> </li>
+                                        {% else %}
+                                            <li><span class="price-old">{{ preview_price }}</span> <span class="live-price-new"> {{ preview_price_alt }}  </span> <small>{{ text_tax_included }} </small></li>
+
+                                            <span id="special_countdown"></span>
+                                        {% endif %}
+
+
+
+                                    </ul>
+
+                                {% else %}
+
+
                                 <ul class="list-unstyled price">
                                     {% if not special %}
-                                        <li><span class="live-price">{{ price }} <span>   <small>{{ text_tax_included }} </small></li>
+                                        <li><span class="live-price">{{ price }} </span>   <small>{{ text_tax_included }} </small></li>
                                     {% else %}
                                         <li><span class="price-old">{{ price }}</span> <span class="live-price-new"> {{ special }}  </span> <small>{{ text_tax_included }} </small></li>
 
@@ -282,6 +303,9 @@
 
 
                                 </ul>
+
+                            {% endif %}
+
 
                                 {% if price and tax %}
                                     <p class="info p-tax"><b>{{ text_tax }}</b> <span class="live-price-tax">{{ tax }}</span></p>

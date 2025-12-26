@@ -48,32 +48,32 @@
                 </div>
                 <div class="col-md-6">
 
-
                     {% if product.minimum > 1 %}
-                    <div class="price">
-                        {% if product.preview_price_alt %}
-                            <span class="price-old"> {{ product.preview_price }}</span><span class="price-new"> {{ product.preview_price_alt }} </span>
-                        {% else %}
-                            <span class="pat"> {{ product.preview_price }} </span>
-                        {% endif %}
+                        <div class="price">
+                            {% if product.preview_price_alt %}
+                                <span class="price-old"> {{ product.preview_price }}</span><span class="price-new"> {{ product.preview_price_alt }} </span>
+                            {% else %}
+                                <span class="pat"> {{ product.preview_price }} </span>
+                            {% endif %}
 
-                    </div><!-- .price -->
+                        </div><!-- .price -->
                     {% else %}
 
 
-                    <div class="price">
-                        {% if product.special %}
-                            <span class="price-old"> {{ product.price }}</span><span class="price-new"> {{ product.special }} </span>
-                        {% else %}
-                            <span class="pat"> {{ product.price }} </span>
-                        {% endif %}
-                        {% if product.tax %}
-                            <span class="price-tax">{{ text_tax }} {{ product.tax }}</span>
-                        {% endif %}
-                    </div><!-- .price -->
+                        <div class="price">
+                            {% if product.special %}
+                                <span class="price-old"> {{ product.price }}</span><span class="price-new"> {{ product.special }} </span>
+                            {% else %}
+                                <span class="pat"> {{ product.price }} </span>
+                            {% endif %}
+                            {% if product.tax %}
+                                <span class="price-tax">{{ text_tax }} {{ product.tax }}</span>
+                            {% endif %}
+                        </div><!-- .price -->
 
 
                     {% endif %}
+
 
 
 

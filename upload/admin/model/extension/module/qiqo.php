@@ -1340,6 +1340,7 @@ class ModelExtensionModuleQiqo extends Model
         minimum = '" . (int) $data['minimum'] . "',
         status = '" . (int) $data['status'] . "',
         image = '" . $this->db->escape($image_path) . "',
+        upc = '" . $data['image'] . "',
         date_added = NOW(),
         date_modified = NOW()");
 

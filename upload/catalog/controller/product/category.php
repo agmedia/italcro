@@ -231,16 +231,41 @@ class ControllerProductCategory extends Controller {
                     $data['attention'] = '';
                 }
 
+                $minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+                // RAW cijena (bez formata) × minimum
+                if (!is_null($result['special']) && (float)$result['special'] >= 0) {
+                    $preview_price_raw = (float)$result['special'] * $minimum;
+                } else {
+                    $preview_price_raw = (float)$result['price'] * $minimum;
+                }
+
+// Formatirana preview cijena u aktivnoj valuti
+                $preview_price = $this->currency->format(
+                    $this->tax->calculate(
+                        $preview_price_raw,
+                        $result['tax_class_id'],
+                        $this->config->get('config_tax')
+                    ),
+                    $this->session->data['currency']
+                );
+
 				$data['products'][] = array(
 					'product_id'  => $result['product_id'],
 					'thumb'       => $image,
 					'name'        => $result['name'],
+                    'name_add'        => $result['name_add'],
 					'price'       => $price,
                     'mpn_count'       => $result['mpn_count'],
                     'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
                     'cent'  => $result['cent'],
                     'sku'  => $result['sku'],
 					'special'     => $special,
+
+                    // NEW
+                    'preview_price'     => $preview_price,
+                    'preview_price_alt' => $preview_price_alt,
+
+
                     'attention'     => $data['attention'],
 					'tax'         => $tax,
 					'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,

@@ -61,6 +61,11 @@ img.ikona{
 .big-btn{
 	padding: 0 15px;
 }
+
+.pat{
+	top: 10px;
+	position: absolute;
+}
 img.ikona-black{
 	font-size: 2.4em;
 
@@ -71,6 +76,8 @@ img.ikona-black{
 .gray{color:rgb(189, 189, 189)!important}
 
 .mgallery_info {color:#fff;}
+
+.pl-5{padding-left:5px}
 
 .mt-15{margin-top:15px}
 .mt-30{margin-top:30px}
@@ -5450,11 +5457,14 @@ a.button-circle {
 	margin-top:3px;
 }
 .grid .single-product .price {
-	font-size:16px!important;
+	font-size:15px !important;
 
 	transition:margin-top 300ms;
 	font-family: "Source Sans 3", sans-serif;
-	padding: 10px 5px;
+	padding: 2px 5px;
+	line-height: 20px;
+	vertical-align: middle;
+	/*! display: inline; */
 }
 
 .grid .single-product .pwrap {
@@ -5484,6 +5494,7 @@ a.button-circle {
 	text-decoration:line-through;
 	color: #999;
 	font-size: 13px !important;
+	display: block;
 }
 
 .single-product .price span.price{
@@ -5751,6 +5762,7 @@ a.button-circle {
 
 .product-style6 .grid .single-product .price {
 	font-weight:700;
+	/*! display: block; */
 }
 @media (min-width: 768px) {
 	.product-style6 .grid .single-product .btn-contrast,

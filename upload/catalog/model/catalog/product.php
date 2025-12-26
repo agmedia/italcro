@@ -81,6 +81,7 @@ class ModelCatalogProduct extends Model {
 				'mpn'              => $query->row['mpn'],
                 'mpn_count'        => (int)$query->row['mpn_count'], // <-- OVO NOVO
 				'location'         => $query->row['location'],
+                'cent'         => $query->row['cent'],
 				'quantity'         => $query->row['quantity'],
 				'stock_status'     => $query->row['stock_status'],
 				'image'            => $query->row['image'],

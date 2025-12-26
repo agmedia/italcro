@@ -229,7 +229,7 @@ p.footertitle{
 
 .grid-holder.product-holder.grid4 .item.single-product {
 	box-sizing: border-box;
-	padding: 10px;
+	padding: 5px;
 	width: 25%;            /* 4 u redu */
 	display: flex;         /* rastezanje visine */
 }
@@ -651,7 +651,7 @@ html.no-scroll body {
 }
 
 @media (min-width:1370px) {
-	.wide_container .container {width:1360px;}
+	.wide_container .container {width:1370px;}
 	.wide_container.boxed-layout .outer-container {max-width:1320px;}
 }
 @media (min-width:1150px) {
@@ -3015,7 +3015,7 @@ body.offset250 .header-bottom, .menu-style {
 
 
 .grid-holder .item .edge {
-	padding: 10px;
+	padding: 5px;
 	border: 1px solid #e2e0db;
 	background-color: #fff;
 	border-radius: 0px;
@@ -4659,10 +4659,10 @@ a.scroll-to-top:hover {
 	text-align:center;
 	padding:8px 20px;
 	display:inline-block;
-	font-size:16px;
+	font-size:15px;
 	line-height:20px;
 	text-align:center;
-	letter-spacing: .3px;
+	letter-spacing: 0px;
 	border:1px solid;
 	border-radius:0;
 	max-width:100%;
@@ -6053,6 +6053,7 @@ a.button-circle {
 .single-product .input-group.addtocart{
 
 	float:right;
+	width: 150px;
 }
 .input-group.addtocart .btn{
 	padding: 8px 10px;
@@ -6060,11 +6061,11 @@ a.button-circle {
 }
 
 .price-wrapper .form-control {
-	padding: 8px 14px;
+	padding: 8px 5px;
 	font-size: 15px;
 	/*! min-height: 40px !important; */
 	width: 100%;
-	min-width: 70px;
+	min-width: 50px;
 }
 
 table p{margin-bottom:0px;}

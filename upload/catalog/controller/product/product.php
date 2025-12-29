@@ -314,6 +314,8 @@ class ControllerProductProduct extends Controller {
 			$data['manufacturer'] = $product_info['manufacturer'];
 			$data['manufacturers'] = $this->url->link('product/manufacturer/info', 'manufacturer_id=' . $product_info['manufacturer_id']);
 			$data['model'] = $product_info['model'];
+            $data['sku'] = $product_info['sku'];
+            $data['ean'] = $product_info['ean'];
 			$data['reward'] = $product_info['reward'];
 			$data['points'] = $product_info['points'];
 			$data['description'] = html_entity_decode($product_info['description'], ENT_QUOTES, 'UTF-8');
@@ -646,6 +648,7 @@ class ControllerProductProduct extends Controller {
 					'product_id'  => $result['product_id'],
 					'thumb'       => $image,
 					'name'        => $result['name'],
+                    'ean'        => $result['ean'],
                     'name_add'        => $result['name_add'],
 					'description' => utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
 					     'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),

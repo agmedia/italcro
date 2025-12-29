@@ -145,6 +145,7 @@
                                         <th>Barcode</th>
                                         <th>Atribut</th>
                                         <th>Pakiranje</th>
+                                        <th>JM.</th>
                                         {% if price %}
                                         <th class="text-right">Zaliha</th>
                                         <th class="text-right">Cijena</th>
@@ -162,7 +163,7 @@
 
                                             <td>{{ p.name_add }}</td>
                                             <td>{{ p.minimum }}</td>
-
+                                            <td>{{ p.ean }}</td>
                                             {% if price %}
                                                         <td class="text-right">{{ p.stock }}</td>
 
@@ -650,9 +651,13 @@
                                 {% if manufacturer %}
                                     <p class="info"><b>{{ text_manufacturer }}</b> <a class="hover_uline" href="{{ manufacturers }}">{{ manufacturer }}</a></p>
                                 {% endif %}
+                                {% if sku %}
+                                <p class="info"><b>Šifra:</b> {{ sku }}</p>
+                                {% endif %}
 
-                                <p class="info"><b>{{ text_model }}</b> {{ model }}</p>
-
+                                {% if manufacturer %}
+                                    <p class="info"><b>Barcode:</b> {{ model }}</p>
+                                {% endif %}
 
                                 {% if reward %}
                                     <p class="info"><b>{{ text_reward }}</b> {{ reward }}</p>

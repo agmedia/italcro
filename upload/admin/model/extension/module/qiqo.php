@@ -849,7 +849,7 @@ class ModelExtensionModuleQiqo extends Model
 
             // 🔹 Priprema dodatnih polja
             $name_add = $dimmodel;
-            $desc_add = trim($opiskatalog . ($group_opis ? "\n\n" . $group_opis : ''));
+            $desc_add = trim($opiskatalog );
 
             // 🔹 Novi glavni naziv proizvoda (naziv grupe + dimmodel ako postoji)
             $new_name = trim($group_naziv);

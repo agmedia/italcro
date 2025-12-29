@@ -49,6 +49,7 @@ class ModelExtensionModuleQiqo extends Model
             $data = [
                 'model'       => $a['barcode'],
                 'sku'         => $a['id'],
+                'ean'         => $a['jm'],
                 'quantity'    => (float) ($a['zaliha'] ?? 0),
                 'price'       => $price,
                 'cent'        => $cent,
@@ -1341,6 +1342,7 @@ class ModelExtensionModuleQiqo extends Model
         status = '" . (int) $data['status'] . "',
         image = '" . $this->db->escape($image_path) . "',
         upc = '" . $data['image'] . "',
+         ean = '" . $this->db->escape($data['ean']) . "',
         date_added = NOW(),
         date_modified = NOW()");
 

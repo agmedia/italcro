@@ -1351,7 +1351,7 @@ class ModelExtensionModuleQiqo extends Model
         // 🔹 Opis
         $this->db->query("INSERT INTO " . DB_PREFIX . "product_description SET
         product_id = '" . (int) $product_id . "',
-        language_id = 1,
+        language_id = 3,
         name = '" . $this->db->escape($data['name']) . "',
         name_add = '" . $this->db->escape($data['name_add']) . "',
         description = '" . $this->db->escape($data['description']) . "',

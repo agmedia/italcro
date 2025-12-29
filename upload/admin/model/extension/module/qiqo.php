@@ -28,7 +28,7 @@ class ModelExtensionModuleQiqo extends Model
             // ⚙️ Nađi ili kreiraj kategoriju
             $category_id = $this->resolveOrCreateCategory((int) $a['gid']);
 
-            $name = trim((string) ($a['naziv'] ?? 'Artikl ' . $a['id']));
+            $name = trim((string) ($group['naziv'] ?? 'Artikl ' . $a['id']));
             $dimmodel = trim((string)($a['dimmodel'] ?? ''));
             $opiskatalog  = trim((string)($a['opiskatalog'] ?? ''));
             $price = (float)($a['cijena'] ?? 0);

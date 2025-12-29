@@ -237,7 +237,7 @@ p.footertitle{
 .grid-holder.product-holder.grid4 .item.single-product {
 	box-sizing: border-box;
 	padding: 5px;
-	width: 25%;            /* 4 u redu */
+
 	display: flex;         /* rastezanje visine */
 }
 

@@ -211,24 +211,42 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 				}
 
 				// Loop through columns
-				if (isset($this->request->post['index']['columns'])) {
-					foreach ($settings['module_product_quick_edit_catalog_products'] as $column => $attr) {
-						$display = (isset($this->request->post['display']['columns'][$column])) ? true : false;
-						if ($settings['module_product_quick_edit_catalog_products'][$column]['display'] != $display) {
-							$response['reload'] = true;
-						}
-						$settings['module_product_quick_edit_catalog_products'][$column]['display'] = $display;
+                // Loop through columns
+                if (isset($this->request->post['index']['columns'])) {
 
-						if (isset($this->request->post['index']['columns'][$column])) {
-							if ($settings['module_product_quick_edit_catalog_products'][$column]['index'] != $this->request->post['index']['columns'][$column]) {
-								$response['reload'] = true;
-							}
-							$settings['module_product_quick_edit_catalog_products'][$column]['index'] = $this->request->post['index']['columns'][$column];
-						}
-					}
-				}
+                    // ensure name_add exists in settings so it can be saved from POST
+                    if (!isset($settings['module_product_quick_edit_catalog_products']['name_add'])) {
+                        $settings['module_product_quick_edit_catalog_products']['name_add'] = array(
+                            'index'    => 2,
+                            'display'  => 1,
+                            'editable' => 1,
+                            'type'     => 'text',
+                            'align'    => 'left',
+                            'sort'     => 'pd.name_add',
+                            'rel'      => array()
+                        );
+                        $response['reload'] = true; // optional
+                    }
 
-				// Loop through actions
+                    foreach ($settings['module_product_quick_edit_catalog_products'] as $column => $attr) {
+                        $display = isset($this->request->post['display']['columns'][$column]) ? true : false;
+
+                        if ($settings['module_product_quick_edit_catalog_products'][$column]['display'] != $display) {
+                            $response['reload'] = true;
+                        }
+                        $settings['module_product_quick_edit_catalog_products'][$column]['display'] = $display;
+
+                        if (isset($this->request->post['index']['columns'][$column])) {
+                            if ($settings['module_product_quick_edit_catalog_products'][$column]['index'] != $this->request->post['index']['columns'][$column]) {
+                                $response['reload'] = true;
+                            }
+                            $settings['module_product_quick_edit_catalog_products'][$column]['index'] = $this->request->post['index']['columns'][$column];
+                        }
+                    }
+                }
+
+
+                // Loop through actions
 				if (isset($this->request->post['index']['actions'])) {
 					foreach ($settings['module_product_quick_edit_catalog_products_actions'] as $action => $attr) {
 						$display = (isset($this->request->post['display']['actions'][$action])) ? true : false;
@@ -276,6 +294,27 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 
 			$all_columns = $this->config->get('module_product_quick_edit_catalog_products');
 
+
+
+            if (!isset($all_columns['name_add'])) {
+                $all_columns['name_add'] = array(
+                    'index'    => 2,
+                    'display'  => 1,
+                    'editable' => 1,
+                    'type'     => 'text',
+                    'align'    => 'left',
+                    'sort'     => 'pd.name_add',
+                    'rel'      => array()
+                );
+            } else {
+                $all_columns['name_add']['display']  = 1;
+                $all_columns['name_add']['editable'] = 1;
+                $all_columns['name_add']['type']     = $all_columns['name_add']['type'] ?? 'text';
+                $all_columns['name_add']['align']    = $all_columns['name_add']['align'] ?? 'left';
+                $all_columns['name_add']['sort']     = $all_columns['name_add']['sort'] ?? 'pd.name_add';
+                $all_columns['name_add']['rel']      = $all_columns['name_add']['rel']  ?? array();
+            }
+
 			uasort($all_columns, 'column_sort');
 			$columns = array_filter($all_columns, 'column_display');
 
@@ -316,12 +355,12 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 					$column_name = $request_column['data'];
 
 					// if ($request_column['orderable'] == 'true' && $columns[$displayed_columns[$column_idx]]['sort']) {
-					if ($request_column['orderable'] == 'true' && $columns[$column_name]['sort']) {
-						$filter_data['sort'][] = array(
-							'column' => $columns[$column_name]['sort'],
-							'order' => ($this->request->post['order'][$i]['dir'] === 'asc' ? 'ASC' : 'DESC')
-						);
-					}
+                    if (!empty($column_name) && !empty($columns[$column_name]) && !empty($columns[$column_name]['sort'])) {
+                        $filter_data['sort'][] = [
+                            'column' => $columns[$column_name]['sort'],
+                            'order'  => ($this->request->post['order'][$i]['dir'] === 'asc' ? 'ASC' : 'DESC')
+                        ];
+                    }
 				}
 			}
 
@@ -2274,15 +2313,39 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 
 		$data['sorts'] = array();
 
-		$columns = $this->config->get('module_product_quick_edit_catalog_products');
+        $columns = $this->config->get('module_product_quick_edit_catalog_products');
+
+        if (!isset($columns['name_add'])) {
+            $columns['name_add'] = array(
+                'index'    => 2,
+                'display'  => 1,
+                'editable' => 1,
+                'type'     => 'text',
+                'align'    => 'left',
+                'sort'     => 'pd.name_add',
+                'rel'      => array()
+            );
+        } else {
+            // prisili samo ono što mora biti, ALI NE DIRAJ index
+            $columns['name_add']['display']  = 1;
+            $columns['name_add']['editable'] = 1;
+            $columns['name_add']['type']     = $columns['name_add']['type'] ?? 'text';
+            $columns['name_add']['align']    = $columns['name_add']['align'] ?? 'left';
+            $columns['name_add']['sort']     = $columns['name_add']['sort'] ?? 'pd.name_add';
+            $columns['name_add']['rel']      = $columns['name_add']['rel']  ?? array();
+        }
 
 		foreach ($columns as $column => $attr) {
 			$columns[$column]['name'] = $this->language->get('column_' . $column);
 
-			if (strpos($attr['sort'], "p.") === 0 || $attr['sort'] == "pd.name") {
-				$data['sorts'][$column]['name'] = $columns[$column]['name'];
-				$data['sorts'][$column]['value'] = $attr['sort'];
-			}
+            if ($column === 'name_add') {
+                $columns[$column]['name'] = 'Dimmodel';
+            }
+
+            if (strpos($attr['sort'], "p.") === 0 || strpos($attr['sort'], "pd.") === 0) {
+                $data['sorts'][$column]['name'] = $columns[$column]['name'];
+                $data['sorts'][$column]['value'] = $attr['sort'];
+            }
 
 			if ($column == 'view_in_store' && !$multistore) {
 				unset($columns[$column]);
@@ -2292,11 +2355,43 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 		uasort($columns, 'column_sort');
 		$data['product_columns'] = $columns;
 
-		$columns = array_filter($columns, 'column_display');
-		$displayed_actions = array_keys(array_filter($actions, 'column_display'));
+        $columns = array_filter($columns, 'column_display');
 
-		$displayed_columns = array_keys($columns);
-		$related_columns = array_merge(array_map(function($v) { return $v['rel']; }, $columns), array_map(function($v) { return $v['rel']; }, $actions));
+// osiguraj da name_add postoji, ali NE pregazuj index ako već postoji u configu
+        if (!isset($columns['name_add'])) {
+            $columns['name_add'] = array(
+                'index'    => 2,            // default samo prvi put
+                'display'  => 1,
+                'editable' => 1,
+                'type'     => 'text',
+                'align'    => 'left',
+                'sort'     => 'pd.name_add',
+                'rel'      => array()
+            );
+        } else {
+            // prisili da je vidljiv i sortable, ali ostavi index kakav je user složio
+            $columns['name_add']['display']  = 1;
+            $columns['name_add']['editable'] = 1;
+            $columns['name_add']['type']     = $columns['name_add']['type']  ?? 'text';
+            $columns['name_add']['align']    = $columns['name_add']['align'] ?? 'left';
+            $columns['name_add']['sort']     = $columns['name_add']['sort']  ?? 'pd.name_add';
+            $columns['name_add']['rel']      = $columns['name_add']['rel']   ?? array();
+
+            // ako baš nema index u configu, tek onda default
+            if (!isset($columns['name_add']['index']) || $columns['name_add']['index'] === '') {
+                $columns['name_add']['index'] = 2;
+            }
+        }
+
+// BITNO: ponovno sortiraj nakon filtera/force-a
+        uasort($columns, 'column_sort');
+
+        $displayed_columns = array_keys($columns);
+
+        $related_columns = array_merge(
+            array_map(function($v) { return isset($v['rel']) ? $v['rel'] : array(); }, $columns),
+            array_map(function($v) { return isset($v['rel']) ? $v['rel'] : array(); }, $actions)
+        );
 		$column_classes = array();
 		$type_classes = array();
 		$non_sortable = array();

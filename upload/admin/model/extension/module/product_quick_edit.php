@@ -46,7 +46,29 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 					case 'descriptions_exist':
 						$products_data['products'][$product_id][$column] = !empty($data['product_description']);
 						break;
-					case 'seo_urls_exist':
+                    case 'name_add':
+                        $lang_id = (int)$this->config->get('config_language_id');
+
+                        if (isset($data['product_description'][$lang_id]['name_add'])) {
+                            $products_data['products'][$product_id]['name_add'] =
+                                $data['product_description'][$lang_id]['name_add'];
+
+                        } elseif (isset($data['value']) && is_array($data['value'])) {
+                            // quick edit format: array of ['lang'=>X,'value'=>Y]
+                            foreach ($data['value'] as $v) {
+                                if ((int)$v['lang'] === $lang_id) {
+                                    $products_data['products'][$product_id]['name_add'] = $v['value'];
+                                    break;
+                                }
+                            }
+
+                        } else {
+                            $cache_miss = true;
+                            $this->log->write("PQE: cache miss p{$product_id}:name_add [S]");
+                        }
+                        break;
+
+                    case 'seo_urls_exist':
 						$products_data['products'][$product_id][$column] = !empty($data['product_seo_url']);
 						break;
 					case 'category':
@@ -300,7 +322,7 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 		$columns = isset($data['columns']) ? $data['columns'] : array();
 		$actions = isset($data['actions']) ? $data['actions'] : array();
 
-		$sql = "SELECT SQL_CALC_FOUND_ROWS pd.*, p.*";
+        $sql = "SELECT SQL_CALC_FOUND_ROWS pd.*, p.*, pd.name_add AS name_add";
 
 		$sql .= ", (SELECT price FROM " . DB_PREFIX . "product_special WHERE product_id = p.product_id AND (date_start = '0000-00-00' OR date_start < NOW() AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority, price LIMIT 1) AS special_price";
 
@@ -489,6 +511,7 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 				'model'             => 'p.model',
 				'tag'               => 'pd.tag',
 				'viewed'            => 'p.viewed',
+                'name_add' => 'pd.name_add',
 			);
 
 			if (preg_match("/^\".*\"$/", trim(html_entity_decode($data["search"])))) {
@@ -713,6 +736,7 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 				'tag'               => 'pd.tag',
 				'store'             => "GROUP_CONCAT(DISTINCT IF(p2s.store_id = 0, '" . $this->db->escape($this->config->get('config_name')) . "', s.name) SEPARATOR ' ')",
 				'viewed'            => 'p.viewed',
+                'name_add' => 'pd.name_add',
 			);
 
 			if (preg_match("/^\".*\"$/", trim(html_entity_decode($data["search"])))) {
@@ -747,9 +771,11 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 		}
 
 		$sort = array();
-		foreach ($data['sort'] as $idx => $value) {
-			$sort[] = $this->db->escape($value['column']) . ' ' . $this->db->escape($value['order']);
-		}
+        if (!empty($data['sort']) && is_array($data['sort'])) {
+            foreach ($data['sort'] as $idx => $value) {
+                $sort[] = $this->db->escape($value['column']) . ' ' . $this->db->escape($value['order']);
+            }
+        }
 
 		if ($sort) {
 			$sql .= " ORDER BY " . implode(", ", $sort);
@@ -1055,7 +1081,7 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 			}
 
 			$result = 1;
-		} else if (in_array($column, array('name', 'tag'))) {
+        } else if (in_array($column, array('name', 'tag', 'name_add'))) {
 			if (isset($data['value']) && is_array($data['value'])) {
 				foreach ((array)$data['value'] as $value) {
 					$this->db->query("UPDATE " . DB_PREFIX . "product_description SET " . $column . " = '" . $this->db->escape($value['value']) . "' WHERE product_id = '" . (int)$product_id . "' AND language_id = '" . (int)$value['lang'] . "'");

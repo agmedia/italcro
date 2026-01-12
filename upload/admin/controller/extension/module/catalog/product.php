@@ -2339,7 +2339,7 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 			$columns[$column]['name'] = $this->language->get('column_' . $column);
 
             if ($column === 'name_add') {
-                $columns[$column]['name'] = 'Dimmodel';
+                $columns[$column]['name'] = 'Atribut';
             }
 
             if (strpos($attr['sort'], "p.") === 0 || strpos($attr['sort'], "pd.") === 0) {

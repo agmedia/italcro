@@ -45,7 +45,12 @@ class ModelExtensionModuleQiqo extends Model
                 $name = $name . ' ' . $dimmodel;
             }*/
 
-            // ⚙️ Kreiraj proizvod
+            $minimum = 1;
+
+            if (!empty($a['pak']) && (int)$a['pak'] === 1) {
+                $minimum = (float) ($a['pakkol'] ?? 1);
+            }
+
             $data = [
                 'model'       => $a['barcode'],
                 'sku'         => $a['id'],
@@ -53,7 +58,7 @@ class ModelExtensionModuleQiqo extends Model
                 'quantity'    => (float) ($a['zaliha'] ?? 0),
                 'price'       => $price,
                 'cent'        => $cent,
-                'minimum'     => (float) ($a['pakkol'] ?? 1),
+                'minimum'     => $minimum,
                 'status'      => $a['aktivan'] === 'true' ? 1 : 0,
                 'image'       => $group['picpath'] ?? '',
                 'category_id' => $category_id,

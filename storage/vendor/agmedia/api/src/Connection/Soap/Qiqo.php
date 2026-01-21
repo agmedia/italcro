@@ -43,7 +43,7 @@ class Qiqo
     /**
      * 📦 Dohvati artikle (qArtikliWeb)
      */
-    public function getArticles(string $since = '-120 days'): array
+    public function getArticles(string $since = '-2 years'): array
     {
         return $this->fetch('qArtikliWeb', $since, 'lines');
     }

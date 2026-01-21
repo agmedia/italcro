@@ -232,7 +232,16 @@ class ModelCatalogProduct extends Model {
                 $sql .= " ORDER BY " . $data['sort'];
             }
         } else {
-            $sql .= " ORDER BY p.sort_order";
+
+            // DEFAULT sort: UPC path (folder + numeric filename)
+            $folder_sql = "LEFT(p.upc, LENGTH(p.upc) - LENGTH(SUBSTRING_INDEX(p.upc, '/', -1)))";
+            $base_sql   = "SUBSTRING_INDEX(SUBSTRING_INDEX(p.upc, '/', -1), '.', 1)";
+            $num_sql    = "CASE
+                      WHEN $base_sql REGEXP '^[0-9]+$' THEN CAST($base_sql AS UNSIGNED)
+                      ELSE 999999999999999999
+                   END";
+
+            $sql .= " ORDER BY " . $folder_sql . ", " . $num_sql;
         }
 
         if (isset($data['order']) && ($data['order'] == 'DESC')) {

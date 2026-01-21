@@ -770,14 +770,38 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 			}
 		}
 
-		$sort = array();
+        $sort = array();
+
         if (!empty($data['sort']) && is_array($data['sort'])) {
             foreach ($data['sort'] as $idx => $value) {
-                $sort[] = $this->db->escape($value['column']) . ' ' . $this->db->escape($value['order']);
+
+                $col = isset($value['column']) ? $value['column'] : '';
+                $ord = isset($value['order']) ? strtoupper($value['order']) : 'ASC';
+
+                // whitelist za order
+                $ord = ($ord === 'DESC') ? 'DESC' : 'ASC';
+
+                // UPC = path → sort po folderu + numerički filename
+                if ($col === 'p.upc') {
+
+                    $sort[] = "
+                SUBSTRING_INDEX(p.upc, '/', 2) {$ord},
+                CASE
+                    WHEN SUBSTRING_INDEX(SUBSTRING_INDEX(p.upc, '/', -1), '.', 1) REGEXP '^[0-9]+$'
+                        THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(p.upc, '/', -1), '.', 1) AS UNSIGNED)
+                    ELSE 999999999999999999
+                END {$ord}
+            ";
+
+                } else {
+                    // default sort (ostala polja)
+                    $sort[] = $this->db->escape($col) . ' ' . $ord;
+                }
             }
         }
 
-		if ($sort) {
+
+        if ($sort) {
 			$sql .= " ORDER BY " . implode(", ", $sort);
 		} else {
 			// $sql .= " ORDER BY pd.name ASC";

@@ -11,6 +11,7 @@ class ModelExtensionModuleQiqo extends Model
 
         $groups   = collect($qiqo->getGroups());
         $articles = collect($qiqo->getArticles());
+        $partners = collect($qiqo->getPartners());
 
         $imported = 0;
 
@@ -24,6 +25,8 @@ class ModelExtensionModuleQiqo extends Model
 
             // ⚙️ Nađi grupu
             $group = $groups->firstWhere('id', $a['kataloggrupa']);
+
+            $partner = $partners->firstWhere('id', $a['partner']);
 
             // ⚙️ Nađi ili kreiraj kategoriju
             $category_id = $this->resolveOrCreateCategory((int) $a['gid']);
@@ -64,6 +67,7 @@ class ModelExtensionModuleQiqo extends Model
                 'category_id' => $category_id,
                 'name'        => $name,
                 'name_add'    => $dimmodel,
+                'isbn' => trim($partner['naziv'] ?? ''),
                 'description' => trim($group['opis'] ?? ''),
                 'description_add' => $opiskatalog
             ];

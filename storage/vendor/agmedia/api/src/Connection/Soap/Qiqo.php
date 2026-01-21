@@ -56,6 +56,11 @@ class Qiqo
     {
         return $this->fetch('qKatalogGrupaWeb', $since, 'KatalogGrupa');
     }
+
+    public function getPartners(string $since = '-2 years'): array
+    {
+        return $this->fetch('qPartnerWeb', $since, 'Partner');
+    }
     
     
     /**

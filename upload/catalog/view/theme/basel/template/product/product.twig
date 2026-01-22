@@ -135,8 +135,6 @@
 
                         {% if same_mpn_products is defined and same_mpn_products|length > 1 %}
 
-
-
                             <div class="mpn-variants table-responsive">
                                 <table class="table table-bordered table-striped">
                                     <thead>
@@ -151,6 +149,7 @@
                                         <th class="text-right">Cijena</th>
                                         <th class="text-right">Ukupno</th>
                                         <th class="text-right">Dodaj</th>
+                                            <th></th>
                                         {% endif %}
                                     </tr>
                                     </thead>
@@ -250,6 +249,12 @@
 
                                                             </div>
                                                         </td>
+
+                                                <td>
+                                                    <div style="padding:0 5px 0 0"><span class="info is_wishlist"><a onclick="wishlist.add('{{ p.product_id }}');"><i class="icon-heart"></i> </a></span>
+                                                    <span class="info is_compare"><a onclick="compare.add('{{ p.product_id }}');"><i class="icon-refresh"></i> </a></span>
+                                                    </div>
+                                                </td>
 
                                             {% endif %}
 

@@ -357,4 +357,26 @@ jQuery(function(){
 			$('header #search').find('button').trigger('click');
 		}
 	});
+	/* === LUPA KAO HREF LINK === */
+	var $mssLink = $('.full-search-wrapper .mss-submit-link');
+
+	function syncMssLink() {
+		var v = $('.full-search-wrapper offering input.tt-input[name="search"]').val()
+			|| $('.full-search-wrapper input.tt-input[name="search"]').val()
+			|| $('.full-search-wrapper input[name="search"]').val()
+			|| '';
+
+		$mssLink.attr('href', url_search(v));
+	}
+
+	syncMssLink();
+
+	$(document).on('keyup change', '.full-search-wrapper input[name="search"]', syncMssLink);
+
+	$mssLink.off('click').on('click', function (e) {
+		e.preventDefault();
+		syncMssLink();
+		window.location.href = $(this).attr('href');
+	});
+
 });

@@ -2,8 +2,11 @@
 <div class="search-field search-main">
 <input type="text" name="search" value="{{ search }}" placeholder="{{ basel_text_search }}" class="form-control main-search-input" />
 </div>
-<div class="search-button do-search main">
-    <button type="submit" class="icon-magnifier icon" title="Pretraga"></button></div>
+    <div class="search-button do-search main">
+        <a class="icon-magnifier icon mss-submit-link"
+           href="{{ base }}index.php?route=product/search"
+           title="Pretraga"></a>
+    </div>
 </div>
 <script>
 $(document).ready(function() {

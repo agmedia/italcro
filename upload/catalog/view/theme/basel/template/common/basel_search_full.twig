@@ -13,3 +13,34 @@ $(document).ready(function() {
 $('.search-holder-mobile input[name=\'search-mobile\']').attr("placeholder", "{{ basel_text_search }}").attr("value", "{{ search }}");
 });
 </script>
+
+<script>
+    $(function () {
+        var $wrap = $('.full-search-wrapper');
+
+        $wrap.on('click', 'a.mss-submit-link', function (e) {
+            e.preventDefault();
+
+            // uzmi vrijednost iz inputa koji je u ISTOM wrapperu
+            var v = $(this).closest('.full-search-wrapper').find('input[name="search"]').val() || '';
+
+            // složi url (sa base ako treba)
+            var base = $('base').attr('href') || '{{ base }}';
+            var url = base + 'index.php?route=product/search';
+
+            if ($.trim(v) !== '') {
+                url += '&search=' + encodeURIComponent($.trim(v));
+            }
+
+            window.location.href = url;
+        });
+
+        // Enter = isti efekt
+        $wrap.on('keydown', 'input[name="search"]', function (e) {
+            if (e.keyCode === 13) {
+                e.preventDefault();
+                $(this).closest('.full-search-wrapper').find('a.mss-submit-link').trigger('click');
+            }
+        });
+    });
+</script>

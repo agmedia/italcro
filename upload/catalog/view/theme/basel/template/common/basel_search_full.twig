@@ -2,9 +2,17 @@
 <div class="search-field search-main">
 <input type="text" name="search" value="{{ search }}" placeholder="{{ basel_text_search }}" class="form-control main-search-input" />
 </div>
-    <div class="search-button do-search main">
-        <button type="submit" class="icon-magnifier icon" title="Pretraga"></button>
-    </div>
+<div class="search-button do-search main">
+    <a href="javascript:void(0)" class="icon-magnifier icon do-search" title="Pretraga"></a>
+
+    <script>
+        $(document).ready(function () {
+            $('.do-search').on('click', function () {
+                $(this).closest('form').submit();
+            });
+        });
+    </script>
+</div>
 </div>
 <script>
 $(document).ready(function() {

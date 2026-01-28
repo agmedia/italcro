@@ -744,15 +744,18 @@ class ControllerProductProduct extends Controller {
 
                     $minimum = ($result['minimum'] > 0) ? (int)$result['minimum'] : 1;
 
+                    // ⬇⬇⬇ OVDJE
+                    $multiplier = ($result['cent'] === 'C-100') ? 100 : $minimum;
+
                     $price_raw   = (float)$result['price'];
                     $special_raw = (float)$result['special'];
 
-                    // novo = special ako postoji, inače regular
-                    $unit_new = ($special_raw > 0) ? $special_raw : $price_raw;
-                    $new_total = $unit_new * $minimum;
+                    $unit_new  = ($special_raw > 0) ? $special_raw : $price_raw;
+                    $new_total = $unit_new * $multiplier;
 
-                    // staro samo ako postoji special
-                    $old_total = ($special_raw > 0) ? ($price_raw * $minimum) : false;
+                    $old_total = ($special_raw > 0)
+                        ? ($price_raw * $multiplier)
+                        : false;
 
                     $data['same_mpn_products'][] = [
                         'product_id' => $result['product_id'],

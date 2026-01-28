@@ -2,37 +2,11 @@
 <div class="search-field search-main">
 <input type="text" name="search" value="{{ search }}" placeholder="{{ basel_text_search }}" class="form-control main-search-input" />
 </div>
-    <div class="search-button do-search main">
-        <a href="index.php?route=product/search"
-           class="icon-magnifier icon do-search-link"
-           title="Pretraga"></a>
-    </div>
+<div class="search-button do-search main">
+    <button type="submit" class="icon-magnifier icon" title="Pretraga"></button></div>
 </div>
 <script>
 $(document).ready(function() {
 $('.search-holder-mobile input[name=\'search-mobile\']').attr("placeholder", "{{ basel_text_search }}").attr("value", "{{ search }}");
 });
-</script>
-<script>
-    $(document).ready(function () {
-
-        $('.do-search-link').on('click', function (e) {
-            e.preventDefault();
-
-            var search = $('.main-search-input').val();
-
-            if (search) {
-                var url = 'index.php?route=product/search&search=' + encodeURIComponent(search);
-                window.location.href = url;
-            }
-        });
-
-        // ENTER key support
-        $('.main-search-input').on('keypress', function (e) {
-            if (e.which === 13) {
-                $('.do-search-link').click();
-            }
-        });
-
-    });
 </script>

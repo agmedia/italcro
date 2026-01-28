@@ -160,7 +160,24 @@ class ControllerProductProduct extends Controller {
 
 		$this->load->model('catalog/product');
 
-		$product_info = $this->model_catalog_product->getProduct($product_id);
+		//$product_info = $this->model_catalog_product->getProduct($product_id);
+
+        $store_id = (int)$this->config->get('config_store_id');
+        $lang_id  = (int)$this->config->get('config_language_id');
+
+       // Verzija cache-a za ovaj product (bump u adminu)
+        $ppver = $this->ppCacheVersion($product_id);
+
+        $base = "pp.$store_id.$lang_id.$product_id.v$ppver";
+
+          // 1) Product
+        $key = $base . '.info';
+        $product_info = $this->ppCacheGet($key);
+        if ($product_info === false) {
+            $product_info = $this->model_catalog_product->getProduct($product_id);
+            $this->ppCacheSet($key, $product_info);
+        }
+
 
         $minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
 
@@ -354,11 +371,18 @@ class ControllerProductProduct extends Controller {
 
 			$data['images'] = array();
 
-			$results = $this->model_catalog_product->getProductImages($this->request->get['product_id']);
+            // 2) Product images (raw lista)
+            $key = $base . '.images';
+            $results = $this->ppCacheGet($key);
+            if ($results === false) {
+                $results = $this->model_catalog_product->getProductImages($product_id);
+                $this->ppCacheSet($key, $results);
+            }
 
-			foreach ($results as $result) {
-				$data['images'][] = array(
-                    'popup'    => 'image/'.$result['image'],
+            $data['images'] = array();
+            foreach ($results as $result) {
+                $data['images'][] = array(
+                    'popup'    => 'image/' . $result['image'],
                     'thumb'    => $this->model_tool_image->resize(
                         $result['image'],
                         $this->config->get('theme_' . $this->config->get('config_theme') . '_image_additional_width'),
@@ -369,13 +393,14 @@ class ControllerProductProduct extends Controller {
                         $this->config->get('theme_' . $this->config->get('config_theme') . '_image_popup_width'),
                         $this->config->get('theme_' . $this->config->get('config_theme') . '_image_popup_height')
                     )
-				);
-			}
+                );
+            }
 
 
 
 
-			if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
+
+            if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
 				$data['price'] = $this->currency->format($this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 				if($this->session->data['currency']=='HRK'){
@@ -543,11 +568,23 @@ class ControllerProductProduct extends Controller {
 
 			$data['share'] = $this->url->link('product/product', 'product_id=' . (int)$this->request->get['product_id']);
 
-			$data['attribute_groups'] = $this->model_catalog_product->getProductAttributes($this->request->get['product_id']);
+            $key = $base . '.attrs';
+            $data['attribute_groups'] = $this->ppCacheGet($key);
+            if ($data['attribute_groups'] === false) {
+                $data['attribute_groups'] = $this->model_catalog_product->getProductAttributes($product_id);
+                $this->ppCacheSet($key, $data['attribute_groups']);
+            }
 
 			$data['products'] = array();
 
-			$results = $this->model_catalog_product->getProductRelated($this->request->get['product_id']);
+			//$results = $this->model_catalog_product->getProductRelated($this->request->get['product_id']);
+
+            $key = $base . '.related';
+            $results = $this->ppCacheGet($key);
+            if ($results === false) {
+                $results = $this->model_catalog_product->getProductRelated($product_id);
+                $this->ppCacheSet($key, $results);
+            }
 
 			foreach ($results as $result) {
 				if ($result['image']) {
@@ -651,7 +688,7 @@ class ControllerProductProduct extends Controller {
                     'ean'        => $result['ean'],
                     'name_add'        => $result['name_add'],
 					'description' => utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
-					     'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),
+					   //  'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),
 					'price'       => $price,
 					'special'     => $special,
                     'mpn_count'       => $result['mpn_count'],
@@ -684,10 +721,20 @@ class ControllerProductProduct extends Controller {
 			}
 
             // proizvodi s istim MPN-om (osim trenutnog)
-            $mpn_products = $this->model_catalog_product->getProductsByMPN(
-                $product_info['mpn'],
-                $product_id
-            );
+            $mpn = isset($product_info['mpn']) ? trim($product_info['mpn']) : '';
+
+            $mpn_products = array();
+            if ($mpn !== '') {
+                $mpn_key = "pp.$store_id.$lang_id.mpn." . md5($mpn) . ".exclude.$product_id.v$ppver";
+                $mpn_products = $this->ppCacheGet($mpn_key);
+                if ($mpn_products === false) {
+                    $mpn_products = $this->model_catalog_product->getProductsByMPN($mpn, $product_id);
+                    $this->ppCacheSet($mpn_key, $mpn_products);
+                }
+            } else {
+                $mpn_products = array();
+            }
+
 
 // želimo prikaz samo ako ima više od 1 (dakle barem 2 proizvoda s tim MPN-om)
             if (count($mpn_products) > 0) {
@@ -994,4 +1041,27 @@ class ControllerProductProduct extends Controller {
 
         return "artikala";
     }
+
+    private function ppCacheVersion($product_id) {
+        $key = 'ppver.' . (int)$product_id;
+        $ver = $this->cache->get($key);
+
+        if ($ver === false || $ver === null) {
+            $ver = 1;
+            $this->cache->set($key, $ver);
+        }
+
+        return (int)$ver;
+    }
+
+    private function ppCacheGet($key) {
+        $value = $this->cache->get($key);
+        return ($value === false || $value === null) ? false : $value;
+    }
+
+    private function ppCacheSet($key, $value) {
+        $this->cache->set($key, $value);
+        return $value;
+    }
+
 }

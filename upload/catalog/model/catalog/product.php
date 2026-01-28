@@ -681,41 +681,67 @@ class ModelCatalogProduct extends Model {
 	}
 
     public function getProductsByMPN($mpn, $exclude_product_id = 0) {
-        $products = array();
+        if (!$mpn) return [];
 
-        // ako je MPN prazan, nema smisla dalje
-        if (!$mpn) {
-            return $products;
+        $store_id = (int)$this->config->get('config_store_id');
+        $lang_id  = (int)$this->config->get('config_language_id');
+        $customer_group_id = (int)$this->config->get('config_customer_group_id');
+
+        // Special (akcijska) cijena po productu (ako postoji i u datumu)
+        $sql = "
+        SELECT
+            p.product_id,
+            p.model,
+            p.sku,
+            p.ean,
+            p.mpn,
+            p.quantity,
+            p.minimum,
+            p.price,
+            p.tax_class_id,
+            pd.name,
+            pd.description,
+            pd.name_add,
+            pd.description_add,
+
+            (
+                SELECT ps.price
+                FROM " . DB_PREFIX . "product_special ps
+                WHERE ps.product_id = p.product_id
+                  AND ps.customer_group_id = " . $customer_group_id . "
+                  AND (ps.date_start = '0000-00-00' OR ps.date_start <= NOW())
+                  AND (ps.date_end   = '0000-00-00' OR ps.date_end   >= NOW())
+                ORDER BY ps.priority ASC, ps.price ASC
+                LIMIT 1
+            ) AS special
+
+        FROM " . DB_PREFIX . "product p
+        INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id)
+        INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id)
+
+        WHERE p.mpn = '" . $this->db->escape($mpn) . "'
+          AND p.status = '1'
+          AND p.date_available <= NOW()
+          AND p2s.store_id = " . $store_id . "
+          AND pd.language_id = " . $lang_id . "
+    ";
+
+        if ($exclude_product_id) {
+            $sql .= " AND p.product_id <> " . (int)$exclude_product_id . " ";
         }
 
-        $sql = "SELECT DISTINCT p.product_id
-            FROM " . DB_PREFIX . "product p
-            LEFT JOIN " . DB_PREFIX . "product_to_store p2s 
-                ON (p.product_id = p2s.product_id)
-            LEFT JOIN " . DB_PREFIX . "product_description pd
-                ON (p.product_id = pd.product_id)
-            WHERE p.mpn = '" . $this->db->escape($mpn) . "'
-              AND p.status = '1'
-              AND p.date_available <= NOW()
-              AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'
-              AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "'";
-
-
-
-        // možeš po želji dodati još sortiranja
         $sql .= " ORDER BY pd.name ASC";
 
         $query = $this->db->query($sql);
 
+        // Vrati kao array po product_id (kao što si imao)
+        $products = [];
         foreach ($query->rows as $row) {
-            $product_info = $this->getProduct($row['product_id']);
-
-            if ($product_info) {
-                $products[$row['product_id']] = $product_info;
-            }
+            $products[(int)$row['product_id']] = $row;
         }
 
         return $products;
     }
+
 
 }

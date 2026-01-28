@@ -146,6 +146,7 @@
                                         <th>JM.</th>
                                         {% if price %}
                                         <th class="text-right">Zaliha</th>
+                                            <th class="text-right">C-100</th>
                                         <th class="text-right price">Cijena</th>
                                         <th class="text-right price">Ukupno</th>
                                         <th class="text-right price">Dodaj</th>
@@ -165,7 +166,7 @@
                                             <td>{{ p.ean }}</td>
                                             {% if price %}
                                                         <td class="text-right">{{ p.stock }}</td>
-
+                                                <td class="text-right">{{ p.cent }}</td>
                                                         {# -------- CIJENA / SPECIAL -------- #}
                                                 <td class="text-right price">
                                                     {% set min_qty = (p.minimum is defined and p.minimum > 1) ? p.minimum : 1 %}

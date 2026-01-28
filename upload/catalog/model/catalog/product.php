@@ -695,6 +695,7 @@ class ModelCatalogProduct extends Model {
             p.sku,
             p.ean,
             p.mpn,
+            p.cent,
             p.quantity,
             p.minimum,
             p.price,

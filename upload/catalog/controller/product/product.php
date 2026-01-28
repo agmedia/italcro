@@ -759,6 +759,7 @@ class ControllerProductProduct extends Controller {
                         'code'       => $result['sku'],
                         'barcode'    => $result['model'],
                         'ean'    => $result['ean'],
+                        'cent'    => $result['cent'],
                         'name_add'   => $result['name_add'],
                         'description_add' => $result['description_add'],
                         'stock'      => $result['quantity'],

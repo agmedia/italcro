@@ -63,13 +63,34 @@
       }, 'json');
     }
 
+    function normalizeCent(v){
+      return String(v || '').toUpperCase().replace(/\s+/g,'').replace(/-/g,'');
+    }
+    function isC100(itemOrTr){
+      var c = '';
+      if(itemOrTr && itemOrTr.jquery){
+        c = itemOrTr.attr('data-cent') || '';
+      } else if(itemOrTr){
+        c = itemOrTr.cent || '';
+      }
+      return normalizeCent(c) === 'C100';
+    }
+    function getPackMultiplier(itemOrTr, fallbackMin){
+      var min = fallbackMin || 1;
+      if(itemOrTr && !itemOrTr.jquery){
+        min = parseInt(itemOrTr.minimum || min, 10) || min;
+      }
+      return isC100(itemOrTr) ? 100 : min;
+    }
+
     /* ===================== Table rendering ===================== */
     function rowHtml(item, added){
       var min = item.minimum && item.minimum > 0 ? item.minimum : 1;
       var qty = item.quantity || min;
+      var pack = getPackMultiplier(item, min); // 100 ako je C-100, inače minimum
       if (qty < min) qty = min;
 
-      var subtotal = (item.price_raw || 0) * qty;
+      var subtotal = (item.price_raw || 0) * qty * pack;
       var subtotalCell = '<span class="qo-subtotal" data-sub="'+subtotal+'">...</span>';
       var actions = added
           ? '<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>'
@@ -97,11 +118,11 @@
           '</div>';
 
       return '\
-        <tr data-id="'+item.product_id+'" data-price="'+(item.price_raw || 0)+'" '+(added?'data-added="1"':'')+'>\
+       <tr data-id="'+item.product_id+'" data-price="'+(item.price_raw || 0)+'" data-cent="'+(item.cent || '')+'" '+(added?'data-added="1"':'')+'>\
           <td>'+(item.thumb ? '<img src="'+item.thumb+'" style="width:60px;height:60px;object-fit:cover">' : '')+'</td>\n\
           <td>'+(item.name || '')+'</td>\n\
           <td>'+(item.name_add || '')+'</td>\n\
-              <td>'+min+'</td>\n\
+           <td>'+pack+'</td>\n\
           <td>'+(item.sku || '')+'</td>\n\
           <td>'+(item.price || '')+'</td>\n\
           <td>'+subtotalCell+'</td>\n\
@@ -114,6 +135,7 @@
       var price = parseFloat($tr.attr('data-price') || '0');
       var $input = $tr.find('.qo-qty');
       var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
+      var pack = getPackMultiplier($tr, step);
       if (isNaN(step) || step < 1) step = 1;
 
       var qty = parseInt($input.val() || step, 10);
@@ -121,7 +143,7 @@
         qty = step;
         $input.val(step);
       }
-      var subtotal = price * qty;
+      var subtotal = price * qty * pack;
       var $cell = $tr.find('.qo-subtotal');
       $cell.attr('data-sub', subtotal);
       formatCurrency(subtotal, function(txt){ $cell.text(txt); });
@@ -138,6 +160,10 @@
       var $existing = $table.find('tr[data-id="'+item.product_id+'"]');
       if($existing.length){
         var min = item.minimum && item.minimum > 0 ? item.minimum : parseInt($existing.find('.qo-qty').attr('data-minstep') || '1', 10) || 1;
+
+        if (item.cent != null) {
+          $existing.attr('data-cent', item.cent);
+        }
         if(item.quantity){
           if (item.quantity < min) item.quantity = min;
           $existing.find('.qo-qty').val(item.quantity).attr('data-minstep', min).attr('min', min);
@@ -188,6 +214,7 @@
         price_raw: isNaN(pRaw) ? 0 : pRaw,
         quantity: qty,
         minimum: minimumVal,
+        cent: $tr.attr('data-cent') || '',
         thumb: (function(){
           var img = $tr.find('td:first img');
           return img.length ? img.attr('src') : '';
@@ -217,7 +244,8 @@
          data-sku="${esc(it.sku||'')}"
          data-price="${esc(it.price||'')}"
          data-priceraw="${Number(it.price_raw||0)}"
-         data-thumb="${esc(it.thumb||'')}">
+        data-thumb="${esc(it.thumb||'')}"
+data-cent="${esc(it.cent||'')}">
       <div class="qo-suggest-inner">
         ${img}
         <div class="qo-info">
@@ -288,6 +316,7 @@
         price_raw: parseFloat($s.attr('data-priceraw') || '0') || 0,
         thumb: $s.attr('data-thumb') || '',
         quantity: q,
+        cent: $s.attr('data-cent') || '',
         minimum: min
       };
     }

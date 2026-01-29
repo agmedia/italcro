@@ -102,6 +102,7 @@
           <td>'+(item.name || '')+'</td>\n\
           <td>'+(item.name_add || '')+'</td>\n\
               <td>'+min+'</td>\n\
+              <td>'+(item.cent || '')+'</td>\n\
           <td>'+(item.sku || '')+'</td>\n\
           <td>'+(item.price || '')+'</td>\n\
           <td>'+subtotalCell+'</td>\n\

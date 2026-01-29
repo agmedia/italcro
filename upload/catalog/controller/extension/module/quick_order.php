@@ -137,8 +137,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 'description_add'=> $product_info['description_add'],    // opis
                 'stock'          => $product_info['quantity'],
                 'minimum'          => $product_info['minimum'],
-
-                'cent'            => isset($product_info['cent']) ? $product_info['cent'] : '',
+                'cent'       => isset($row['cent']) ? $row['cent'] : '',
                 'thumb'      => $thumb
             ];
         }
@@ -292,9 +291,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 'price_raw'  => $price_raw,
                 'price'      => $price_txt,
                 'quantity'   => (int)$product['quantity'],
-                'thumb'      => $thumb,
-                'cent'       => isset($product_info['cent']) ? $product_info['cent'] : '',
-                'minimum'    => isset($product_info['minimum']) ? (int)$product_info['minimum'] : 1,
+                'thumb'      => $thumb
             );
         }
 

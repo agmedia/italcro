@@ -81,7 +81,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
 
 
-        $sql = "SELECT p.product_id 
+        $sql = "SELECT p.product_id, p.cent
         FROM " . DB_PREFIX . "product p 
         JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
         WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'

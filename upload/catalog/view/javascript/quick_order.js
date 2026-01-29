@@ -150,8 +150,11 @@
         if (item.minimum) {
           $existing.find('td').eq(3).text(item.minimum);
         }
+        if (item.cent != null) {
+          $existing.find('td').eq(4).text(item.cent);
+        }
         if (item.sku) {
-          $existing.find('td').eq(4).text(item.sku);
+          $existing.find('td').eq(5).text(item.sku);
         }
         recomputeRow($existing);
         return $existing;
@@ -184,8 +187,10 @@
         name: tds.eq(1).text().trim(),
         name_add: tds.eq(2).text().trim(),      // Atribut (name_add)
         // td(3) = Pakiranje (minimum)
-        sku:  tds.eq(4).text().trim(),          // Šifra
-        price: tds.eq(5).text().trim(),         // Cijena
+        cent: tds.eq(4).text().trim(),
+        sku:  tds.eq(5).text().trim(),
+        price: tds.eq(6).text().trim(),
+        // Cijena
         price_raw: isNaN(pRaw) ? 0 : pRaw,
         quantity: qty,
         minimum: minimumVal,
@@ -209,16 +214,17 @@
           : `<div class="qo-thumb placeholder"><i class="fa fa-box"></i></div>`;
 
       return `
-    <div class="list-group-item qo-suggest"
-         tabindex="0"
-         data-pid="${esc(it.product_id)}"
-         data-name="${esc(it.name||'')}"
-         data-name_add="${esc(it.name_add||'')}"
-         data-minimum="${min}"
-         data-sku="${esc(it.sku||'')}"
-         data-price="${esc(it.price||'')}"
-         data-priceraw="${Number(it.price_raw||0)}"
-         data-thumb="${esc(it.thumb||'')}">
+<div class="list-group-item qo-suggest"
+     tabindex="0"
+     data-pid="${esc(it.product_id)}"
+     data-name="${esc(it.name||'')}"
+     data-name_add="${esc(it.name_add||'')}"
+     data-minimum="${min}"
+     data-sku="${esc(it.sku||'')}"
+     data-price="${esc(it.price||'')}"
+     data-priceraw="${Number(it.price_raw||0)}"
+     data-thumb="${esc(it.thumb||'')}"
+     data-cent="${esc(it.cent||'')}">
       <div class="qo-suggest-inner">
         ${img}
         <div class="qo-info">
@@ -289,7 +295,8 @@
         price_raw: parseFloat($s.attr('data-priceraw') || '0') || 0,
         thumb: $s.attr('data-thumb') || '',
         quantity: q,
-        minimum: min
+        minimum: min,
+        cent: $s.attr('data-cent') || ''
       };
     }
 

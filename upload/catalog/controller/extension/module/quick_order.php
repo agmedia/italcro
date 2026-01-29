@@ -137,7 +137,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 'description_add'=> $product_info['description_add'],    // opis
                 'stock'          => $product_info['quantity'],
                 'minimum'          => $product_info['minimum'],
-                'cent'       => isset($row['cent']) ? $row['cent'] : '',
+                'cent'       => isset($product_info['cent']) ? $product_info['cent'] : '',
                 'thumb'      => $thumb
             ];
         }

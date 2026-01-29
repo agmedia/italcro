@@ -63,6 +63,21 @@
       }, 'json');
     }
 
+    function normCent(v){
+      return String(v || '').toUpperCase().replace(/\s+/g,'').replace(/-/g,'');
+    }
+    function isC100(obj){
+      return normCent(obj && obj.cent) === 'C100';
+    }
+// prikaz cijene u tablici: ako je C-100 -> cijena*100, inače normalno
+    function displayPrice(item){
+      if(isC100(item)){
+        // item.price_raw je broj (po komadu)
+        return ((item.price_raw || 0) * 100).toFixed(2) + '€';
+      }
+      return item.price || '';
+    }
+
     /* ===================== Table rendering ===================== */
     function rowHtml(item, added){
       var min = item.minimum && item.minimum > 0 ? item.minimum : 1;
@@ -104,7 +119,7 @@
               <td>'+min+'</td>\n\
               <td>'+(item.cent || '')+'</td>\n\
           <td>'+(item.sku || '')+'</td>\n\
-          <td>'+(item.price || '')+'</td>\n\
+         <td>'+(displayPrice(item))+'</td>\n\
           <td>'+subtotalCell+'</td>\n\
           <td>'+qtyHtml+'</td>\n\
           <td class="qo-actions">'+actions+'</td>\n\
@@ -155,6 +170,15 @@
         }
         if (item.sku) {
           $existing.find('td').eq(5).text(item.sku);
+        }
+
+        // osvježi prikaz cijene (C-100 -> price_raw*100)
+        if(item.price_raw != null || item.price != null){
+          $existing.find('td').eq(6).text(displayPrice({
+            cent: item.cent != null ? item.cent : $existing.find('td').eq(4).text(),
+            price_raw: item.price_raw != null ? item.price_raw : parseFloat($existing.attr('data-price') || '0'),
+            price: item.price != null ? item.price : $existing.find('td').eq(6).text()
+          }));
         }
         recomputeRow($existing);
         return $existing;

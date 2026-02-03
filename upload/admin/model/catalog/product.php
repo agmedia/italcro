@@ -149,11 +149,6 @@ class ModelCatalogProduct extends Model {
 		$this->db->query("DELETE FROM " . DB_PREFIX . "product_description WHERE product_id = '" . (int)$product_id . "'");
 
         foreach ($data['product_description'] as $language_id => $value) {
-            $name_add_sql = "name_add";
-
-            if (isset($value['name_add'])) {
-                $name_add_sql = "'" . $this->db->escape($value['name_add']) . "'";
-            }
 
             $this->db->query("INSERT INTO " . DB_PREFIX . "product_description SET
     product_id = '" . (int)$product_id . "',
@@ -164,7 +159,7 @@ class ModelCatalogProduct extends Model {
     meta_title = '" . $this->db->escape($value['meta_title']) . "',
     meta_description = '" . $this->db->escape($value['meta_description']) . "',
     meta_keyword = '" . $this->db->escape($value['meta_keyword']) . "',
-    name_add = $name_add_sql
+    name_add = '" . $this->db->escape($value['name_add'] ?? '') . "'
 ");
         }
 
@@ -457,6 +452,7 @@ class ModelCatalogProduct extends Model {
 		foreach ($query->rows as $result) {
 			$product_description_data[$result['language_id']] = array(
 				'name'             => $result['name'],
+                'name_add'         => $result['name_add'],
 				'description'      => $result['description'],
 				'meta_title'       => $result['meta_title'],
 				'meta_description' => $result['meta_description'],

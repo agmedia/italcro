@@ -144,15 +144,15 @@ class ControllerCheckoutSuccess extends Controller {
 	                                ),
 	                            'receiver' =>
 	                                array (
-	                                    'name' => 'Lux natur d.o.o.',
-	                                    'street' => 'Zagrebačka avenija 5',
-	                                    'place' => '10000 Zagreb',
-	                                    'iban' => 'HR0624070001100411692',
+	                                    'name' => 'ITALCRO d.o.o.',
+	                                    'street' => 'Poduzetnička zona 6',
+	                                    'place' => '52216 Galižana',
+	                                    'iban' => 'HR7623600001101243009',
 	                                    'model' => '00',
 	                                    'reference' => $pozivnabroj,
 	                                ),
 	                            'purpose' => 'SUPP',
-	                            'description' => 'Web narudžba LUX-NATUR',
+	                            'description' => 'Web narudžba ITALCRO',
 	                        ),
 	                );
 

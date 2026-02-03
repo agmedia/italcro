@@ -725,10 +725,12 @@ class ControllerProductProduct extends Controller {
 
             $mpn_products = array();
             if ($mpn !== '') {
-                $mpn_key = "pp.$store_id.$lang_id.mpn." . md5($mpn) . ".exclude.$product_id.v$ppver";
+                $mpn_key = "pp.$store_id.$lang_id.mpn." . md5($mpn) . ".include.v$ppver";
                 $mpn_products = $this->ppCacheGet($mpn_key);
                 if ($mpn_products === false) {
-                    $mpn_products = $this->model_catalog_product->getProductsByMPN($mpn, $product_id);
+                   // $mpn_products = $this->model_catalog_product->getProductsByMPN($mpn, $product_id);
+
+                    $mpn_products = $this->model_catalog_product->getProductsByMPN($mpn);
                     $this->ppCacheSet($mpn_key, $mpn_products);
                 }
             } else {

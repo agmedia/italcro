@@ -5333,6 +5333,13 @@ a.button-circle {
 .grid .carousel .single-product .caption {
 	min-height: 170px;
 }
+.grid .carousel .single-product .caption {
+	display: flex;
+	flex-direction: column;
+}
+.grid .carousel .single-product .price-wrapper {
+	margin-top: auto;
+}
 .grid .carousel .single-product .price-wrapper {
 	margin-top: 0;
 }

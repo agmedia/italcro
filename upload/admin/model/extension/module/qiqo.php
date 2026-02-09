@@ -36,6 +36,7 @@ class ModelExtensionModuleQiqo extends Model
             $opiskatalog  = trim((string)($a['opiskatalog'] ?? ''));
             $price = (float)($a['cijena'] ?? 0);
             $cent  = trim((string)($a['cent'] ?? null));
+            $sortid = (int)($a['sortid'] ?? 0);
 
             // Ako ERP šalje "C-100", cijenu dijelimo sa 100
             if ($cent && strtoupper($cent) === 'C-100') {
@@ -62,6 +63,7 @@ class ModelExtensionModuleQiqo extends Model
                 'price'       => $price,
                 'cent'        => $cent,
                 'minimum'     => $a['pakkol'],
+                'sort_order'  => $sortid,
                 'status'      => $a['aktivan'] === 'true' ? 1 : 0,
                 'image'       => $group['picpath'] ?? '',
                 'category_id' => $category_id,
@@ -100,17 +102,18 @@ class ModelExtensionModuleQiqo extends Model
             $quantity   = (float)($a['zaliha'] ?? 0);
             $pak        = (int)($a['pak'] ?? 0);
             $pakkol     = (float)($a['pakkol'] ?? 0);
+            $sortid     = (int)($a['sortid'] ?? 0);
 
             // Ako je pak=1 → postavi minimum = pakkol
             if ($pakkol > 1) {
                 $this->db->query("UPDATE " . DB_PREFIX . "product 
-                              SET quantity = '{$quantity}', minimum = '{$pakkol}', date_modified = NOW()
+                              SET quantity = '{$quantity}', minimum = '{$pakkol}', sort_order = '{$sortid}', date_modified = NOW()
                               WHERE product_id = '{$product_id}'");
                 $this->log('Quantities', "SKU {$sku} → pak=1, količina={$quantity}, minimum={$pakkol}");
             } else {
                 // standardno ažuriranje
                 $this->db->query("UPDATE " . DB_PREFIX . "product 
-                              SET quantity = '{$quantity}', minimum = 1, date_modified = NOW()
+                              SET quantity = '{$quantity}', minimum = 1, sort_order = '{$sortid}', date_modified = NOW()
                               WHERE product_id = '{$product_id}'");
             }
 
@@ -1348,6 +1351,7 @@ class ModelExtensionModuleQiqo extends Model
         price = '" . (float) $data['price'] . "',
         cent = '" . $this->db->escape($data['cent']) . "',
         minimum = '" . (int) $data['minimum'] . "',
+        sort_order = '" . (int) $data['sort_order'] . "',
         status = '" . (int) $data['status'] . "',
         image = '" . $this->db->escape($image_path) . "',
         upc = '" . $data['image'] . "',

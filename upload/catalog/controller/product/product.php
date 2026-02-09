@@ -741,6 +741,10 @@ class ControllerProductProduct extends Controller {
 // želimo prikaz samo ako ima više od 1 (dakle barem 2 proizvoda s tim MPN-om)
             if (count($mpn_products) > 0) {
                 $data['same_mpn_products'] = array();
+                $mpn_products = array_values($mpn_products);
+                usort($mpn_products, function ($a, $b) {
+                    return (int)$a['sort_order'] <=> (int)$b['sort_order'];
+                });
 
                 foreach ($mpn_products as $result) {
 

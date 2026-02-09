@@ -698,6 +698,7 @@ class ModelCatalogProduct extends Model {
             p.cent,
             p.quantity,
             p.minimum,
+            p.sort_order,
             p.price,
             p.tax_class_id,
             pd.name,
@@ -731,7 +732,7 @@ class ModelCatalogProduct extends Model {
             $sql .= " AND p.product_id <> " . (int)$exclude_product_id . " ";
         }
 
-        $sql .= " ORDER BY pd.name ASC";
+        $sql .= " ORDER BY p.sort_order ASC, pd.name ASC";
 
         $query = $this->db->query($sql);
 

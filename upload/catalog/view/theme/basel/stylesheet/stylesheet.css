@@ -5517,6 +5517,30 @@ a.button-circle {
 	flex: 0 0 100%;
 	max-width: 100%;
 }
+.grid .single-product .caption .row.gray .col-md-12 {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+}
+.grid .single-product .caption .row.gray .col-md-6 {
+	flex: 0 0 50%;
+	max-width: 50%;
+}
+.grid .single-product .caption .row.gray .col-md-6:first-child {
+	display: flex;
+	align-items: flex-end;
+}
+.grid .single-product .caption .row.gray .col-md-6:last-child {
+	display: flex;
+	justify-content: flex-end;
+}
+.grid .single-product .caption .row.gray .input-group.addtocart {
+	margin-left: auto;
+}
+.grid .single-product .caption .row.gray .price {
+	margin-bottom: 0;
+}
 .grid .single-product .caption .input-group.addtocart {
 	margin-top: 6px;
 }

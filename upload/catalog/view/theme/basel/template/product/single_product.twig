@@ -46,7 +46,9 @@
 
             <div class="row gray">
                 <div class="col-md-12">
-                    <span class="pl-5">{{ product.cent }}</span>
+                    {% if product.cent %}
+                        <span class="pl-5">{{ product.cent }}</span>
+                    {% endif %}
 
                     <span>{{ product.sku }}</span> <span style="float:right">Dostupnost: {{ product.quantity }}</span>
                 </div>

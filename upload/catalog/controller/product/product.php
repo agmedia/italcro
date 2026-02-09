@@ -749,6 +749,12 @@ class ControllerProductProduct extends Controller {
                     // ⬇⬇⬇ OVDJE
                     $multiplier = ($result['cent'] === 'C-100') ? 100 : $minimum;
 
+                    if($result['cent'] === 'C-100'){
+                        $minimumifc100 = $minimum;
+                    }else{
+                        $minimumifc100 = 1;
+                    }
+
                     $price_raw   = (float)$result['price'];
                     $special_raw = (float)$result['special'];
 
@@ -769,6 +775,8 @@ class ControllerProductProduct extends Controller {
                         'description_add' => $result['description_add'],
                         'stock'      => $result['quantity'],
                         'minimum'    => $minimum,
+
+                        'minimumifc100'    => $minimumifc100,
 
                         // standardne cijene (po komadu)
                         'price'   => $this->currency->format($price_raw, $this->session->data['currency']),

@@ -5331,14 +5331,20 @@ a.button-circle {
 	display: block;
 }
 .grid .carousel .single-product .caption {
-	min-height: 170px;
-}
-.grid .carousel .single-product .caption {
 	display: flex;
 	flex-direction: column;
+	min-height: 130px;
 }
 .grid .carousel .single-product .price-wrapper {
 	margin-top: auto;
+}
+.grid .carousel .single-product .product-name {
+	min-height: 36px;
+	line-height: 18px;
+}
+.grid .carousel .single-product .caption .pl-5 {
+	display: block;
+	min-height: 18px;
 }
 .grid .carousel .single-product .price-wrapper {
 	margin-top: 0;

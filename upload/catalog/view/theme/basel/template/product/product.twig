@@ -221,10 +221,10 @@
                                                                <input type="text"
                                                                       name="quantity_{{ p.product_id }}"
                                                                       class="form-control input-number"
-                                                                      value="{{ p.minimum }}"
+                                                                      value="{{ p.minimumifc100 }}"
 
-                                                                      min="{{ p.minimum }}"
-                                                                      min-step="{{ p.minimum }}"
+                                                                      min="{{ p.minimumifc100 }}"
+                                                                      min-step="{{ p.minimumifc100 }}"
                                                                       data-id="{{ p.product_id }}"
                                                                       data-price="{% if p.special_value is defined and p.special_value %}{{ p.special_value }}{% elseif p.price_value is defined %}{{ p.price_value }}{% else %}0{% endif %}"
                                                                       onkeyup="updateMpnTotal(this)"
@@ -1362,4 +1362,3 @@
         $('#mpn_total_' + id).text(total);
     }
 </script>
-

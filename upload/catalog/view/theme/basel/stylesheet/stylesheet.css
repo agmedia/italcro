@@ -5326,14 +5326,14 @@ a.button-circle {
 	margin: auto;
 }
 .grid .carousel .single-product .edge {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
+	display: block;
+	height: auto;
 }
 .grid .carousel .single-product .caption {
 	display: flex;
 	flex-direction: column;
-	height: 100%;
+	height: auto;
+	min-height: 140px;
 }
 .grid .carousel .single-product .price-wrapper {
 	margin-top: auto;
@@ -5350,7 +5350,7 @@ a.button-circle {
 	min-height: 18px;
 }
 .grid .carousel .single-product {
-	height: 100%;
+	height: auto;
 }
 .grid .single-product .caption {
 	display: flex;

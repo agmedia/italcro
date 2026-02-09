@@ -70,13 +70,12 @@
       return normCent(obj && obj.cent) === 'C100';
     }
     function getMinStep(item){
-      var ms = item && item.minimumifc100;
-      ms = parseInt(ms || 0, 10);
-      if(isNaN(ms) || ms < 1){
-        ms = parseInt(item && item.minimum || 0, 10);
+      if (isC100(item)) {
+        var pack = parseInt(item && item.minimum || 0, 10);
+        if (isNaN(pack) || pack < 1) pack = 1;
+        return pack;
       }
-      if(isNaN(ms) || ms < 1) ms = 1;
-      return ms;
+      return 1;
     }
 // prikaz cijene u tablici: ako je C-100 -> cijena*100, inače normalno
     function displayPrice(item){

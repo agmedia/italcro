@@ -21,7 +21,12 @@
             {% set button_cart = default_button_cart %}
         {% endif %}
 
+        <a class="img-overlay" href="{{ product.href }}"></a>
         <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');">{{ button_cart }}</a></div>
+        <div class="icons-wrapper">
+            <a class="icon is_wishlist" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart"></span></a>
+            <a class="icon is_compare" onclick="compare.add('{{ product.product_id }}');"><span class="icon-refresh"></span></a>
+        </div>
 
     </div><!-- .image ends -->
     <div class="caption">

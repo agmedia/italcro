@@ -5279,6 +5279,31 @@ a.button-circle {
 	/*! display: -webkit-inline-flex; */
 	/*! flex-wrap: wrap; */
 }
+.grid .single-product .edge {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+.grid .single-product .image {
+	aspect-ratio: 1 / 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+.grid .single-product .image img {
+	max-height: 100%;
+	width: auto;
+	object-fit: contain;
+}
+.grid .single-product .caption {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+.grid .single-product .price-wrapper {
+	margin-top: auto;
+}
 
 .grid.related .single-product {
 	margin-bottom:0px;

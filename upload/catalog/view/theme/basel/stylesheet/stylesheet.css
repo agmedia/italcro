@@ -5312,7 +5312,7 @@ a.button-circle {
 	padding-top: 100%;
 }
 .grid .carousel .single-product .image {
-	height: auto;
+	height: 400px;
 }
 .grid .carousel .single-product .image img {
 	position: absolute;

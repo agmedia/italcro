@@ -58,7 +58,7 @@
                 </div><!-- .image ends -->
                 <div class="caption">
                     <h3 class="product-name" > <a href="{{ product.href }}">{{ product.name }}</a></h3>
-                    {% if product.name_add and product.mpn_count == 1%}
+                    {% if product.name_add and product.mpn_count == 1 %}
                         <span class="pl-5">{{ product.name_add }}</span>
                     {% endif %}
 
@@ -74,13 +74,15 @@
 
                         <div class="row gray">
                             <div class="col-md-12">
-                                <span class="pl-5">  {{ product.cent }}</span>
+                                {% if product.cent %}
+                                    <span class="pl-5">{{ product.cent }}</span>
+                                {% endif %}
 
-                                <span >{{ product.sku }}</span> <span style="float:right">Dostupnost: {{ product.quantity }}</span>
+                                <span class="pl-5">{{ product.sku }}</span> <span style="float:right">Dostupnost: {{ product.quantity }}</span>
                             </div>
                             <div class="col-md-6">
 
-                                {% if product.minimum > 1 %}
+                                {% if product.list_min and product.list_min > 1 %}
                                     <div class="price">
                                         {% if product.preview_price_alt %}
                                             <span class="price-old"> {{ product.preview_price }}</span><span class="price-new"> {{ product.preview_price_alt }} </span>
@@ -112,7 +114,8 @@
 
                             <div class="col-md-6 ">
 
-                                <div class="input-group addtocart" >
+                                {% set list_min = product.list_min is defined ? product.list_min : ((product.cent == 'C-100') ? product.minimum : 1) %}
+                                <div class="input-group addtocart">
 
                       <span class="input-group-btn ">
                           <button type="button" class="btn btn-default btn-number" data-type="minus" data-field="category" onclick="descrement($(this).parent().parent())")>
@@ -124,9 +127,9 @@
                                            class="form-control input-number"
                                            id="category"
 
-                                           min="{{ product.minimum }}"
-                                           min-step="{{ product.minimum }}"
-                                           value="{{ product.minimum }}" >
+                                           min="{{ list_min }}"
+                                           min-step="{{ list_min }}"
+                                           value="{{ list_min }}">
                                     <span class="input-group-btn">
                           <button type="button" class="btn btn-default btn-number" data-type="plus" data-field="category" onclick="increment($(this).parent().parent())">
                             <span class="glyphicon glyphicon-plus"></span>

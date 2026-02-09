@@ -5526,8 +5526,17 @@ a.button-circle {
 .grid .single-product .caption .row.gray .col-md-12 span {
 	white-space: nowrap;
 }
+.grid .single-product .caption .row.gray .col-md-12 span:nth-child(2) {
+	margin-left: 8px;
+}
+.grid .single-product .caption .row.gray .col-md-12 span:nth-child(3) {
+	margin-left: auto;
+}
 .grid .single-product .caption .row.gray .col-md-12 span:last-child {
 	margin-left: auto;
+}
+.grid .single-product .caption .row.gray .col-md-12 span:only-child {
+	margin-left: 0;
 }
 .grid .single-product .caption .row.gray .col-md-6 {
 	flex: 0 0 50%;

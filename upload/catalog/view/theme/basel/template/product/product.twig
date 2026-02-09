@@ -169,7 +169,7 @@
                                                 <td class="text-right">{{ p.cent }}</td>
                                                         {# -------- CIJENA / SPECIAL -------- #}
                                                 <td class="text-right price">
-                                                    {% set min_qty = (p.minimum is defined and p.minimum > 1) ? p.minimum : 1 %}
+                                                {% set min_qty = (p.minimumifc100 is defined and p.minimumifc100 > 1) ? p.minimum : 1 %}
 
                                                     {% if min_qty > 1 %}
                                                         {# prikaz za minimum (× minimum) #}
@@ -194,7 +194,7 @@
                                                 {# -------- UKUPNO (cijena * količina) -------- #}
                                                                                     <td class="text-right price">
                                                        <span class="mpn-total" id="mpn_total_{{ p.product_id }}">
-                                                          {% set min_qty = (p.minimum is defined and p.minimum) ? p.minimum : 1 %}
+                                                          {% set min_qty = (p.minimumifc100 is defined and p.minimumifc100 > 1) ? p.minimum : 1 %}
 
                                                            {% if p.special_value is defined and p.special_value %}
                                                                {{ (p.special_value * min_qty)|number_format(2, '.', '') }}

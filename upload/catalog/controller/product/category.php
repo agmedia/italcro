@@ -238,11 +238,12 @@ class ControllerProductCategory extends Controller {
 
 // default: nema "stare" cijene
                 $preview_price_alt = false;
+                $list_min = ($result['cent'] === 'C-100') ? $minimum : 1;
 
 // NOVO: ako ima special (>0) onda je novo = special, staro = price
                 if ($special_raw > 0) {
-                    $preview_price_raw = $special_raw * $minimum;
-                    $preview_price_alt_raw = $price_raw * $minimum;
+                    $preview_price_raw = $special_raw * $list_min;
+                    $preview_price_alt_raw = $price_raw * $list_min;
 
                     $preview_price_alt = $this->currency->format(
                         $this->tax->calculate(
@@ -254,7 +255,7 @@ class ControllerProductCategory extends Controller {
                     );
                 } else {
                     // nema akcije: novo = regular
-                    $preview_price_raw = $price_raw * $minimum;
+                    $preview_price_raw = $price_raw * $list_min;
                 }
 
 // NOVA (glavna) preview cijena
@@ -287,7 +288,8 @@ class ControllerProductCategory extends Controller {
 
                     'attention'     => $data['attention'],
 					'tax'         => $tax,
-					'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
+                    'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
+                    'list_min'    => $list_min,
 					'rating'      => $result['rating'],
 					'href'        => $this->url->link('product/product', 'path=' . $this->request->get['path'] . '&product_id=' . $result['product_id'] . $url)
 				);

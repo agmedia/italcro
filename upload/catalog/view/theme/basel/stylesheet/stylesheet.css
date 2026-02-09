@@ -5483,6 +5483,24 @@ a.button-circle {
 	color: #000;
 	font-weight: 400;
 }
+.grid .single-product .caption .row.gray {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 0;
+}
+.grid .single-product .caption .row.gray > [class*="col-"] {
+	flex: 0 0 100%;
+	max-width: 100%;
+}
+.grid .single-product .caption .input-group.addtocart {
+	margin-top: 6px;
+}
+.grid .single-product .caption .input-group.addtocart .form-control.input-number {
+	text-align: center;
+}
+.grid .single-product .caption .price {
+	min-height: 36px;
+}
 .single-product .price .price-old {
 	margin-right:3px;
 	text-decoration:line-through;

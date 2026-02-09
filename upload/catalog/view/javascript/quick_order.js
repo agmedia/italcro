@@ -69,9 +69,18 @@
     function isC100(obj){
       return normCent(obj && obj.cent) === 'C100';
     }
+    function getMinStep(item){
+      var ms = item && item.minimumifc100;
+      ms = parseInt(ms || 0, 10);
+      if(isNaN(ms) || ms < 1){
+        ms = parseInt(item && item.minimum || 0, 10);
+      }
+      if(isNaN(ms) || ms < 1) ms = 1;
+      return ms;
+    }
 // prikaz cijene u tablici: ako je C-100 -> cijena*100, inače normalno
     function displayPrice(item){
-      if(isC100(item)){
+      if(isC100(item) && getMinStep(item) > 1){
         // item.price_raw je broj (po komadu)
         return ((item.price_raw || 0) * 100).toFixed(2) + '€';
       }
@@ -80,9 +89,10 @@
 
     /* ===================== Table rendering ===================== */
     function rowHtml(item, added){
-      var min = item.minimum && item.minimum > 0 ? item.minimum : 1;
-      var qty = item.quantity || min;
-      if (qty < min) qty = min;
+      var pack = item.minimum && item.minimum > 0 ? item.minimum : 1;
+      var minStep = getMinStep(item);
+      var qty = item.quantity || minStep;
+      if (qty < minStep) qty = minStep;
 
       var subtotal = (item.price_raw || 0) * qty;
       var subtotalCell = '<span class="qo-subtotal" data-sub="'+subtotal+'">...</span>';
@@ -100,8 +110,8 @@
           '  <input type="text"' +
           '         class="form-control input-number qo-qty"' +
           '         value="'+qty+'"' +
-          '         min="'+min+'"' +
-          '         data-minstep="'+min+'"' +
+          '         min="'+minStep+'"' +
+          '         data-minstep="'+minStep+'"' +
           '         readonly' +
           '         style="text-align:right;">' +
           '  <span class="input-group-btn">' +
@@ -116,7 +126,7 @@
           <td>'+(item.thumb ? '<img src="'+item.thumb+'" style="width:60px;height:60px;object-fit:cover">' : '')+'</td>\n\
           <td>'+(item.name || '')+'</td>\n\
           <td>'+(item.name_add || '')+'</td>\n\
-              <td>'+min+'</td>\n\
+              <td>'+pack+'</td>\n\
               <td>'+(item.cent || '')+'</td>\n\
           <td>'+(item.sku || '')+'</td>\n\
          <td>'+(displayPrice(item))+'</td>\n\
@@ -153,7 +163,7 @@
     function ensureRow(item, added){
       var $existing = $table.find('tr[data-id="'+item.product_id+'"]');
       if($existing.length){
-        var min = item.minimum && item.minimum > 0 ? item.minimum : parseInt($existing.find('.qo-qty').attr('data-minstep') || '1', 10) || 1;
+        var min = getMinStep(item);
         if(item.quantity){
           if (item.quantity < min) item.quantity = min;
           $existing.find('.qo-qty').val(item.quantity).attr('data-minstep', min).attr('min', min);
@@ -177,7 +187,9 @@
           $existing.find('td').eq(6).text(displayPrice({
             cent: item.cent != null ? item.cent : $existing.find('td').eq(4).text(),
             price_raw: item.price_raw != null ? item.price_raw : parseFloat($existing.attr('data-price') || '0'),
-            price: item.price != null ? item.price : $existing.find('td').eq(6).text()
+            price: item.price != null ? item.price : $existing.find('td').eq(6).text(),
+            minimumifc100: item.minimumifc100 != null ? item.minimumifc100 : min,
+            minimum: item.minimum != null ? item.minimum : parseInt($existing.find('td').eq(3).text() || '1', 10)
           }));
         }
         recomputeRow($existing);
@@ -218,6 +230,7 @@
         price_raw: isNaN(pRaw) ? 0 : pRaw,
         quantity: qty,
         minimum: minimumVal,
+        minimumifc100: minStep,
         thumb: (function(){
           var img = $tr.find('td:first img');
           return img.length ? img.attr('src') : '';
@@ -230,8 +243,9 @@
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
     function suggestionHtml(it){
-      var min = it.minimum && it.minimum > 0 ? it.minimum : 1;
-      var qtyVal = it.quantity && it.quantity >= min ? it.quantity : min;
+      var pack = it.minimum && it.minimum > 0 ? it.minimum : 1;
+      var minStep = getMinStep(it);
+      var qtyVal = it.quantity && it.quantity >= minStep ? it.quantity : minStep;
 
       var img = it.thumb
           ? `<img src="${esc(it.thumb)}" alt="${esc(it.name)}" class="qo-thumb">`
@@ -243,12 +257,14 @@
      data-pid="${esc(it.product_id)}"
      data-name="${esc(it.name||'')}"
      data-name_add="${esc(it.name_add||'')}"
-     data-minimum="${min}"
+     data-minimum="${minStep}"
+     data-pack="${pack}"
      data-sku="${esc(it.sku||'')}"
      data-price="${esc(it.price||'')}"
      data-priceraw="${Number(it.price_raw||0)}"
      data-thumb="${esc(it.thumb||'')}"
-     data-cent="${esc(it.cent||'')}">
+     data-cent="${esc(it.cent||'')}"
+     data-minimumifc100="${minStep}">
       <div class="qo-suggest-inner">
         ${img}
         <div class="qo-info">
@@ -273,8 +289,8 @@
 
           <input type="text"
                  class="qo-suggest-qty input-number"
-                 min="${min}"
-                 data-minstep="${min}"
+                 min="${minStep}"
+                 data-minstep="${minStep}"
                  value="${qtyVal}"
                  tabindex="0"
                  aria-label="Količina"
@@ -306,6 +322,8 @@
       var $qty = $s.find('.qo-suggest-qty');
       var min = parseInt($s.attr('data-minimum') || $qty.attr('data-minstep') || $qty.attr('min') || '1', 10);
       if(isNaN(min) || min < 1) min = 1;
+      var pack = parseInt($s.attr('data-pack') || '0', 10);
+      if(isNaN(pack) || pack < 1) pack = min;
 
       var q = parseInt($qty.val() || min, 10);
       if(isNaN(q) || q < min) q = min;
@@ -319,7 +337,8 @@
         price_raw: parseFloat($s.attr('data-priceraw') || '0') || 0,
         thumb: $s.attr('data-thumb') || '',
         quantity: q,
-        minimum: min,
+        minimum: pack,
+        minimumifc100: min,
         cent: $s.attr('data-cent') || ''
       };
     }
@@ -399,7 +418,7 @@
         toast('err', 'Nije odabran valjan artikl.');
         return $.Deferred().resolve().promise();
       }
-      var min = item.minimum && item.minimum > 0 ? item.minimum : 1;
+      var min = getMinStep(item);
       qty = parseInt(qty || item.quantity || min, 10);
       if(isNaN(qty) || qty < min) qty = min;
 
@@ -663,7 +682,7 @@
       var data = getRowData($tr);
       var pid = data.product_id;
       var qty = data.quantity;
-      var min = data.minimum && data.minimum > 0 ? data.minimum : 1;
+      var min = data.minimumifc100 && data.minimumifc100 > 0 ? data.minimumifc100 : (data.minimum && data.minimum > 0 ? data.minimum : 1);
       if(qty < min) qty = min;
 
       $.post('index.php?route=extension/module/quick_order/fastAdd', { product_id: pid, quantity: qty }, function(res){

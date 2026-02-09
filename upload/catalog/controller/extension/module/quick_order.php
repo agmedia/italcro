@@ -126,6 +126,8 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
             $thumb = $product_info['image'] ? $this->model_tool_image->resize($product_info['image'], 60, 60) : '';
 
+            $minimumifc100 = ($row['cent'] === 'C-100') ? 1 : (int)$product_info['minimum'];
+
             $results[] = [
                 'product_id' => (int)$product_info['product_id'],
                 'name'       => html_entity_decode($product_info['name'], ENT_QUOTES, 'UTF-8'),
@@ -137,6 +139,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 'description_add'=> $product_info['description_add'],    // opis
                 'stock'          => $product_info['quantity'],
                 'minimum'          => $product_info['minimum'],
+                'minimumifc100'    => $minimumifc100,
                 'cent'       => isset($row['cent']) ? $row['cent'] : '',
                 'thumb'      => $thumb
             ];

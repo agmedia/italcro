@@ -5330,6 +5330,9 @@ a.button-circle {
 	height: auto;
 	display: block;
 }
+.grid .carousel .single-product .caption {
+	min-height: 170px;
+}
 .grid .carousel .single-product .price-wrapper {
 	margin-top: 0;
 }

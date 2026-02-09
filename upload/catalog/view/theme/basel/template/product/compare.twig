@@ -109,24 +109,14 @@
             {% endfor %}
           </tr>
           {% endif %}
-          <tr>
-            <td>{{ text_summary }}</td>
-            {% for product in products %}
-            <td class="description">{{ product.description }}</td>
-            {% endfor %}
-          </tr>
+
           <tr>
             <td>{{ text_description_add }}</td>
             {% for product in products %}
             <td class="description">{{ product.description_add ? product.description_add : '-' }}</td>
             {% endfor %}
           </tr>
-          <tr>
-            <td>{{ text_description_full }}</td>
-            {% for product in products %}
-            <td class="description">{{ product.description_full ? product.description_full : '-' }}</td>
-            {% endfor %}
-          </tr>
+
         
         </tbody>
         {% for attribute_group in attribute_groups %}

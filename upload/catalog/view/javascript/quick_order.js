@@ -187,7 +187,7 @@
             cent: item.cent != null ? item.cent : $existing.find('td').eq(4).text(),
             price_raw: item.price_raw != null ? item.price_raw : parseFloat($existing.attr('data-price') || '0'),
             price: item.price != null ? item.price : $existing.find('td').eq(6).text(),
-            minimumifc100: item.minimumifc100 != null ? item.minimumifc100 : min,
+            minimumifc100: min,
             minimum: item.minimum != null ? item.minimum : parseInt($existing.find('td').eq(3).text() || '1', 10)
           }));
         }
@@ -245,11 +245,7 @@
       var pack = it.minimum && it.minimum > 0 ? it.minimum : 1;
       var minStep = getMinStep(it);
       var qtyVal = it.quantity && it.quantity >= minStep ? it.quantity : minStep;
-      if (it.minimumifc100 != null) {
-        minStep = parseInt(it.minimumifc100 || 1, 10);
-        if (isNaN(minStep) || minStep < 1) minStep = 1;
-        qtyVal = it.quantity && it.quantity >= minStep ? it.quantity : minStep;
-      }
+      // minStep je isključivo po pravilima getMinStep (C-100 -> minimum, ostalo -> 1)
 
       var img = it.thumb
           ? `<img src="${esc(it.thumb)}" alt="${esc(it.name)}" class="qo-thumb">`
@@ -267,8 +263,7 @@
      data-price="${esc(it.price||'')}"
      data-priceraw="${Number(it.price_raw||0)}"
      data-thumb="${esc(it.thumb||'')}"
-     data-cent="${esc(it.cent||'')}"
-     data-minimumifc100="${minStep}">
+     data-cent="${esc(it.cent||'')}">
       <div class="qo-suggest-inner">
         ${img}
         <div class="qo-info">
@@ -328,11 +323,8 @@
       if(isNaN(min) || min < 1) min = 1;
       var pack = parseInt($s.attr('data-pack') || '0', 10);
       if(isNaN(pack) || pack < 1) pack = min;
-      var minIf = parseInt($s.attr('data-minimumifc100') || min, 10);
-      if(isNaN(minIf) || minIf < 1) minIf = min;
-
       var q = parseInt($qty.val() || min, 10);
-      if(isNaN(q) || q < minIf) q = minIf;
+      if(isNaN(q) || q < min) q = min;
 
       return {
         product_id: pid,
@@ -344,7 +336,7 @@
         thumb: $s.attr('data-thumb') || '',
         quantity: q,
         minimum: pack,
-        minimumifc100: minIf,
+        minimumifc100: min,
         cent: $s.attr('data-cent') || ''
       };
     }

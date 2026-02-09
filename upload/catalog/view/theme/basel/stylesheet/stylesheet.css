@@ -5523,6 +5523,12 @@ a.button-circle {
 	align-items: center;
 	gap: 8px;
 }
+.grid .single-product .caption .row.gray .col-md-12 span {
+	white-space: nowrap;
+}
+.grid .single-product .caption .row.gray .col-md-12 span:last-child {
+	margin-left: auto;
+}
 .grid .single-product .caption .row.gray .col-md-6 {
 	flex: 0 0 50%;
 	max-width: 50%;
@@ -5540,6 +5546,18 @@ a.button-circle {
 }
 .grid .single-product .caption .row.gray .price {
 	margin-bottom: 0;
+}
+.grid .single-product .caption .row.gray .price-old,
+.grid .single-product .caption .row.gray .price-new,
+.grid .single-product .caption .row.gray .pat {
+	line-height: 1.1;
+}
+.grid .single-product .caption .row.gray .input-group.addtocart .btn {
+	min-width: 34px;
+	padding: 6px 8px;
+}
+.grid .single-product .caption .row.gray .input-group.addtocart .input-number {
+	min-width: 48px;
 }
 .grid .single-product .caption .input-group.addtocart {
 	margin-top: 6px;

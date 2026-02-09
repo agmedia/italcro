@@ -5314,6 +5314,9 @@ a.button-circle {
 .grid .carousel .single-product .image {
 	height: 400px;
 }
+.grid .carousel .single-product .image:before {
+	padding-top: 0;
+}
 .grid .carousel .single-product .image img {
 	position: absolute;
 	top: 0;

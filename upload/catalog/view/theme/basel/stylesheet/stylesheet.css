@@ -5308,6 +5308,15 @@ a.button-circle {
 	height: 100%;
 	object-fit: contain;
 }
+.grid .carousel .single-product .image:before {
+	content: none;
+}
+.grid .carousel .single-product .image {
+	height: 400px;
+}
+.grid .carousel .single-product .image img {
+	position: relative;
+}
 .grid .single-product .caption {
 	display: flex;
 	flex-direction: column;

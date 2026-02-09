@@ -5323,17 +5323,14 @@ a.button-circle {
 	margin: auto;
 }
 .grid .carousel .single-product .edge {
-	height: auto;
-	display: block;
-}
-.grid .carousel .single-product .caption {
-	height: auto;
-	display: block;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
 }
 .grid .carousel .single-product .caption {
 	display: flex;
 	flex-direction: column;
-	min-height: 190px;
+	height: 100%;
 }
 .grid .carousel .single-product .price-wrapper {
 	margin-top: auto;
@@ -5349,11 +5346,8 @@ a.button-circle {
 	display: block;
 	min-height: 18px;
 }
-.grid .carousel .single-product .price-wrapper {
-	margin-top: 0;
-}
 .grid .carousel .single-product {
-	height: auto;
+	height: 100%;
 }
 .grid .single-product .caption {
 	display: flex;

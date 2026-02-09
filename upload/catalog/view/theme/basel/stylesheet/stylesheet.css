@@ -5322,6 +5322,20 @@ a.button-circle {
 	bottom: 0;
 	margin: auto;
 }
+.grid .carousel .single-product .edge {
+	height: auto;
+	display: block;
+}
+.grid .carousel .single-product .caption {
+	height: auto;
+	display: block;
+}
+.grid .carousel .single-product .price-wrapper {
+	margin-top: 0;
+}
+.grid .carousel .single-product {
+	height: auto;
+}
 .grid .single-product .caption {
 	display: flex;
 	flex-direction: column;

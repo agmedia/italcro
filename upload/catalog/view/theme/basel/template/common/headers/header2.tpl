@@ -83,6 +83,11 @@
         </div>
         <?php } ?>
         
+        <div class="icon-element is_compare">
+        <a class="shortcut-wrapper compare" href="<?php echo $compare; ?>" title="<?php echo $text_compare; ?>">
+        <div class="compare-hover"><i class="icon-refresh icon"></i><span class="counter compare-counter"><?php echo $compare_counter; ?></span></div>
+        </a>
+        </div>
         <div class="icon-element is_wishlist">
         <a class="shortcut-wrapper wishlist" href="<?php echo $wishlist; ?>">
         <div class="wishlist-hover"><i class="icon-heart icon"></i><span class="counter wishlist-counter"><?php echo $wishlist_counter; ?></span></div>

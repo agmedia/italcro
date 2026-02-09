@@ -518,6 +518,9 @@ var compare = {
 					$('body').append(html);
 					setTimeout(function() {$('.popup-note').hide();}, 8100);
 					$('#compare-total').html(json['total']);
+					if (typeof json['total_counter'] !== 'undefined') {
+						$('.compare-counter').html(json['total_counter']);
+					}
 				}
 			},
 			error: function(xhr, ajaxOptions, thrownError) {

@@ -7,6 +7,11 @@
 	} else {
 		$data['wishlist_counter'] = (isset($this->session->data['wishlist']) ? count($this->session->data['wishlist']) : 0);
 	}
+	// Compare Items
+	$data['compare_counter'] = (isset($this->session->data['compare']) ? count($this->session->data['compare']) : 0);
+	$this->load->language('product/compare');
+	$data['compare'] = $this->url->link('product/compare');
+	$data['text_compare'] = sprintf($this->language->get('text_compare'), $data['compare_counter']);
 	// Cart Items
 	$data['cart_items'] = $this->cart->countProducts() + (isset($this->session->data['vouchers']) ? count($this->session->data['vouchers']) : 0);
 	

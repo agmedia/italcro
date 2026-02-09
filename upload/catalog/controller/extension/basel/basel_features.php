@@ -316,6 +316,7 @@ public function add_to_compare() {
 			$json['success'] = sprintf($this->language->get('text_success'), $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']), $product_info['name'], $this->url->link('product/compare'));
 
 			$json['total'] = sprintf($this->language->get('text_compare'), (isset($this->session->data['compare']) ? count($this->session->data['compare']) : 0));
+			$json['total_counter'] = (isset($this->session->data['compare']) ? count($this->session->data['compare']) : 0);
 		}
 
 		$this->response->addHeader('Content-Type: application/json');

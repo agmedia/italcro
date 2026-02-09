@@ -62,11 +62,24 @@
               </td>
             {% endfor %}
           </tr>
-          
           <tr>
-            <td>{{ text_model }}</td>
+            <td>{{ text_name_add }}</td>
+            {% for product in products %}
+            <td>{{ product.name_add ? product.name_add : '-' }}</td>
+            {% endfor %}
+          </tr>
+          
+
+          <tr>
+            <td>{{ text_barcode }}</td>
             {% for product in products %}
             <td>{{ product.model }}</td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td>{{ text_sku }}</td>
+            {% for product in products %}
+            <td>{{ product.sku ? product.sku : '-' }}</td>
             {% endfor %}
           </tr>
           <tr>
@@ -100,6 +113,18 @@
             <td>{{ text_summary }}</td>
             {% for product in products %}
             <td class="description">{{ product.description }}</td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td>{{ text_description_add }}</td>
+            {% for product in products %}
+            <td class="description">{{ product.description_add ? product.description_add : '-' }}</td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td>{{ text_description_full }}</td>
+            {% for product in products %}
+            <td class="description">{{ product.description_full ? product.description_full : '-' }}</td>
             {% endfor %}
           </tr>
         

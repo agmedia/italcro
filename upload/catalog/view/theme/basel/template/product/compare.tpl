@@ -62,11 +62,29 @@
               </td>
             <?php } ?>
           </tr>
+          <tr>
+            <td><?php echo $text_name_add; ?></td>
+            <?php foreach ($products as $product) { ?>
+            <td><?php echo ($product['name_add'] ? $product['name_add'] : '-'); ?></td>
+            <?php } ?>
+          </tr>
           
           <tr>
             <td><?php echo $text_model; ?></td>
             <?php foreach ($products as $product) { ?>
             <td><?php echo $product['model']; ?></td>
+            <?php } ?>
+          </tr>
+          <tr>
+            <td><?php echo $text_barcode; ?></td>
+            <?php foreach ($products as $product) { ?>
+            <td><?php echo $product['model']; ?></td>
+            <?php } ?>
+          </tr>
+          <tr>
+            <td><?php echo $text_sku; ?></td>
+            <?php foreach ($products as $product) { ?>
+            <td><?php echo ($product['sku'] ? $product['sku'] : '-'); ?></td>
             <?php } ?>
           </tr>
           <tr>
@@ -100,6 +118,18 @@
             <td><?php echo $text_summary; ?></td>
             <?php foreach ($products as $product) { ?>
             <td class="description"><?php echo $product['description']; ?></td>
+            <?php } ?>
+          </tr>
+          <tr>
+            <td><?php echo $text_description_add; ?></td>
+            <?php foreach ($products as $product) { ?>
+            <td class="description"><?php echo ($product['description_add'] ? $product['description_add'] : '-'); ?></td>
+            <?php } ?>
+          </tr>
+          <tr>
+            <td><?php echo $text_description_full; ?></td>
+            <?php foreach ($products as $product) { ?>
+            <td class="description"><?php echo ($product['description_full'] ? $product['description_full'] : '-'); ?></td>
             <?php } ?>
           </tr>
           <tr>

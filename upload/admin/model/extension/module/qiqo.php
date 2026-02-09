@@ -61,7 +61,7 @@ class ModelExtensionModuleQiqo extends Model
                 'quantity'    => (float) ($a['zaliha'] ?? 0),
                 'price'       => $price,
                 'cent'        => $cent,
-                'minimum'     => $minimum,
+                'minimum'     => $a['pakkol'],
                 'status'      => $a['aktivan'] === 'true' ? 1 : 0,
                 'image'       => $group['picpath'] ?? '',
                 'category_id' => $category_id,
@@ -102,7 +102,7 @@ class ModelExtensionModuleQiqo extends Model
             $pakkol     = (float)($a['pakkol'] ?? 0);
 
             // Ako je pak=1 → postavi minimum = pakkol
-            if ($pak === 1 && $pakkol > 0) {
+            if ($pakkol > 1) {
                 $this->db->query("UPDATE " . DB_PREFIX . "product 
                               SET quantity = '{$quantity}', minimum = '{$pakkol}', date_modified = NOW()
                               WHERE product_id = '{$product_id}'");

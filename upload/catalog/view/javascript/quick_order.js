@@ -71,11 +71,11 @@
     }
     function getMinStep(item){
       if (isC100(item)) {
-        return 1;
+        var pack = parseInt(item && item.minimum || 0, 10);
+        if (isNaN(pack) || pack < 1) pack = 1;
+        return pack;
       }
-      var pack = parseInt(item && item.minimum || 0, 10);
-      if (isNaN(pack) || pack < 1) pack = 1;
-      return pack;
+      return 1;
     }
 // prikaz cijene u tablici: ako je C-100 -> cijena*100, inače normalno
     function displayPrice(item){

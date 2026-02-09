@@ -246,6 +246,11 @@
       var pack = it.minimum && it.minimum > 0 ? it.minimum : 1;
       var minStep = getMinStep(it);
       var qtyVal = it.quantity && it.quantity >= minStep ? it.quantity : minStep;
+      if (it.minimumifc100 != null) {
+        minStep = parseInt(it.minimumifc100 || 1, 10);
+        if (isNaN(minStep) || minStep < 1) minStep = 1;
+        qtyVal = it.quantity && it.quantity >= minStep ? it.quantity : minStep;
+      }
 
       var img = it.thumb
           ? `<img src="${esc(it.thumb)}" alt="${esc(it.name)}" class="qo-thumb">`
@@ -324,9 +329,11 @@
       if(isNaN(min) || min < 1) min = 1;
       var pack = parseInt($s.attr('data-pack') || '0', 10);
       if(isNaN(pack) || pack < 1) pack = min;
+      var minIf = parseInt($s.attr('data-minimumifc100') || min, 10);
+      if(isNaN(minIf) || minIf < 1) minIf = min;
 
       var q = parseInt($qty.val() || min, 10);
-      if(isNaN(q) || q < min) q = min;
+      if(isNaN(q) || q < minIf) q = minIf;
 
       return {
         product_id: pid,
@@ -338,7 +345,7 @@
         thumb: $s.attr('data-thumb') || '',
         quantity: q,
         minimum: pack,
-        minimumifc100: min,
+        minimumifc100: minIf,
         cent: $s.attr('data-cent') || ''
       };
     }
@@ -509,6 +516,13 @@
           .then(function(items){
             $list.empty();
             if(!items || !items.length){ $list.hide(); return items || []; }
+            items.forEach(function(it){
+              if(it && it.minimumifc100 != null){
+                var ms = parseInt(it.minimumifc100 || 1, 10);
+                if(isNaN(ms) || ms < 1) ms = 1;
+                it.minimumifc100 = ms;
+              }
+            });
             items.forEach(function(it){ $list.append(suggestionHtml(it)); });
             $list.show();
             return items;

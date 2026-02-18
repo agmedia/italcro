@@ -61,12 +61,36 @@ class Qiqo
     {
         return $this->fetch('qPartnerWeb', $since, 'Partner');
     }
+
+    /**
+     * 📦 Dohvati mjesta isporuke (qMjestoIsporukeWeb)
+     */
+    public function getDeliveryPlaces(string $since = '-2 years'): array
+    {
+        return $this->fetch('qMjestoIsporukeWeb', $since, null);
+    }
+
+    /**
+     * 📦 Dohvati dodatne rabate po artiklu i partneru (qPartnerArtikalRabatWeb)
+     */
+    public function getPartnerArticleDiscounts(string $since = '-2 years'): array
+    {
+        return $this->fetch('qPartnerArtikalRabatWeb', $since, null);
+    }
+
+    /**
+     * 📦 Dohvati akcijski cjenik (qAkcijskiCjenikWeb)
+     */
+    public function getActionPriceList(string $since = '-2 years'): array
+    {
+        return $this->fetch('qAkcijskiCjenikWeb', $since, null);
+    }
     
     
     /**
      * 🧭 Glavna metoda – generički SOAP poziv
      */
-    private function fetch(string $method, string $since, string $node): array
+    private function fetch(string $method, string $since, ?string $node): array
     {
         $datum = date('Y-m-d\TH:i:s', strtotime($since));
         $soapAction = "http://www.qiqo.hr/{$method}";
@@ -154,7 +178,7 @@ class Qiqo
     /**
      * 🧩 Parsiraj SOAP XML → array
      */
-    private function parse(string $xml, string $method, string $node): array
+    private function parse(string $xml, string $method, ?string $node): array
     {
         libxml_use_internal_errors(true);
         $parsed = simplexml_load_string($xml);
@@ -205,8 +229,22 @@ class Qiqo
         }
 
 
+        $resolvedNode = $node;
+
+        if (!$resolvedNode || !isset($newDataSet->{$resolvedNode})) {
+            foreach ($newDataSet->children() as $child) {
+                $resolvedNode = $child->getName();
+                break;
+            }
+        }
+
+        if (!$resolvedNode) {
+            Log::store("⚠️ No data node in {$method}", 'qiqo_empty');
+            return [];
+        }
+
         $records = [];
-        foreach ($newDataSet->{$node} as $item) {
+        foreach ($newDataSet->{$resolvedNode} as $item) {
             $row = [];
             foreach ($item as $key => $value) {
                 $row[$key] = trim((string) $value);
@@ -216,7 +254,7 @@ class Qiqo
 
         Log::store('Children of result: ' . implode(', ', array_map(fn($x) => $x->getName(), iterator_to_array($result->children()))), 'qiqo_debug');
 
-        Log::store("✅ Parsed " . count($records) . " records from {$method}", 'qiqo_info');
+        Log::store("✅ Parsed " . count($records) . " records from {$method} (node: {$resolvedNode})", 'qiqo_info');
         return $records;
     }
 }

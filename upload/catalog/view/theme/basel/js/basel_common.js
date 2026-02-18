@@ -54,11 +54,11 @@ $(document).ready(function() {
 			$('body').removeClass('sticky-active');
 		}
 		;
-		if (window_to_top > (sticky_to_top + 140)) {
+		/*if (window_to_top > (sticky_to_top + 140)) {
 			$('.sticky-header').addClass('short');
 		} else {
-			$('.sticky-header').removeClass('short');
-		}
+			$('.sticky-header').removeClass('hort');
+		}*/
 		if (window_to_top > 250) {
 			$('body').addClass('offset250');
 		} else {

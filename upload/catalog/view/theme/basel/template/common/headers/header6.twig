@@ -31,7 +31,7 @@
 </div> <!-- .top_line ends -->
 {% endif %}
 
-<span class="table header-main sticky-header-placeholder slidedown ">&nbsp;</span>
+<span class="table header-main sticky-header-placeholder ">&nbsp;</span>
 <div class=" outer-container header-style sticky-header">
   <div class="container {{ main_header_width }}">
     <div class="table header-main {{ main_menu_align }}">
@@ -124,38 +124,40 @@
     
     </div> <!-- .table.header_main ends -->
   </div> <!-- .container ends -->
+
+    <div class=" slidedown outer-container header-bottom  ">
+        <div class="container {{ main_header_width }}">
+            <div class="table">
+                {% if secondary_menu %}
+                    <div class="table-cell w235 hidden-xs hidden-sm">
+                        <div class="main-menu vertical vertical-menu-bg dropdown-wrapper from-bottom">
+                            <p class="menu-heading">{{ basel_text_category }}<i class="fa fa-angle-down"></i></p>
+                            <ul class="categories vertical-menu-bg dropdown-content">
+                                {% if secondary_menu == 'oc' %}
+                                    <!-- Default menu -->
+                                    {{ default_menu }}
+                                {% elseif secondary_menu is defined %}
+                                    <!-- Mega menu -->
+                                    {% for key, row in secondary_menu_desktop %}
+                                        {% include 'basel/template/common/menus/mega_menu.twig' %}
+                                    {% endfor %}
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="table-cell w100 search-cell {{ basel_search_scheme }}">
+                    {{ basel_search }}
+                </div>
+
+
+
+            </div>
+        </div><!-- .container ends -->
+    </div>
 </div> <!-- .sticky ends -->
 
-<div class=" sticky-header slidedown outer-container header-bottom  ">
-<div class="container {{ main_header_width }}">
-    <div class="table">
-        {% if secondary_menu %}
-        <div class="table-cell w235 hidden-xs hidden-sm">
-        <div class="main-menu vertical vertical-menu-bg dropdown-wrapper from-bottom">
-        <p class="menu-heading">{{ basel_text_category }}<i class="fa fa-angle-down"></i></p>
-            <ul class="categories vertical-menu-bg dropdown-content">
-              {% if secondary_menu == 'oc' %}
-                <!-- Default menu -->
-                {{ default_menu }}
-              {% elseif secondary_menu is defined %} 
-                <!-- Mega menu -->
-                {% for key, row in secondary_menu_desktop %}
-                {% include 'basel/template/common/menus/mega_menu.twig' %}
-                {% endfor %}
-              {% endif %}
-            </ul>
-        </div>
-        </div>
-        {% endif %}
-        
-            <div class="table-cell w100 search-cell {{ basel_search_scheme }}">
-         {{ basel_search }}
-        </div>
 
-
-
-    </div>
-</div><!-- .container ends -->
-</div>
 
 </div> <!-- .header_wrapper ends -->

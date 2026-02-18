@@ -268,13 +268,15 @@ class ModelExtensionMazaTfProduct extends Model {
         );
                 
         // sort by multiple sort and order
-        if(isset($data['sort_order'])){
+        if (isset($data['sort_order']) && is_array($data['sort_order']) && $data['sort_order']) {
             $sql_order_by = TRUE;
-            
+
             foreach ($data['sort_order'] as $sort_order) {
-                if (isset($sort_data[$sort_order['sort']])) {
-                    $sql .= (($sql_order_by)?' ORDER BY ':', ') . $sort_data[$sort_order['sort']];
+                if (!isset($sort_order['sort']) || !isset($sort_data[$sort_order['sort']])) {
+                    continue;
                 }
+
+                $sql .= (($sql_order_by) ? ' ORDER BY ' : ', ') . $sort_data[$sort_order['sort']];
 
                 if (isset($sort_order['order']) && ($sort_order['order'] == 'DESC')) {
                     $sql .= ' DESC';
@@ -284,15 +286,23 @@ class ModelExtensionMazaTfProduct extends Model {
 
                 $sql_order_by = FALSE;
             }
-        } elseif (isset($data['sort'])) {
-            if (isset($sort_data[$data['sort']])) {
-                $sql .= ' ORDER BY ' . $sort_data[$data['sort']];
+
+            if ($sql_order_by) {
+                $sql .= ' ORDER BY sort_order';
+
+                if (isset($data['order']) && ($data['order'] == 'DESC')) {
+                    $sql .= ' DESC, product_id DESC';
+                } else {
+                    $sql .= ' ASC, product_id ASC';
+                }
             }
-            
+        } elseif (!empty($data['sort']) && isset($sort_data[$data['sort']])) {
+            $sql .= ' ORDER BY ' . $sort_data[$data['sort']];
+
             if (isset($data['order']) && ($data['order'] == 'DESC')) {
-                                $sql .= ' DESC, product_id DESC';
+                $sql .= ' DESC, product_id DESC';
             } else {
-                                $sql .= ' ASC, product_id ASC';
+                $sql .= ' ASC, product_id ASC';
             }
         } else {
             $sql .= ' ORDER BY sort_order';

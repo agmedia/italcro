@@ -1480,6 +1480,11 @@ class ModelExtensionModuleQiqo extends Model
         return $result;
     }
 
+    public function syncPartnerBaseDataFull(string $defaultSince = '-2 years'): array
+    {
+        return $this->syncPartnerBaseData($defaultSince);
+    }
+
     public function syncPartnerArticleDiscountsFull(string $since = '-2 years'): int
     {
         @set_time_limit(0);

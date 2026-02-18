@@ -741,6 +741,7 @@ class ControllerProductProduct extends Controller {
 // želimo prikaz samo ako ima više od 1 (dakle barem 2 proizvoda s tim MPN-om)
             if (count($mpn_products) > 0) {
                 $data['same_mpn_products'] = array();
+                $data['same_mpn_has_c100'] = false;
                 $mpn_products = array_values($mpn_products);
                 usort($mpn_products, function ($a, $b) {
                     return (int)$a['sort_order'] <=> (int)$b['sort_order'];
@@ -757,6 +758,11 @@ class ControllerProductProduct extends Controller {
                         $minimumifc100 = $minimum;
                     }else{
                         $minimumifc100 = 1;
+                    }
+
+                    $cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$result['cent']));
+                    if ($cent_normalized === 'C100') {
+                        $data['same_mpn_has_c100'] = true;
                     }
 
                     $price_raw   = (float)$result['price'];
@@ -810,6 +816,7 @@ class ControllerProductProduct extends Controller {
 
             } else {
                 $data['same_mpn_products'] = false;
+                $data['same_mpn_has_c100'] = false;
             }
 
 			$data['recurrings'] = $this->model_catalog_product->getProfiles($this->request->get['product_id']);

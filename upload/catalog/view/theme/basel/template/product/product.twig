@@ -146,7 +146,9 @@
                                         <th>JM.</th>
                                         {% if price %}
                                         <th class="text-right">Zaliha</th>
+                                            {% if same_mpn_has_c100 %}
                                             <th class="text-right">C-100</th>
+                                            {% endif %}
                                         <th class="text-right price">Cijena</th>
                                         <th class="text-right price">Ukupno</th>
                                         <th class="text-right price">Dodaj</th>
@@ -166,7 +168,9 @@
                                             <td>{{ p.ean }}</td>
                                             {% if price %}
                                                         <td class="text-right">{{ p.stock }}</td>
+                                                {% if same_mpn_has_c100 %}
                                                 <td class="text-right">{{ p.cent }}</td>
+                                                {% endif %}
                                                         {# -------- CIJENA / SPECIAL -------- #}
                                                 <td class="text-right price">
                                                 {% set min_qty = (p.minimumifc100 is defined and p.minimumifc100 > 1) ? p.minimum : 1 %}

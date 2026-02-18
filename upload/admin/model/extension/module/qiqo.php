@@ -1434,7 +1434,7 @@ class ModelExtensionModuleQiqo extends Model
         }
     }
 
-    public function syncPartnerBaseData(string $defaultSince = '-30 days'): array
+    public function syncPartnerBaseData(string $defaultSince = '-30 days', bool $forceDefaultSince = false): array
     {
         @set_time_limit(0);
         $this->ensurePartnerSyncTables();
@@ -1446,21 +1446,21 @@ class ModelExtensionModuleQiqo extends Model
             [
                 'key'     => 'partners',
                 'label'   => 'qPartnerWeb',
-                'since'   => $this->resolveSince('partners', $defaultSince),
+                'since'   => $this->resolveSince('partners', $defaultSince, $forceDefaultSince),
                 'fetcher' => 'getPartners',
                 'writer'  => 'upsertPartners',
             ],
             [
                 'key'     => 'delivery_places',
                 'label'   => 'qMjestoIsporukeWeb',
-                'since'   => $this->resolveSince('delivery_places', $defaultSince),
+                'since'   => $this->resolveSince('delivery_places', $defaultSince, $forceDefaultSince),
                 'fetcher' => 'getDeliveryPlaces',
                 'writer'  => 'upsertDeliveryPlaces',
             ],
             [
                 'key'     => 'action_prices',
                 'label'   => 'qAkcijskiCjenikWeb',
-                'since'   => $this->resolveSince('action_prices', $defaultSince),
+                'since'   => $this->resolveSince('action_prices', $defaultSince, $forceDefaultSince),
                 'fetcher' => 'getActionPriceList',
                 'writer'  => 'upsertActionPrices',
             ],
@@ -1482,7 +1482,7 @@ class ModelExtensionModuleQiqo extends Model
 
     public function syncPartnerBaseDataFull(string $defaultSince = '-2 years'): array
     {
-        return $this->syncPartnerBaseData($defaultSince);
+        return $this->syncPartnerBaseData($defaultSince, true);
     }
 
     public function syncPartnerArticleDiscountsFull(string $since = '-2 years'): int
@@ -1733,8 +1733,12 @@ class ModelExtensionModuleQiqo extends Model
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
-    private function resolveSince(string $feedKey, string $fallback): string
+    private function resolveSince(string $feedKey, string $fallback, bool $forceDefaultSince = false): string
     {
+        if ($forceDefaultSince) {
+            return $fallback;
+        }
+
         $last = $this->getFeedLastSync($feedKey);
         if ($last) {
             return $last;

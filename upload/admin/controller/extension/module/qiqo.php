@@ -71,6 +71,22 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->session->data['success'] = "Onemogućeno {$count} proizvoda koji ne postoje u ERP-u.";
                     break;
 
+                case 'sync_partner_base':
+                    $stats = $this->model_extension_module_qiqo->syncPartnerBaseData();
+                    $this->session->data['success'] = "Partner base sync: partneri {$stats['partners']}, mjesta isporuke {$stats['delivery_places']}, akcijski cjenik {$stats['action_prices']}.";
+                    break;
+
+                case 'sync_partner_discounts':
+                    $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
+                    $this->session->data['success'] = "Partner-artikl rabati full sync: {$count} slogova.";
+                    break;
+
+                case 'sync_partner_all':
+                    $stats = $this->model_extension_module_qiqo->syncPartnerBaseData();
+                    $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
+                    $this->session->data['success'] = "Kompletan partner sync: partneri {$stats['partners']}, mjesta {$stats['delivery_places']}, akcije {$stats['action_prices']}, partner-artikl rabati {$count}.";
+                    break;
+
                 case 'clear_log':
                     $log_file = DIR_LOGS . 'qiqo.log';
                     if (file_exists($log_file)) {

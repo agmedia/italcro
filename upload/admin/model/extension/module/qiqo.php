@@ -1434,6 +1434,335 @@ class ModelExtensionModuleQiqo extends Model
         }
     }
 
+    public function syncPartnerBaseData(string $defaultSince = '-30 days'): array
+    {
+        @set_time_limit(0);
+        $this->ensurePartnerSyncTables();
+
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $now  = date('Y-m-d H:i:s');
+
+        $feeds = [
+            [
+                'key'     => 'partners',
+                'label'   => 'qPartnerWeb',
+                'since'   => $this->resolveSince('partners', $defaultSince),
+                'fetcher' => 'getPartners',
+                'writer'  => 'upsertPartners',
+            ],
+            [
+                'key'     => 'delivery_places',
+                'label'   => 'qMjestoIsporukeWeb',
+                'since'   => $this->resolveSince('delivery_places', $defaultSince),
+                'fetcher' => 'getDeliveryPlaces',
+                'writer'  => 'upsertDeliveryPlaces',
+            ],
+            [
+                'key'     => 'action_prices',
+                'label'   => 'qAkcijskiCjenikWeb',
+                'since'   => $this->resolveSince('action_prices', $defaultSince),
+                'fetcher' => 'getActionPriceList',
+                'writer'  => 'upsertActionPrices',
+            ],
+        ];
+
+        $result = [];
+
+        foreach ($feeds as $feed) {
+            $this->log('PartnerSync', "START {$feed['label']} since={$feed['since']}");
+            $rows = $qiqo->{$feed['fetcher']}($feed['since']);
+            $count = $this->{$feed['writer']}($rows);
+            $this->setFeedLastSync($feed['key'], $now);
+            $this->log('PartnerSync', "END {$feed['label']} rows=" . count($rows) . " upserted={$count}");
+            $result[$feed['key']] = $count;
+        }
+
+        return $result;
+    }
+
+    public function syncPartnerArticleDiscountsFull(string $since = '-2 years'): int
+    {
+        @set_time_limit(0);
+        $this->ensurePartnerSyncTables();
+
+        $this->log('PartnerSync', "START qPartnerArtikalRabatWeb full since={$since}");
+
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $rows = $qiqo->getPartnerArticleDiscounts($since);
+
+        $this->db->query("TRUNCATE TABLE `" . DB_PREFIX . "qiqo_partner_article_discount`");
+
+        $inserted = 0;
+        $batch = [];
+        $batchSize = 1000;
+
+        foreach ($rows as $row) {
+            $partner = (int)($row['partner'] ?? 0);
+            $article = trim((string)($row['artikal'] ?? ''));
+            $discount = (float)($row['rabat'] ?? 0);
+
+            if (!$partner || $article === '') {
+                continue;
+            }
+
+            $batch[] = "("
+                . $partner . ", "
+                . "'" . $this->db->escape($article) . "', "
+                . "'" . (float)$discount . "', "
+                . "NOW(), NOW()"
+                . ")";
+
+            if (count($batch) >= $batchSize) {
+                $this->flushPartnerDiscountBatch($batch);
+                $inserted += count($batch);
+                $batch = [];
+            }
+        }
+
+        if ($batch) {
+            $this->flushPartnerDiscountBatch($batch);
+            $inserted += count($batch);
+        }
+
+        $this->setFeedLastSync('partner_article_discounts', date('Y-m-d H:i:s'));
+        $this->log('PartnerSync', "END qPartnerArtikalRabatWeb full inserted={$inserted}");
+
+        return $inserted;
+    }
+
+    private function flushPartnerDiscountBatch(array $batch): void
+    {
+        if (!$batch) {
+            return;
+        }
+
+        $sql = "INSERT INTO `" . DB_PREFIX . "qiqo_partner_article_discount`
+                (`partner_id`, `article_code`, `discount`, `date_added`, `date_modified`)
+                VALUES " . implode(',', $batch) . "
+                ON DUPLICATE KEY UPDATE
+                    `discount` = VALUES(`discount`),
+                    `date_modified` = NOW()";
+
+        $this->db->query($sql);
+    }
+
+    private function upsertPartners(array $rows): int
+    {
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $partnerId = (int)($row['id'] ?? 0);
+            if (!$partnerId) {
+                continue;
+            }
+
+            $name = trim((string)($row['naziv'] ?? ''));
+            $oib = trim((string)($row['oib'] ?? ''));
+            $address = trim((string)($row['adresa'] ?? ''));
+            $place = trim((string)($row['mjesto'] ?? ''));
+            $discount = (float)($row['rabat'] ?? 0);
+            $activeRaw = strtolower(trim((string)($row['aktivan'] ?? '')));
+            $active = in_array($activeRaw, ['1', 'true', 'da', 'yes'], true) ? 1 : 0;
+            $apiModified = trim((string)($row['izmjena'] ?? ''));
+
+            $this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_partner`
+                SET `partner_id` = '" . (int)$partnerId . "',
+                    `name` = '" . $this->db->escape($name) . "',
+                    `oib` = '" . $this->db->escape($oib) . "',
+                    `address` = '" . $this->db->escape($address) . "',
+                    `place` = '" . $this->db->escape($place) . "',
+                    `base_discount` = '" . (float)$discount . "',
+                    `active` = '" . (int)$active . "',
+                    `api_modified_at` = " . ($apiModified !== '' ? "'" . $this->db->escape($apiModified) . "'" : "NULL") . ",
+                    `date_added` = NOW(),
+                    `date_modified` = NOW()
+                ON DUPLICATE KEY UPDATE
+                    `name` = VALUES(`name`),
+                    `oib` = VALUES(`oib`),
+                    `address` = VALUES(`address`),
+                    `place` = VALUES(`place`),
+                    `base_discount` = VALUES(`base_discount`),
+                    `active` = VALUES(`active`),
+                    `api_modified_at` = VALUES(`api_modified_at`),
+                    `date_modified` = NOW()");
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function upsertDeliveryPlaces(array $rows): int
+    {
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $placeId = (int)($row['id'] ?? 0);
+            if (!$placeId) {
+                continue;
+            }
+
+            $partnerId = (int)($row['partner'] ?? 0);
+            $code = trim((string)($row['sifra'] ?? ''));
+            $name = trim((string)($row['naziv'] ?? ''));
+            $address = trim((string)($row['adresa'] ?? ''));
+            $place = trim((string)($row['mjesto'] ?? ''));
+            $apiModified = trim((string)($row['izmjena'] ?? ''));
+
+            $this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_delivery_place`
+                SET `delivery_place_id` = '" . (int)$placeId . "',
+                    `partner_id` = '" . (int)$partnerId . "',
+                    `code` = '" . $this->db->escape($code) . "',
+                    `name` = '" . $this->db->escape($name) . "',
+                    `address` = '" . $this->db->escape($address) . "',
+                    `place` = '" . $this->db->escape($place) . "',
+                    `api_modified_at` = " . ($apiModified !== '' ? "'" . $this->db->escape($apiModified) . "'" : "NULL") . ",
+                    `date_added` = NOW(),
+                    `date_modified` = NOW()
+                ON DUPLICATE KEY UPDATE
+                    `partner_id` = VALUES(`partner_id`),
+                    `code` = VALUES(`code`),
+                    `name` = VALUES(`name`),
+                    `address` = VALUES(`address`),
+                    `place` = VALUES(`place`),
+                    `api_modified_at` = VALUES(`api_modified_at`),
+                    `date_modified` = NOW()");
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function upsertActionPrices(array $rows): int
+    {
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $article = trim((string)($row['artikal'] ?? ''));
+            $indicator = trim((string)($row['indikator'] ?? ''));
+            $quantity = (float)($row['kolicina'] ?? 0);
+            $price = (float)($row['cijena'] ?? 0);
+            $discount = (float)($row['rabat'] ?? 0);
+
+            if ($article === '' || $indicator === '') {
+                continue;
+            }
+
+            $this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_action_price`
+                SET `article_code` = '" . $this->db->escape($article) . "',
+                    `indicator` = '" . $this->db->escape($indicator) . "',
+                    `quantity` = '" . (float)$quantity . "',
+                    `price` = '" . (float)$price . "',
+                    `discount` = '" . (float)$discount . "',
+                    `date_added` = NOW(),
+                    `date_modified` = NOW()
+                ON DUPLICATE KEY UPDATE
+                    `price` = VALUES(`price`),
+                    `discount` = VALUES(`discount`),
+                    `date_modified` = NOW()");
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function ensurePartnerSyncTables(): void
+    {
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_partner` (
+            `partner_id` INT(11) NOT NULL,
+            `name` VARCHAR(255) NOT NULL DEFAULT '',
+            `oib` VARCHAR(32) NOT NULL DEFAULT '',
+            `address` VARCHAR(255) NOT NULL DEFAULT '',
+            `place` VARCHAR(255) NOT NULL DEFAULT '',
+            `base_discount` DECIMAL(10,4) NOT NULL DEFAULT 0,
+            `active` TINYINT(1) NOT NULL DEFAULT 1,
+            `api_modified_at` VARCHAR(64) NULL,
+            `date_added` DATETIME NOT NULL,
+            `date_modified` DATETIME NOT NULL,
+            PRIMARY KEY (`partner_id`),
+            KEY `idx_oib` (`oib`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_delivery_place` (
+            `delivery_place_id` INT(11) NOT NULL,
+            `partner_id` INT(11) NOT NULL,
+            `code` VARCHAR(64) NOT NULL DEFAULT '',
+            `name` VARCHAR(255) NOT NULL DEFAULT '',
+            `address` VARCHAR(255) NOT NULL DEFAULT '',
+            `place` VARCHAR(255) NOT NULL DEFAULT '',
+            `api_modified_at` VARCHAR(64) NULL,
+            `date_added` DATETIME NOT NULL,
+            `date_modified` DATETIME NOT NULL,
+            PRIMARY KEY (`delivery_place_id`),
+            KEY `idx_partner` (`partner_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_partner_article_discount` (
+            `partner_id` INT(11) NOT NULL,
+            `article_code` VARCHAR(64) NOT NULL,
+            `discount` DECIMAL(10,4) NOT NULL DEFAULT 0,
+            `date_added` DATETIME NOT NULL,
+            `date_modified` DATETIME NOT NULL,
+            PRIMARY KEY (`partner_id`,`article_code`),
+            KEY `idx_article` (`article_code`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_action_price` (
+            `article_code` VARCHAR(64) NOT NULL,
+            `indicator` CHAR(1) NOT NULL,
+            `quantity` DECIMAL(15,4) NOT NULL DEFAULT 0,
+            `price` DECIMAL(15,4) NOT NULL DEFAULT 0,
+            `discount` DECIMAL(10,4) NOT NULL DEFAULT 0,
+            `date_added` DATETIME NOT NULL,
+            `date_modified` DATETIME NOT NULL,
+            PRIMARY KEY (`article_code`,`indicator`,`quantity`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_sync_state` (
+            `feed_key` VARCHAR(64) NOT NULL,
+            `last_sync_at` DATETIME NOT NULL,
+            `date_modified` DATETIME NOT NULL,
+            PRIMARY KEY (`feed_key`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    private function resolveSince(string $feedKey, string $fallback): string
+    {
+        $last = $this->getFeedLastSync($feedKey);
+        if ($last) {
+            return $last;
+        }
+
+        return $fallback;
+    }
+
+    private function getFeedLastSync(string $feedKey): ?string
+    {
+        $q = $this->db->query("SELECT last_sync_at
+                               FROM `" . DB_PREFIX . "qiqo_sync_state`
+                               WHERE feed_key = '" . $this->db->escape($feedKey) . "'
+                               LIMIT 1");
+
+        if ($q->num_rows && !empty($q->row['last_sync_at'])) {
+            return $q->row['last_sync_at'];
+        }
+
+        return null;
+    }
+
+    private function setFeedLastSync(string $feedKey, string $timestamp): void
+    {
+        $this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_sync_state`
+            SET `feed_key` = '" . $this->db->escape($feedKey) . "',
+                `last_sync_at` = '" . $this->db->escape($timestamp) . "',
+                `date_modified` = NOW()
+            ON DUPLICATE KEY UPDATE
+                `last_sync_at` = VALUES(`last_sync_at`),
+                `date_modified` = NOW()");
+    }
+
 
     private function log(string $title, string $message)
     {

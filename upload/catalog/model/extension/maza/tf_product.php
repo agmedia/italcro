@@ -305,8 +305,17 @@ class ModelExtensionMazaTfProduct extends Model {
                 $sql .= ' ASC, product_id ASC';
             }
         } else {
-            $sql .= ' ORDER BY sort_order';
-                        
+            if (!$temp_table) {
+                $base_sql = "SUBSTRING_INDEX(SUBSTRING_INDEX(p.upc, '/', -1), '.', 1)";
+                $num_sql  = "CASE
+                            WHEN $base_sql REGEXP '^[0-9]+$' THEN CAST($base_sql AS UNSIGNED)
+                            ELSE 999999999999999999
+                           END";
+                $sql .= ' ORDER BY ' . $num_sql;
+            } else {
+                $sql .= ' ORDER BY sort_order';
+            }
+
             if (isset($data['order']) && ($data['order'] == 'DESC')) {
                 $sql .= ' DESC, product_id DESC';
             } else {

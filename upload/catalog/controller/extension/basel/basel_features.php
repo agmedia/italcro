@@ -70,10 +70,27 @@ public function add_to_cart() {
 		$product_info = $this->model_catalog_product->getProduct($product_id);
 
 		if ($product_info) {
-			if (isset($this->request->post['quantity']) && ((int)$this->request->post['quantity'] >= $product_info['minimum'])) {
+			$minimum_step = 1;
+			$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_info['cent']));
+			if ($cent_normalized === 'C100') {
+				$minimum_step = $product_info['minimum'] ? (int)$product_info['minimum'] : 1;
+			}
+			if ($minimum_step < 1) {
+				$minimum_step = 1;
+			}
+
+			if (isset($this->request->post['quantity'])) {
 				$quantity = (int)$this->request->post['quantity'];
 			} else {
-				$quantity = $product_info['minimum'] ? $product_info['minimum'] : 1;
+				$quantity = $minimum_step;
+			}
+
+			if ($quantity < $minimum_step) {
+				$quantity = $minimum_step;
+			}
+
+			if ($minimum_step > 1) {
+				$quantity = (int)(ceil($quantity / $minimum_step) * $minimum_step);
 			}
 
 			if (isset($this->request->post['option'])) {

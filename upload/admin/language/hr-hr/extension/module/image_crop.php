@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title']         = "<span style=\\"color:#006bb3;\\">Izrezivanje slike</span>";
+$_['heading_title']         = "<span style=\"color:#006bb3;\">Izrezivanje slike</span>";
 
 // Text
 $_['text_module']           = "Moduli";

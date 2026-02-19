@@ -1,7 +1,7 @@
 <?php
 // Heading
 $_['heading_title1']    		= "Postavka TMD Faq";
-$_['heading_title']     		= "<span style=\\"color:#23A8DA;font-weight:bold;\\">TMD FAQ SETTING</span>";
+$_['heading_title']     		= "<span style=\"color:#23A8DA;font-weight:bold;\">TMD FAQ SETTING</span>";
 
 // Text
 $_['text_extension']   			= "Ekstenzije";

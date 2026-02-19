@@ -217,9 +217,9 @@ $_['warning_Expect_CT']                         = '<strong>Napomena:</strong><br
 <br/>
 Preglednici ignoriraju zaglavlje <strong>Expect-CT</strong> kada se šalje preko HTTP-a, zaglavlje ima učinak samo na HTTPS veze.';
 
-$_['warning_Referrer_Policy']                   = "<strong>Napomena:</strong><br/>Originalni naziv zaglavlja <strong>Referer</strong> pogrešno je napisana riječ \\"referrer\\". Zaglavlje <strong>Referrer-Policy</strong> ne dijeli ovu pravopisnu pogrešku.";
+$_['warning_Referrer_Policy']                   = "<strong>Napomena:</strong><br/>Originalni naziv zaglavlja <strong>Referer</strong> pogrešno je napisana riječ \"referrer\". Zaglavlje <strong>Referrer-Policy</strong> ne dijeli ovu pravopisnu pogrešku.";
 
-$_['warning_X_Content_Type_Options']            = "<strong>Napomena:</strong><br/>X-Content-Type-Options samo primjenjuje blokiranje zahtjeva zbog nosniffa za odredišta zahtjeva \\"script\\" i \\"style\\". Međutim, također omogućuje Cross-Origin Read Blocking (CORB) za HTML, TXT, JSON i XML datoteke (isključujući SVG image/svg+xml).";
+$_['warning_X_Content_Type_Options']            = "<strong>Napomena:</strong><br/>X-Content-Type-Options samo primjenjuje blokiranje zahtjeva zbog nosniffa za odredišta zahtjeva \"script\" i \"style\". Međutim, također omogućuje Cross-Origin Read Blocking (CORB) za HTML, TXT, JSON i XML datoteke (isključujući SVG image/svg+xml).";
 
 $_['warning_X_Frame_Options']                   = "<strong>Napomena:</strong><br/>HTTP zaglavlje Content-Security-Policy ima direktivu frame-ancestors koja zastarijeva ovo zaglavlje za podršku preglednicima.";
 
@@ -278,7 +278,7 @@ $_['type_webauthn']				= "Webauthn";
 // Help Tooltip Feature Policies
 $_['help_accelerometer']			= "Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o ubrzanju uređaja putem sučelja mjerača ubrzanja.";
 $_['help_ambient_light_sensor']			= "Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o količini svjetla u okruženju oko uređaja putem sučelja AmbientLightSensor.";
-$_['help_autoplay']				= "Kontrolira je li trenutnom dokumentu dopuštena automatska reprodukcija medija zatraženih putem sučelja HTMLMediaElement. Kada je ovo pravilo omogućeno i nije bilo gesta korisnika, obećanje koje vraća HTMLMediaElement.play() odbacit će se uz DOMException. Atribut automatske reprodukcije na elementima \\"audio\\" i \\"video\\" bit će zanemaren.";
+$_['help_autoplay']				= "Kontrolira je li trenutnom dokumentu dopuštena automatska reprodukcija medija zatraženih putem sučelja HTMLMediaElement. Kada je ovo pravilo omogućeno i nije bilo gesta korisnika, obećanje koje vraća HTMLMediaElement.play() odbacit će se uz DOMException. Atribut automatske reprodukcije na elementima \"audio\" i \"video\" bit će zanemaren.";
 $_['help_camera']				= "Kontrolira je li trenutnom dokumentu dopuštena upotreba video ulaznih uređaja. Kada je ovo pravilo omogućeno, obećanje koje vraća getUserMedia() odbacit će se uz NotAllowedError DOMException.";
 $_['help_fullscreen']				= "Kontrolira smije li trenutni dokument koristiti Element.requestFullScreen(). Kada je ovo pravilo omogućeno, vraćeni Promise odbija se uz TypeError DOMException.";
 $_['help_display_capture']			= "Kontrolira je li trenutnom dokumentu dopušteno korištenje metode getDisplayMedia() za snimanje sadržaja zaslona. Kada je ovo pravilo omogućeno, obećanje koje vraća getDisplayMedia() odbacit će se s NotAllowedError ako se ne dobije dopuštenje za snimanje sadržaja zaslona.";
@@ -297,7 +297,7 @@ $_['help_picture_in_picture']			= "Kontrolira smije li trenutačni dokument repr
 $_['help_speaker']				= "Kontrolira je li trenutnom dokumentu dopušteno reproducirati zvuk putem bilo koje metode.";
 $_['help_sync_xhr']				= "Kontrolira je li trenutnom dokumentu dopušteno slanje sinkronih XMLHttpRequest zahtjeva.";
 $_['help_unoptimized_images']			= "HTTP Feature-Policy zaglavlje unoptimized-images direktiva kontrolira je li trenutnom dokumentu dopušteno preuzimanje i prikaz neoptimiziranih slika.";
-$_['help_unsized_media']			= "HTTP Feature-Policy zaglavlje unsized-media direktiva kontrolira je li trenutnom dokumentu dopušteno mijenjati veličinu medijskih elemenata nakon završetka početnog izgleda. Ovo ograničenje rješava problem \\"nestabilnosti izgleda\\" uzrokovan pružanjem zadanih dimenzija za slike čija veličina nije unaprijed navedena tako da slika ne mijenja veličinu nakon učitavanja.";
+$_['help_unsized_media']			= "HTTP Feature-Policy zaglavlje unsized-media direktiva kontrolira je li trenutnom dokumentu dopušteno mijenjati veličinu medijskih elemenata nakon završetka početnog izgleda. Ovo ograničenje rješava problem \"nestabilnosti izgleda\" uzrokovan pružanjem zadanih dimenzija za slike čija veličina nije unaprijed navedena tako da slika ne mijenja veličinu nakon učitavanja.";
 $_['help_usb']					= "Kontrolira smije li trenutni dokument koristiti WebUSB API.";
 $_['help_vr']					= "Kontrolira je li trenutnom dokumentu dopušteno koristiti WebVR API. Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.getVRDisplays() odbacit će se uz DOMException. Imajte na umu da je WebVR standard u procesu zamjene s WebXR.";
 $_['help_vibrate']				= "HTTP Feature-Policy zaglavlje vibrate direktiva kontrolira smije li trenutni dokument pokretati vibracije uređaja putem Vibration API-ja.";

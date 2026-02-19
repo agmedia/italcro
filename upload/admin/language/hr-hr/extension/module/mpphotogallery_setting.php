@@ -5,7 +5,7 @@ $_['heading_title'] = "Modulepoints - Postavka galerije fotografija";
 // Text
 $_['text_extension'] = "Ekstenzije";
 // 17-march-2023: improvements start
-$_['text_disable_events'] = "Neki događaji modula su onemogućeni, kliknite <button type=\\"button\\" class=\\"btn btn-primary mpphotogallery_setting_activate_evs\\">ovdje</button> da biste ih omogućili.";
+$_['text_disable_events'] = "Neki događaji modula su onemogućeni, kliknite <button type=\"button\" class=\"btn btn-primary mpphotogallery_setting_activate_evs\">ovdje</button> da biste ih omogućili.";
 $_['text_success_activate_events'] = "Uspjeh: događaji proširenja sada su omogućeni!";
 
 
@@ -19,7 +19,7 @@ $_['text_success_files_permission'] = "Uspjeh: datoteke su dodane na popis dopu�
 // module blog layouts add into Design > Layout list start
 $_['text_layout_name'] = "Naziv izgleda:";
 $_['text_layout_route'] = "Izgled rute:";
-$_['text_add_layouts'] = "Neki izgledi galerije fotografija mogu se dodati u <a href=\\"%s\\" target=\\"_blank\\"> Dizajn > Izgled. </a> <span class=\\"info-collapse\\" data-toggle=\\"collapse\\" data-target=\\"#list-layouts\\">Kliknite da vidite informacije o izgledima</span>";
+$_['text_add_layouts'] = "Neki izgledi galerije fotografija mogu se dodati u <a href=\"%s\" target=\"_blank\"> Dizajn > Izgled. </a> <span class=\"info-collapse\" data-toggle=\"collapse\" data-target=\"#list-layouts\">Kliknite da vidite informacije o izgledima</span>";
 $_['text_success_layouts_update'] = "Uspjeh: Izgledi fotogalerije dodani na popis izgleda!";
 // module blog layouts add into Design > Layout list end
 

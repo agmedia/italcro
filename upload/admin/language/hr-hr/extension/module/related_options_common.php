@@ -16,7 +16,7 @@ $_['text_column_left']      = "Column Left";
 $_['text_column_right']     = "Column Right";
 $_['text_ro_updated_to']    = "Module updated to version ";
 $_['text_ro_all_options']   = "All available options";
-$_['text_ro_support']       = "Developer: <a href='http://liveopencart.com' target='_blank'>liveopencart.com</a> | Support, questions and suggestions: <a href=\\"mailto:support@liveopencart.com\\">support@liveopencart.com</a>";
+$_['text_ro_support']       = "Developer: <a href='http://liveopencart.com' target='_blank'>liveopencart.com</a> | Support, questions and suggestions: <a href=\"mailto:support@liveopencart.com\">support@liveopencart.com</a>";
 $_['text_ro_clear_options'] = "Reset options";
 
 // Entry
@@ -244,7 +244,7 @@ PRO module version allows to set some different variants of combinations of rela
 <br><br>
 ';
 
-$_['text_conversation'] = "We are open for conversation. If you need modify or integrate our modules, add new functionality or develop new modules, email as to <b><a href=\\"mailto:support@liveopencart.com\\">support@liveopencart.com</a></b>.";
+$_['text_conversation'] = "We are open for conversation. If you need modify or integrate our modules, add new functionality or develop new modules, email as to <b><a href=\"mailto:support@liveopencart.com\">support@liveopencart.com</a></b>.";
 
 $_['entry_we_recommend'] = "We also recommend:";
 $_['text_we_recommend']  = "";

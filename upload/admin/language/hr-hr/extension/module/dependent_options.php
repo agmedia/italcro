@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title']       				   = "<span style=\\"color:#006bb3;\\">Ovisne opcije</span>";
+$_['heading_title']       				   = "<span style=\"color:#006bb3;\">Ovisne opcije</span>";
 
 // Text
 $_['text_no_config']					   = "Ovdje nisu potrebne konfiguracije za ovo proširenje. Proširenje je uspješno instalirano.";

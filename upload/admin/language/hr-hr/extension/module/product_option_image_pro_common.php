@@ -10,7 +10,7 @@ $_['poip_module_name'] = $_['module_name'];
 
 // Text
 $_['text_module']         = "Moduli";
-$_['text_success']        = "Uspjeh: \\\"\'.\$_[\'module_name\'] .\'\\\" postavke su promijenjene!";
+$_['text_success']        = "Uspjeh: postavke modula su promijenjene!";
 $_['text_content_top']    = "Sadržaj Vrh";
 $_['text_content_bottom'] = "Sadržaj Dno";
 $_['text_column_left']    = "Stupac lijevo";
@@ -125,7 +125,7 @@ $_['entry_img_use']      = "Dodajte slike opcija proizvoda u dodatne";
 $_['entry_img_use_help'] = "dodajte slike opcija proizvoda na popis dodatnih slika proizvoda na stranici proizvoda u odjeljku za kupce";
 
 $_['entry_img_limit']                                = "Filtrirajte dodatne slike";
-$_['entry_img_limit_help']                           = "prikaži samo prikladne slike (u skladu s odabranim opcijama proizvoda) na popisu dodatnih slika na stranici proizvoda u odjeljku za korisnike<br> radi samo sa značajkom \\\"\'.\$_[\'entry_img_use\'].\'\\\"";
+$_['entry_img_limit_help']                           = "Prikazi samo prikladne slike (prema odabranim opcijama proizvoda) na popisu dodatnih slika na stranici proizvoda u korisnickom dijelu. Radi samo uz opciju Dodajte slike opcija proizvoda u dodatne.";
 $_['entry_img_limit_v0']                             = "Isključeno";
 $_['entry_img_limit_v1']                             = "Sve dodatne slike";
 $_['entry_img_limit_v2']                             = "Samo slike odabranih opcija";
@@ -136,7 +136,7 @@ $_['entry_img_filter_checkbox_use_exact_match']      = "Potpuno podudaranje za p
 $_['entry_img_filter_checkbox_use_exact_match_help'] = "Filtrirajte sliku povezanu s opcijom potvrdnog okvira ako se vrijednosti provjerene za sliku ne podudaraju točno s vrijednostima koje je korisnik trenutno provjerio na stranici proizvoda";
 
 $_['entry_img_gal']      = "Filtriraj skočnu galeriju";
-$_['entry_img_gal_help'] = "prikaži samo prikladne slike (u skladu s odabranim opcijama proizvoda) u skočnoj galeriji na stranici proizvoda u odjeljku za korisnike, preporučuje se korištenje sa značajkama \\\"\'.\$_[\'entry_img_use\'].\'\\\" i \\\"\'.\$_[\'entry_img_limit\'].\'\\\"";
+$_['entry_img_gal_help'] = "prikaži samo prikladne slike (u skladu s odabranim opcijama proizvoda) u skočnoj galeriji na stranici proizvoda u odjeljku za korisnike, preporučuje se korištenje sa značajkama \\"\'.\$_[\'entry_img_use\'].\'\\" i \\"\'.\$_[\'entry_img_limit\'].\'\\"";
 
 $_['entry_img_option']      = "Opcija prikaza slika ispod";
 $_['entry_img_option_v0']   = "Isključeno";
@@ -148,7 +148,7 @@ $_['entry_img_load_outofstock']      = "Slike za opcije rasprodanih";
 $_['entry_img_load_outofstock_help'] = "učitavanje slika za vrijednosti opcije rasprodaje (može biti korisno u slučaju izmjene koja prikazuje vrijednosti opcije rasprodaje čak i ako je \'Oduzimanje zaliha\' za njih postavljeno na \'Da\' ili u slučaju filtriranja slika proizvoda povezanih s vrijednostima opcije rasprodaje)";
 
 $_['entry_img_category']            = "Prikaži opcije opcija na popisima proizvoda";
-$_['entry_img_category_help']       = "prikaz vrijednosti opcija proizvoda na popisima proizvoda (stranice kategorija, stranice proizvođača, standardni moduli \\\"Najnovije\\\", \\\"Bestsellers\\\", \\\"Posebno\\\", \\\"Istaknuto\\\", itd.)";
+$_['entry_img_category_help']       = "prikaz vrijednosti opcija proizvoda na popisima proizvoda (stranice kategorija, stranice proizvođača, standardni moduli \\"Najnovije\\", \\"Bestsellers\\", \\"Posebno\\", \\"Istaknuto\\", itd.)";
 $_['entry_img_category_click']      = "Zamijenite sliku na popisu proizvoda klikom";
 $_['entry_img_category_click_help'] = "promjena glavne slike proizvoda na odgovarajuću sliku vrijednosti opcije na klik (inače, prelaskom miša), ima smisla samo u slučaju uključene postavke \'\'.\$_[\'entry_img_category\'].\'\'";
 $_['entry_custom_thumb_size']       = "Prilagođena veličina sličica opcija na popisima proizvoda";
@@ -195,7 +195,7 @@ If you want to use the module on multiple sites, you should purchase a separate 
 ';
 
 // Error
-$_['error_permission'] = "Upozorenje: Nemate dopuštenje za izmjenu modula \\\"\'.\$_[\'module_name\'] .\'\\\"!";
+$_['error_permission'] = "Upozorenje: Nemate dopuštenje za izmjenu modula \\"\'.\$_[\'module_name\'] .\'\\"!";
 
 $_['text_module_version'] = $_['module_name'].', version';
-$_['text_module_support'] = "Programer: <a href=\\\"http://liveopencart.com\\\" target=\\\"_blank\\\">liveopencart.com</a> | Podrška, pitanja i prijedlozi: <a href=\\\"mailto:support@liveopencart.com\\\">support@liveopencart.com</a>";
+$_['text_module_support'] = "Programer: <a href=\\"http://liveopencart.com\\" target=\\"_blank\\">liveopencart.com</a> | Podrška, pitanja i prijedlozi: <a href=\\"mailto:support@liveopencart.com\\">support@liveopencart.com</a>";

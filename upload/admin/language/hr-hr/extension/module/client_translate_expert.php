@@ -7,15 +7,15 @@ $_['text_extension']   = "Moduli";
 $_['text_success']     = "Postavke modula ažurirane!";
 $_['text_edit']        = "Uređivanje modula";
 
-$_['text_login_is_correct']        = "<div class=\\"translate_expert_correct\\"> Provjera autorizacije uspjela. </div>";
-$_['text_need_to_login'] = "<div class=\\"translate_expert_incorrect\\"> Provjera autorizacije NIJE uspješna.</div><br> Da biste dobili ključ, registrirajte se ili prijavite na web stranicu <a href=\\"https://translator.codeguild.com.ua/\\">https://translator.codeguild.com.ua/</a>";
-$_['text_need_to_pay'] = "<div class=\\"translate_expert_incorrect\\"> Ponestalo vam je ili je ostalo vrlo malo znakova za prijevod.</div><br> Idite na web mjesto i kupite dodatne simbole <a href=\\"https://translator.codeguild.com.ua/\\">https://translator.codeguild.com.ua/</a>";
-$_['text_no_need_to_pay'] = "<div class=\\"translate_expert_correct\\"> Još uvijek imate puno znakova za prevesti.</div>";
-$_['text_about_page']        = "<div class=\\"panel-body\\"><h2>Hvala što koristite naš modul!</h2><h4>Podrška <a href=\\"mailto:admin@codeguild.com.ua\\"><b>admin@codeguild.com.ua</b></a></h4><div class=\\"alert bg-success\\"><h4>Modul je testiran na standardnim stranicama administratorskog dijela, pišite na mail ako trebate prilagoditi svim drugim stranicama.<p></p><p>Svim korisnicima omogućeno je besplatno savjetovanje i podrška o radu modula putem e-pošte.</p><p>Stranica <a href=\\"https://translator.codeguild.com.ua/uk-ua/about-us\\" target=\\"_blank\\">Sve o modulu Translate Expert.</a></p><p>Stranica <a href=\\"https://translator.codeguild.com.ua/en-gb/translate-opencart-in-few-clicks\\" target=\\"_blank\\">Kako koristiti modul za analizu i/ili prijevod cijele stranice.</a></p></h4></div></div>";
+$_['text_login_is_correct']        = "<div class=\"translate_expert_correct\"> Provjera autorizacije uspjela. </div>";
+$_['text_need_to_login'] = "<div class=\"translate_expert_incorrect\"> Provjera autorizacije NIJE uspješna.</div><br> Da biste dobili ključ, registrirajte se ili prijavite na web stranicu <a href=\"https://translator.codeguild.com.ua/\">https://translator.codeguild.com.ua/</a>";
+$_['text_need_to_pay'] = "<div class=\"translate_expert_incorrect\"> Ponestalo vam je ili je ostalo vrlo malo znakova za prijevod.</div><br> Idite na web mjesto i kupite dodatne simbole <a href=\"https://translator.codeguild.com.ua/\">https://translator.codeguild.com.ua/</a>";
+$_['text_no_need_to_pay'] = "<div class=\"translate_expert_correct\"> Još uvijek imate puno znakova za prevesti.</div>";
+$_['text_about_page']        = "<div class=\"panel-body\"><h2>Hvala što koristite naš modul!</h2><h4>Podrška <a href=\"mailto:admin@codeguild.com.ua\"><b>admin@codeguild.com.ua</b></a></h4><div class=\"alert bg-success\"><h4>Modul je testiran na standardnim stranicama administratorskog dijela, pišite na mail ako trebate prilagoditi svim drugim stranicama.<p></p><p>Svim korisnicima omogućeno je besplatno savjetovanje i podrška o radu modula putem e-pošte.</p><p>Stranica <a href=\"https://translator.codeguild.com.ua/uk-ua/about-us\" target=\"_blank\">Sve o modulu Translate Expert.</a></p><p>Stranica <a href=\"https://translator.codeguild.com.ua/en-gb/translate-opencart-in-few-clicks\" target=\"_blank\">Kako koristiti modul za analizu i/ili prijevod cijele stranice.</a></p></h4></div></div>";
 $_['text_current_module_version']        = "Trenutna verzija modula <b>{current_module_version}</b>";
 $_['text_newest_module_version']        = "Najnovija dostupna verzija modula <b>{newest_module_version}</b>";
-$_['text_you_need_to_update_module']        = "<div class=\\"translate_expert_incorrect\\">Za ispravan rad modula preporučamo nadogradnju modula na noviju verziju. <br>Zadnju verziju uvijek možete pronaći na <a href=\\"https://translator.codeguild.com.ua/en-gb/releases\\" target=\\"_blank\\">https://translator.codeguild.com.ua/en-gb/releases</a></div>";
-$_['text_you_have_the_newest_version_of_module']        = "<div class=\\"translate_expert_correct\\">Čestitamo, imate najnoviju verziju modula.</div>";
+$_['text_you_need_to_update_module']        = "<div class=\"translate_expert_incorrect\">Za ispravan rad modula preporučamo nadogradnju modula na noviju verziju. <br>Zadnju verziju uvijek možete pronaći na <a href=\"https://translator.codeguild.com.ua/en-gb/releases\" target=\"_blank\">https://translator.codeguild.com.ua/en-gb/releases</a></div>";
+$_['text_you_have_the_newest_version_of_module']        = "<div class=\"translate_expert_correct\">Čestitamo, imate najnoviju verziju modula.</div>";
 $_['text_debug_log']        = "Dnevnik otklanjanja pogrešaka";
 $_['text_clear_debug_log_success']	   = "Uspjeh: Uspješno ste izbrisali svoj dnevnik otklanjanja pogrešaka!";
 $_['text_clear_confirm']	   = "Jeste li sigurni da želite izbrisati datoteku dnevnika otklanjanja pogrešaka?";
@@ -41,7 +41,7 @@ $_['entry_analization_result'] = "Rezultat analize";
 $_['entry_analization_mode'] = "Način analize";
 $_['entry_stop_modal_process'] = "Stop";
 $_['entry_stop_modal_process_confirmation'] = "Jeste li sigurni da želite zaustaviti trenutni proces?";
-$_['entry_time_in_sec'] = "Vrijeme: <strong id=\\"timeInSec\\">{timeInSec} sekundi</strong>";
+$_['entry_time_in_sec'] = "Vrijeme: <strong id=\"timeInSec\">{timeInSec} sekundi</strong>";
 $_['entry_summ'] = "Svi jezici";
 $_['entry_close'] = "Zatvoriti";
 $_['entry_try_translate']     = "Obrazac za provjeru prijevoda<br>API ključni test";
@@ -76,7 +76,7 @@ $_['entry_server_translation_char_count'] = "Broj znakova prijevoda";
 $_['entry_server_translation_char_count_info'] = "
 <div id='translation_char_count_info_container' title='Translated char count: {charCount}. Month free limit: {monthFreeLimit}. Estimated cost: {costOverFreeLimit}.'>
 	<div id='translation_char_count_info' class='{color}'>Translated char count:<br>{charCount} / {monthFreeLimit} ({costOverFreeLimit})</div>
-	<div id='reset_translation_char_count' class='{color}' title='Reset translated char count' onclick='if (confirm(\\"Are you sure you want to reset the translation char count?\\")) resetTranslationCharCount()'>Reset</div>
+	<div id='reset_translation_char_count' class='{color}' title='Reset translated char count' onclick='if (confirm(\"Are you sure you want to reset the translation char count?\")) resetTranslationCharCount()'>Reset</div>
 </div>
 ";
 
@@ -127,18 +127,18 @@ $_['error_permission'] = "Nemate dopuštenje za upravljanje ovim modulom!";
 $_['Error_name'] = "Ime modula mora biti između 3 i 64 znaka!";
 $_['error_width'] ="Morate navesti širinu!";
 $_['error_height'] ="Morate navesti visinu!";
-$_['error_unlicensed'] = "Koristite nelicenciranu verziju modula! <br> Preporučujemo kupnju modula na web stranici <a href=\\"https://translator.codeguild.com.ua/\\"> https://translator.codeguild.com.ua/ </a> ili kontaktirajte podršku modula putem e-pošte admin@codeguild.com.ua";
-$_['error_unlicensed_active'] = "Koristite nelicenciranu verziju modula! <br>Modul radi u demo načinu rada i uskoro će prestati raditi.<br> Preporučujemo kupnju modula na web stranici <a href=\\"https://translator.codeguild.com.ua/\\"> https://translator.codeguild.com.ua/ </a> ili kontaktirajte podršku modula putem e-pošte admin@codeguild.com.ua";
+$_['error_unlicensed'] = "Koristite nelicenciranu verziju modula! <br> Preporučujemo kupnju modula na web stranici <a href=\"https://translator.codeguild.com.ua/\"> https://translator.codeguild.com.ua/ </a> ili kontaktirajte podršku modula putem e-pošte admin@codeguild.com.ua";
+$_['error_unlicensed_active'] = "Koristite nelicenciranu verziju modula! <br>Modul radi u demo načinu rada i uskoro će prestati raditi.<br> Preporučujemo kupnju modula na web stranici <a href=\"https://translator.codeguild.com.ua/\"> https://translator.codeguild.com.ua/ </a> ili kontaktirajte podršku modula putem e-pošte admin@codeguild.com.ua";
 $_['error_debug_log_warning']	   = "Upozorenje: Vaša datoteka dnevnika otklanjanja pogrešaka %s je %s!";
 
-$_['error_lang_from_folder_is_not_exists']	   = "Mapa datoteka lokalizacije za \\"Jezik za prijevod\\" nije pronađena:";
-$_['error_lang_to_folder_is_not_exists']	   = "Mapa datoteka lokalizacije za \\"Jezik za prijevod\\" nije pronađena:";
+$_['error_lang_from_folder_is_not_exists']	   = "Mapa datoteka lokalizacije za \"Jezik za prijevod\" nije pronađena:";
+$_['error_lang_to_folder_is_not_exists']	   = "Mapa datoteka lokalizacije za \"Jezik za prijevod\" nije pronađena:";
 $_['error_lang_from_and_lang_to_are_equal']	   = "Odaberite jezik na koji želite prevesti";
 
 // Messages;
 $_['message_analize_global_info'] ="<b>Sve tablice</b>";
-$_['message_analize_table_head_info'] = "<strong class=\\"et_table\\" id=\\"et_{table}\\">{table}</strong>";
-$_['message_analize_field_head_info'] = "Tekstualno polje <strong class=\\"et_field\\" id=\\"et_{table}_{textColumnName}\\">{textColumnName}</strong>";
+$_['message_analize_table_head_info'] = "<strong class=\"et_table\" id=\"et_{table}\">{table}</strong>";
+$_['message_analize_field_head_info'] = "Tekstualno polje <strong class=\"et_field\" id=\"et_{table}_{textColumnName}\">{textColumnName}</strong>";
 
 
 

@@ -25,7 +25,7 @@ $_['entry_addtc'] = "<h4>AddToCart konverzije</h4>";
 $_['entry_signup'] = "<h4>Konverzije prijave</h4>";
 $_['entry_adwid'] = "AdWords ID";
 $_['entry_adwlbl'] = "Adwords oznaka";
-$_['entry_g_help'] = "<font style=\\"font-size: 10px;\\">Izborno - ostavite prazno ako ne želite pratiti</font>";
+$_['entry_g_help'] = "<font style=\"font-size: 10px;\">Izborno - ostavite prazno ako ne želite pratiti</font>";
 
 // Error
 $_['error_permission'] = "Upozorenje: Nemate dopuštenje za izmjenu modula računa!";

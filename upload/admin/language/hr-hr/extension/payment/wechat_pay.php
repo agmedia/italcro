@@ -11,32 +11,32 @@
 $_['heading_title']                  = "Wechat Pay";
 
 // Text
-$_['text_extension']                 = "Extensions";
-$_['text_success']                   = "Success: You have modified Wechat account details!";
-$_['text_edit']                      = "Edit Wechat Pay";
+$_['text_extension']                 = "Ekstenzije";
+$_['text_success']                   = "Uspjeh: izmijenili ste detalje Wechat računa!";
+$_['text_edit']                      = "Uredi Wechat Pay";
 $_['text_wechat_pay']                = "<a target=\"_BLANK\" href=\"https://pay.weixin.qq.com\"><img src=\"view/image/payment/wechat.png\" alt=\"Wechat Pay Website\" title=\"Wechat Pay Website\" style=\"border: 1px solid #EEEEEE;\" /></a>";
 
 // Entry
-$_['entry_app_id']                   = "App ID";
-$_['entry_app_secret']               = "App Secret";
-$_['entry_mch_id']                   = "Merchant ID";
-$_['entry_api_secret']               = "API Secret";
-$_['entry_debug']                    = "Debug Mode";
-$_['entry_total']                    = "Total";
-$_['entry_currency']                 = "Currency";
-$_['entry_completed_status']         = "Completed Status";
-$_['entry_geo_zone']                 = "Geo Zone";
+$_['entry_app_id']                   = "ID aplikacije";
+$_['entry_app_secret']               = "Tajna aplikacije";
+$_['entry_mch_id']                   = "ID trgovca";
+$_['entry_api_secret']               = "Tajna API-ja";
+$_['entry_debug']                    = "Način otklanjanja pogrešaka";
+$_['entry_total']                    = "Ukupno";
+$_['entry_currency']                 = "Valuta";
+$_['entry_completed_status']         = "Status završeno";
+$_['entry_geo_zone']                 = "Geo zona";
 $_['entry_status']                   = "Status";
-$_['entry_sort_order']               = "Sort Order";
+$_['entry_sort_order']               = "Redoslijed sortiranja";
 
 // Help
-$_['help_total']                     = "The checkout total the order must reach before this payment method becomes active";
-$_['help_currency']                  = "The currency customer paid merchant!";
-$_['help_wechat_pay_setup']          = "<a target=\"_blank\" href=\"http://www.opencart.cn/docs/wechat-pay\">Click here</a> to learn how to set up Wechat Pay account.";
+$_['help_total']                     = "Ukupni iznos narudžbe mora doseći prije nego što ovaj način plaćanja postane aktivan";
+$_['help_currency']                  = "Valuta koju je kupac platio trgovcu!";
+$_['help_wechat_pay_setup']          = "<a target=\"_blank\" href=\"http://www.opencart.cn/docs/wechat-pay\">Kliknite ovdje</a> da biste saznali kako postaviti Wechat Pay račun.";
 
 // Error
-$_['error_permission']               = "Warning: You do not have permission to modify payment Wechat!";
-$_['error_app_id']                   = "App ID required!";
-$_['error_app_secret']               = "App Secret required!";
-$_['error_mch_id']                   = "Merchant ID required!";
-$_['error_api_secret']               = "API Secret required!";
+$_['error_permission']               = "Upozorenje: Nemate dozvolu za izmjenu plaćanja Wechat!";
+$_['error_app_id']                   = "Potreban je ID aplikacije!";
+$_['error_app_secret']               = "Potrebna je tajna aplikacije!";
+$_['error_mch_id']                   = "Potreban ID trgovca!";
+$_['error_api_secret']               = "Potreban API Secret!";

@@ -338,7 +338,7 @@ $_['text_eq_weight_free_product'] = "Total Weight of the free products";
 $_['text_eq_total_gift_product'] = "Total of the X-Gifted Products";
 $_['text_eq_weight_gift_product'] = "Weight of the X-Gifted Products";
 $_['text_eq_no_block'] = "No. of block";
-$_['text_product_rules'] = "Please <a href=\"https://docs.google.com/document/d/1u8KUVlbzO2mOAOsStxPqB_EIQXtZCUqQcw2-p8rFH8M/edit\" target=\"_blank\">check this document</a> to understand the difference between various modes.";
+$_['text_product_rules'] = "Please <a href=\\"https://docs.google.com/document/d/1u8KUVlbzO2mOAOsStxPqB_EIQXtZCUqQcw2-p8rFH8M/edit\\" target=\\"_blank\\">check this document</a> to understand the difference between various modes.";
 $_['text_product_rules_advanced'] = "In most cases, you don't need to configure the following options, and it works with default settings. However, you can adjust them if you feel you need them.";
 $_['text_reveal_options'] = "Reveal All Sub-Options...";
 // Global text across mods
@@ -392,7 +392,7 @@ $_['help_sort_order'] = "Sorting order amoung methods created by X-Shippingpro";
 $_['help_status'] = "Enable/Disable this particular method only";
 $_['help_store']  = $_['help_zone'] = $_['help_customer_group'] = $_['help_currency'] = $_['help_geo_zone'] = $_['help_country'] = $_['help_payment'] = $_['help_city_all'] = $_['help_postal_all'] = $_['help_coupon_all'] = $_['help_days'] = $_['help_customer_all'] = $_['help_custom_all'] = $_['help_xlevel'] = 'If you want to specify any particular items, please uncheck `For Any` to show the available options';
 $_['help_customer_rule'] = $_['help_coupon_rule'] = $_['help_postal_rule'] = $_['help_city_rule']= '<b>Inlcusive:</b> Shipping method will appear for the entered items only. <b>Exclusive:</b> Shipping method will appear for non-entered items only.';
-$_['help_weight'] = $_['help_quantity'] = $_['help_order_total']  = 'Inclusive value. Additional restriction rule if you want to use. If you don\'t need, just keep blank. Noted that this rule does not respect product rules i.e. it would consider whole cart value.';
+$_['help_weight'] = $_['help_quantity'] = $_['help_order_total']  = 'Inclusive value. Additional restriction rule if you want to use. If you don\\'t need, just keep blank. Noted that this rule does not respect product rules i.e. it would consider whole cart value.';
 $_['help_display'] = "For admin use only. It helps you to differentiate a method from others sharing same name.";
 $_['help_city']  = "Multiple cities are supported. Newline/Comma Separated";
 $_['help_desc'] = "The description would appear just after the shipping method name. It supports few shortcodes e.g. [date]3[/date]";
@@ -403,7 +403,7 @@ $_['help_date']  = "If you want to restrict shipping method by date range, pleas
 $_['help_logo'] = "Optional field. You can enter an image URL or font-awesome icon class. This logo will be appeared right before shipping title";
 $_['help_postal']="Newline/Comma Separated. Wildcards support (*, ?) and Range Support. <br /><b>Example:</b><br />12345,443300-443399,9843*,875*22,45433?,S3432?2 <br /><b>Explanation</b>:<br /> 12345: A single Postal Code <br /> 443300-443399: Postal Code start from 443300 to 443399<br /> 9843*: Any code that starts with 9843 <br />875*22:  Any code that starts with 875 and ends by 22 <br /> 45433?: Any code that start with 45433 and ends by any single alpha-numeric char. <br /> SE-1-10: Postal Code start from 1 to 10 with prefix SE i.e SE9 <br /> PA-1-10-NK: Postal Code start from 1 to 10 with prefix PK and suffix NK i.e PA9NK";
 $_['help_additional'] ='If it turns out that the target value does not fall under the above ranges, X-Shippingpro will calculate the shipping costs for additional items based on these fields. <br> <br />For Product Based shipping, these fields will be treated as shipping cost for all non-listed products.
-   <br><br /> If you put @ in the `Additional Price` field in place of cost,  X-Shippingpro iterates the above ranges and cumulates the cost until it finds the target value. <br /><br /> If you don\'t want to auto calculate, keep it blank. Default Max Limit is unlimited.';
+   <br><br /> If you put @ in the `Additional Price` field in place of cost,  X-Shippingpro iterates the above ranges and cumulates the cost until it finds the target value. <br /><br /> If you don\\'t want to auto calculate, keep it blank. Default Max Limit is unlimited.';
 $_['help_custom_css'] = "Don't put inside style tag. Just enter your css rule. e.g .box {background:#2f96c9;}";
 $_['help_module_status'] = "Enable/Disable X-Shippingpro";
 $_['help_module_sort_order'] = "The sorting Order amoung other shipping modules";

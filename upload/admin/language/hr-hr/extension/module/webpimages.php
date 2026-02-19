@@ -12,15 +12,15 @@ $_['heading_title']    = "WebP slike 2.3";
 $_['text_extension']   = "Ekstenzije";
 $_['text_success']     = "Uspjeh: izmijenili ste modul WebP Images!";
 $_['text_edit']        = "Modul za uređivanje Webp slika";
-$_['text_gd']          = "<i class=\\"fa fa-check\\" style=\\"color:green;font-size:24px\\"></i>";
-$_['text_error_gd']    = "<i class=\\"fa fa-close\\" style=\\"color:red;font-size:24px\\"></i>";
+$_['text_gd']          = "<i class=\"fa fa-check\" style=\"color:green;font-size:24px\"></i>";
+$_['text_error_gd']    = "<i class=\"fa fa-close\" style=\"color:red;font-size:24px\"></i>";
 $_['entry_quality']    = "Kvaliteta slike";
 $_['entry_status']     = "Status";
 $_['entry_cookie']     = "Podrška za kolačiće";
 $_['help_gd'] ="";
 $_['help_quality']		= "Preporučena kvaliteta slike je 80;";
 $_['error_permission']  = "Upozorenje: Nemate dopuštenje za izmjenu WebP Image modula!";
-$_['help_gd']          = "<i class=\\"fa fa-info\\" style=\\"color:blue;font-size:24px;padding:10px\\"></i>PHP GD is required for this extension to work. <br>If GD WebP is not supported on your server. Please contact your hosting provider to enable Webp support. <br/><br/>For Extension Support visit <a href=\\"https://aits.xyz/support\\" target=\\"new\\">https://aits.xyz/support</a>";
+$_['help_gd']          = "<i class=\"fa fa-info\" style=\"color:blue;font-size:24px;padding:10px\"></i>PHP GD is required for this extension to work. <br>If GD WebP is not supported on your server. Please contact your hosting provider to enable Webp support. <br/><br/>For Extension Support visit <a href=\"https://aits.xyz/support\" target=\"new\">https://aits.xyz/support</a>";
 $_['help_cookie']      = "Cookie se preporučuje, ali ako imate problema s Litespeed poslužiteljem, preporučuje se isključivanje";
 
 

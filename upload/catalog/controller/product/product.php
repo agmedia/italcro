@@ -782,6 +782,7 @@ class ControllerProductProduct extends Controller {
 					'name'        => $result['name'],
                     'ean'        => $result['ean'],
                     'name_add'        => $result['name_add'],
+					'quantity'    => (int)$result['quantity'],
 					'description' => utf8_substr(trim(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8'))), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
 					   //  'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),
 					'price'       => $price,

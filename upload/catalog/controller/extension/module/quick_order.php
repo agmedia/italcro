@@ -101,32 +101,88 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
         $query = $this->db->query($sql);
 
+        $show_price = true;
+        if ($this->config->get('config_customer_price') && !$this->customer->isLogged()) {
+            $show_price = false;
+        }
 
+        $items = [];
+        $sku_quantities = [];
+        $base_unit_prices = [];
 
-
-        $query = $this->db->query($sql);
-
-        $results = [];
         foreach ($query->rows as $row) {
             $product_info = $this->model_catalog_product->getProduct((int)$row['product_id']);
-            if (!$product_info) continue;
-
-            $price_float   = (float)$product_info['price'];
-            $special_float = isset($product_info['special']) ? (float)$product_info['special'] : 0;
-            $effective     = $special_float > 0 ? $special_float : $price_float;
-
-            $taxed = $this->tax->calculate($effective, $product_info['tax_class_id'], (bool)$this->config->get('config_tax'));
-
-            $show_price = true;
-            if ($this->config->get('config_customer_price') && !$this->customer->isLogged()) {
-                $show_price = false;
+            if (!$product_info) {
+                continue;
             }
 
-            $price_display = $show_price ? $this->currency->format($taxed, $this->session->data['currency']) : '';
-
-            $thumb = $product_info['image'] ? $this->model_tool_image->resize($product_info['image'], 60, 60) : '';
-
             $minimumifc100 = ($row['cent'] === 'C-100') ? 1 : (int)$product_info['minimum'];
+            if ($minimumifc100 < 1) {
+                $minimumifc100 = 1;
+            }
+
+            $base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+            $sku = trim((string)$product_info['sku']);
+
+            if ($sku !== '' && $base_unit > 0) {
+                $sku_quantities[$sku] = (float)$minimumifc100;
+                $base_unit_prices[$sku] = $base_unit;
+            }
+
+            $items[] = [
+                'product_info'  => $product_info,
+                'cent'          => isset($row['cent']) ? $row['cent'] : '',
+                'minimumifc100' => $minimumifc100,
+                'base_unit'     => $base_unit
+            ];
+        }
+
+        $qiqo_price_map = [];
+        $qiqo_extra_map = [];
+        if ($this->customer->isLogged() && $sku_quantities) {
+            $qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+                (int)$this->customer->getId(),
+                $sku_quantities,
+                $base_unit_prices
+            );
+            $qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
+        }
+
+        $results = [];
+        foreach ($items as $item) {
+            $product_info = $item['product_info'];
+            $sku = trim((string)$product_info['sku']);
+            $unit_raw = (float)$item['base_unit'];
+            $price_old = false;
+            $qiqo_discount_percent = 0.0;
+            $qiqo_proforma_extra_percent = 0.0;
+
+            if ($sku !== '' && isset($qiqo_price_map[$sku])) {
+                $map_row = $qiqo_price_map[$sku];
+                if (isset($map_row['final_unit_price'])) {
+                    $unit_raw = (float)$map_row['final_unit_price'];
+                }
+                if (isset($map_row['discount_percent'])) {
+                    $qiqo_discount_percent = (float)$map_row['discount_percent'];
+                }
+                if (isset($map_row['old_unit_price']) && $map_row['old_unit_price'] !== false) {
+                    $old_unit_raw = (float)$map_row['old_unit_price'];
+                    if ($old_unit_raw > 0 && $old_unit_raw > $unit_raw) {
+                        $price_old = $this->currency->format(
+                            $this->tax->calculate($old_unit_raw, $product_info['tax_class_id'], (bool)$this->config->get('config_tax')),
+                            $this->session->data['currency']
+                        );
+                    }
+                }
+            }
+
+            if ($sku !== '' && isset($qiqo_extra_map[$sku])) {
+                $qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$sku];
+            }
+
+            $taxed = $this->tax->calculate($unit_raw, $product_info['tax_class_id'], (bool)$this->config->get('config_tax'));
+            $price_display = $show_price ? $this->currency->format($taxed, $this->session->data['currency']) : '';
+            $thumb = $product_info['image'] ? $this->model_tool_image->resize($product_info['image'], 60, 60) : '';
 
             $results[] = [
                 'product_id' => (int)$product_info['product_id'],
@@ -135,13 +191,16 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 'sku'        => $product_info['sku'],
                 'price'      => $price_display,
                 'price_raw'  => $show_price ? (float)$taxed : 0.0,
-                'name_add'       => $product_info['name_add'],          // tvoj custom naziv / atribut
-                'description_add'=> $product_info['description_add'],    // opis
+                'price_old'  => $show_price ? $price_old : false,
+                'qiqo_discount_percent' => $qiqo_discount_percent,
+                'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
+                'name_add'       => $product_info['name_add'],
+                'description_add'=> $product_info['description_add'],
                 'stock'          => $product_info['quantity'],
-                'minimum'          => $product_info['minimum'],
-                'minimumifc100'    => $minimumifc100,
-                'cent'       => isset($row['cent']) ? $row['cent'] : '',
-                'thumb'      => $thumb
+                'minimum'        => $product_info['minimum'],
+                'minimumifc100'  => $item['minimumifc100'],
+                'cent'           => $item['cent'],
+                'thumb'          => $thumb
             ];
         }
 
@@ -272,9 +331,56 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $this->load->model('tool/image');
         $this->load->language('product/product');
 
+        $cart_products = $this->cart->getProducts();
+        $product_info_map = array();
+        $sku_quantities = array();
+        $base_unit_prices = array();
+
+        foreach ($cart_products as $cart_product) {
+            $product_id = (int)$cart_product['product_id'];
+            if (!isset($product_info_map[$product_id])) {
+                $product_info_map[$product_id] = $this->model_catalog_product->getProduct($product_id);
+            }
+
+            $product_info = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
+            if (!$product_info || empty($product_info['sku'])) {
+                continue;
+            }
+
+            $sku = trim((string)$product_info['sku']);
+            if ($sku === '') {
+                continue;
+            }
+
+            $qty = (float)$cart_product['quantity'];
+            if ($qty <= 0) {
+                $qty = 1.0;
+            }
+
+            $base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+            if ($base_unit <= 0) {
+                continue;
+            }
+
+            $sku_quantities[$sku] = $qty;
+            $base_unit_prices[$sku] = $base_unit;
+        }
+
+        $qiqo_price_map = array();
+        $qiqo_extra_map = array();
+        if ($this->customer->isLogged() && $sku_quantities) {
+            $qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+                (int)$this->customer->getId(),
+                $sku_quantities,
+                $base_unit_prices
+            );
+            $qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
+        }
+
         $items = array();
-        foreach ($this->cart->getProducts() as $product) {
-            $product_info = $this->model_catalog_product->getProduct($product['product_id']);
+        foreach ($cart_products as $product) {
+            $product_id = (int)$product['product_id'];
+            $product_info = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
 
             $thumb = '';
             if (!empty($product_info['image'])) {
@@ -287,12 +393,46 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 $this->session->data['currency']
             );
 
+            $product_sku = !empty($product['sku']) ? (string)$product['sku'] : (!empty($product_info['sku']) ? (string)$product_info['sku'] : '');
+            $qiqo_discount_percent = 0.0;
+            $qiqo_proforma_extra_percent = 0.0;
+            $price_old = false;
+
+            if ($product_sku !== '') {
+                if (isset($qiqo_price_map[$product_sku]['discount_percent'])) {
+                    $qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['discount_percent'];
+                }
+
+                if (isset($qiqo_extra_map[$product_sku])) {
+                    $qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$product_sku];
+                }
+
+                if (isset($qiqo_price_map[$product_sku]['old_unit_price']) &&
+                    $qiqo_price_map[$product_sku]['old_unit_price'] !== false) {
+                    $old_unit_raw = (float)$qiqo_price_map[$product_sku]['old_unit_price'];
+                    $current_unit_raw = (float)$product['price'];
+
+                    if ($old_unit_raw > 0 && $old_unit_raw > $current_unit_raw) {
+                        $price_old = $this->currency->format(
+                            $this->tax->calculate($old_unit_raw, $product['tax_class_id'], $this->config->get('config_tax')),
+                            $this->session->data['currency']
+                        );
+                    }
+                }
+            }
+
             $items[] = array(
                 'product_id' => (int)$product['product_id'],
                 'name'       => $product['name'],
-                'sku'        => isset($product_info['sku']) ? $product_info['sku'] : '', // KLJUČNO
+                'name_add'   => !empty($product_info['name_add']) ? $product_info['name_add'] : '',
+                'minimum'    => !empty($product_info['minimum']) ? (int)$product_info['minimum'] : 1,
+                'cent'       => !empty($product_info['cent']) ? $product_info['cent'] : '',
+                'sku'        => $product_sku,
                 'price_raw'  => $price_raw,
                 'price'      => $price_txt,
+                'price_old'  => $price_old,
+                'qiqo_discount_percent' => $qiqo_discount_percent,
+                'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
                 'quantity'   => (int)$product['quantity'],
                 'thumb'      => $thumb
             );

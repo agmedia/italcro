@@ -85,6 +85,21 @@
       }
       return item.price || '';
     }
+    function displayPriceHtml(item){
+      var current = displayPrice(item);
+      var old = item && item.price_old ? String(item.price_old) : '';
+      if(old){
+        return '<span class="price-new" style="color:#d9534f;font-weight:700;">' + current + '</span><br><span class="price-old" style="text-decoration:line-through;color:#777;">' + old + '</span>';
+      }
+      return current;
+    }
+    function displayPercent(value, prefix){
+      var n = parseFloat(value || 0);
+      if(isNaN(n) || n <= 0){
+        return '-';
+      }
+      return (prefix || '') + Math.round(n) + '%';
+    }
 
     /* ===================== Table rendering ===================== */
     function rowHtml(item, added){
@@ -128,7 +143,9 @@
               <td>'+pack+'</td>\n\
               <td>'+(item.cent || '')+'</td>\n\
           <td>'+(item.sku || '')+'</td>\n\
-         <td>'+(displayPrice(item))+'</td>\n\
+          <td>'+displayPercent(item.qiqo_discount_percent, '-')+'</td>\n\
+          <td>'+displayPercent(item.qiqo_proforma_extra_percent, '+')+'</td>\n\
+         <td>'+(displayPriceHtml(item))+'</td>\n\
           <td>'+subtotalCell+'</td>\n\
           <td>'+qtyHtml+'</td>\n\
           <td class="qo-actions">'+actions+'</td>\n\
@@ -167,6 +184,9 @@
           if (item.quantity < min) item.quantity = min;
           $existing.find('.qo-qty').val(item.quantity).attr('data-minstep', min).attr('min', min);
         }
+        if (item.price_raw != null) {
+          $existing.attr('data-price', item.price_raw);
+        }
         if(added){
           $existing.attr('data-added','1').addClass('success')
               .find('.qo-actions').html('<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
@@ -180,13 +200,20 @@
         if (item.sku) {
           $existing.find('td').eq(5).text(item.sku);
         }
+        if (item.qiqo_discount_percent != null) {
+          $existing.find('td').eq(6).text(displayPercent(item.qiqo_discount_percent, '-'));
+        }
+        if (item.qiqo_proforma_extra_percent != null) {
+          $existing.find('td').eq(7).text(displayPercent(item.qiqo_proforma_extra_percent, '+'));
+        }
 
         // osvježi prikaz cijene (C-100 -> price_raw*100)
-        if(item.price_raw != null || item.price != null){
-          $existing.find('td').eq(6).text(displayPrice({
+        if(item.price_raw != null || item.price != null || item.price_old != null){
+          $existing.find('td').eq(8).html(displayPriceHtml({
             cent: item.cent != null ? item.cent : $existing.find('td').eq(4).text(),
             price_raw: item.price_raw != null ? item.price_raw : parseFloat($existing.attr('data-price') || '0'),
-            price: item.price != null ? item.price : $existing.find('td').eq(6).text(),
+            price: item.price != null ? item.price : $existing.find('td').eq(8).text(),
+            price_old: item.price_old != null ? item.price_old : '',
             minimumifc100: min,
             minimum: item.minimum != null ? item.minimum : parseInt($existing.find('td').eq(3).text() || '1', 10)
           }));
@@ -224,7 +251,10 @@
         // td(3) = Pakiranje (minimum)
         cent: tds.eq(4).text().trim(),
         sku:  tds.eq(5).text().trim(),
-        price: tds.eq(6).text().trim(),
+        qiqo_discount_percent: parseFloat(String(tds.eq(6).text() || '').replace(/[^\d.-]/g, '')) || 0,
+        qiqo_proforma_extra_percent: parseFloat(String(tds.eq(7).text() || '').replace(/[^\d.-]/g, '')) || 0,
+        price: tds.eq(8).find('.price-new').text().trim() || tds.eq(8).text().trim(),
+        price_old: tds.eq(8).find('.price-old').text().trim() || '',
         // Cijena
         price_raw: isNaN(pRaw) ? 0 : pRaw,
         quantity: qty,
@@ -261,7 +291,10 @@
      data-pack="${pack}"
      data-sku="${esc(it.sku||'')}"
      data-price="${esc(it.price||'')}"
+     data-price-old="${esc(it.price_old||'')}"
      data-priceraw="${Number(it.price_raw||0)}"
+     data-discount="${Number(it.qiqo_discount_percent||0)}"
+     data-proforma="${Number(it.qiqo_proforma_extra_percent||0)}"
      data-thumb="${esc(it.thumb||'')}"
      data-cent="${esc(it.cent||'')}">
       <div class="qo-suggest-inner">
@@ -273,7 +306,9 @@
           </div>
           <div class="meta">
             ${(it.sku ? `<span>Šifra: ${esc(it.sku)}</span>` : '')}
+            ${(it.qiqo_discount_percent ? `<span>Rabat: -${Math.round(Number(it.qiqo_discount_percent))}%</span>` : '')}
             ${(it.price ? `<span class="price">${esc(it.price)}</span>` : '')}
+            ${(it.price_old ? `<span class="price-old" style="text-decoration:line-through;color:#777;">${esc(it.price_old)}</span>` : '')}
           </div>
         </div>
 
@@ -332,6 +367,9 @@
         name_add: $s.attr('data-name_add') || '',
         sku: $s.attr('data-sku') || '',
         price: $s.attr('data-price') || '',
+        price_old: $s.attr('data-price-old') || '',
+        qiqo_discount_percent: parseFloat($s.attr('data-discount') || '0') || 0,
+        qiqo_proforma_extra_percent: parseFloat($s.attr('data-proforma') || '0') || 0,
         price_raw: parseFloat($s.attr('data-priceraw') || '0') || 0,
         thumb: $s.attr('data-thumb') || '',
         quantity: q,
@@ -492,7 +530,7 @@
       if(res && res.items){
         var map = {}; loadLS().forEach(function(x){ map[String(x.product_id)] = x; });
         res.items.forEach(function(it){
-          var merged = Object.assign({}, it, map[String(it.product_id)] || {}, { added: true });
+          var merged = Object.assign({}, map[String(it.product_id)] || {}, it, { added: true });
           ensureRow(merged, true);
           upsertLS(merged);
         });

@@ -82,6 +82,8 @@ class ControllerMailOrder extends Controller {
 		$data['text_product'] = $language->get('text_product');
 		$data['text_model'] = $language->get('text_model');
 		$data['text_quantity'] = $language->get('text_quantity');
+		$data['text_discount'] = $language->get('text_discount');
+		$data['text_old_price'] = $language->get('text_old_price');
 		$data['text_price'] = $language->get('text_price');
 		$data['text_total'] = $language->get('text_total');
 		$data['text_footer'] = $language->get('text_footer');
@@ -188,13 +190,59 @@ class ControllerMailOrder extends Controller {
 
 		$data['shipping_address'] = str_replace(array("\r\n", "\r", "\n"), '<br />', preg_replace(array("/\s\s+/", "/\r\r+/", "/\n\n+/"), '<br />', trim(str_replace($find, $replace, $format))));
 
-		$this->load->model('tool/upload');
+			$this->load->model('tool/upload');
+			$this->load->model('catalog/product');
 
-		// Products
-		$data['products'] = array();
+			// Products
+			$data['products'] = array();
 
-		foreach ($order_products as $order_product) {
-			$option_data = array();
+			$product_info_map = array();
+			$sku_quantities = array();
+			$base_unit_prices = array();
+
+			foreach ($order_products as $order_product_prepare) {
+				$product_id = (int)$order_product_prepare['product_id'];
+				if (!isset($product_info_map[$product_id])) {
+					$product_info_map[$product_id] = $this->model_catalog_product->getProduct($product_id);
+				}
+
+				$product_info_prepare = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
+				if (!$product_info_prepare || empty($product_info_prepare['sku'])) {
+					continue;
+				}
+
+				$sku = trim((string)$product_info_prepare['sku']);
+				if ($sku === '') {
+					continue;
+				}
+
+				$qty = (float)$order_product_prepare['quantity'];
+				if ($qty <= 0) {
+					$qty = 1.0;
+				}
+
+				$base_unit = ((float)$product_info_prepare['special'] > 0) ? (float)$product_info_prepare['special'] : (float)$product_info_prepare['price'];
+				if ($base_unit <= 0) {
+					continue;
+				}
+
+				$sku_quantities[$sku] = $qty;
+				$base_unit_prices[$sku] = $base_unit;
+			}
+
+			$qiqo_price_map = array();
+			$qiqo_extra_map = array();
+			if (!empty($order_info['customer_id']) && $sku_quantities) {
+				$qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+					(int)$order_info['customer_id'],
+					$sku_quantities,
+					$base_unit_prices
+				);
+				$qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
+			}
+
+			foreach ($order_products as $order_product) {
+				$option_data = array();
 
 			$order_options = $this->model_checkout_order->getOrderOptions($order_info['order_id'], $order_product['order_product_id']);
 
@@ -215,16 +263,49 @@ class ControllerMailOrder extends Controller {
 					'name'  => $order_option['name'],
 					'value' => (utf8_strlen($value) > 20 ? utf8_substr($value, 0, 20) . '..' : $value)
 				);
-			}
+				}
 
-			$data['products'][] = array(
-				'name'     => $order_product['name'],
-				'model'    => $order_product['model'],
-				'option'   => $option_data,
-				'quantity' => $order_product['quantity'],
-				'price'    => $this->currency->format($order_product['price'] + ($this->config->get('config_tax') ? $order_product['tax'] : 0), $order_info['currency_code'], $order_info['currency_value']),
-				'total'    => $this->currency->format($order_product['total'] + ($this->config->get('config_tax') ? ($order_product['tax'] * $order_product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value'])
-			);
+				$product_info = isset($product_info_map[(int)$order_product['product_id']]) ? $product_info_map[(int)$order_product['product_id']] : array();
+				$product_sku = !empty($product_info['sku']) ? trim((string)$product_info['sku']) : '';
+
+				$qiqo_discount_percent = 0.0;
+				$qiqo_proforma_extra_percent = 0.0;
+				$price_old = false;
+
+				if ($product_sku !== '' && isset($qiqo_price_map[$product_sku]['discount_percent'])) {
+					$qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['discount_percent'];
+				}
+
+				if ($product_sku !== '' && isset($qiqo_extra_map[$product_sku])) {
+					$qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$product_sku];
+				}
+
+				if ($product_sku !== '' &&
+					isset($qiqo_price_map[$product_sku]['old_unit_price']) &&
+					$qiqo_price_map[$product_sku]['old_unit_price'] !== false) {
+					$old_unit_raw = (float)$qiqo_price_map[$product_sku]['old_unit_price'];
+					$current_unit_raw = (float)$order_product['price'];
+
+					if ($old_unit_raw > 0 && $old_unit_raw > $current_unit_raw) {
+						$price_old = $this->currency->format(
+							$old_unit_raw + ($this->config->get('config_tax') ? (float)$order_product['tax'] : 0),
+							$order_info['currency_code'],
+							$order_info['currency_value']
+						);
+					}
+				}
+
+				$data['products'][] = array(
+					'name'     => $order_product['name'],
+					'model'    => $order_product['model'],
+					'option'   => $option_data,
+					'quantity' => $order_product['quantity'],
+					'qiqo_discount_percent' => $qiqo_discount_percent,
+					'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
+					'price_old' => $price_old,
+					'price'    => $this->currency->format($order_product['price'] + ($this->config->get('config_tax') ? $order_product['tax'] : 0), $order_info['currency_code'], $order_info['currency_value']),
+					'total'    => $this->currency->format($order_product['total'] + ($this->config->get('config_tax') ? ($order_product['tax'] * $order_product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value'])
+				);
 		}
 
 		// Vouchers

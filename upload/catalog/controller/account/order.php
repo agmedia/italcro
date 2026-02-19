@@ -240,6 +240,48 @@ class ControllerAccountOrder extends Controller {
 
 			$products = $this->model_account_order->getOrderProducts($this->request->get['order_id']);
 
+			$product_info_map = array();
+			$sku_quantities = array();
+			$base_unit_prices = array();
+			foreach ($products as $product_prepare) {
+				$product_id = (int)$product_prepare['product_id'];
+				if (!isset($product_info_map[$product_id])) {
+					$product_info_map[$product_id] = $this->model_catalog_product->getProduct($product_id);
+				}
+
+				$product_info_prepare = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
+				if (!$product_info_prepare || empty($product_info_prepare['sku'])) {
+					continue;
+				}
+
+				$sku = trim((string)$product_info_prepare['sku']);
+				if ($sku === '') {
+					continue;
+				}
+
+				$qty = (float)$product_prepare['quantity'];
+				if ($qty <= 0) {
+					$qty = 1.0;
+				}
+
+				$base_unit = ((float)$product_info_prepare['special'] > 0) ? (float)$product_info_prepare['special'] : (float)$product_info_prepare['price'];
+				if ($base_unit <= 0) {
+					continue;
+				}
+
+				$sku_quantities[$sku] = $qty;
+				$base_unit_prices[$sku] = $base_unit;
+			}
+
+			$qiqo_price_map = array();
+			if ($this->customer->isLogged() && $sku_quantities) {
+				$qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+					(int)$this->customer->getId(),
+					$sku_quantities,
+					$base_unit_prices
+				);
+			}
+
 			foreach ($products as $product) {
 				$option_data = array();
 
@@ -264,7 +306,7 @@ class ControllerAccountOrder extends Controller {
 					);
 				}
 
-				$product_info = $this->model_catalog_product->getProduct($product['product_id']);
+				$product_info = isset($product_info_map[(int)$product['product_id']]) ? $product_info_map[(int)$product['product_id']] : array();
 
 				if ($product_info) {
 					$reorder = $this->url->link('account/order/reorder', 'order_id=' . $order_id . '&order_product_id=' . $product['order_product_id'], true);
@@ -272,11 +314,33 @@ class ControllerAccountOrder extends Controller {
 					$reorder = '';
 				}
 
+				$product_sku = (!empty($product_info['sku']) ? trim((string)$product_info['sku']) : '');
+				$qiqo_discount_percent = 0.0;
+				$price_old = false;
+
+				if ($product_sku !== '' && isset($qiqo_price_map[$product_sku]['discount_percent'])) {
+					$qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['discount_percent'];
+				}
+
+				if ($product_sku !== '' &&
+					isset($qiqo_price_map[$product_sku]['old_unit_price']) &&
+					$qiqo_price_map[$product_sku]['old_unit_price'] !== false) {
+					$old_unit_raw = (float)$qiqo_price_map[$product_sku]['old_unit_price'];
+					$current_unit_raw = (float)$product['price'];
+
+					if ($old_unit_raw > 0 && $old_unit_raw > $current_unit_raw) {
+						$old_unit_price = $old_unit_raw + ($this->config->get('config_tax') ? (float)$product['tax'] : 0);
+						$price_old = $this->currency->format($old_unit_price, $order_info['currency_code'], $order_info['currency_value']);
+					}
+				}
+
 				$data['products'][] = array(
 					'name'     => $product['name'],
 					'model'    => $product['model'],
 					'option'   => $option_data,
 					'quantity' => $product['quantity'],
+					'qiqo_discount_percent' => $qiqo_discount_percent,
+					'price_old' => $price_old,
 					'price'    => $this->currency->format($product['price'] + ($this->config->get('config_tax') ? $product['tax'] : 0), $order_info['currency_code'], $order_info['currency_value']),
 					'total'    => $this->currency->format($product['total'] + ($this->config->get('config_tax') ? ($product['tax'] * $product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value']),
 					'reorder'  => $reorder,

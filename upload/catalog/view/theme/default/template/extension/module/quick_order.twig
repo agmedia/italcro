@@ -18,6 +18,8 @@
         <th>Pakiranje</th>
         <th>C-100</th>
         <th>{{ text_sku }}</th>
+        <th>Rabat</th>
+        <th>Predračun</th>
         <th>{{ text_price }}</th>
         <th>Ukupno</th>
         <th style="width:110px">{{ text_qty }}</th>
@@ -67,8 +69,14 @@
     .quick-order #qo-table th:nth-child(3),
     .quick-order #qo-table td:nth-child(3) { display:none; } /* sakrij SKU na XS */
   }
-  .quick-order #qo-table th:nth-child(6),
-  .quick-order #qo-table td:nth-child(6) { text-align:right; }
+  .quick-order #qo-table th:nth-child(7),
+  .quick-order #qo-table td:nth-child(7),
+  .quick-order #qo-table th:nth-child(8),
+  .quick-order #qo-table td:nth-child(8),
+  .quick-order #qo-table th:nth-child(9),
+  .quick-order #qo-table td:nth-child(9),
+  .quick-order #qo-table th:nth-child(10),
+  .quick-order #qo-table td:nth-child(10) { text-align:right; }
 
   /* Total */
   .quick-order-total { margin-top:15px; padding:10px 15px; text-align:right; background:#fff; font-size:1.8rem; color:#000; }

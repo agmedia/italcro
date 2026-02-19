@@ -74,6 +74,8 @@
               <td class="text-left">{{ column_name }}</td>
               <td class="text-left hidden-xs hidden-sm">{{ column_model }}</td>
               <td class="text-right hidden-xs hidden-sm">{{ column_quantity }}</td>
+              <td class="text-right hidden-xs hidden-sm">{{ column_discount }}</td>
+              <td class="text-right hidden-xs hidden-sm">{{ column_old_price }}</td>
               <td class="text-right hidden-xs hidden-sm">{{ column_price }}</td>
               <td class="text-right">{{ column_total }}</td>
               {% if products %}
@@ -91,6 +93,14 @@
                 {% endfor %}</td>
               <td class="text-left hidden-xs hidden-sm">{{ product.model }}</td>
               <td class="text-right hidden-xs hidden-sm">{{ product.quantity }}</td>
+              <td class="text-right hidden-xs hidden-sm">
+                {% if product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}
+                  -{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="text-right hidden-xs hidden-sm">{% if product.price_old %}{{ product.price_old }}{% else %}-{% endif %}</td>
               <td class="text-right hidden-xs hidden-sm">{{ product.price }}</td>
               <td class="text-right">{{ product.total }}</td>
               <td class="text-right" style="white-space: nowrap;">&nbsp;
@@ -106,6 +116,8 @@
               <td class="text-left">{{ voucher.description }}</td>
               <td class="text-left hidden-xs hidden-sm"></td>
               <td class="text-right hidden-xs hidden-sm">1</td>
+              <td class="text-right hidden-xs hidden-sm">-</td>
+              <td class="text-right hidden-xs hidden-sm">-</td>
               <td class="text-right hidden-xs hidden-sm">{{ voucher.amount }}</td>
               <td class="text-right">{{ voucher.amount }}</td>
               {% if products %}

@@ -18,9 +18,33 @@ class ModelExtensionModuleQiqo extends Model
         return $this->columnExistsCache[$key];
     }
 
+    private function ensureProductPartnerColumn(): bool
+    {
+        if ($this->tableColumnExists('product', 'partner')) {
+            return true;
+        }
+
+        $this->db->query("ALTER TABLE `" . DB_PREFIX . "product`
+            ADD COLUMN `partner` INT(11) NOT NULL DEFAULT 0 AFTER `manufacturer_id`,
+            ADD INDEX `idx_partner` (`partner`)");
+
+        // reset cache for this column and re-check
+        unset($this->columnExistsCache['product.partner']);
+
+        $ok = $this->tableColumnExists('product', 'partner');
+        if ($ok) {
+            $this->log('Partners', '✅ Dodana kolona oc_product.partner.');
+        } else {
+            $this->log('Partners', '❌ Nije moguće dodati kolonu oc_product.partner.');
+        }
+
+        return $ok;
+    }
+
     public function importArticles(): int
     {
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $this->ensureProductPartnerColumn();
 
         $groups   = collect($qiqo->getGroups());
         $articles = collect($qiqo->getArticles());
@@ -102,7 +126,7 @@ class ModelExtensionModuleQiqo extends Model
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
         $articles = $qiqo->getArticles();
 
-        $hasPartnerColumn = $this->tableColumnExists('product', 'partner');
+        $hasPartnerColumn = $this->ensureProductPartnerColumn();
 
         $updated = 0;
         $unchanged = 0;

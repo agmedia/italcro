@@ -4,7 +4,7 @@ $_['heading_title']					 = "PayPal (Powered by Braintree)";
 
 // Text
 $_['text_extension']		 		 = "Extensions";
-$_['text_pp_braintree']				 = "<img src=\"view/image/payment/paypal.png\" alt=\"PayPal (Powered by Braintree)\" title=\"PayPal (Powered by Braintree)\" style=\"border: 1px solid #EEEEEE;\" />";
+$_['text_pp_braintree']				 = "<img src=\\"view/image/payment/paypal.png\\" alt=\\"PayPal (Powered by Braintree)\\" title=\\"PayPal (Powered by Braintree)\\" style=\\"border: 1px solid #EEEEEE;\\" />";
 $_['text_payment']					 = "Payment";
 $_['text_success']					 = "Success: You have modified Braintree account details!";
 $_['text_success_connect']			 = "Success: You have connected your PayPal (Powered by Braintree) account!";
@@ -34,7 +34,7 @@ $_['text_yes']						 = "Yes";
 $_['text_no']						 = "No";
 $_['text_no_refund']				 = "No refund history";
 $_['text_app_connected']		     = "Module is connected via Braintree auth";
-$_['text_braintree']        		 = "<img width=\"100\" src=\"https://s3-us-west-1.amazonaws.com/bt-partner-assets/paypal-braintree.png\" alt=\"PayPal powered by Braintree\" style=\"border: 1px solid #EEEEEE;\">";
+$_['text_braintree']        		 = "<img width=\\"100\\" src=\\"https://s3-us-west-1.amazonaws.com/bt-partner-assets/paypal-braintree.png\\" alt=\\"PayPal powered by Braintree\\" style=\\"border: 1px solid #EEEEEE;\\">";
 $_['text_paypal_gold'] 				 = "Gold";
 $_['text_paypal_blue'] 				 = "Blue";
 $_['text_paypal_silver'] 			 = "Silver";
@@ -44,7 +44,7 @@ $_['text_paypal_medium']		 	 = "Medium";
 $_['text_paypal_pill']		 		 = "Pill";
 $_['text_paypal_rectangular']		 = "Rectangular";
 $_['text_paypal_preview']		 	 = "Button preview<br />Save to view changes";
-$_['text_braintree_learn']		 	 = "To start accepting credit/debit cards and PayPal, click Connect with Braintree. <a href=\"https://www.braintreepayments.com/partners/learn-more\" target=\"_blank\">Learn more</a>";
+$_['text_braintree_learn']		 	 = "To start accepting credit/debit cards and PayPal, click Connect with Braintree. <a href=\\"https://www.braintreepayments.com/partners/learn-more\\" target=\\"_blank\\">Learn more</a>";
 $_['text_3ds']		 	 			 = "3D Secure";
 $_['text_cvv']		 	 			 = "CVV Number";
 $_['text_promotion_main']		 	 = "Designed for businesses of all sizes, from small to large enterprise, easily accept and process payments to help maximise business opportunities and revenue growth, with no setup or monthly fees";
@@ -56,7 +56,7 @@ $_['text_learn_more']			 	 = "(Learn more)";
 $_['text_accept']			 	 	 = "Accept";
 $_['text_decline']			 	 	 = "Decline";
 $_['text_merchant_connected']		 = "Connected Merchant ID: ";
-$_['text_enable_button']			 = "We recommend offering PayPal Express Shortcut to maximise checkout conversion, this allows customers to use their PayPal address book and <strong>checkout is as little as three taps</strong> from the basket page. Click enable to install the extension and access the layout manager, you will ned to add \"PayPal (Powered by Braintree) Button\" to the checkout layout";
+$_['text_enable_button']			 = "We recommend offering PayPal Express Shortcut to maximise checkout conversion, this allows customers to use their PayPal address book and <strong>checkout is as little as three taps</strong> from the basket page. Click enable to install the extension and access the layout manager, you will ned to add \\"PayPal (Powered by Braintree) Button\\" to the checkout layout";
 $_['text_3ds_ssl']		 			 = "3D Secure requires the store to be using an SSL certificate";
 $_['text_unlink']		 			 = "Delete link";
 
@@ -173,12 +173,12 @@ $_['error_private_key']				 	= "Private Key Required!";
 $_['error_connection']				 	= "There was a problem establishing a connection to the Braintree API. Please check your Merchant ID, Public Key, Private Key and Environment settings.";
 $_['error_account']					 	= "Please enter a valid Merchant Account ID as specified in your Braintree Account";
 $_['error_warning']					 	= "Warning: Please check the form carefully for errors!";
-$_['error_3ds_not_ready']			 	= "You have enabled 3D secure however your Braintree account does not have it configured, please check your <a href=\"https://www.braintreegateway.com/login\" title=\"Braintree login\" target=\"_blank\">Braintree Control Panel</a> or contact Braintree support";
-$_['error_paypal_not_ready']		 	= "You have enabled PayPal however your Braintree account does not have it configured, please check your <a href=\"https://www.braintreegateway.com/login\" title=\"Braintree login\" target=\"_blank\">Braintree Control Panel</a> or contact Braintree support";
-$_['error_paypal_billing_not_ready'] 	= "You have enabled PayPal vaulting/billing agreements however your Braintree account does not have it configured, please check your <a href=\"https://www.braintreegateway.com/login\" title=\"Braintree login\" target=\"_blank\">Braintree Control Panel</a> or contact Braintree support";
-$_['error_braintree_account_3ds'] 	 	= "3DS is not enabled in your Braintree account yet, however it is not available for all countries. Please check your <a href=\"https://www.braintreegateway.com/login\" title=\"Braintree login\" target=\"_blank\">Braintree Control Panel</a> or contact Braintree support";
-$_['error_braintree_account_paypal'] 	= "PayPal is not enabled in your Braintree account yet. Please check your <a href=\"https://www.braintreegateway.com/login\" title=\"Braintree login\" target=\"_blank\">Braintree Control Panel</a> or contact Braintree support";
-$_['error_braintree_account_billing']	= "Billing agreements are not enabled in your Braintree account yet. Please check your <a href=\"https://www.braintreegateway.com/login\" title=\"Braintree login\" target=\"_blank\">Braintree Control Panel</a> or contact Braintree support";
+$_['error_3ds_not_ready']			 	= "You have enabled 3D secure however your Braintree account does not have it configured, please check your <a href=\\"https://www.braintreegateway.com/login\\" title=\\"Braintree login\\" target=\\"_blank\\">Braintree Control Panel</a> or contact Braintree support";
+$_['error_paypal_not_ready']		 	= "You have enabled PayPal however your Braintree account does not have it configured, please check your <a href=\\"https://www.braintreegateway.com/login\\" title=\\"Braintree login\\" target=\\"_blank\\">Braintree Control Panel</a> or contact Braintree support";
+$_['error_paypal_billing_not_ready'] 	= "You have enabled PayPal vaulting/billing agreements however your Braintree account does not have it configured, please check your <a href=\\"https://www.braintreegateway.com/login\\" title=\\"Braintree login\\" target=\\"_blank\\">Braintree Control Panel</a> or contact Braintree support";
+$_['error_braintree_account_3ds'] 	 	= "3DS is not enabled in your Braintree account yet, however it is not available for all countries. Please check your <a href=\\"https://www.braintreegateway.com/login\\" title=\\"Braintree login\\" target=\\"_blank\\">Braintree Control Panel</a> or contact Braintree support";
+$_['error_braintree_account_paypal'] 	= "PayPal is not enabled in your Braintree account yet. Please check your <a href=\\"https://www.braintreegateway.com/login\\" title=\\"Braintree login\\" target=\\"_blank\\">Braintree Control Panel</a> or contact Braintree support";
+$_['error_braintree_account_billing']	= "Billing agreements are not enabled in your Braintree account yet. Please check your <a href=\\"https://www.braintreegateway.com/login\\" title=\\"Braintree login\\" target=\\"_blank\\">Braintree Control Panel</a> or contact Braintree support";
 $_['error_environment']					= "You cannot set your environment to %s when your credentials are for the %s environment in Braintree";
 
 // Tab

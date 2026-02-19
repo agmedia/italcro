@@ -61,7 +61,7 @@ $_['text_search_items']         = "Pretražujte stavke prema ID-u, vrsti, vrijed
 $_['text_status']               = "Status";
 $_['text_enable_logs']          = "Omogući zapisnike";
 $_['text_api']                  = "API za ChatGPT";
-$_['text_api_help']             = "Ovdje unesite ChatGPT API ključ. Možete ga nabaviti na <a href=\\"https://platform.openai.com/api-keys\\" target=\\"_blank\\">https://platform.openai.com/api-keys</a>.";
+$_['text_api_help']             = "Ovdje unesite ChatGPT API ključ. Možete ga nabaviti na <a href=\"https://platform.openai.com/api-keys\" target=\"_blank\">https://platform.openai.com/api-keys</a>.";
 $_['text_gpt_model']            = "GPT model";
 $_['text_gpt_max_tokens']       = "Maksimalan broj tokena po zahtjevu";
 $_['text_language']             = "Zadani jezik";

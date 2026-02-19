@@ -111,14 +111,14 @@
           {% endif %}
 
           <tr>
-            <td>{{ text_description_add }}</td>
+            <td>Kratki opis</td>
             {% for product in products %}
             <td class="description">{{ product.description_add ? product.description_add : '-' }}</td>
             {% endfor %}
           </tr>
 
           <tr>
-            <td>{{ text_description }}</td>
+            <td>{{ text_description_add }}</td>
             {% for product in products %}
               <td class="description">{{ product.description ? product.description : '-' }}</td>
             {% endfor %}

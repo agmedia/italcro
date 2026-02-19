@@ -231,7 +231,7 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
                     if (!isset($settings['module_product_quick_edit_catalog_products']['partner'])) {
                         $settings['module_product_quick_edit_catalog_products']['partner'] = array(
                             'index'    => 35,
-                            'display'  => 0,
+                            'display'  => 1,
                             'editable' => 0,
                             'type'     => '',
                             'align'    => 'left',
@@ -331,7 +331,7 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
             if (!isset($all_columns['partner'])) {
                 $all_columns['partner'] = array(
                     'index'    => 35,
-                    'display'  => 0,
+                    'display'  => 1,
                     'editable' => 0,
                     'type'     => '',
                     'align'    => 'left',
@@ -339,7 +339,7 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
                     'rel'      => array()
                 );
             } else {
-                $all_columns['partner']['display']  = $all_columns['partner']['display'] ?? 0;
+                $all_columns['partner']['display']  = 1;
                 $all_columns['partner']['editable'] = 0;
                 $all_columns['partner']['type']     = $all_columns['partner']['type'] ?? '';
                 $all_columns['partner']['align']    = $all_columns['partner']['align'] ?? 'left';
@@ -2374,7 +2374,7 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
         if (!isset($columns['partner'])) {
             $columns['partner'] = array(
                 'index'    => 35,
-                'display'  => 0,
+                'display'  => 1,
                 'editable' => 0,
                 'type'     => '',
                 'align'    => 'left',
@@ -2382,7 +2382,7 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
                 'rel'      => array()
             );
         } else {
-            $columns['partner']['display']  = $columns['partner']['display'] ?? 0;
+            $columns['partner']['display']  = 1;
             $columns['partner']['editable'] = 0;
             $columns['partner']['type']     = $columns['partner']['type'] ?? '';
             $columns['partner']['align']    = $columns['partner']['align'] ?? 'left';
@@ -2395,6 +2395,9 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 
             if ($column === 'name_add') {
                 $columns[$column]['name'] = 'Atribut';
+            }
+            if ($column === 'partner') {
+                $columns[$column]['name'] = 'Dobavljač';
             }
 
             if (strpos($attr['sort'], "p.") === 0 || strpos($attr['sort'], "pd.") === 0) {

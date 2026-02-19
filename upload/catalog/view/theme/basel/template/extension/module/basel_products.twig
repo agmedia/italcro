@@ -39,9 +39,17 @@
                             <img class="thumb2" src="{{ product.thumb2 }}" alt="{{ product.name }}" title="{{ product.name }}" />
                         {% endif %}
                     </a>
-                    {% if product.price and product.special and salebadge_status %}
+                    {% if salebadge_status and ((product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0) or (product.price and product.special)) %}
                         <div class="sale-counter id{{ product.product_id }}"></div>
-                        <span class="badge sale_badge"><i>{{ product.sale_badge }}</i></span>
+                        <span class="badge sale_badge">
+                            <i>
+                                {% if product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}
+                                    -{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%
+                                {% else %}
+                                    {{ product.sale_badge }}
+                                {% endif %}
+                            </i>
+                        </span>
                     {% endif %}
                     {% if product.new_label %}
                         <span class="badge new_badge"><i>{{ basel_text_new }}</i></span>

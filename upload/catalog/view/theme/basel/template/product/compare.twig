@@ -120,7 +120,7 @@
           <tr>
             <td>{{ text_description_add }}</td>
             {% for product in products %}
-              <td class="description">{{ product.description ? product.description : '-' }}</td>
+              <td class="description">{{ product.description_full ? product.description_full : '-' }}</td>
             {% endfor %}
           </tr>
 

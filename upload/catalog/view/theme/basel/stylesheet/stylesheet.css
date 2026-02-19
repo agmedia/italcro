@@ -8787,11 +8787,44 @@ html.fl-anim .featherlight .featherlight-content {
 	height: auto;
 }
 
-/* Tvoja kartica (.edge) ispunjava cijeli slide */
-.grid-holder.related.carousel .slick-slide > .edge {
+/* Slick u DOM umeće dodatni wrapper unutar slidea */
+.grid-holder.related.carousel .slick-slide > div,
+.grid-holder.related.carousel .slick-slide .single-product {
+	display: flex;
+	width: 100%;
+}
+
+/* Kartica (.edge) ispunjava cijeli slide */
+.grid-holder.related.carousel .slick-slide .edge {
 	display: flex;
 	flex-direction: column;
 	width: 100%;
+}
+
+/* Related slika uvijek square kao u product modulima */
+.widget-related .grid-holder.related .single-product .image {
+	position: relative;
+	height: auto;
+}
+
+.widget-related .grid-holder.related .single-product .image:before {
+	content: "";
+	display: block;
+	padding-top: 100%;
+}
+
+.widget-related .grid-holder.related .single-product .image > a,
+.widget-related .grid-holder.related .single-product .image > img,
+.widget-related .grid-holder.related .single-product .image img {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	margin: auto;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
 }
 
 /* Caption ispunjava preostalu visinu ispod slike */

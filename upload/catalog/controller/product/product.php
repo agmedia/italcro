@@ -653,6 +653,17 @@ class ControllerProductProduct extends Controller {
 					}
 				}
 
+				$related_image_width = (int)$this->config->get('theme_' . $this->config->get('config_theme') . '_image_product_width');
+				$related_image_height = (int)$this->config->get('theme_' . $this->config->get('config_theme') . '_image_product_height');
+
+				if ($related_image_width <= 0) {
+					$related_image_width = (int)$this->config->get('theme_' . $this->config->get('config_theme') . '_image_related_width');
+				}
+
+				if ($related_image_height <= 0) {
+					$related_image_height = (int)$this->config->get('theme_' . $this->config->get('config_theme') . '_image_related_height');
+				}
+
 				foreach ($results as $result) {
 					$row_sku_key = trim((string)$result['sku']);
 					$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
@@ -674,9 +685,9 @@ class ControllerProductProduct extends Controller {
 					}
 
 					if ($result['image']) {
-						$image = $this->model_tool_image->resize($result['image'], $this->config->get('theme_' . $this->config->get('config_theme') . '_image_related_width'), $this->config->get('theme_' . $this->config->get('config_theme') . '_image_related_height'));
+						$image = $this->model_tool_image->resize($result['image'], $related_image_width, $related_image_height);
 					} else {
-					$image = $this->model_tool_image->resize('placeholder.png', $this->config->get('theme_' . $this->config->get('config_theme') . '_image_related_width'), $this->config->get('theme_' . $this->config->get('config_theme') . '_image_related_height'));
+					$image = $this->model_tool_image->resize('placeholder.png', $related_image_width, $related_image_height);
 				}
 
 					if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {

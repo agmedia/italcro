@@ -237,6 +237,41 @@
                         {% endif %}
                         {% endfor %}
                       </fieldset>
+                      {% if qiqo_authorization %}
+                      <fieldset>
+                        <legend>QIQO autorizacija</legend>
+                        <div class="form-group">
+                          <label class="col-sm-2 control-label">Partner</label>
+                          <div class="col-sm-10">
+                            <input type="text" value="#{{ qiqo_authorization.partner_id }} - {{ qiqo_authorization.partner_name }}" class="form-control" readonly />
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <label class="col-sm-2 control-label">Rabat partnera (%)</label>
+                          <div class="col-sm-10">
+                            <input type="text" value="{{ qiqo_authorization.partner_discount }}" class="form-control" readonly />
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <label class="col-sm-2 control-label">Mjesto isporuke</label>
+                          <div class="col-sm-10">
+                            <input type="text" value="#{{ qiqo_authorization.delivery_place_id }} - {{ qiqo_authorization.delivery_place_code }} - {{ qiqo_authorization.delivery_place_name }} ({{ qiqo_authorization.delivery_place_city }})" class="form-control" readonly />
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <label class="col-sm-2 control-label">Komercijalist</label>
+                          <div class="col-sm-10">
+                            <input type="text" value="{% if qiqo_authorization.sales_rep_id %}#{{ qiqo_authorization.sales_rep_id }} - {{ qiqo_authorization.sales_rep_code }} - {{ qiqo_authorization.sales_rep_name }}{% else %}-{% endif %}" class="form-control" readonly />
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <label class="col-sm-2 control-label">Odobrio</label>
+                          <div class="col-sm-10">
+                            <input type="text" value="{{ qiqo_authorization.approved_by_name }}{% if qiqo_authorization.approved_at %} ({{ qiqo_authorization.approved_at }}){% endif %}" class="form-control" readonly />
+                          </div>
+                        </div>
+                      </fieldset>
+                      {% endif %}
                       <fieldset>
                         <legend>{{ text_password }}</legend>
                         <div class="form-group required">

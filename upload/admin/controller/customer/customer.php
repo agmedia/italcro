@@ -693,6 +693,31 @@ class ControllerCustomerCustomer extends Controller {
 			$customer_info = $this->model_customer_customer->getCustomer($this->request->get['customer_id']);
 		}
 
+		$data['qiqo_authorization'] = array();
+
+		if (isset($this->request->get['customer_id'])) {
+			$this->load->model('customer/customer_approval');
+			$qiqo_authorization = $this->model_customer_customer_approval->getCustomerQiqoAuthorization((int)$this->request->get['customer_id']);
+
+			if (!empty($qiqo_authorization)) {
+				$data['qiqo_authorization'] = array(
+					'partner_id' => (int)$qiqo_authorization['partner_id'],
+					'partner_name' => $qiqo_authorization['partner_name'],
+					'partner_discount' => (float)$qiqo_authorization['partner_discount'],
+					'partner_base_discount' => isset($qiqo_authorization['partner_base_discount']) ? (float)$qiqo_authorization['partner_base_discount'] : 0,
+					'delivery_place_id' => (int)$qiqo_authorization['delivery_place_id'],
+					'delivery_place_code' => $qiqo_authorization['delivery_place_code'],
+					'delivery_place_name' => $qiqo_authorization['delivery_place_name'],
+					'delivery_place_city' => $qiqo_authorization['delivery_place_city'],
+					'sales_rep_id' => !empty($qiqo_authorization['sales_rep_id']) ? (int)$qiqo_authorization['sales_rep_id'] : 0,
+					'sales_rep_code' => $qiqo_authorization['sales_rep_code'],
+					'sales_rep_name' => $qiqo_authorization['sales_rep_name'],
+					'approved_by_name' => $qiqo_authorization['approved_by_name'],
+					'approved_at' => $qiqo_authorization['approved_at']
+				);
+			}
+		}
+
 		$this->load->model('customer/customer_group');
 
 		$data['customer_groups'] = $this->model_customer_customer_group->getCustomerGroups();

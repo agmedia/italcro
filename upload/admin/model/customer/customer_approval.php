@@ -160,6 +160,29 @@ class ModelCustomerCustomerApproval extends Model {
 				date_modified = NOW()");
 	}
 
+	public function getCustomerQiqoAuthorization($customer_id) {
+		$this->ensureQiqoAuthorizationTables();
+
+		$query = $this->db->query("SELECT cqa.*, 
+				qp.name AS partner_name,
+				qp.base_discount AS partner_base_discount,
+				qdp.code AS delivery_place_code,
+				qdp.name AS delivery_place_name,
+				qdp.place AS delivery_place_city,
+				qsr.code AS sales_rep_code,
+				qsr.name AS sales_rep_name,
+				CONCAT(u.firstname, ' ', u.lastname) AS approved_by_name
+			FROM `" . DB_PREFIX . "customer_qiqo_authorization` cqa
+			LEFT JOIN `" . DB_PREFIX . "qiqo_partner` qp ON (cqa.partner_id = qp.partner_id)
+			LEFT JOIN `" . DB_PREFIX . "qiqo_delivery_place` qdp ON (cqa.delivery_place_id = qdp.delivery_place_id)
+			LEFT JOIN `" . DB_PREFIX . "qiqo_sales_rep` qsr ON (cqa.sales_rep_id = qsr.sales_rep_id)
+			LEFT JOIN `" . DB_PREFIX . "user` u ON (cqa.approved_by_user_id = u.user_id)
+			WHERE cqa.customer_id = '" . (int)$customer_id . "'
+			LIMIT 1");
+
+		return $query->row;
+	}
+
 	private function ensureQiqoAuthorizationTables() {
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_sales_rep` (
 			`sales_rep_id` INT(11) NOT NULL AUTO_INCREMENT,

@@ -174,7 +174,58 @@ class ControllerProductCategory extends Controller {
 
 			$results = $this->model_catalog_product->getProducts($filter_data);
 
+			$qiqo_price_map = array();
+			if ($this->customer->isLogged() && $results) {
+				$sku_quantities = array();
+				$base_unit_prices = array();
+
+				foreach ($results as $r) {
+					$sku_key = trim((string)$r['sku']);
+					if ($sku_key === '') {
+						continue;
+					}
+
+					$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
+					$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
+					$r_base_unit = ((float)$r['special'] > 0) ? (float)$r['special'] : (float)$r['price'];
+
+					if ($r_base_unit <= 0) {
+						continue;
+					}
+
+					$sku_quantities[$sku_key] = $r_list_min;
+					$base_unit_prices[$sku_key] = $r_base_unit;
+				}
+
+				if ($sku_quantities) {
+					$qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+						(int)$this->customer->getId(),
+						$sku_quantities,
+						$base_unit_prices
+					);
+				}
+			}
+
 			foreach ($results as $result) {
+				$sku_key = trim((string)$result['sku']);
+				$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+				$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
+
+				$display_price_unit = (float)$result['price'];
+				$display_special_unit = (float)$result['special'];
+				$qiqo_discount_percent = 0.0;
+
+				if ($sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
+					$pricing = $qiqo_price_map[$sku_key];
+					$display_price_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+						? (float)$pricing['old_unit_price']
+						: (float)$pricing['final_unit_price'];
+					$display_special_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+						? (float)$pricing['final_unit_price']
+						: 0.0;
+					$qiqo_discount_percent = isset($pricing['discount_percent']) ? (float)$pricing['discount_percent'] : 0.0;
+				}
+
 				if ($result['image']) {
 					$image = $this->model_tool_image->resize($result['image'], $this->config->get('theme_' . $this->config->get('config_theme') . '_image_product_width'), $this->config->get('theme_' . $this->config->get('config_theme') . '_image_product_height'));
 				} else {
@@ -182,13 +233,13 @@ class ControllerProductCategory extends Controller {
 				}
 
 				if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
-					$price = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+					$price = $this->currency->format($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 					if($this->session->data['currency']=='HRK'){
-                        $priceeur = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), 'EUR');
+                        $priceeur = $this->currency->format($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')), 'EUR');
                     }
                     else{
-                       $priceeur = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), 'HRK');
+                       $priceeur = $this->currency->format($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')), 'HRK');
 
                     }
 				} else {
@@ -196,20 +247,20 @@ class ControllerProductCategory extends Controller {
 					 $priceeur  ='';
 				}
 
-				if (!is_null($result['special']) && (float)$result['special'] >= 0) {
-					$special = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+				if ($display_special_unit > 0) {
+					$special = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 					 if($this->session->data['currency']=='HRK'){
-                        $specialeur = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')),  'EUR');
+                        $specialeur = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')),  'EUR');
                     }
                     else{
-                       $specialeur = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')),  'HRK');
+                       $specialeur = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')),  'HRK');
 
                     }
-					$tax_price = (float)$result['special'];
+					$tax_price = (float)$display_special_unit;
 				} else {
 					$special = false;
 					 $specialeur  ='';
-					$tax_price = (float)$result['price'];
+					$tax_price = (float)$display_price_unit;
 				}
 
 				if ($this->config->get('config_tax')) {
@@ -231,14 +282,11 @@ class ControllerProductCategory extends Controller {
                     $data['attention'] = '';
                 }
 
-                $minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
-
-                $price_raw   = (float)$result['price'];
-                $special_raw = (float)$result['special'];
+                $price_raw   = (float)$display_price_unit;
+                $special_raw = (float)$display_special_unit;
 
 // default: nema "stare" cijene
                 $preview_price_alt = false;
-                $list_min = ($result['cent'] === 'C-100') ? $minimum : 1;
 
 // NOVO: ako ima special (>0) onda je novo = special, staro = price
                 if ($special_raw > 0) {
@@ -290,6 +338,7 @@ class ControllerProductCategory extends Controller {
 					'tax'         => $tax,
                     'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
                     'list_min'    => $list_min,
+                    'qiqo_discount_percent' => $qiqo_discount_percent,
 					'rating'      => $result['rating'],
 					'href'        => $this->url->link('product/product', 'path=' . $this->request->get['path'] . '&product_id=' . $result['product_id'] . $url)
 				);

@@ -50,7 +50,11 @@
                         <span class="pl-5">{{ product.cent }}</span>
                     {% endif %}
 
-                    <span class="pl-5">{{ product.sku }}</span> <span style="float:right">Dostupnost: {{ product.quantity }}</span>
+                    <span class="pl-5">{{ product.sku }}</span>
+                    {% if product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}
+                        <span class="pl-5">Rabat: -{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%</span>
+                    {% endif %}
+                    <span style="float:right">Dostupnost: {{ product.quantity }}</span>
                 </div>
                 <div class="col-md-6">
 

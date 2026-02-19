@@ -149,6 +149,7 @@
                                             {% if same_mpn_has_c100 %}
                                             <th class="text-right">C-100</th>
                                             {% endif %}
+                                        <th class="text-right">Rabat</th>
                                         <th class="text-right price">Cijena</th>
                                         <th class="text-right price">Ukupno</th>
                                         <th class="text-right price">Dodaj</th>
@@ -171,6 +172,13 @@
                                                 {% if same_mpn_has_c100 %}
                                                 <td class="text-right">{{ p.cent }}</td>
                                                 {% endif %}
+                                                        <td class="text-right">
+                                                            {% if p.qiqo_discount_percent is defined and p.qiqo_discount_percent > 0 %}
+                                                                -{{ p.qiqo_discount_percent|number_format(0, '.', '') }}%
+                                                            {% else %}
+                                                                -
+                                                            {% endif %}
+                                                        </td>
                                                         {# -------- CIJENA / SPECIAL -------- #}
                                                 <td class="text-right price">
                                                 {% set min_qty = (p.minimumifc100 is defined and p.minimumifc100 > 1) ? p.minimum : 1 %}
@@ -663,6 +671,9 @@
                                 {% endif %}
                                 {% if sku %}
                                 <p class="info"><b>Šifra:</b> {{ sku }}</p>
+                                {% endif %}
+                                {% if qiqo_discount_percent is defined and qiqo_discount_percent > 0 %}
+                                    <p class="info"><b>Rabat:</b> -{{ qiqo_discount_percent|number_format(0, '.', '') }}%</p>
                                 {% endif %}
 
                                 {% if model %}

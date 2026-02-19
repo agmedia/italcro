@@ -2,6 +2,10 @@
 namespace Cart;
 class Cart {
 	private $data = array();
+	private $qiqo_tables_ready = null;
+	private $qiqo_authorization = null;
+	private $qiqo_article_discount_cache = array();
+	private $qiqo_action_rows_cache = array();
 
 	public function __construct($registry) {
 		$this->config = $registry->get('config');
@@ -187,6 +191,8 @@ class Cart {
 					$price = $product_special_query->row['price'];
 				}
 
+				$price = $this->applyQiqoCartPrice((string)$product_query->row['sku'], (float)$price, (float)$cart['quantity']);
+
 				// Reward Points
 				$product_reward_query = $this->db->query("SELECT points FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$cart['product_id'] . "' AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "'");
 
@@ -267,6 +273,253 @@ class Cart {
 		}
 
 		return $product_data;
+	}
+
+	private function applyQiqoCartPrice($sku, $base_price, $qty) {
+		$sku = trim((string)$sku);
+		$base_price = (float)$base_price;
+		$qty = (float)$qty;
+
+		if (!$this->customer->getId() || $sku === '' || $base_price <= 0 || $qty <= 0) {
+			return $base_price;
+		}
+
+		if (!$this->hasQiqoPricingTables()) {
+			return $base_price;
+		}
+
+		$auth = $this->getQiqoAuthorization();
+		if (!$auth || empty($auth['partner_id'])) {
+			return $base_price;
+		}
+
+		$partner_id = (int)$auth['partner_id'];
+		$base_discount = isset($auth['partner_discount']) ? (float)$auth['partner_discount'] : 0.0;
+
+		$article_discount = $this->getQiqoArticleDiscount($partner_id, $sku);
+		if ($article_discount !== null) {
+			$base_discount = (float)$article_discount;
+		}
+
+		$action = $this->resolveQiqoActionForArticle(
+			$this->getQiqoActionRows($sku),
+			$qty,
+			$this->isQiqoProformaPayment()
+		);
+
+		if ($action['net_price'] !== null && $action['net_price'] > 0) {
+			return (float)$action['net_price'];
+		}
+
+		$total_discount = max(0.0, (float)$base_discount + (float)$action['discount']);
+		$total_discount = min(100.0, $total_discount);
+
+		if ($total_discount <= 0) {
+			return $base_price;
+		}
+
+		return (float)($base_price * (1 - ($total_discount / 100)));
+	}
+
+	private function getQiqoAuthorization() {
+		if ($this->qiqo_authorization !== null) {
+			return $this->qiqo_authorization;
+		}
+
+		$customer_id = (int)$this->customer->getId();
+		if (!$customer_id) {
+			$this->qiqo_authorization = array();
+			return $this->qiqo_authorization;
+		}
+
+		$query = $this->db->query("SELECT cqa.partner_id,
+				cqa.partner_discount,
+				qp.base_discount
+			FROM `" . DB_PREFIX . "customer_qiqo_authorization` cqa
+			LEFT JOIN `" . DB_PREFIX . "qiqo_partner` qp ON (qp.partner_id = cqa.partner_id)
+			WHERE cqa.customer_id = '" . $customer_id . "'
+			LIMIT 1");
+
+		if (!$query->num_rows) {
+			$this->qiqo_authorization = array();
+			return $this->qiqo_authorization;
+		}
+
+		$partner_discount = isset($query->row['partner_discount']) && $query->row['partner_discount'] !== null
+			? (float)$query->row['partner_discount']
+			: (isset($query->row['base_discount']) ? (float)$query->row['base_discount'] : 0.0);
+
+		$this->qiqo_authorization = array(
+			'partner_id' => (int)$query->row['partner_id'],
+			'partner_discount' => (float)$partner_discount
+		);
+
+		return $this->qiqo_authorization;
+	}
+
+	private function getQiqoArticleDiscount($partner_id, $sku) {
+		$key = (int)$partner_id . '|' . (string)$sku;
+
+		if (array_key_exists($key, $this->qiqo_article_discount_cache)) {
+			return $this->qiqo_article_discount_cache[$key];
+		}
+
+		$query = $this->db->query("SELECT discount
+			FROM `" . DB_PREFIX . "qiqo_partner_article_discount`
+			WHERE partner_id = '" . (int)$partner_id . "'
+			  AND article_code = '" . $this->db->escape((string)$sku) . "'
+			LIMIT 1");
+
+		if ($query->num_rows) {
+			$this->qiqo_article_discount_cache[$key] = (float)$query->row['discount'];
+		} else {
+			$this->qiqo_article_discount_cache[$key] = null;
+		}
+
+		return $this->qiqo_article_discount_cache[$key];
+	}
+
+	private function getQiqoActionRows($sku) {
+		$sku = (string)$sku;
+
+		if (isset($this->qiqo_action_rows_cache[$sku])) {
+			return $this->qiqo_action_rows_cache[$sku];
+		}
+
+		$query = $this->db->query("SELECT indicator, quantity, price, discount
+			FROM `" . DB_PREFIX . "qiqo_action_price`
+			WHERE article_code = '" . $this->db->escape($sku) . "'");
+
+		$rows = array();
+		foreach ($query->rows as $row) {
+			$rows[] = array(
+				'indicator' => strtoupper(trim((string)$row['indicator'])),
+				'quantity'  => (float)$row['quantity'],
+				'price'     => (float)$row['price'],
+				'discount'  => (float)$row['discount']
+			);
+		}
+
+		$this->qiqo_action_rows_cache[$sku] = $rows;
+		return $this->qiqo_action_rows_cache[$sku];
+	}
+
+	private function resolveQiqoActionForArticle($rows, $qty, $is_proforma) {
+		$result = array(
+			'net_price' => null,
+			'discount'  => 0.0
+		);
+
+		if (!$rows) {
+			return $result;
+		}
+
+		$qty = (float)$qty;
+		$c_discount = 0.0;
+		$p_always_discount = 0.0;
+		$p_tier_qty = -1;
+		$p_tier_discount = 0.0;
+		$x_discount = 0.0;
+		$net_price = null;
+
+		foreach ($rows as $row) {
+			$indicator = isset($row['indicator']) ? (string)$row['indicator'] : '';
+			$quantity = isset($row['quantity']) ? (float)$row['quantity'] : 0.0;
+			$price = isset($row['price']) ? (float)$row['price'] : 0.0;
+			$discount = isset($row['discount']) ? (float)$row['discount'] : 0.0;
+
+			if ($indicator === 'C' && $price > 0) {
+				if ($net_price === null || $price < $net_price) {
+					$net_price = $price;
+				}
+			}
+
+			if ($indicator === 'C' && $price <= 0 && $discount > $c_discount) {
+				$c_discount = $discount;
+			}
+
+			if ($indicator === 'P') {
+				if ($quantity <= 0 && $discount > $p_always_discount) {
+					$p_always_discount = $discount;
+				} elseif ($quantity > 0 && $qty >= $quantity) {
+					if ($quantity > $p_tier_qty || ($quantity == $p_tier_qty && $discount > $p_tier_discount)) {
+						$p_tier_qty = $quantity;
+						$p_tier_discount = $discount;
+					}
+				}
+			}
+
+			if ($is_proforma && $indicator === 'X' && $discount > $x_discount) {
+				$x_discount = $discount;
+			}
+		}
+
+		if ($net_price !== null && $net_price > 0) {
+			$result['net_price'] = $net_price;
+			$result['discount'] = 0.0;
+			return $result;
+		}
+
+		$action_discount = max($c_discount, $p_always_discount, $p_tier_discount);
+		$action_discount += $x_discount;
+
+		$result['discount'] = max(0.0, $action_discount);
+		return $result;
+	}
+
+	private function isQiqoProformaPayment() {
+		$code = '';
+
+		if (isset($this->session->data['payment_method']['code'])) {
+			$code = (string)$this->session->data['payment_method']['code'];
+		} elseif (isset($this->session->data['payment_code'])) {
+			$code = (string)$this->session->data['payment_code'];
+		}
+
+		$code = strtolower(trim($code));
+
+		if ($code === '') {
+			return false;
+		}
+
+		$proforma_tokens = array(
+			'bank_transfer',
+			'free_checkout',
+			'predrac',
+			'virman'
+		);
+
+		foreach ($proforma_tokens as $token) {
+			if (strpos($code, $token) !== false) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function hasQiqoPricingTables() {
+		if ($this->qiqo_tables_ready !== null) {
+			return $this->qiqo_tables_ready;
+		}
+
+		$required = array(
+			DB_PREFIX . 'customer_qiqo_authorization',
+			DB_PREFIX . 'qiqo_partner',
+			DB_PREFIX . 'qiqo_partner_article_discount',
+			DB_PREFIX . 'qiqo_action_price'
+		);
+
+		foreach ($required as $table) {
+			$q = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
+			if (!$q->num_rows) {
+				$this->qiqo_tables_ready = false;
+				return $this->qiqo_tables_ready;
+			}
+		}
+
+		$this->qiqo_tables_ready = true;
+		return $this->qiqo_tables_ready;
 	}
 
 	public function add($product_id, $quantity = 1, $option = array(), $recurring_id = 0) {

@@ -1,20 +1,20 @@
 <?php
 // Heading
-$_['heading_title']     = "Events";
+$_['heading_title']     = "Događaji";
 
 // Text
-$_['text_success']      = "Success: You have modified events!";
-$_['text_list']         = "Event List";
-$_['text_event']        = "Events are used by extensions to override the default functionality of your store. If you have issues you can disable or enable the events here.";
-$_['text_info']         = "Event Information";
-$_['text_trigger']      = "Trigger";
-$_['text_action']       = "Action";
+$_['text_success']      = "Uspjeh: izmijenili ste događaje!";
+$_['text_list']         = "Popis događaja";
+$_['text_event']        = "Proširenja koriste događaje za nadjačavanje zadane funkcije vaše trgovine. Ako imate problema, ovdje možete onemogućiti ili omogućiti događaje.";
+$_['text_info']         = "Informacije o događaju";
+$_['text_trigger']      = "Okidač";
+$_['text_action']       = "Akcijski";
 
 // Column
-$_['column_code']       = "Event Code";
+$_['column_code']       = "Šifra događaja";
 $_['column_status']     = "Status";
-$_['column_sort_order'] = "Sort Order";
-$_['column_action']     = "Action";
+$_['column_sort_order'] = "Redoslijed sortiranja";
+$_['column_action']     = "Akcijski";
 
 // Error
-$_['error_permission']  = "Warning: You do not have permission to modify extensions!";
+$_['error_permission']  = "Upozorenje: Nemate dopuštenje za izmjenu ekstenzija!";

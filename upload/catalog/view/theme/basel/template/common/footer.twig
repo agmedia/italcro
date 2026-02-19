@@ -145,21 +145,55 @@
 
 <script>
     $(function() {
-        // Provjera ako je već skriveno
-        if (localStorage.getItem('hidePrices') === 'true') {
-            $('.price, .product-price, .product-thumb .price, .p-tax, .live-price-tax').hide();
-            $('#togglePrices').html('<i class="fa fa-eye-slash"></i> ');
+        function findTargetColumns($table) {
+            var indexes = [];
+            var $headers = $table.find('thead th');
+
+            if (!$headers.length) {
+                $headers = $table.find('tr').first().find('th');
+            }
+
+            $headers.each(function(i) {
+                var txt = $.trim($(this).text()).toLowerCase().replace(/\s+/g, ' ');
+                if (txt === 'cijena' || txt === 'ukupno') {
+                    indexes.push(i);
+                }
+            });
+
+            return indexes;
         }
 
-        $('#togglePrices').click(function() {
-            if ($('.price, .product-price, .product-thumb .price, .p-tax, .live-price-tax').is(':visible')) {
-                $('.price, .product-price, .product-thumb .price, .p-tax, .live-price-tax').hide();
-                $(this).html('<i class="fa fa-eye-slash"></i> ');
-                localStorage.setItem('hidePrices', 'true');
-            } else {
-                $('.price, .product-price, .product-thumb .price, .p-tax, .live-price-tax').show();
-                $(this).html('<i class="fa fa-eye"></i> ');
-                localStorage.setItem('hidePrices', 'false');
+        function applyPriceColumnsVisibility(hide) {
+            $('table').each(function() {
+                var $table = $(this);
+                var cols = findTargetColumns($table);
+
+                if (!cols.length) {
+                    return;
+                }
+
+                $table.find('tr').each(function() {
+                    var $cells = $(this).children('th,td');
+                    cols.forEach(function(idx) {
+                        $cells.eq(idx).toggle(!hide);
+                    });
+                });
+            });
+
+            $('#togglePrices').html(hide ? '<i class="fa fa-eye-slash"></i> ' : '<i class="fa fa-eye"></i> ');
+            localStorage.setItem('hidePrices', hide ? 'true' : 'false');
+        }
+
+        applyPriceColumnsVisibility(localStorage.getItem('hidePrices') === 'true');
+
+        $('#togglePrices').on('click', function() {
+            var currentlyHidden = localStorage.getItem('hidePrices') === 'true';
+            applyPriceColumnsVisibility(!currentlyHidden);
+        });
+
+        $(document).ajaxComplete(function() {
+            if (localStorage.getItem('hidePrices') === 'true') {
+                applyPriceColumnsVisibility(true);
             }
         });
     });

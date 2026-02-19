@@ -1,6 +1,6 @@
 <?php
 // Text
-$_['text_subject'] = "%s - Your Account has been denied!";
-$_['text_welcome'] = "Welcome and thank you for registering at %s!";
-$_['text_denied']  = "Unfortunately your request has been denied. For more information you can contact the store owner here:";
-$_['text_thanks']  = "Thanks,";
+$_['text_subject'] = "%s - Vaš račun je odbijen!";
+$_['text_welcome'] = "Dobrodošli i hvala na registraciji na %s!";
+$_['text_denied']  = "Nažalost, vaš zahtjev je odbijen. Za više informacija možete kontaktirati vlasnika trgovine ovdje:";
+$_['text_thanks']  = "Hvala,";

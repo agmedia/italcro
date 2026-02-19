@@ -1,19 +1,19 @@
 <?php
 // Heading
-$_['heading_title']     = "Modifications";
+$_['heading_title']     = "Izmjene";
 
 // Text
-$_['text_success']      = "Success: You have modified modifications!";
-$_['text_refresh']      = "Whenever you enable / disable or delete a modification you need to click the refresh button to rebuild your modification cache!";
-$_['text_list']         = "Modification List";
+$_['text_success']      = "Uspjeh: Izmijenili ste izmjene!";
+$_['text_refresh']      = "Kad god omogućite/onemogućite ili izbrišete modifikaciju, morate kliknuti gumb za osvježavanje kako biste ponovno izgradili svoju predmemoriju izmjena!";
+$_['text_list']         = "Popis izmjena";
 
 // Column
-$_['column_name']       = "Modification Name";
-$_['column_author']     = "Author";
-$_['column_version']    = "Version";
+$_['column_name']       = "Naziv izmjene";
+$_['column_author']     = "Autor";
+$_['column_version']    = "Verzija";
 $_['column_status']     = "Status";
-$_['column_date_added'] = "Date Added";
-$_['column_action']     = "Action";
+$_['column_date_added'] = "Datum dodavanja";
+$_['column_action']     = "Akcijski";
 
 // Error
-$_['error_permission']  = "Warning: You do not have permission to modify modifications!";
+$_['error_permission']  = "Upozorenje: Nemate dopuštenje za mijenjanje izmjena!";

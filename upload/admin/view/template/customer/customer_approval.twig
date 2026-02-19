@@ -175,7 +175,7 @@ $('#customer-approval').on('click', '.btn-approve', function(e) {
 	$('#modal-approve-auth').modal('show');
 });
 
-$('#button-load-partner').on('click', function() {
+$(document).on('click', '#button-load-partner', function() {
 	var partnerId = $('#auth-partner-id').val();
 	if (!partnerId) {
 		alert('Upišite šifru partnera.');
@@ -214,7 +214,7 @@ $('#button-load-partner').on('click', function() {
 	});
 });
 
-$('#button-confirm-approve').on('click', function() {
+$(document).on('click', '#button-confirm-approve', function() {
 	var partnerId = $('#auth-partner-id').val();
 	var deliveryPlaceId = $('#auth-delivery-place').val();
 	var salesRepId = $('#auth-sales-rep').val();

@@ -46,6 +46,8 @@
                 <td colspan="2">{{ column_name }}</td>
               
                 <td>{{ column_quantity }}</td>
+                <td class="text-right hidden-xs hidden-sm">Rabat</td>
+                <td class="text-right hidden-xs hidden-sm">Predračun</td>
                 <td class="text-right hidden-xs hidden-sm">{{ column_price }}</td>
                 <td class="text-right">{{ column_total }}</td>
               </tr>
@@ -63,6 +65,10 @@
                   {% endif %}
                   </td>
                 <td class="name"><a class="hover_uline" href="{{ product.href }}">{{ product.name }}</a>
+                  {% if product.sku %}
+                  <br />
+                  <small>Šifra: {{ product.sku }}</small>
+                  {% endif %}
                   {% if not product.stock %}
                   <span class="text-danger">***</span>
                   {% endif %}
@@ -103,6 +109,20 @@
 
 
                                 </script>
+                <td class="text-right price-cell hidden-xs hidden-sm">
+                  {% if product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}
+                    -{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td class="text-right price-cell hidden-xs hidden-sm">
+                  {% if product.qiqo_proforma_extra_percent is defined and product.qiqo_proforma_extra_percent > 0 %}
+                    +{{ product.qiqo_proforma_extra_percent|number_format(0, '.', '') }}%
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
                 <td class="text-right price-cell hidden-xs hidden-sm">{{ product.price }}</td>
                 <td class="text-right total-cell">{{ product.total }}</td>
               </tr>
@@ -117,11 +137,11 @@
 				<a class="btn btn-default btn-tiny hidden-md hidden-lg" style="margin-top:5px;" onclick="voucher.remove('{{ voucher.key }}');">{{ button_remove }}</a>
 				</td>               
 				<td class="hidden-xs hidden-sm"></td>
+				<td class="hidden-xs hidden-sm"></td>
+				<td class="hidden-xs hidden-sm"></td>
 				<td class="text-left"><div class="input-group btn-block" style="max-width: 200px;">
 					<input type="number" value="1" disabled="disabled" class="form-control qty-form" />
                     </td>
-				<td class="hidden-xs hidden-sm"></td>
-                
                 <td class="text-right total-cell">{{ voucher.amount }}</td>
               </tr>
               {% endfor %}

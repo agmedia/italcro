@@ -52,10 +52,62 @@ class ControllerCheckoutCart extends Controller {
 
 			$this->load->model('tool/image');
 			$this->load->model('tool/upload');
+			$this->load->model('catalog/product');
 
 			$data['products'] = array();
 
 			$products = $this->cart->getProducts();
+			$product_info_map = array();
+			$qiqo_price_map = array();
+			$qiqo_extra_map = array();
+
+			foreach ($products as $cart_product) {
+				$product_id = (int)$cart_product['product_id'];
+				if (!isset($product_info_map[$product_id])) {
+					$product_info_map[$product_id] = $this->model_catalog_product->getProduct($product_id);
+				}
+			}
+
+			if ($this->customer->isLogged()) {
+				$sku_quantities = array();
+				$base_unit_prices = array();
+
+				foreach ($products as $cart_product) {
+					$product_id = (int)$cart_product['product_id'];
+					$product_info = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
+
+					if (!$product_info || empty($product_info['sku'])) {
+						continue;
+					}
+
+					$sku = trim((string)$product_info['sku']);
+					if ($sku === '') {
+						continue;
+					}
+
+					$qty = (float)$cart_product['quantity'];
+					if ($qty <= 0) {
+						$qty = 1.0;
+					}
+
+					$base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+					if ($base_unit <= 0) {
+						continue;
+					}
+
+					$sku_quantities[$sku] = $qty;
+					$base_unit_prices[$sku] = $base_unit;
+				}
+
+				if ($sku_quantities) {
+					$qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+						(int)$this->customer->getId(),
+						$sku_quantities,
+						$base_unit_prices
+					);
+					$qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
+				}
+			}
 
 			foreach ($products as $product) {
 				$product_total = 0;
@@ -135,16 +187,36 @@ class ControllerCheckoutCart extends Controller {
 					}
 				}
 
+				$product_id = (int)$product['product_id'];
+				$product_info = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
+				$product_sku = !empty($product['sku']) ? (string)$product['sku'] : (!empty($product_info['sku']) ? (string)$product_info['sku'] : '');
+
+				$qiqo_discount_percent = 0.0;
+				$qiqo_proforma_extra_percent = 0.0;
+
+				if ($product_sku !== '') {
+					if (isset($qiqo_price_map[$product_sku]['discount_percent'])) {
+						$qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['discount_percent'];
+					}
+
+					if (isset($qiqo_extra_map[$product_sku])) {
+						$qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$product_sku];
+					}
+				}
+
 				$data['products'][] = array(
 					'cart_id'   => $product['cart_id'],
 					'thumb'     => $image,
 					'name'      => $product['name'],
+					'sku'       => $product_sku,
 					'model'     => $product['model'],
 					'option'    => $option_data,
 					'recurring' => $recurring,
 					'quantity'  => $product['quantity'],
 					'stock'     => $product['stock'] ? true : !(!$this->config->get('config_stock_checkout') || $this->config->get('config_stock_warning')),
 					'reward'    => ($product['reward'] ? sprintf($this->language->get('text_points'), $product['reward']) : ''),
+					'qiqo_discount_percent' => $qiqo_discount_percent,
+					'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
 					'price'     => $price,
 					'total'     => $total,
 					'href'      => $this->url->link('product/product', 'product_id=' . $product['product_id'])

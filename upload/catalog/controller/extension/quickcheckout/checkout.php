@@ -61,7 +61,12 @@ class ControllerExtensionQuickCheckoutCheckout extends Equotix {
 				}
 			}		
 			
-			if ($product['minimum'] > $product_total) {
+			$effective_minimum = isset($product['minimumifc100']) ? (int)$product['minimumifc100'] : 1;
+			if ($effective_minimum < 1) {
+				$effective_minimum = 1;
+			}
+
+			if ($effective_minimum > $product_total) {
 				$this->response->redirect($this->url->link('checkout/cart'));
 			}				
 		}

@@ -62,7 +62,7 @@
                     {% endif %}
 
                     <span class="pl-5">{{ product.sku }}</span>
-                    <span style="float:right;font-size:12px;white-space:nowrap;">Stanje: {{ (product.quantity is defined and product.quantity != '') ? product.quantity : 0 }}</span>
+                    <span style="white-space:nowrap;">Stanje: {{ (product.quantity is defined and product.quantity != '') ? product.quantity : 0 }}</span>
                 </div>
                 <div class="col-md-6">
 

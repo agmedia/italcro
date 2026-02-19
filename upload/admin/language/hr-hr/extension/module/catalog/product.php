@@ -159,6 +159,7 @@ $_['column_isbn'] = "Rok isporuke";
 $_['column_mpn'] = "Jamstvo";
 $_['column_id'] = "ID";
 $_['column_manufacturer'] = "Brand";
+$_['column_partner'] = "Dobavljač";
 $_['column_category'] = "Kategorija";
 $_['column_location'] = "Jeftinije.hr";
 $_['column_seo'] = "Ključna riječ SEO";

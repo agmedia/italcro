@@ -159,6 +159,7 @@ $_['column_isbn']                       = 'ISBN';
 $_['column_mpn']                        = 'MPN';
 $_['column_id']                         = 'ID';
 $_['column_manufacturer']               = 'Manufacturer';
+$_['column_partner']                    = 'Supplier';
 $_['column_category']                   = 'Category';
 $_['column_location']                   = 'Location';
 $_['column_seo']                        = 'SEO Keyword';

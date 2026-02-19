@@ -4,6 +4,19 @@ require_once DIR_STORAGE . 'vendor/agmedia/api/src/Connection/Soap/Qiqo.php';
 
 class ModelExtensionModuleQiqo extends Model
 {
+    private $columnExistsCache = [];
+
+    private function tableColumnExists(string $table, string $column): bool
+    {
+        $key = $table . '.' . $column;
+
+        if (!array_key_exists($key, $this->columnExistsCache)) {
+            $query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . $this->db->escape($table) . "` LIKE '" . $this->db->escape($column) . "'");
+            $this->columnExistsCache[$key] = (bool)$query->num_rows;
+        }
+
+        return $this->columnExistsCache[$key];
+    }
 
     public function importArticles(): int
     {
@@ -58,6 +71,7 @@ class ModelExtensionModuleQiqo extends Model
             $data = [
                 'model'       => $a['barcode'],
                 'sku'         => $a['id'],
+                'partner_id'  => (int)($a['partner'] ?? 0),
                 'ean'         => $a['jm'],
                 'quantity'    => (float) ($a['zaliha'] ?? 0),
                 'price'       => $price,
@@ -81,6 +95,82 @@ class ModelExtensionModuleQiqo extends Model
         $this->log('Import', "{$imported} novih artikala uvezeno.");
 
         return $imported;
+    }
+
+    public function updateArticlePartners(): array
+    {
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $articles = $qiqo->getArticles();
+
+        $hasPartnerColumn = $this->tableColumnExists('product', 'partner');
+
+        $updated = 0;
+        $unchanged = 0;
+        $missingProduct = 0;
+        $missingPartner = 0;
+        $skippedSchema = 0;
+
+        if (!$hasPartnerColumn) {
+            $skippedSchema = count((array)$articles);
+            $this->log('Partners', '⚠ Preskočeno: kolona oc_product.partner ne postoji.');
+
+            return [
+                'updated' => 0,
+                'unchanged' => 0,
+                'missing_product' => 0,
+                'missing_partner' => 0,
+                'skipped_schema' => $skippedSchema
+            ];
+        }
+
+        foreach ((array)$articles as $a) {
+            $sku = trim((string)($a['id'] ?? ''));
+            $partnerId = (int)($a['partner'] ?? 0);
+
+            if ($sku === '') {
+                continue;
+            }
+
+            if ($partnerId <= 0) {
+                $missingPartner++;
+                continue;
+            }
+
+            $product = $this->db->query("SELECT product_id, partner
+                FROM `" . DB_PREFIX . "product`
+                WHERE sku = '" . $this->db->escape($sku) . "'
+                LIMIT 1");
+
+            if (!$product->num_rows) {
+                $missingProduct++;
+                continue;
+            }
+
+            $productId = (int)$product->row['product_id'];
+            $currentPartner = isset($product->row['partner']) ? (int)$product->row['partner'] : 0;
+
+            if ($currentPartner === $partnerId) {
+                $unchanged++;
+                continue;
+            }
+
+            $this->db->query("UPDATE `" . DB_PREFIX . "product`
+                SET partner = '" . (int)$partnerId . "',
+                    date_modified = NOW()
+                WHERE product_id = '" . (int)$productId . "'");
+
+            $updated++;
+        }
+
+        $this->log('Partners', "Partner update artikala: updated={$updated}, unchanged={$unchanged}, missing_product={$missingProduct}, missing_partner={$missingPartner}");
+
+        return [
+            'updated' => $updated,
+            'unchanged' => $unchanged,
+            'missing_product' => $missingProduct,
+            'missing_partner' => $missingPartner,
+            'skipped_schema' => $skippedSchema
+        ];
     }
 
 
@@ -1337,6 +1427,11 @@ class ModelExtensionModuleQiqo extends Model
     private function createProduct(array $data)
     {
         $image_path = '';
+        $partnerSql = '';
+
+        if ($this->tableColumnExists('product', 'partner')) {
+            $partnerSql = "partner = '" . (int)($data['partner_id'] ?? 0) . "',";
+        }
 
         // 🖼️ Preuzmi sliku ako postoji picpath
         if ( ! empty($data['image'])) {
@@ -1347,6 +1442,7 @@ class ModelExtensionModuleQiqo extends Model
         $this->db->query("INSERT INTO " . DB_PREFIX . "product SET
         model = '" . $this->db->escape($data['model']) . "',
         sku = '" . $this->db->escape($data['sku']) . "',
+        " . $partnerSql . "
         quantity = '" . (float) $data['quantity'] . "',
         price = '" . (float) $data['price'] . "',
         cent = '" . $this->db->escape($data['cent']) . "',

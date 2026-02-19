@@ -228,6 +228,19 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
                         $response['reload'] = true; // optional
                     }
 
+                    if (!isset($settings['module_product_quick_edit_catalog_products']['partner'])) {
+                        $settings['module_product_quick_edit_catalog_products']['partner'] = array(
+                            'index'    => 35,
+                            'display'  => 0,
+                            'editable' => 0,
+                            'type'     => '',
+                            'align'    => 'left',
+                            'sort'     => 'qp.name',
+                            'rel'      => array()
+                        );
+                        $response['reload'] = true;
+                    }
+
                     foreach ($settings['module_product_quick_edit_catalog_products'] as $column => $attr) {
                         $display = isset($this->request->post['display']['columns'][$column]) ? true : false;
 
@@ -313,6 +326,25 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
                 $all_columns['name_add']['align']    = $all_columns['name_add']['align'] ?? 'left';
                 $all_columns['name_add']['sort']     = $all_columns['name_add']['sort'] ?? 'pd.name_add';
                 $all_columns['name_add']['rel']      = $all_columns['name_add']['rel']  ?? array();
+            }
+
+            if (!isset($all_columns['partner'])) {
+                $all_columns['partner'] = array(
+                    'index'    => 35,
+                    'display'  => 0,
+                    'editable' => 0,
+                    'type'     => '',
+                    'align'    => 'left',
+                    'sort'     => 'qp.name',
+                    'rel'      => array()
+                );
+            } else {
+                $all_columns['partner']['display']  = $all_columns['partner']['display'] ?? 0;
+                $all_columns['partner']['editable'] = 0;
+                $all_columns['partner']['type']     = $all_columns['partner']['type'] ?? '';
+                $all_columns['partner']['align']    = $all_columns['partner']['align'] ?? 'left';
+                $all_columns['partner']['sort']     = $all_columns['partner']['sort'] ?? 'qp.name';
+                $all_columns['partner']['rel']      = $all_columns['partner']['rel'] ?? array();
             }
 
 			uasort($all_columns, 'column_sort');
@@ -512,6 +544,10 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 						case 'manufacturer':
 							$value = (int)$result[$displayed_columns[$i] . '_id'];
 							$product[$displayed_columns[$i] . '_text'] = (is_null($result[$displayed_columns[$i] . '_text'])) ? '' : $result[$displayed_columns[$i] . '_text'];
+							break;
+						case 'partner':
+							$value = isset($result['partner_id']) ? (int)$result['partner_id'] : 0;
+							$product['partner_text'] = (isset($result['partner_text']) && !is_null($result['partner_text'])) ? $result['partner_text'] : '';
 							break;
 						case 'quantity':
 							$value = (int)$result['quantity'];
@@ -2335,6 +2371,25 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
             $columns['name_add']['rel']      = $columns['name_add']['rel']  ?? array();
         }
 
+        if (!isset($columns['partner'])) {
+            $columns['partner'] = array(
+                'index'    => 35,
+                'display'  => 0,
+                'editable' => 0,
+                'type'     => '',
+                'align'    => 'left',
+                'sort'     => 'qp.name',
+                'rel'      => array()
+            );
+        } else {
+            $columns['partner']['display']  = $columns['partner']['display'] ?? 0;
+            $columns['partner']['editable'] = 0;
+            $columns['partner']['type']     = $columns['partner']['type'] ?? '';
+            $columns['partner']['align']    = $columns['partner']['align'] ?? 'left';
+            $columns['partner']['sort']     = $columns['partner']['sort'] ?? 'qp.name';
+            $columns['partner']['rel']      = $columns['partner']['rel'] ?? array();
+        }
+
 		foreach ($columns as $column => $attr) {
 			$columns[$column]['name'] = $this->language->get('column_' . $column);
 
@@ -2380,6 +2435,29 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
             // ako baš nema index u configu, tek onda default
             if (!isset($columns['name_add']['index']) || $columns['name_add']['index'] === '') {
                 $columns['name_add']['index'] = 2;
+            }
+        }
+
+        if (!isset($columns['partner'])) {
+            $columns['partner'] = array(
+                'index'    => 35,
+                'display'  => 0,
+                'editable' => 0,
+                'type'     => '',
+                'align'    => 'left',
+                'sort'     => 'qp.name',
+                'rel'      => array()
+            );
+        } else {
+            $columns['partner']['display']  = $columns['partner']['display'] ?? 0;
+            $columns['partner']['editable'] = 0;
+            $columns['partner']['type']     = $columns['partner']['type'] ?? '';
+            $columns['partner']['align']    = $columns['partner']['align'] ?? 'left';
+            $columns['partner']['sort']     = $columns['partner']['sort'] ?? 'qp.name';
+            $columns['partner']['rel']      = $columns['partner']['rel'] ?? array();
+
+            if (!isset($columns['partner']['index']) || $columns['partner']['index'] === '') {
+                $columns['partner']['index'] = 35;
             }
         }
 

@@ -1,6 +1,24 @@
 <?php
 class ModelExtensionModuleProductQuickEdit extends Model {
 	protected static $productCount = 0;
+	protected static $productColumnCache = array();
+
+	protected function productColumnExists($column) {
+		if (!array_key_exists($column, self::$productColumnCache)) {
+			$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE '" . $this->db->escape($column) . "'");
+			self::$productColumnCache[$column] = (bool)$query->num_rows;
+		}
+
+		return self::$productColumnCache[$column];
+	}
+
+	protected function getPartnerSourceSql() {
+		if ($this->productColumnExists('partner')) {
+			return "p.partner";
+		}
+
+		return "CAST(NULLIF(TRIM(p.isbn), '') AS UNSIGNED)";
+	}
 
 	public function updateProductCache($product_id, $data) {
 		if (!(int)$this->config->get('module_product_quick_edit_server_side_caching')) {
@@ -346,6 +364,10 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 			$sql .= ", m.name AS manufacturer_text";
 		}
 
+		if (in_array("partner", $columns)) {
+			$sql .= ", " . $this->getPartnerSourceSql() . " AS partner_id, qp.name AS partner_text";
+		}
+
 		if (in_array("tax_class", $columns)) {
 			$sql .= ", tc.title AS tax_class_text, tc.tax_class_id";
 		}
@@ -435,6 +457,10 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 			$sql .= " LEFT JOIN " . DB_PREFIX . "manufacturer m ON (m.manufacturer_id = p.manufacturer_id)";
 		}
 
+		if (in_array("partner", $columns)) {
+			$sql .= " LEFT JOIN " . DB_PREFIX . "qiqo_partner qp ON (qp.partner_id = " . $this->getPartnerSourceSql() . ")";
+		}
+
 		if (in_array("category", $columns)) {
 			$sql .= " LEFT JOIN " . DB_PREFIX . "product_to_category p2c ON (p.product_id = p2c.product_id) LEFT JOIN (SELECT cp.category_id AS category_id, GROUP_CONCAT(cd1.name ORDER BY cp.level SEPARATOR ' &gt; ') AS name FROM " . DB_PREFIX . "category_path cp LEFT JOIN " . DB_PREFIX . "category c ON (cp.path_id = c.category_id) LEFT JOIN " . DB_PREFIX . "category_description cd1 ON (c.category_id = cd1.category_id) LEFT JOIN " . DB_PREFIX . "category_description cd2 ON (cp.category_id = cd2.category_id) WHERE cd1.language_id = '" . (int)$this->config->get('config_language_id') . "' AND cd2.language_id = '" . (int)$this->config->get('config_language_id') . "' GROUP BY cp.category_id ORDER BY name) AS cat ON (p2c.category_id = cat.category_id)";
 			$sql .= " LEFT JOIN " . DB_PREFIX . "product_to_category p2c2 ON (p.product_id = p2c2.product_id)";
@@ -482,6 +508,7 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 				'length_class'      => 'lcd.title',
 				'weight_class'      => 'wcd.title',
 				'manufacturer'      => 'm.name',
+				'partner'           => 'qp.name',
 				'stock_status'      => 'ss.name',
 				'image'             => "IF(p.image IS NOT NULL AND p.image <> '' AND p.image <> 'no_image.png', '" . $this->db->escape($this->language->get('text_yes')) . "','" .$this->db->escape($this->language->get('text_no')) . "')",
 				'subtract'          => "IF(p.subtract, '" . $this->db->escape($this->language->get('text_yes')) . "','" .$this->db->escape($this->language->get('text_no')) . "')",
@@ -703,6 +730,7 @@ class ModelExtensionModuleProductQuickEdit extends Model {
 				'length_class'      => 'lcd.title',
 				'weight_class'      => 'wcd.title',
 				'manufacturer'      => 'm.name',
+				'partner'           => 'qp.name',
 				'stock_status'      => 'ss.name',
 				'subtract'          => 'subtract_text',
 				'id'                => 'p.product_id',

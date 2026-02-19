@@ -57,6 +57,7 @@ class ControllerExtensionModuleProductQuickEdit extends Controller {
 			'image'             => array('display' => 1, 'editable' => 1, 'index' =>  10, 'align' => 'text-center', 'type' =>   'image_qe', 'sort' => ''                , 'rel' => array()),
 			'category'          => array('display' => 0, 'editable' => 1, 'index' =>  20, 'align' =>   'text-left', 'type' =>     'cat_qe', 'sort' => ''                , 'rel' => array()),
 			'manufacturer'      => array('display' => 0, 'editable' => 1, 'index' =>  30, 'align' =>   'text-left', 'type' => 'manufac_qe', 'sort' => 'm.name'          , 'rel' => array()),
+			'partner'           => array('display' => 0, 'editable' => 0, 'index' =>  35, 'align' =>   'text-left', 'type' =>           '', 'sort' => 'qp.name'         , 'rel' => array()),
 			'name'              => array('display' => 1, 'editable' => 1, 'index' =>  40, 'align' =>   'text-left', 'type' =>    'name_qe', 'sort' => 'pd.name'         , 'rel' => array()),
 			'tag'               => array('display' => 0, 'editable' => 1, 'index' =>  50, 'align' =>   'text-left', 'type' =>     'tag_qe', 'sort' => ''                , 'rel' => array()),
 			'model'             => array('display' => 1, 'editable' => 1, 'index' =>  60, 'align' =>   'text-left', 'type' =>         'qe', 'sort' => 'p.model'         , 'rel' => array()),

@@ -92,6 +92,11 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->session->data['success'] = "Kompletan partner sync: partneri {$stats['partners']}, mjesta {$stats['delivery_places']}, akcije {$stats['action_prices']}, partner-artikl rabati {$count}.";
                     break;
 
+                case 'update_article_partners':
+                    $stats = $this->model_extension_module_qiqo->updateArticlePartners();
+                    $this->session->data['success'] = "Partner update artikala: ažurirano {$stats['updated']}, bez promjene {$stats['unchanged']}, bez proizvoda {$stats['missing_product']}, bez partnera u API {$stats['missing_partner']}, preskočeno (schema) {$stats['skipped_schema']}.";
+                    break;
+
                 case 'clear_log':
                     $log_file = DIR_LOGS . 'qiqo.log';
                     if (file_exists($log_file)) {

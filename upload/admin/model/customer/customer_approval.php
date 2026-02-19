@@ -160,6 +160,126 @@ class ModelCustomerCustomerApproval extends Model {
 				date_modified = NOW()");
 	}
 
+	public function syncCustomerAddressFromDeliveryPlace($customer_id, $delivery_place_id, $partner_name = '') {
+		$this->ensureQiqoAuthorizationTables();
+
+		$customer_query = $this->db->query("SELECT firstname, lastname, address_id
+			FROM `" . DB_PREFIX . "customer`
+			WHERE customer_id = '" . (int)$customer_id . "'
+			LIMIT 1");
+
+		if (!$customer_query->num_rows) {
+			return false;
+		}
+
+		$place_query = $this->db->query("SELECT *
+			FROM `" . DB_PREFIX . "qiqo_delivery_place`
+			WHERE delivery_place_id = '" . (int)$delivery_place_id . "'
+			LIMIT 1");
+
+		if (!$place_query->num_rows) {
+			return false;
+		}
+
+		$customer = $customer_query->row;
+		$place = $place_query->row;
+
+		$company = trim((string)$partner_name);
+		if ($company === '' && !empty($place['name'])) {
+			$company = trim((string)$place['name']);
+		}
+
+		$address_1 = !empty($place['address']) ? trim((string)$place['address']) : trim((string)$place['name']);
+		$parsed_city = $this->parseCityAndPostcode((string)$place['place']);
+
+		$country_id = $this->getCroatiaCountryId();
+		$zone_id = (int)$this->config->get('config_zone_id');
+
+		$default_address_id = !empty($customer['address_id']) ? (int)$customer['address_id'] : 0;
+		$address_id = 0;
+
+		if ($default_address_id > 0) {
+			$default_address_query = $this->db->query("SELECT address_id
+				FROM `" . DB_PREFIX . "address`
+				WHERE address_id = '" . $default_address_id . "'
+				  AND customer_id = '" . (int)$customer_id . "'
+				LIMIT 1");
+
+			if ($default_address_query->num_rows) {
+				$this->db->query("UPDATE `" . DB_PREFIX . "address`
+					SET firstname = '" . $this->db->escape($customer['firstname']) . "',
+						lastname = '" . $this->db->escape($customer['lastname']) . "',
+						company = '" . $this->db->escape($company) . "',
+						address_1 = '" . $this->db->escape($address_1) . "',
+						address_2 = '',
+						city = '" . $this->db->escape($parsed_city['city']) . "',
+						postcode = '" . $this->db->escape($parsed_city['postcode']) . "',
+						country_id = '" . (int)$country_id . "',
+						zone_id = '" . (int)$zone_id . "',
+						custom_field = '[]'
+					WHERE address_id = '" . $default_address_id . "'
+					  AND customer_id = '" . (int)$customer_id . "'");
+				$address_id = $default_address_id;
+			}
+		}
+
+		if (!$address_id) {
+			$sql = "SELECT address_id
+				FROM `" . DB_PREFIX . "address`
+				WHERE customer_id = '" . (int)$customer_id . "'
+				  AND firstname = '" . $this->db->escape($customer['firstname']) . "'
+				  AND lastname = '" . $this->db->escape($customer['lastname']) . "'
+				  AND company = '" . $this->db->escape($company) . "'
+				  AND address_1 = '" . $this->db->escape($address_1) . "'
+				  AND city = '" . $this->db->escape($parsed_city['city']) . "'
+				LIMIT 1";
+
+			$existing_query = $this->db->query($sql);
+
+			if ($existing_query->num_rows) {
+				$address_id = (int)$existing_query->row['address_id'];
+			}
+		}
+
+		if (!$address_id) {
+			$this->db->query("INSERT INTO `" . DB_PREFIX . "address`
+				SET customer_id = '" . (int)$customer_id . "',
+					firstname = '" . $this->db->escape($customer['firstname']) . "',
+					lastname = '" . $this->db->escape($customer['lastname']) . "',
+					company = '" . $this->db->escape($company) . "',
+					address_1 = '" . $this->db->escape($address_1) . "',
+					address_2 = '',
+					city = '" . $this->db->escape($parsed_city['city']) . "',
+					postcode = '" . $this->db->escape($parsed_city['postcode']) . "',
+					country_id = '" . (int)$country_id . "',
+					zone_id = '" . (int)$zone_id . "',
+					custom_field = '[]'");
+			$address_id = (int)$this->db->getLastId();
+		} else {
+			$this->db->query("UPDATE `" . DB_PREFIX . "address`
+				SET firstname = '" . $this->db->escape($customer['firstname']) . "',
+					lastname = '" . $this->db->escape($customer['lastname']) . "',
+					company = '" . $this->db->escape($company) . "',
+					address_1 = '" . $this->db->escape($address_1) . "',
+					address_2 = '',
+					city = '" . $this->db->escape($parsed_city['city']) . "',
+					postcode = '" . $this->db->escape($parsed_city['postcode']) . "',
+					country_id = '" . (int)$country_id . "',
+					zone_id = '" . (int)$zone_id . "',
+					custom_field = '[]'
+				WHERE address_id = '" . (int)$address_id . "'
+				  AND customer_id = '" . (int)$customer_id . "'");
+		}
+
+		if ($address_id) {
+			$this->db->query("UPDATE `" . DB_PREFIX . "customer`
+				SET address_id = '" . $address_id . "'
+				WHERE customer_id = '" . (int)$customer_id . "'");
+		}
+
+		return (bool)$address_id;
+	}
+
 	public function getCustomerQiqoAuthorization($customer_id) {
 		$this->ensureQiqoAuthorizationTables();
 
@@ -209,5 +329,42 @@ class ModelCustomerCustomerApproval extends Model {
 			KEY `idx_delivery_place` (`delivery_place_id`),
 			KEY `idx_sales_rep` (`sales_rep_id`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+	}
+
+	private function parseCityAndPostcode($raw_place) {
+		$raw_place = trim($raw_place);
+
+		$postcode = '';
+		$city = $raw_place;
+
+		if ($raw_place !== '') {
+			$parts = explode(',', $raw_place, 2);
+			$left = trim($parts[0]);
+
+			if (preg_match('/^([0-9]{4,6})\s+(.+)$/u', $left, $m)) {
+				$postcode = trim($m[1]);
+				$city = trim($m[2]);
+			} else {
+				$city = $left;
+			}
+		}
+
+		return array(
+			'postcode' => $postcode,
+			'city' => $city
+		);
+	}
+
+	private function getCroatiaCountryId() {
+		$query = $this->db->query("SELECT country_id
+			FROM `" . DB_PREFIX . "country`
+			WHERE (iso_code_2 = 'HR' OR iso_code_3 = 'HRV' OR LCASE(name) LIKE '%croatia%')
+			LIMIT 1");
+
+		if ($query->num_rows) {
+			return (int)$query->row['country_id'];
+		}
+
+		return (int)$this->config->get('config_country_id');
 	}
 }	

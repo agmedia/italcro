@@ -15,6 +15,8 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
         $data['heading_title']   = $this->language->get('heading_title');
         $data['text_edit']       = $this->language->get('text_edit');
+        $data['text_enabled']    = $this->language->get('text_enabled');
+        $data['text_disabled']   = $this->language->get('text_disabled');
         $data['entry_status']    = $this->language->get('entry_status');
         $data['button_save']     = $this->language->get('button_save');
         $data['button_cancel']   = $this->language->get('button_cancel');

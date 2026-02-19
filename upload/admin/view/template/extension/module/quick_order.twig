@@ -22,8 +22,8 @@
             <label class="col-sm-2 control-label">{{ entry_status }}</label>
             <div class="col-sm-10">
               <select name="module_quick_order_status" class="form-control">
-                <option value="1" {% if module_quick_order_status %}selected{% endif %}>Enabled</option>
-                <option value="0" {% if not module_quick_order_status %}selected{% endif %}>Disabled</option>
+                <option value="1" {% if module_quick_order_status %}selected{% endif %}>{{ text_enabled }}</option>
+                <option value="0" {% if not module_quick_order_status %}selected{% endif %}>{{ text_disabled }}</option>
               </select>
             </div>
           </div>

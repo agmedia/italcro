@@ -25,4 +25,5 @@ $_['entry_type']            = 'Tip';
 $_['entry_date_added']      = 'Datum dodavanja';
 
 // Greška
+$_['error_warning']         = 'Upozorenje: Molimo pažljivo provjerite obrazac zbog mogućih grešaka!';
 $_['error_permission']      = 'Upozorenje: Nemate dozvolu za izmjenu odobrenja kupaca!';

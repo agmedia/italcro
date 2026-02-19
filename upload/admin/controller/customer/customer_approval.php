@@ -278,6 +278,11 @@ class ControllerCustomerCustomerApproval extends Controller {
 						],
 						$this->user->getId()
 					);
+					$this->model_customer_customer_approval->syncCustomerAddressFromDeliveryPlace(
+						(int)$this->request->get['customer_id'],
+						$delivery_place_id,
+						$partner['name']
+					);
 
 					$this->model_customer_customer_approval->approveCustomer($this->request->get['customer_id']);
 					$this->sendCustomerApprovedMail((int)$this->request->get['customer_id']);

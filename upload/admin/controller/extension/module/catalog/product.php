@@ -546,8 +546,8 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
 							$product[$displayed_columns[$i] . '_text'] = (is_null($result[$displayed_columns[$i] . '_text'])) ? '' : $result[$displayed_columns[$i] . '_text'];
 							break;
 						case 'partner':
-							$value = isset($result['partner_id']) ? (int)$result['partner_id'] : 0;
-							$product['partner_text'] = (isset($result['partner_text']) && !is_null($result['partner_text'])) ? $result['partner_text'] : '';
+							$product['partner_id'] = isset($result['partner_id']) ? (int)$result['partner_id'] : 0;
+							$value = (isset($result['partner_text']) && !is_null($result['partner_text'])) ? $result['partner_text'] : '';
 							break;
 						case 'quantity':
 							$value = (int)$result['quantity'];

@@ -66,8 +66,13 @@ class ControllerCheckoutCart extends Controller {
 					}
 				}
 
-				if ($product['minimum'] > $product_total) {
-					$data['error_warning'] = sprintf($this->language->get('error_minimum'), $product['name'], $product['minimum']);
+				$effective_minimum = isset($product['minimumifc100']) ? (int)$product['minimumifc100'] : 1;
+				if ($effective_minimum < 1) {
+					$effective_minimum = 1;
+				}
+
+				if ($effective_minimum > $product_total) {
+					$data['error_warning'] = sprintf($this->language->get('error_minimum'), $product['name'], $effective_minimum);
 				}
 
 				if ($product['image']) {

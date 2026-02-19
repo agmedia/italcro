@@ -241,6 +241,15 @@ class Cart {
 					$recurring = false;
 				}
 
+				$minimum_step = 1;
+				$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_query->row['cent']));
+				if ($cent_normalized === 'C100') {
+					$minimum_step = $product_query->row['minimum'] ? (int)$product_query->row['minimum'] : 1;
+				}
+				if ($minimum_step < 1) {
+					$minimum_step = 1;
+				}
+
 				$product_data[] = array(
 					'cart_id'         => $cart['cart_id'],
 					'product_id'      => $product_query->row['product_id'],
@@ -252,6 +261,8 @@ class Cart {
 					'download'        => $download_data,
 					'quantity'        => $cart['quantity'],
 					'minimum'         => $product_query->row['minimum'],
+					'minimumifc100'   => $minimum_step,
+					'cent'            => $product_query->row['cent'],
 					'subtract'        => $product_query->row['subtract'],
 					'stock'           => $stock,
 					'price'           => ($price + $option_price),

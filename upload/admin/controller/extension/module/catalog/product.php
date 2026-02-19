@@ -2438,29 +2438,6 @@ class ControllerExtensionModuleCatalogProduct extends ControllerExtensionModuleP
             }
         }
 
-        if (!isset($columns['partner'])) {
-            $columns['partner'] = array(
-                'index'    => 35,
-                'display'  => 0,
-                'editable' => 0,
-                'type'     => '',
-                'align'    => 'left',
-                'sort'     => 'qp.name',
-                'rel'      => array()
-            );
-        } else {
-            $columns['partner']['display']  = $columns['partner']['display'] ?? 0;
-            $columns['partner']['editable'] = 0;
-            $columns['partner']['type']     = $columns['partner']['type'] ?? '';
-            $columns['partner']['align']    = $columns['partner']['align'] ?? 'left';
-            $columns['partner']['sort']     = $columns['partner']['sort'] ?? 'qp.name';
-            $columns['partner']['rel']      = $columns['partner']['rel'] ?? array();
-
-            if (!isset($columns['partner']['index']) || $columns['partner']['index'] === '') {
-                $columns['partner']['index'] = 35;
-            }
-        }
-
 // BITNO: ponovno sortiraj nakon filtera/force-a
         uasort($columns, 'column_sort');
 

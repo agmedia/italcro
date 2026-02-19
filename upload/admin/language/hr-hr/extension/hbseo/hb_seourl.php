@@ -76,7 +76,7 @@ $_['error_no_valid_preserve_records']   = "Nisu pronađeni valjani sačuvani zap
 $_['text_enter_keyword']                  = "Unesite ključnu riječ jezika. Npr.: en-gb";
 
 $_['success_language_keyword_removed']  = "Ključna riječ jezika uspješno je uklonjena";
-$_['success_language_keyword_updated']  = "Jezična ključna riječ \\"%s\\" uspješno je ažurirana";
+$_['success_language_keyword_updated']  = "Jezicna kljucna rijec \"%s\" uspjesno je azurirana";
 
 $_['error_invalid_language_code']         = "Nevažeći jezični kod";
 $_['error_language_keyword_not_found']    = "Ključna riječ jezika nije pronađena u bazi podataka. Kliknite na gumb za spremanje da biste dodali ključnu riječ jezika.";

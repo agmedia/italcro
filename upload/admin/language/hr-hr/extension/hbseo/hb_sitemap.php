@@ -70,7 +70,7 @@ $_['text_htaccess_code']               = "Dodajte ove retke svojoj .htaccess dat
 $_['text_invalid_date_product']        = "%d Pronađen proizvod(i) s nevažećim datumom zadnje izmjene!";
 $_['text_invalid_date_category']       = "%d Pronađene su kategorije s nevažećim datumom zadnje izmjene!";
 $_['text_import_bulk']                 = "Uvezite skupne veze na Sitemap prilagođenih veza";
-$_['text_info_import']                 = "Svaku poveznicu možete unijeti u novom retku ili ih odvojiti pomoću \"|\" lik.";
+$_['text_info_import']                 = "Svaku poveznicu možete unijeti u novom retku ili ih odvojiti pomoću \\"|\\" lik.";
 
 // Frequency Options
 $_['text_freq_monthly'] = "Ova stranica se ažurira jednom mjesečno";

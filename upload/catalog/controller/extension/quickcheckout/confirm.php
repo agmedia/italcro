@@ -46,7 +46,12 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 				}
 			}
 
-			if ($product['minimum'] > $product_total) {
+			$effective_minimum = isset($product['minimumifc100']) ? (int)$product['minimumifc100'] : (int)$product['minimum'];
+			if ($effective_minimum < 1) {
+				$effective_minimum = 1;
+			}
+
+			if ($effective_minimum > $product_total) {
 				$redirect = $this->url->link('checkout/cart');
 
 				break;
@@ -365,10 +370,63 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 			$data['column_total'] = $this->language->get('column_total');
 
 			$this->load->model('tool/upload');
+			$this->load->model('catalog/product');
 
 			$data['products'] = array();
+			$product_info_map = array();
+			$cart_products = $this->cart->getProducts();
+			$qiqo_price_map = array();
+			$qiqo_extra_map = array();
 
-			foreach ($this->cart->getProducts() as $product) {
+			foreach ($cart_products as $cart_product) {
+				$product_id = (int)$cart_product['product_id'];
+				if (!isset($product_info_map[$product_id])) {
+					$product_info_map[$product_id] = $this->model_catalog_product->getProduct($product_id);
+				}
+			}
+
+			if ($this->customer->isLogged()) {
+				$sku_quantities = array();
+				$base_unit_prices = array();
+
+				foreach ($cart_products as $cart_product) {
+					$product_id = (int)$cart_product['product_id'];
+					$product_info = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
+
+					if (!$product_info || empty($product_info['sku'])) {
+						continue;
+					}
+
+					$sku = trim((string)$product_info['sku']);
+					if ($sku === '') {
+						continue;
+					}
+
+					$qty = (float)$cart_product['quantity'];
+					if ($qty <= 0) {
+						$qty = 1.0;
+					}
+
+					$base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+					if ($base_unit <= 0) {
+						continue;
+					}
+
+					$sku_quantities[$sku] = $qty;
+					$base_unit_prices[$sku] = $base_unit;
+				}
+
+				if ($sku_quantities) {
+					$qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+						(int)$this->customer->getId(),
+						$sku_quantities,
+						$base_unit_prices
+					);
+					$qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
+				}
+			}
+
+			foreach ($cart_products as $product) {
 				$option_data = array();
 
 				foreach ($product['option'] as $option) {
@@ -415,16 +473,36 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 				$price = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 				$total = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity'], $this->session->data['currency']);
 
+				$product_id = (int)$product['product_id'];
+				$product_info = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
+				$product_sku = !empty($product['sku']) ? (string)$product['sku'] : (!empty($product_info['sku']) ? (string)$product_info['sku'] : '');
+
+				$qiqo_discount_percent = 0.0;
+				$qiqo_proforma_extra_percent = 0.0;
+
+				if ($product_sku !== '') {
+					if (isset($qiqo_price_map[$product_sku]['discount_percent'])) {
+						$qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['discount_percent'];
+					}
+
+					if (isset($qiqo_extra_map[$product_sku])) {
+						$qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$product_sku];
+					}
+				}
+
 				$data['products'][] = array(
 					'key'        => isset($product['key']) ? $product['key'] : $product['cart_id'],
 					'cart_id'	 => isset($product['cart_id']) ? $product['cart_id'] : $product['key'],
 					'product_id' => $product['product_id'],
 					'name'       => $product['name'],
+					'sku'        => $product_sku,
 					'model'      => $product['model'],
 					'option'     => $option_data,
 					'recurring'  => $recurring,
 					'quantity'   => $product['quantity'],
 					'subtract'   => $product['subtract'],
+					'qiqo_discount_percent' => $qiqo_discount_percent,
+					'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
 					'price'      => $price,
 					'total'      => $total,
 					'href'       => $this->url->link('product/product', 'product_id=' . $product['product_id']),

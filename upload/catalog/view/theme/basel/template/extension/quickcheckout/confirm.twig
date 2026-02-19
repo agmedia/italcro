@@ -5,7 +5,8 @@
 		<thead>
 		  <tr>
 			<td class="text-left">{{ column_name }}</td>
-
+			<td class="text-right">Rabat</td>
+			<td class="text-right">Predračun</td>
 			<td class="text-right">{{ column_price }}</td>
 			<td class="text-right">{{ column_total }}</td>
 		  </tr>
@@ -14,6 +15,9 @@
 		  {% for product in products %} 
 		  <tr>
 			<td class="text-left">{{ product.quantity }} x <a href="{{ product.href }}">{{ product.name }}</a>
+			  {% if product.sku %}
+			  <br /><small>Šifra: {{ product.sku }}</small>
+			  {% endif %}
 			  <br /><small>({{ product.model }})</small>
 			  {% for option in product.option %} 
 			  <br />
@@ -23,7 +27,20 @@
 			  <br />
 			  <span class="label label-info">{{ text_recurring }}</span> <small>{{ product.recurring }}</small>
 			  {% endif %}</td>
-
+			<td class="text-right">
+			  {% if product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}
+				-{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%
+			  {% else %}
+				-
+			  {% endif %}
+			</td>
+			<td class="text-right">
+			  {% if product.qiqo_proforma_extra_percent is defined and product.qiqo_proforma_extra_percent > 0 %}
+				+{{ product.qiqo_proforma_extra_percent|number_format(0, '.', '') }}%
+			  {% else %}
+				-
+			  {% endif %}
+			</td>
 			<td class="text-right">{{ product.price }}</td>
 			<td class="text-right">{{ product.total }}</td>
 		  </tr>
@@ -31,7 +48,8 @@
 		  {% for voucher in vouchers %} 
 		  <tr>
 			<td class="text-left">{{ voucher.description }}</td>
-
+			<td class="text-right">-</td>
+			<td class="text-right">-</td>
 			<td class="text-right">{{ voucher.amount }}</td>
 			<td class="text-right">{{ voucher.amount }}</td>
 		  </tr>
@@ -40,7 +58,7 @@
 		<tfoot>
 		  {% for total in totals %} 
 		  <tr>
-			<td colspan="2" class="text-right"><strong>{{ total.title }}:</strong></td>
+			<td colspan="4" class="text-right"><strong>{{ total.title }}:</strong></td>
 			<td class="text-right">{{ total.text }}</td>
 		  </tr>
 		  {% endfor %} 

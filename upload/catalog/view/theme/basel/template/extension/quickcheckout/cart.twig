@@ -4,6 +4,8 @@
 	  <td class="image">{{ column_image }}</td>
 	  <td class="name">{{ column_name }}</td>
 	  <td class="quantity">{{ column_quantity }}</td>
+	  <td class="price1 hidden-xs hidden-sm">Rabat</td>
+	  <td class="price1 hidden-xs hidden-sm">Predračun</td>
 	  <td class="price1 hidden-xs hidden-sm">{{ column_price }}</td>
 	  <td class="total text-right">{{ column_total }}</td>
 	</tr>
@@ -17,6 +19,9 @@
             {% endif %}</td>
           <td class="name"><a href="{{ product.href }}">{{ product.name }}</a>
             <div>
+			  {% if product.sku %}
+			  <small>Šifra: {{ product.sku }}</small><br />
+			  {% endif %}
               {% for option in product.option %} 
               <small>{{ option.name }}: {{ option.value }}</small><br />
 			  {% endfor %}
@@ -40,6 +45,20 @@
 			{% else %}
 			x&nbsp;{{ product.quantity }} 
 			{% endif %}</td>
+		  <td class="price1 hidden-xs hidden-sm">
+			{% if product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}
+				-{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%
+			{% else %}
+				-
+			{% endif %}
+		  </td>
+		  <td class="price1 hidden-xs hidden-sm">
+			{% if product.qiqo_proforma_extra_percent is defined and product.qiqo_proforma_extra_percent > 0 %}
+				+{{ product.qiqo_proforma_extra_percent|number_format(0, '.', '') }}%
+			{% else %}
+				-
+			{% endif %}
+		  </td>
 		  <td class="price1 hidden-xs hidden-sm">{{ product.price }}</td>
           <td class="total text-right">{{ product.total }}</td>
         </tr>
@@ -49,6 +68,8 @@
           <td class="image"></td>
           <td class="name">{{ voucher.description }}</td>
           <td class="quantity">x&nbsp;1</td>
+		  <td class="price1 hidden-xs hidden-sm">-</td>
+		  <td class="price1 hidden-xs hidden-sm">-</td>
 		  <td class="price1">{{ voucher.amount }}</td>
           <td class="total">{{ voucher.amount }}</td>
         </tr>
@@ -61,7 +82,7 @@
 	<tbody>
 		{% for total in totals %} 
 		<tr>
-		  <td class="text-left" colspan="4"><b>{{ total.title }}:</b></td>
+		  <td class="text-left" colspan="6"><b>{{ total.title }}:</b></td>
 		  <td class="text-right">{{ total.text }}</td>
 		</tr>
         {% endfor %} 

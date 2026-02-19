@@ -117,6 +117,13 @@
             {% endfor %}
           </tr>
 
+          <tr>
+            <td>{{ text_description }}</td>
+            {% for product in products %}
+              <td class="description">{{ product.description ? product.description : '-' }}</td>
+            {% endfor %}
+          </tr>
+
         
         </tbody>
         {% for attribute_group in attribute_groups %}

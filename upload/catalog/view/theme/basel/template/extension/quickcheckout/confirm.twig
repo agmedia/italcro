@@ -41,7 +41,12 @@
 				-
 			  {% endif %}
 			</td>
-			<td class="text-right">{{ product.price }}</td>
+			<td class="text-right">
+			  {% if product.price_old %}
+				<small style="text-decoration: line-through; color: #777;">{{ product.price_old }}</small><br />
+			  {% endif %}
+			  {{ product.price }}
+			</td>
 			<td class="text-right">{{ product.total }}</td>
 		  </tr>
 		  {% endfor %}

@@ -479,6 +479,7 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 
 				$qiqo_discount_percent = 0.0;
 				$qiqo_proforma_extra_percent = 0.0;
+				$price_old = false;
 
 				if ($product_sku !== '') {
 					if (isset($qiqo_price_map[$product_sku]['discount_percent'])) {
@@ -487,6 +488,19 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 
 					if (isset($qiqo_extra_map[$product_sku])) {
 						$qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$product_sku];
+					}
+
+					if (isset($qiqo_price_map[$product_sku]['old_unit_price']) &&
+						$qiqo_price_map[$product_sku]['old_unit_price'] !== false) {
+						$old_unit_raw = (float)$qiqo_price_map[$product_sku]['old_unit_price'];
+						$current_unit_raw = (float)$product['price'];
+
+						if ($old_unit_raw > 0 && $old_unit_raw > $current_unit_raw) {
+							$price_old = $this->currency->format(
+								$this->tax->calculate($old_unit_raw, $product['tax_class_id'], $this->config->get('config_tax')),
+								$this->session->data['currency']
+							);
+						}
 					}
 				}
 
@@ -503,6 +517,7 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 					'subtract'   => $product['subtract'],
 					'qiqo_discount_percent' => $qiqo_discount_percent,
 					'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
+					'price_old'  => $price_old,
 					'price'      => $price,
 					'total'      => $total,
 					'href'       => $this->url->link('product/product', 'product_id=' . $product['product_id']),

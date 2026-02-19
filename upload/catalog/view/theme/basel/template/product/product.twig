@@ -133,7 +133,7 @@
 
                         <!-- start -->
 
-                        {% if same_mpn_products is defined and same_mpn_products|length > 1 %}
+                        {% if same_mpn_products is defined and same_mpn_products|length > 0 %}
 
                             <div class="mpn-variants table-responsive">
                                 <table class="table table-bordered table-striped">
@@ -150,6 +150,7 @@
                                             <th class="text-right">C-100</th>
                                             {% endif %}
                                         <th class="text-right">Rabat</th>
+                                        <th class="text-right">Predračun</th>
                                         <th class="text-right price">Cijena</th>
                                         <th class="text-right price">Ukupno</th>
                                         <th class="text-right price">Dodaj</th>
@@ -175,6 +176,13 @@
                                                         <td class="text-right">
                                                             {% if p.qiqo_discount_percent is defined and p.qiqo_discount_percent > 0 %}
                                                                 -{{ p.qiqo_discount_percent|number_format(0, '.', '') }}%
+                                                            {% else %}
+                                                                -
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-right">
+                                                            {% if p.qiqo_proforma_extra_percent is defined and p.qiqo_proforma_extra_percent > 0 %}
+                                                                +{{ p.qiqo_proforma_extra_percent|number_format(0, '.', '') }}%
                                                             {% else %}
                                                                 -
                                                             {% endif %}
@@ -674,6 +682,9 @@
                                 {% endif %}
                                 {% if qiqo_discount_percent is defined and qiqo_discount_percent > 0 %}
                                     <p class="info"><b>Rabat:</b> -{{ qiqo_discount_percent|number_format(0, '.', '') }}%</p>
+                                {% endif %}
+                                {% if qiqo_proforma_extra_percent is defined and qiqo_proforma_extra_percent > 0 %}
+                                    <p class="info"><b>Napomena:</b> kod plaćanja predračunom moguć dodatni popust +{{ qiqo_proforma_extra_percent|number_format(0, '.', '') }}%.</p>
                                 {% endif %}
 
                                 {% if model %}

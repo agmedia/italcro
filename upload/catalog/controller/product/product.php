@@ -179,9 +179,15 @@ class ControllerProductProduct extends Controller {
 	        }
 
 			$data['qiqo_discount_percent'] = 0;
+			$data['qiqo_proforma_extra_percent'] = 0;
 			if ($product_info && $this->customer->isLogged()) {
 				$main_sku = trim((string)$product_info['sku']);
 				if ($main_sku !== '') {
+					$main_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array($main_sku));
+					if (isset($main_extra_map[$main_sku])) {
+						$data['qiqo_proforma_extra_percent'] = (float)$main_extra_map[$main_sku];
+					}
+
 					$main_minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
 					$main_base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
 
@@ -818,7 +824,7 @@ class ControllerProductProduct extends Controller {
             }
 
 
-// želimo prikaz samo ako ima više od 1 (dakle barem 2 proizvoda s tim MPN-om)
+// tablični prikaz varijanti: ako nema drugih, prikaži trenutni artikl kao jedan red
             if (count($mpn_products) > 0) {
                 $data['same_mpn_products'] = array();
                 $data['same_mpn_has_c100'] = false;
@@ -828,6 +834,7 @@ class ControllerProductProduct extends Controller {
                 });
 
                 $mpn_qiqo_price_map = array();
+                $mpn_qiqo_extra_map = array();
                 if ($this->customer->isLogged()) {
                     $mpn_sku_quantities = array();
                     $mpn_base_prices = array();
@@ -851,6 +858,7 @@ class ControllerProductProduct extends Controller {
                     }
 
                     if ($mpn_sku_quantities) {
+                        $mpn_qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($mpn_sku_quantities));
                         $mpn_qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
                             (int)$this->customer->getId(),
                             $mpn_sku_quantities,
@@ -880,8 +888,13 @@ class ControllerProductProduct extends Controller {
                     $price_raw   = (float)$result['price'];
                     $special_raw = (float)$result['special'];
                     $row_qiqo_discount_percent = 0.0;
+                    $row_qiqo_proforma_extra_percent = 0.0;
 
                     $row_sku = trim((string)$result['sku']);
+                    if ($row_sku !== '' && isset($mpn_qiqo_extra_map[$row_sku])) {
+                        $row_qiqo_proforma_extra_percent = (float)$mpn_qiqo_extra_map[$row_sku];
+                    }
+
                     if ($row_sku !== '' && isset($mpn_qiqo_price_map[$row_sku])) {
                         $row_pricing = $mpn_qiqo_price_map[$row_sku];
                         $price_raw = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
@@ -913,6 +926,7 @@ class ControllerProductProduct extends Controller {
 
                         'minimumifc100'    => $minimumifc100,
                         'qiqo_discount_percent' => $row_qiqo_discount_percent,
+                        'qiqo_proforma_extra_percent' => $row_qiqo_proforma_extra_percent,
 
                         // standardne cijene (po komadu)
                         'price'   => $this->currency->format($price_raw, $this->session->data['currency']),
@@ -941,8 +955,91 @@ class ControllerProductProduct extends Controller {
                 }
 
             } else {
-                $data['same_mpn_products'] = false;
+                $data['same_mpn_products'] = array();
                 $data['same_mpn_has_c100'] = false;
+
+                $single_minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
+                $single_multiplier = ((string)$product_info['cent'] === 'C-100') ? 100 : $single_minimum;
+                $single_minimumifc100 = ((string)$product_info['cent'] === 'C-100') ? $single_minimum : 1;
+
+                $single_cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_info['cent']));
+                if ($single_cent_normalized === 'C100') {
+                    $data['same_mpn_has_c100'] = true;
+                }
+
+                $single_price_raw = (float)$product_info['price'];
+                $single_special_raw = (float)$product_info['special'];
+                $single_unit_new = ($single_special_raw > 0) ? $single_special_raw : $single_price_raw;
+                $single_new_total = $single_unit_new * $single_multiplier;
+                $single_old_total = ($single_special_raw > 0) ? ($single_price_raw * $single_multiplier) : false;
+
+                $single_qiqo_discount_percent = 0.0;
+                $single_qiqo_proforma_extra_percent = 0.0;
+
+                if ($this->customer->isLogged()) {
+                    $single_sku = trim((string)$product_info['sku']);
+                    if ($single_sku !== '') {
+                        $single_base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+
+                        if ($single_base_unit > 0) {
+                            $single_map = $this->model_catalog_product->getQiqoPricingMap(
+                                (int)$this->customer->getId(),
+                                array($single_sku => $single_minimumifc100),
+                                array($single_sku => $single_base_unit)
+                            );
+
+                            if (isset($single_map[$single_sku])) {
+                                $single_pricing = $single_map[$single_sku];
+                                $single_price_raw = isset($single_pricing['old_unit_price']) && $single_pricing['old_unit_price'] !== false
+                                    ? (float)$single_pricing['old_unit_price']
+                                    : (float)$single_pricing['final_unit_price'];
+                                $single_special_raw = isset($single_pricing['old_unit_price']) && $single_pricing['old_unit_price'] !== false
+                                    ? (float)$single_pricing['final_unit_price']
+                                    : 0.0;
+                                $single_qiqo_discount_percent = isset($single_pricing['discount_percent']) ? (float)$single_pricing['discount_percent'] : 0.0;
+
+                                $single_unit_new = ($single_special_raw > 0) ? $single_special_raw : $single_price_raw;
+                                $single_new_total = $single_unit_new * $single_multiplier;
+                                $single_old_total = ($single_special_raw > 0) ? ($single_price_raw * $single_multiplier) : false;
+                            }
+                        }
+
+                        $single_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array($single_sku));
+                        if (isset($single_extra_map[$single_sku])) {
+                            $single_qiqo_proforma_extra_percent = (float)$single_extra_map[$single_sku];
+                        }
+                    }
+                }
+
+                $data['same_mpn_products'][] = [
+                    'product_id' => $product_info['product_id'],
+                    'code'       => $product_info['sku'],
+                    'barcode'    => $product_info['model'],
+                    'ean'        => $product_info['ean'],
+                    'cent'       => $product_info['cent'],
+                    'name_add'   => $product_info['name_add'],
+                    'description_add' => isset($product_info['description_add']) ? $product_info['description_add'] : '',
+                    'stock'      => $product_info['quantity'],
+                    'minimum'    => $single_minimum,
+                    'minimumifc100' => $single_minimumifc100,
+                    'qiqo_discount_percent' => $single_qiqo_discount_percent,
+                    'qiqo_proforma_extra_percent' => $single_qiqo_proforma_extra_percent,
+                    'price'      => $this->currency->format($single_price_raw, $this->session->data['currency']),
+                    'special'    => ($single_special_raw > 0)
+                        ? $this->currency->format($single_special_raw, $this->session->data['currency'])
+                        : false,
+                    'preview_price_new' => ($single_new_total > 0)
+                        ? $this->currency->format($single_new_total, $this->session->data['currency'])
+                        : false,
+                    'preview_price_old' => ($single_old_total)
+                        ? $this->currency->format($single_old_total, $this->session->data['currency'])
+                        : false,
+                    'preview_price_ex_tax' => ($single_new_total > 0)
+                        ? $this->currency->format($single_new_total, $this->session->data['currency'])
+                        : false,
+                    'price_value'   => $single_price_raw,
+                    'special_value' => $single_special_raw,
+                ];
             }
 
 			$data['recurrings'] = $this->model_catalog_product->getProfiles($this->request->get['product_id']);

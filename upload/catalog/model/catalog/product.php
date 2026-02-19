@@ -896,6 +896,41 @@ class ModelCatalogProduct extends Model {
 		);
 	}
 
+	public function getQiqoProformaExtraDiscountMap($sku_list = array()) {
+		$map = array();
+
+		if (!$sku_list || !$this->hasQiqoPricingTables()) {
+			return $map;
+		}
+
+		$clean = array();
+		foreach ($sku_list as $sku) {
+			$sku = trim((string)$sku);
+			if ($sku !== '') {
+				$clean[] = $sku;
+			}
+		}
+
+		$clean = array_values(array_unique($clean));
+		if (!$clean) {
+			return $map;
+		}
+
+		$in = $this->buildEscapedInList($clean);
+
+		$query = $this->db->query("SELECT article_code, MAX(discount) AS extra_discount
+			FROM `" . DB_PREFIX . "qiqo_action_price`
+			WHERE indicator = 'X'
+			  AND article_code IN (" . $in . ")
+			GROUP BY article_code");
+
+		foreach ($query->rows as $row) {
+			$map[(string)$row['article_code']] = (float)$row['extra_discount'];
+		}
+
+		return $map;
+	}
+
 	private function resolveQiqoActionForArticle($rows, $qty, $is_proforma) {
 		$result = array(
 			'net_price' => null,

@@ -35,7 +35,9 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         }
 
         $this->load->language('extension/module/quick_order');
-        $this->document->addScript('catalog/view/javascript/quick_order.js');
+        $script_file = DIR_APPLICATION . '../catalog/view/javascript/quick_order.js';
+        $script_ver = is_file($script_file) ? filemtime($script_file) : time();
+        $this->document->addScript('catalog/view/javascript/quick_order.js?v=' . $script_ver);
 
         $data['heading_title'] = $this->language->get('heading_title');
         $data['text_search']   = $this->language->get('text_search');

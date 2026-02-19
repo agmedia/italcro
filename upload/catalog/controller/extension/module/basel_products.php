@@ -100,7 +100,58 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 				}
 				
 				if (isset($results)) {
+				$qiqo_price_map = array();
+				if ($this->customer->isLogged() && $results) {
+					$sku_quantities = array();
+					$base_unit_prices = array();
+
+					foreach ($results as $r) {
+						$sku_key = trim((string)$r['sku']);
+						if ($sku_key === '') {
+							continue;
+						}
+
+						$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
+						$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
+						$r_base_unit = ((float)$r['special'] > 0) ? (float)$r['special'] : (float)$r['price'];
+
+						if ($r_base_unit <= 0) {
+							continue;
+						}
+
+						$sku_quantities[$sku_key] = $r_list_min;
+						$base_unit_prices[$sku_key] = $r_base_unit;
+					}
+
+					if ($sku_quantities) {
+						$qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+							(int)$this->customer->getId(),
+							$sku_quantities,
+							$base_unit_prices
+						);
+					}
+				}
+
 				foreach ($results as $result) {
+					$sku_key = trim((string)$result['sku']);
+					$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+					$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
+
+					$display_price_unit = (float)$result['price'];
+					$display_special_unit = (float)$result['special'];
+					$qiqo_discount_percent = 0.0;
+
+					if ($sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
+						$pricing = $qiqo_price_map[$sku_key];
+						$display_price_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+							? (float)$pricing['old_unit_price']
+							: (float)$pricing['final_unit_price'];
+						$display_special_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+							? (float)$pricing['final_unit_price']
+							: 0.0;
+						$qiqo_discount_percent = isset($pricing['discount_percent']) ? (float)$pricing['discount_percent'] : 0.0;
+					}
+
 					if ($result['image']) {
 					$image = $this->model_tool_image->resize($result['image'], $setting['image_width'], $setting['image_height']);
 					} else {
@@ -115,13 +166,13 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 					}
 					
 					if (($this->config->get('config_customer_price') && $this->customer->isLogged()) || !$this->config->get('config_customer_price')) {
-						$price = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+						$price = $this->currency->format($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 						if($this->session->data['currency']=='HRK'){
-                        $priceeur = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), 'EUR');
+                        $priceeur = $this->currency->format($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')), 'EUR');
 	                    }
 	                    else{
-	                        $priceeur = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), 'HRK');
+	                        $priceeur = $this->currency->format($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')), 'HRK');
 
 	                    }
 					} else {
@@ -129,14 +180,14 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						$priceeur  ='';
 					}
 							
-					if ((float)$result['special']) {
-						$special = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+					if ($display_special_unit > 0) {
+						$special = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 						if($this->session->data['currency']=='HRK'){
-                        $specialeur = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')),  'EUR');
+                        $specialeur = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')),  'EUR');
                     }
                     else{
-                        $specialeur = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')),  'HRK');
+                        $specialeur = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')),  'HRK');
 
                     }
 						$date_end = $this->model_extension_basel_basel->getSpecialEndDate($result['product_id']);
@@ -146,9 +197,9 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						$date_end = false;
 					}
 					
-					if ( (float)$result['special'] && ($this->config->get('salebadge_status')) ) {
+					if ($display_special_unit > 0 && ($this->config->get('salebadge_status'))) {
 						if ($this->config->get('salebadge_status') == '2') {
-							$sale_badge = '-' . number_format(((($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')))-($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax'))))/(($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')))/100)), 0, ',', '.') . '%';
+							$sale_badge = '-' . number_format(((($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')))-($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax'))))/(($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')))/100)), 0, ',', '.') . '%';
 						} else {
 							$sale_badge = $this->language->get('basel_text_sale');
 						}		
@@ -169,7 +220,7 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						$is_new = false;
 					}
 					if ($this->config->get('config_tax')) {
-					$tax = $this->currency->format((float)$result['special'] ? $result['special'] : $result['price'], $this->session->data['currency']);
+					$tax = $this->currency->format($display_special_unit > 0 ? $display_special_unit : $display_price_unit, $this->session->data['currency']);
 					} else {
 						$tax = false;
 					}	
@@ -185,23 +236,35 @@ class ControllerExtensionModuleBaselProducts extends Controller {
                         $data['attention'] = '';
                     }
 
-                    $minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
-                    // RAW cijena (bez formata) × minimum
-                    if (!is_null($result['special']) && (float)$result['special'] >= 0) {
-                        $preview_price_raw = (float)$result['special'] * $minimum;
+                    $price_raw = (float)$display_price_unit;
+                    $special_raw = (float)$display_special_unit;
+                    $preview_price_alt = false;
+
+                    if ($special_raw > 0) {
+                        $preview_price_raw = $special_raw * $list_min;
+                        $preview_price_alt_raw = $price_raw * $list_min;
+
+                        $preview_price_alt = $this->currency->format(
+                            $this->tax->calculate(
+                                $preview_price_alt_raw,
+                                $result['tax_class_id'],
+                                $this->config->get('config_tax')
+                            ),
+                            $this->session->data['currency']
+                        );
                     } else {
-                        $preview_price_raw = (float)$result['price'] * $minimum;
+                        $preview_price_raw = $price_raw * $list_min;
                     }
 
 // Formatirana preview cijena u aktivnoj valuti
-                    $preview_price = $this->currency->format(
+                    $preview_price = ($preview_price_raw > 0) ? $this->currency->format(
                         $this->tax->calculate(
                             $preview_price_raw,
                             $result['tax_class_id'],
                             $this->config->get('config_tax')
                         ),
                         $this->session->data['currency']
-                    );
+                    ) : false;
 					
 					$products[] = array(
 						'product_id' => $result['product_id'],
@@ -220,6 +283,8 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						'special' 	 => $special,
                         'cent'  => $result['cent'],
                         'sku'  => $result['sku'],
+                        'list_min' => $list_min,
+                        'qiqo_discount_percent' => $qiqo_discount_percent,
 
                         // NEW
                         'preview_price'     => $preview_price,

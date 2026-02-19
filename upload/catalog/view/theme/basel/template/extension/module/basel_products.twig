@@ -53,7 +53,7 @@
                         {% set button_cart = default_button_cart %}
                     {% endif %}
 
-                    <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');">{{ button_cart }}</a></div>
+                    <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="var q=$(this).closest('.single-product').find('.input-number').first().val(); cart.add('{{ product.product_id }}', q ? q : '{{ product.minimum }}');">{{ button_cart }}</a></div>
 
                 </div><!-- .image ends -->
                 <div class="caption">

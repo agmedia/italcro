@@ -1,57 +1,57 @@
 <?php
 // Heading
-$_['heading_title']     = "GDPR Deletion Requests";
+$_['heading_title']     = "Zahtjevi za brisanje GDPR-a";
 
 // Text
-$_['text_success']      = "Success: You have modified GDPR Deletion Requests!";
-$_['text_list']      = "GDPR Deletion Requests List";
-$_['text_all']      = "All";
-$_['text_expire']      = "Expired";
-$_['text_confirmed']      = "Confirmed";
-$_['text_awating']      = "Awating Confirmation";
-$_['text_deny']      = "Deny";
-$_['text_complete']      = "Deleted/Anonymouse";
+$_['text_success']      = "Uspjeh: izmijenili ste zahtjeve za brisanje GDPR-a!";
+$_['text_list']      = "Popis zahtjeva za brisanje GDPR-a";
+$_['text_all']      = "Sve";
+$_['text_expire']      = "Istekao";
+$_['text_confirmed']      = "Potvrđeno";
+$_['text_awating']      = "Čeka se potvrda";
+$_['text_deny']      = "poreći";
+$_['text_complete']      = "Izbrisano/anonimno";
 
-$_['text_request_id']      = "Request ID";
-$_['text_deny_reason']      = "Deny Reason";
+$_['text_request_id']      = "ID zahtjeva";
+$_['text_deny_reason']      = "Uskrati razum";
 
-$_['text_deleteanonymouse_warning']      = "Approve customer deletion (Anonymouse) request?";
+$_['text_deleteanonymouse_warning']      = "Odobriti zahtjev za brisanje korisnika (Anonymouse)?";
 
-$_['success_delete']      = "Success: Data Deleted/Anonymouse Request Processed Successfully!";
-$_['success_deny']			= "Success: Data Deleted/Anonymouse Request denied!";
-$_['success_approve']      = "Success: Data Deleted/Anonymouse Request approved  Successfully!";
+$_['success_delete']      = "Uspjeh: Podaci izbrisani/anonimni zahtjev uspješno obrađen!";
+$_['success_deny']			= "Uspjeh: Podaci izbrisani/anonimni zahtjev odbijen!";
+$_['success_approve']      = "Uspjeh: Podaci izbrisani/anonimni zahtjev uspješno odobren!";
 
 // Entry
 $_['entry_status']      = "Status";
-$_['entry_request_id']      = "Request ID";
+$_['entry_request_id']      = "ID zahtjeva";
 $_['entry_email']      = "E-mail";
-$_['entry_date_deletion']      = "Deletion Date";
-$_['entry_date_start']      = "Date start";
-$_['entry_date_end']      = "Date end";
-$_['entry_time_lap_value']      = "Past Time Value";
-$_['entry_time_lap']      = "Past Time Type";
-$_['entry_days']      = "DAYS";
-$_['entry_weeks']      = "WEEKS";
-$_['entry_months']      = "MONTHS";
-$_['entry_years']      = "YEARS";
+$_['entry_date_deletion']      = "Datum brisanja";
+$_['entry_date_start']      = "Početak datuma";
+$_['entry_date_end']      = "Kraj datuma";
+$_['entry_time_lap_value']      = "Prošla vremenska vrijednost";
+$_['entry_time_lap']      = "Vrsta prošlog vremena";
+$_['entry_days']      = "DANA";
+$_['entry_weeks']      = "TJEDNA";
+$_['entry_months']      = "MJESECI";
+$_['entry_years']      = "GODINE";
 
-$_['entry_denyreason']      = "Deny Reason";
+$_['entry_denyreason']      = "Uskrati razum";
 
 // Column
 $_['column_email']      = "E-mail";
-$_['column_request_id']      = "Request ID";
+$_['column_request_id']      = "ID zahtjeva";
 $_['column_status']      = "Status";
-$_['column_date_deletion']      = "Deletion Date";
-$_['column_date']      = "Date";
-$_['column_action']      = "Action";
+$_['column_date_deletion']      = "Datum brisanja";
+$_['column_date']      = "Datum";
+$_['column_action']      = "Akcijski";
 
 // Button
-$_['button_delete_customer']      = "Anonymouse Data";
-$_['button_deny']      = "Deny Request";
-$_['button_cancel']      = "Cancel";
+$_['button_delete_customer']      = "Anonimni podaci";
+$_['button_deny']      = "Odbij zahtjev";
+$_['button_cancel']      = "Otkazati";
 
 // Error
-$_['error_permission']  = "Warning: You do not have permission to modify GDPR Deletion Requests!";
-$_['error_invalid']  = "Warning: Invalid Request. Please refresh page!";
-$_['error_date_deletion']  = "Warning: Deletion Date Required!";
-$_['error_denyreason']  = "Warning: Deny Reason Must betwen 3 and 10000 characters!";
+$_['error_permission']  = "Upozorenje: nemate dozvolu za izmjenu zahtjeva za brisanje GDPR-a!";
+$_['error_invalid']  = "Upozorenje: nevažeći zahtjev. Molimo osvježite stranicu!";
+$_['error_date_deletion']  = "Upozorenje: Potreban je datum brisanja!";
+$_['error_denyreason']  = "Upozorenje: Razlog odbijanja Mora biti između 3 i 10000 znakova!";

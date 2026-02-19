@@ -116,8 +116,8 @@ $_['text_check_redirect_disabled_false'] = "%d onemogućene stavke nemaju odgova
 $_['text_check_reviews_true'] = "Omogućene su recenzije prilagođene SEO-u proizvoda. Recenzije se učitavaju izravno umjesto korištenja Ajaxa za bolje SEO performanse.";
 $_['text_check_reviews_false'] = "SEO recenzije proizvoda su onemogućene. Korištenje Ajaxa za učitavanje recenzija može spriječiti tražilice da ih ispravno indeksiraju.";
 
-$_['text_check_index_follow_true'] = "Sve stranice imaju ispravne oznake \\"index, follow\\" koje omogućuju tražilicama indeksiranje i praćenje veza na stranici.";
-$_['text_check_index_follow_false'] = "%d stranice nemaju ispravne oznake \\"indeksiraj, prati\\". Ove su oznake bitne kako bi tražilice mogle indeksirati vaše stranice i pratiti veze za bolju SEO izvedbu.";
+$_['text_check_index_follow_true'] = "Sve stranice imaju ispravne oznake \"index, follow\" koje omogućuju tražilicama indeksiranje i praćenje veza na stranici.";
+$_['text_check_index_follow_false'] = "%d stranice nemaju ispravne oznake \"indeksiraj, prati\". Ove su oznake bitne kako bi tražilice mogle indeksirati vaše stranice i pratiti veze za bolju SEO izvedbu.";
 
 $_['text_check_seo_image_true'] = "Sve slike imaju nazive datoteka prilagođene SEO-u koji su opisni i relevantni.";
 $_['text_check_seo_image_false'] = "%d slike nemaju nazive datoteka prilagođene SEO-u. Opisni nazivi datoteka pomažu tražilicama da razumiju sadržaj slike i poboljšaju SEO.";

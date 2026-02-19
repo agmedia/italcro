@@ -3,144 +3,144 @@
 $_['heading_title']     = "GDPR";
 
 // Text
-$_['text_oc_captcha']      = "Opencart Settings Captcha!";
-$_['text_success']      = "Success: You have modified GDPR!";
-$_['text_edit']      = "Edit GDPR Settings";
+$_['text_oc_captcha']      = "Opencart postavke Captcha!";
+$_['text_success']      = "Uspjeh: izmijenili ste GDPR!";
+$_['text_edit']      = "Uredite postavke GDPR-a";
 $_['text_store']      = "Store";
-$_['text_default_page']      = "Default Opencart Settings";
-$_['text_access_personaldata']      = "Access to Personal Data";
+$_['text_default_page']      = "Zadane Opencart postavke";
+$_['text_access_personaldata']      = "Pristup osobnim podacima";
 
-$_['text_cbposition_bottom']      = "bottom position";
-$_['text_cbposition_top']      = "Top position";
-$_['text_cbposition_static']      = "Static position (Top Only)";
-$_['text_cbposition_left']      = "Bottom left";
-$_['text_cbposition_right']      = "Bottom right";
+$_['text_cbposition_bottom']      = "donji položaj";
+$_['text_cbposition_top']      = "Najviša pozicija";
+$_['text_cbposition_static']      = "Statički položaj (samo na vrhu)";
+$_['text_cbposition_left']      = "Dolje lijevo";
+$_['text_cbposition_right']      = "Dolje desno";
 
-$_['text_cookie_analytic_block']      = "Block Analytics cookie until visitor opt-in";
-$_['text_cookie_marketing_block']      = "Block Marketing cookie until visitor opt-in";
-$_['text_cookie_analyticmarketing_block']      = "Block Analytics & Marketing cookie until visitor opt-in";
-$_['text_cookie_idel']      = "Keep all website cookies untill visistor change";
+$_['text_cookie_analytic_block']      = "Blokiraj Analytics kolačić dok se posjetitelj ne uključi";
+$_['text_cookie_marketing_block']      = "Blokiraj marketinški kolačić dok se posjetitelj ne uključi";
+$_['text_cookie_analyticmarketing_block']      = "Blokiraj kolačić za analitiku i marketing dok se posjetitelj ne uključi";
+$_['text_cookie_idel']      = "Čuvajte sve kolačiće web stranice do promjene posjetitelja";
 
-$_['text_acceptpolicy_gdpr']      = "Show Acceptance Policy From GDPR Settings";
+$_['text_acceptpolicy_gdpr']      = "Prikaži politiku prihvaćanja iz postavki GDPR-a";
 
 
 
 
 // Entry
 $_['entry_status']      = "Status";
-$_['entry_maxrequests']      = "Max Requests Per Day";
-$_['entry_acceptpolicy_customer']      = "Store Policy Acceptance Register Page";
-$_['entry_policy_customer']      = "Register Page Policy";
-$_['entry_acceptpolicy_contactus']      = "Store Policy Acceptance Contact us Page";
-$_['entry_policy_contactus']      = "Contact us Page Policy ";
-$_['entry_acceptpolicy_checkout']      = "Store Policy Acceptance Checkout Page";
-$_['entry_policy_checkout']      = "Checkout Page Policy";
-$_['entry_hasright_todelete']      = "Enable Right to Be Forgotten Form";
-$_['entry_login_gdprforms']      = "GDPR Forms Require Login";
-$_['entry_captcha_gdprforms']      = "Cpatch on GDPR Forms ";
+$_['entry_maxrequests']      = "Maks. zahtjeva po danu";
+$_['entry_acceptpolicy_customer']      = "Stranica za registraciju prihvaćanja pravila trgovine";
+$_['entry_policy_customer']      = "Pravila registracijske stranice";
+$_['entry_acceptpolicy_contactus']      = "Prihvaćanje pravila trgovine Kontaktirajte nas Stranica";
+$_['entry_policy_contactus']      = "Kontaktirajte nas Pravila stranice";
+$_['entry_acceptpolicy_checkout']      = "Stranica za prihvaćanje pravila trgovine";
+$_['entry_policy_checkout']      = "Pravila Checkout stranice";
+$_['entry_hasright_todelete']      = "Omogućite obrazac za pravo na zaborav";
+$_['entry_login_gdprforms']      = "GDPR obrasci zahtijevaju prijavu";
+$_['entry_captcha_gdprforms']      = "Cpatch na GDPR obrascima";
 $_['entry_captcha']                = "Captcha";
 $_['entry_keyword']                = "SEO URL";
-$_['entry_locationservices']                = "Third Party Serives";
-$_['entry_otherservices']                = "Other Serives";
-$_['entry_requestget_personaldata']      = "Request to Access Personal Data";
-$_['entry_requestdelete_personaldata']      = "Request to remove Personal Data";
-$_['entry_file_ext_allowed']       = "Allowed File Extensions";
-$_['entry_file_mime_allowed']      = "Allowed File Mime Types";
+$_['entry_locationservices']                = "Servisi trećih strana";
+$_['entry_otherservices']                = "Ostale usluge";
+$_['entry_requestget_personaldata']      = "Zahtjev za pristup osobnim podacima";
+$_['entry_requestdelete_personaldata']      = "Zahtjev za uklanjanje osobnih podataka";
+$_['entry_file_ext_allowed']       = "Dopuštene ekstenzije datoteka";
+$_['entry_file_mime_allowed']      = "Dopuštene Mime vrste datoteka";
 
-$_['entry_cbstatus']      = "Show Cookie Consent Bar";
-$_['entry_cbpolicy']      = "Add policy link to cookie bar";
-$_['entry_cbpolicy_page']      = "Choose specific page for policy link";
+$_['entry_cbstatus']      = "Prikaži traku suglasnosti za kolačiće";
+$_['entry_cbpolicy']      = "Dodajte vezu pravila na traku kolačića";
+$_['entry_cbpolicy_page']      = "Odaberite određenu stranicu za poveznicu na pravila";
 
-$_['entry_cbinitial']      = "Initial face of conset bar";
-$_['entry_cbaction_close']      = "action on close button click";
-$_['entry_cbshowagain']      = "Show mini button to show cookie conset";
-$_['entry_cbpptrack']      = "Tracking privay policy acceptace for cookie conset";
-$_['entry_cookie_stricklyrequired']      = "Strickly Required Cookies";
-$_['entry_cookie_analytics']      = "Analytics and Statistics";
-$_['entry_cookie_marketing']      = "Marketing and Retargetting";
-$_['entry_cookie_domain']      = "Domains";
-$_['entry_cookielanguage']      = "Cookie Consent Text";
-$_['entry_cookietext_msg']      = "Consent Message";
-$_['entry_cookietext_policy']      = "Privacy Policy Link Text";
-$_['entry_cookiebtn_accept']      = "Allowed Button Text";
-$_['entry_cookiebtn_deny']      = "Deny Button Text";
-$_['entry_cookiebtn_prefrence']      = "Prefrences Button Text";
-$_['entry_cookiebtn_showagain']      = "Show Again Cookie Consent Button Text";
-$_['entry_cbposition']      = "Consent bar position";
-$_['entry_cbcolors']      = "Consent Bar colors ";
-$_['entry_cbboxbg']      = "Consent Bar Background";
-$_['entry_cbboxtext']      = "Consent Bar Text";
-$_['entry_cbbtnbg']      = "Consent Bar Button";
-$_['entry_cbbtntext']      = "Consent Bar Button Text";
-$_['entry_cbcss']      = "Custom CSS";
+$_['entry_cbinitial']      = "Početno lice conset trake";
+$_['entry_cbaction_close']      = "radnja pri kliku gumba za zatvaranje";
+$_['entry_cbshowagain']      = "Prikaži mini gumb za prikaz konfiguracije kolačića";
+$_['entry_cbpptrack']      = "Praćenje prihvaćanja pravila privatnosti za postavljanje kolačića";
+$_['entry_cookie_stricklyrequired']      = "Strogo obavezni kolačići";
+$_['entry_cookie_analytics']      = "Analitika i statistika";
+$_['entry_cookie_marketing']      = "Marketing i ponovno ciljanje";
+$_['entry_cookie_domain']      = "Domene";
+$_['entry_cookielanguage']      = "Tekst suglasnosti za kolačiće";
+$_['entry_cookietext_msg']      = "Poruka o pristanku";
+$_['entry_cookietext_policy']      = "Tekst poveznice Pravila privatnosti";
+$_['entry_cookiebtn_accept']      = "Dopušteni tekst gumba";
+$_['entry_cookiebtn_deny']      = "Zabrani tekst gumba";
+$_['entry_cookiebtn_prefrence']      = "Tekst gumba postavki";
+$_['entry_cookiebtn_showagain']      = "Ponovno pokaži tekst gumba za pristanak na kolačiće";
+$_['entry_cbposition']      = "Položaj trake pristanka";
+$_['entry_cbcolors']      = "Boje trake pristanka";
+$_['entry_cbboxbg']      = "Pozadina trake pristanka";
+$_['entry_cbboxtext']      = "Tekst trake pristanka";
+$_['entry_cbbtnbg']      = "Gumb trake pristanka";
+$_['entry_cbbtntext']      = "Tekst gumba trake pristanka";
+$_['entry_cbcss']      = "Prilagođeni CSS";
 
 // Button
-$_['button_save']       = "Save Settings";
+$_['button_save']       = "Spremi postavke";
 
 // Help
-$_['help_status']      = "Enable / Disable  GDPR Extension";
-$_['help_maxrequests']      = "Max requests user can submit in single day. Best practice to keep less or betwen 1 - 5";
-$_['help_acceptpolicy_customer']      = "Every time customer need to accept privacy policy. If set to yes, Important if set to yes, please make sure register page working perfectly";
-$_['help_policy_customer']      = "Select Policy Page for register page.";
-$_['help_acceptpolicy_contactus']      = "Every time customer need to accept privacy policy. If set to yes, Important if set to yes, please make sure contact us page working perfectly";
-$_['help_policy_contactus']      = "Select Policy Page for register page.";
-$_['help_acceptpolicy_checkout']      = "Every time customer need to accept privacy policy. If set to yes, Important if set to yes, please make sure checkout working perfectly";
-$_['help_policy_checkout']      = "Select Policy Page for register page.";
-$_['help_hasright_todelete']      = "This will enable right to forgotten form. where customers can automatically delete their account and anonymize theri account data where it can not be delete";
-$_['help_login_gdprforms']      = "Force customer login for all GDPR requests";
-$_['help_captcha_gdprforms']      = "User need to verify they are human. Prevent multiple submissions from bot in very less time";
-$_['help_captcha']                 = "Captcha to use for GDPR submissions.";
+$_['help_status']      = "Omogući/onemogući GDPR proširenje";
+$_['help_maxrequests']      = "Maksimalan broj zahtjeva koje korisnik može podnijeti u jednom danu. Najbolja praksa je zadržati manje ili između 1 - 5";
+$_['help_acceptpolicy_customer']      = "Svaki put kada kupac mora prihvatiti politiku privatnosti. Ako je postavljeno na Da, Važno ako je postavljeno na Da, provjerite radi li stranica za registraciju savršeno";
+$_['help_policy_customer']      = "Odaberite stranicu s pravilima za stranicu za registraciju.";
+$_['help_acceptpolicy_contactus']      = "Svaki put kada kupac mora prihvatiti politiku privatnosti. Ako je postavljeno na Da, Važno ako je postavljeno na Da, provjerite radi li stranica Kontaktirajte nas savršeno";
+$_['help_policy_contactus']      = "Odaberite stranicu s pravilima za stranicu za registraciju.";
+$_['help_acceptpolicy_checkout']      = "Svaki put kada kupac mora prihvatiti politiku privatnosti. Ako je postavljeno na Da, Važno ako je postavljeno na Da, provjerite radi li naplata savršeno";
+$_['help_policy_checkout']      = "Odaberite stranicu s pravilima za stranicu za registraciju.";
+$_['help_hasright_todelete']      = "To će omogućiti pravo na zaboravljeni obrazac. gdje klijenti mogu automatski izbrisati svoj račun i anonimizirati podatke o računu gdje se ne mogu izbrisati";
+$_['help_login_gdprforms']      = "Prisilna prijava korisnika za sve GDPR zahtjeve";
+$_['help_captcha_gdprforms']      = "Korisnik mora potvrditi da je čovjek. Spriječite višestruko podnošenje od bota u vrlo kraćem vremenu";
+$_['help_captcha']                 = "Captcha za korištenje za podnošenje GDPR-a.";
 $_['help_keyword']                 = "Do not use spaces, instead replace spaces with - and make sure the SEO URL is globally unique. ADD SEO URL for GDPR tool page. Note: Store \\"SEO URLS\\" need to be active.";
-$_['help_locationservices']      = "Please mention the services that you are using to track, analyze or enhance the experience of your customers. (e.g. Google Analytics, Google AdWords, Google Retargeting, Facebook Ads, etc).";
-$_['help_otherservices']      = "Mention any others (non-public) services for internal use that have access to personal data.";
-$_['help_access_personaldata']      = "Mention services which access to your customer's personal data (e.g. name, email, customer_id, IP, etc).";
-$_['help_requestget_personaldata']      = "Set Time out in HOURS for get personal data requests. If customer did not confirm the request withing timeout time. Then they need to submit request again.";
-$_['help_requestdelete_personaldata']      = "Set Time out in HOURS for remove personal data requests. If customer did not confirm the request withing timeout time. Then they need to submit request again.";
-$_['help_file_ext_allowed']        = "Add which file extensions are allowed to be uploaded. Use a new line for each value.";
-$_['help_file_mime_allowed']       = "Add which file mime types are allowed to be uploaded. Use a new line for each value.";
+$_['help_locationservices']      = "Navedite usluge koje koristite za praćenje, analizu ili poboljšanje iskustva svojih kupaca. (npr. Google Analytics, Google AdWords, Google Retargeting, Facebook oglasi itd.).";
+$_['help_otherservices']      = "Navedite sve druge (nejavne) usluge za internu upotrebu koje imaju pristup osobnim podacima.";
+$_['help_access_personaldata']      = "Navedite usluge koje pristupaju osobnim podacima vašeg klijenta (npr. ime, e-pošta, customer_id, IP itd.).";
+$_['help_requestget_personaldata']      = "Postavite Time out u HOURS za zahtjeve za dobivanje osobnih podataka. Ako korisnik nije potvrdio zahtjev unutar isteka vremena. Zatim moraju ponovno podnijeti zahtjev.";
+$_['help_requestdelete_personaldata']      = "Postavite istek u HOURS za zahtjeve za uklanjanje osobnih podataka. Ako korisnik nije potvrdio zahtjev unutar isteka vremena. Zatim moraju ponovno podnijeti zahtjev.";
+$_['help_file_ext_allowed']        = "Dodajte ekstenzije datoteka koje je dopušteno učitavati. Koristite novi redak za svaku vrijednost.";
+$_['help_file_mime_allowed']       = "Dodajte mime vrste datoteka koje je dopušteno učitavati. Koristite novi redak za svaku vrijednost.";
 
-$_['help_cbstatus']      = "Enable/Disable Cookie Consent Bar";
-$_['help_cbpolicy']      = "Add Privay Policy In Cookie Consent Bar";
-$_['help_cbpolicy_page']      = "Choose Privay Policy page. If choose Default opencart settings. Then pick policy from System > settings > edit > option > account > account terms.";
-$_['help_cbinitial']      = "Select default status of consent bar. When visitor open the website but not responsd to consent bar";
-$_['help_cbaction_close']      = "What happnes with cookies when visitor click close button on consent bar";
-$_['help_cbshowagain']      = "Add small button on page, that show consent bar again, so visitor can change cookies prefrences again. But show as per consent bar position selected";
-$_['help_cbpptrack']      = "When user click on allow cookies button. Then assume user read privacy policy and accept it.";
-$_['help_cookie_stricklyrequired']      = "These cookies are required for the website to run and cannot be switched off. Such cookies are only set in response to actions made by you such as languaege, currency, login session, privay preferences. You can set your browser to block these cookies but this might affect the way our site is working.";
-$_['help_cookie_analytics']      = "These cookies allow us to measure visitor traffic and see traffic sources by collecting information in data sets. They also help us learn what are the most popular products and activites on our store";
-$_['help_cookie_marketing']      = "These cookies are usually set by our marketing and advertising partners. They may be used by them to build a profile of your iterest and show you relevant ads. If you do not allow these cookies you will not experiecne targeted ads for your interest";
+$_['help_cbstatus']      = "Omogući/onemogući traku suglasnosti za kolačiće";
+$_['help_cbpolicy']      = "Dodajte Pravila privatnosti u Traku pristanka za kolačiće";
+$_['help_cbpolicy_page']      = "Odaberite stranicu Pravila privatnosti. Ako odaberete Zadane opencart postavke. Zatim odaberite pravilo iz Sustav > postavke > uredi > opcija > račun > uvjeti računa.";
+$_['help_cbinitial']      = "Odaberite zadani status trake pristanka. Kada posjetitelj otvori web stranicu, ali ne odgovori na traku pristanka";
+$_['help_cbaction_close']      = "Što se događa s kolačićima kada posjetitelj klikne gumb za zatvaranje na traci pristanka";
+$_['help_cbshowagain']      = "Dodajte mali gumb na stranicu, koji ponovno prikazuje traku pristanka, tako da posjetitelj može ponovno promijeniti postavke kolačića. Ali prikaži prema odabranoj poziciji trake pristanka";
+$_['help_cbpptrack']      = "Kada korisnik klikne na gumb dopusti kolačiće. Zatim pretpostavite da je korisnik pročitao politiku privatnosti i prihvatio je.";
+$_['help_cookie_stricklyrequired']      = "Ovi su kolačići potrebni za rad web stranice i ne mogu se isključiti. Takvi se kolačići postavljaju samo kao odgovor na vaše radnje kao što su jezik, valuta, sesija prijave, postavke privatnosti. Možete postaviti svoj preglednik da blokira ove kolačiće, ali to može utjecati na način na koji naša stranica radi.";
+$_['help_cookie_analytics']      = "Ovi nam kolačići omogućuju mjerenje prometa posjetitelja i uvid u izvore prometa prikupljanjem informacija u skupovima podataka. Također nam pomažu saznati koji su najpopularniji proizvodi i aktivnosti u našoj trgovini";
+$_['help_cookie_marketing']      = "Ove kolačiće obično postavljaju naši marketinški i oglašivački partneri. Oni ih mogu koristiti za izradu profila vašeg interesa i prikazivanje relevantnih oglasa. Ako ne dopustite ove kolačiće, nećete doživjeti ciljane oglase koji vas zanimaju";
 $_['help_cookie_domain']      = "Add domain without \\"http://www.\\" and \\"https://www.\\" For example: demo.mywebsite.com mywebsite.com .";
-$_['help_cookielanguage']      = "Add Text For Cookie Consent Popup In Each Language";
-$_['help_cookietext_msg']      = "Enter Message To Conset Bar";
-$_['help_cookietext_policy']      = "Enter Privay Policy Link Text";
-$_['help_cookiebtn_accept']      = "Cookie Allowed Button Text";
-$_['help_cookiebtn_deny']      = "Cookie Deny Button Text";
-$_['help_cookiebtn_prefrence']      = "Cookie Prefrences Button Text";
-$_['help_cookiebtn_showagain']      = "Enter Text that will show on small cookie button that show consent popup again.";
-$_['help_cbposition']      = "choose consent bar position";
-$_['help_cbcolors']      = "Choose colors to style consent bar as per theme";
-$_['help_cbboxbg']      = "Choose consent bar Background color";
-$_['help_cbboxtext']      = "Choose consent bar text color";
-$_['help_cbbtnbg']      = "Choose consent bar Button color";
-$_['help_cbbtntext']      = "Choose consent bar Background text color";
-$_['help_cbcss']      = "Add custom CSS code to update consent bar css";
+$_['help_cookielanguage']      = "Dodajte tekst za skočni prozor pristanka na kolačiće na svakom jeziku";
+$_['help_cookietext_msg']      = "Unesite poruku u Conset Bar";
+$_['help_cookietext_policy']      = "Unesite tekst veze Pravila privatnosti";
+$_['help_cookiebtn_accept']      = "Tekst gumba s dopuštenim kolačićima";
+$_['help_cookiebtn_deny']      = "Tekst gumba za odbijanje kolačića";
+$_['help_cookiebtn_prefrence']      = "Tekst gumba za postavke kolačića";
+$_['help_cookiebtn_showagain']      = "Unesite tekst koji će se prikazati na malom gumbu kolačića koji ponovno prikazuje skočni prozor za pristanak.";
+$_['help_cbposition']      = "odaberite položaj trake pristanka";
+$_['help_cbcolors']      = "Odaberite boje za stiliziranje trake pristanka prema temi";
+$_['help_cbboxbg']      = "Odaberite boju pozadine trake pristanka";
+$_['help_cbboxtext']      = "Odaberite boju teksta trake pristanka";
+$_['help_cbbtnbg']      = "Odaberite boju gumba trake pristanka";
+$_['help_cbbtntext']      = "Odaberite traku pristanka Boja teksta pozadine";
+$_['help_cbcss']      = "Dodajte prilagođeni CSS kod za ažuriranje css trake pristanka";
 
 
 
 // Tab
-$_['tab_general']      		= "Extension Settings";
-$_['tab_settings']      		= "Settings";
-$_['tab_other']      		= "Access to Personal Data";
-$_['tab_cookieconsent']     = "Cookie Consent";
-$_['tab_modulepoints'] 					= "Support";
+$_['tab_general']      		= "Postavke proširenja";
+$_['tab_settings']      		= "postavke";
+$_['tab_other']      		= "Pristup osobnim podacima";
+$_['tab_cookieconsent']     = "Suglasnost za kolačiće";
+$_['tab_modulepoints'] 					= "podrška";
 
 // legend
-$_['legend_general']       = "General Settings";
+$_['legend_general']       = "Opće postavke";
 $_['legend_captcha']       = "Captcha";
-$_['legend_upload']       = "Request Data File Upload";
-$_['legend_requesttimeout']       = "GDPR Requests Expiration Time";
-$_['legend_cookiemanager']       = "Cookie Manage";
-$_['legend_language']       = "Language";
+$_['legend_upload']       = "Zatraži prijenos podatkovne datoteke";
+$_['legend_requesttimeout']       = "Vrijeme isteka zahtjeva GDPR-a";
+$_['legend_cookiemanager']       = "Upravljanje kolačićima";
+$_['legend_language']       = "Jezik";
 
 // Error
-$_['error_permission']  = "Warning: You do not have permission to modify GDPR!";
+$_['error_permission']  = "Upozorenje: Nemate dopuštenje za izmjenu GDPR-a!";

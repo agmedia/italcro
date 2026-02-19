@@ -1,60 +1,60 @@
 <?php
 // Heading
-$_['heading_title']     = "GDPR Policy/Term Acceptance";
+$_['heading_title']     = "GDPR politika/prihvaćanje uvjeta";
 
 // Text
-$_['text_success']      = "Success: You have modified GDPR Policy/Term Acceptance!";
-$_['text_list']      = "GDPR Policy/Term Acceptance List";
+$_['text_success']      = "Uspjeh: izmijenili ste GDPR politiku/prihvaćanje uvjeta!";
+$_['text_list']      = "Politika GDPR-a/Popis prihvatljivih uvjeta";
 
 // Entry
-$_['entry_request_id']      = "Policy/Term Acceptance ID";
-$_['entry_server_ip']      = "Server IP";
-$_['entry_type']      = "Type";
-$_['entry_client_ip']      = "Client IP";
+$_['entry_request_id']      = "ID prihvaćanja pravila/uvjeta";
+$_['entry_server_ip']      = "IP poslužitelja";
+$_['entry_type']      = "Tip";
+$_['entry_client_ip']      = "IP klijenta";
 $_['entry_email']      = "E-mail";
-$_['entry_useragent']      = "User Agent";
-$_['entry_date_start']      = "Date start";
-$_['entry_date_end']      = "Date end";
-$_['entry_time_lap_value']      = "Past Time Value";
-$_['entry_time_lap']      = "Past Time Type";
-$_['entry_days']      = "DAYS";
-$_['entry_weeks']      = "WEEKS";
-$_['entry_months']      = "MONTHS";
-$_['entry_years']      = "YEARS";
+$_['entry_useragent']      = "Korisnički agent";
+$_['entry_date_start']      = "Početak datuma";
+$_['entry_date_end']      = "Kraj datuma";
+$_['entry_time_lap_value']      = "Prošla vremenska vrijednost";
+$_['entry_time_lap']      = "Vrsta prošlog vremena";
+$_['entry_days']      = "DANA";
+$_['entry_weeks']      = "TJEDNA";
+$_['entry_months']      = "MJESECI";
+$_['entry_years']      = "GODINE";
 
 // Column
-$_['column_request_id']      = "Acceptance ID";
-$_['column_policy_id']      = "Policy ID";
-$_['column_policy_title']      = "Policy Title";
-$_['column_policy_description']      = "Policy Description";
-$_['column_server_ip']      = "Server IP";
-$_['column_type']      = "Type";
-$_['column_client_ip']      = "Client IP";
+$_['column_request_id']      = "ID prihvaćanja";
+$_['column_policy_id']      = "ID politike";
+$_['column_policy_title']      = "Naslov politike";
+$_['column_policy_description']      = "Opis pravila";
+$_['column_server_ip']      = "IP poslužitelja";
+$_['column_type']      = "Tip";
+$_['column_client_ip']      = "IP klijenta";
 $_['column_email']      = "E-mail";
-$_['column_useragent']      = "User Agent";
-$_['column_acceptlanguage']      = "Accept Language";
-$_['column_date']      = "Date";
-$_['column_other']      = "Other Info";
-$_['column_action']      = "Action";
+$_['column_useragent']      = "Korisnički agent";
+$_['column_acceptlanguage']      = "Prihvati jezik";
+$_['column_date']      = "Datum";
+$_['column_other']      = "Ostale informacije";
+$_['column_action']      = "Akcijski";
 
 
 // Button
-$_['button_export']      = "Export";
+$_['button_export']      = "Izvoz";
 
 // Export
-$_['export_policyacceptance_id']      = "Acceptance ID";
-$_['export_type']      = "Type";
-$_['export_policy_id']      = "Policy ID";
-$_['export_policy_title']      = "Policy Title";
-$_['export_policy_description']      = "Policy Description";
-$_['export_server_ip']      = "Server IP";
-$_['export_client_ip']      = "Client IP";
+$_['export_policyacceptance_id']      = "ID prihvaćanja";
+$_['export_type']      = "Tip";
+$_['export_policy_id']      = "ID politike";
+$_['export_policy_title']      = "Naslov politike";
+$_['export_policy_description']      = "Opis pravila";
+$_['export_server_ip']      = "IP poslužitelja";
+$_['export_client_ip']      = "IP klijenta";
 $_['export_email']      = "E-mail";
-$_['export_useragent']      = "User Agent";
-$_['export_acceptlanguage']      = "Accept Language";
-$_['export_date']      = "Date";
+$_['export_useragent']      = "Korisnički agent";
+$_['export_acceptlanguage']      = "Prihvati jezik";
+$_['export_date']      = "Datum";
 
 // Error
-$_['error_permission']  = "Warning: You do not have permission to modify GDPR Policy/Term Acceptance!";
-$_['error_invalid']  = "Warning: Invalid Request. Please refresh the page!";
-$_['error_not_exists']  = "Warning: Policy/Term Acceptance Not exists. Please refresh the page!";
+$_['error_permission']  = "Upozorenje: nemate dopuštenje za izmjenu GDPR politike/prihvaćanja uvjeta!";
+$_['error_invalid']  = "Upozorenje: nevažeći zahtjev. Molimo osvježite stranicu!";
+$_['error_not_exists']  = "Upozorenje: Prihvaćanje pravila/uvjeta ne postoji. Molimo osvježite stranicu!";

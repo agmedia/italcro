@@ -1,43 +1,43 @@
 <?php
 // Heading
-$_['heading_title']     = "GDPR Requests";
+$_['heading_title']     = "GDPR zahtjevi";
 
 // Text
-$_['text_success']      = "Success: You have modified GDPR Requests!";
-$_['text_list']      = "GDPR Requests List";
+$_['text_success']      = "Uspjeh: izmijenili ste GDPR zahtjeve!";
+$_['text_list']      = "Popis zahtjeva GDPR-a";
 
 // Entry
-$_['entry_request_id']      = "Request ID";
-$_['entry_server_ip']      = "Server IP";
-$_['entry_type']      = "Type";
-$_['entry_client_ip']      = "Client IP";
+$_['entry_request_id']      = "ID zahtjeva";
+$_['entry_server_ip']      = "IP poslužitelja";
+$_['entry_type']      = "Tip";
+$_['entry_client_ip']      = "IP klijenta";
 $_['entry_email']      = "E-mail";
-$_['entry_useragent']      = "User Agent";
-$_['entry_date_start']      = "Date start";
-$_['entry_date_end']      = "Date end";
-$_['entry_time_lap_value']      = "Past Time Value";
-$_['entry_time_lap']      = "Past Time Type";
-$_['entry_days']      = "DAYS";
-$_['entry_weeks']      = "WEEKS";
-$_['entry_months']      = "MONTHS";
-$_['entry_years']      = "YEARS";
+$_['entry_useragent']      = "Korisnički agent";
+$_['entry_date_start']      = "Početak datuma";
+$_['entry_date_end']      = "Kraj datuma";
+$_['entry_time_lap_value']      = "Prošla vremenska vrijednost";
+$_['entry_time_lap']      = "Vrsta prošlog vremena";
+$_['entry_days']      = "DANA";
+$_['entry_weeks']      = "TJEDNA";
+$_['entry_months']      = "MJESECI";
+$_['entry_years']      = "GODINE";
 
 // Column
-$_['column_request_id']      = "Request ID";
-$_['column_server_ip']      = "Server IP";
-$_['column_type']      = "Type";
+$_['column_request_id']      = "ID zahtjeva";
+$_['column_server_ip']      = "IP poslužitelja";
+$_['column_type']      = "Tip";
 /*13 sep 2019 gdpr session starts*/
-$_['column_custom_string']      = "Custom Message";
+$_['column_custom_string']      = "Prilagođena poruka";
 /*13 sep 2019 gdpr session ends*/
-$_['column_client_ip']      = "Client IP";
+$_['column_client_ip']      = "IP klijenta";
 $_['column_email']      = "E-mail";
-$_['column_useragent']      = "User Agent";
-$_['column_acceptlanguage']      = "Accept Language";
-$_['column_date']      = "Date";
-$_['column_other']      = "Other Info";
+$_['column_useragent']      = "Korisnički agent";
+$_['column_acceptlanguage']      = "Prihvati jezik";
+$_['column_date']      = "Datum";
+$_['column_other']      = "Ostale informacije";
 
 // Button
-$_['button_export']      = "Export";
+$_['button_export']      = "Izvoz";
 
 // Error
-$_['error_permission']  = "Warning: You do not have permission to modify GDPR Requests!";
+$_['error_permission']  = "Upozorenje: nemate dozvolu za izmjenu GDPR zahtjeva!";

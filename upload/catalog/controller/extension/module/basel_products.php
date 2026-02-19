@@ -205,7 +205,7 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 					
 					$products[] = array(
 						'product_id' => $result['product_id'],
-						'quantity'  => $result['quantity'],
+						'quantity'  => isset($result['quantity']) ? (int)$result['quantity'] : 0,
 						'thumb'   	 => $image,
 						'thumb2' 	 => $this->model_tool_image->resize($image2, $setting['image_width'], $setting['image_height']),
 						'sale_end_date' => $date_end['date_end'] ?? '',

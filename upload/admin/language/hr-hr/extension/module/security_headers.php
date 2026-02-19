@@ -1,310 +1,309 @@
 <?php
 // Heading
-$_['heading_title']                             = "Opencart Security Headers";
+$_['heading_title']                             = "Opencart sigurnosna zaglavlja";
 // Text
-$_['text_module']                               = "Modules";
-$_['text_success']                              = "Success: You have modified Opencart Security Headers!";
-$_['text_edit']                                 = "Edit your security headers settings";
-$_['text_default']                              = "Default Store";
-$_['text_select_store']                         = "Select Store";
-$_['text_stores']                               = "Stores: ";
-$_['text_insecure']                             = "Insecure";
+$_['text_module']                               = "Moduli";
+$_['text_success']                              = "Uspjeh: izmijenili ste sigurnosna zaglavlja Opencart!";
+$_['text_edit']                                 = "Uredite postavke sigurnosnih zaglavlja";
+$_['text_default']                              = "Zadana trgovina";
+$_['text_select_store']                         = "Odaberite Trgovina";
+$_['text_stores']                               = "Trgovine:";
+$_['text_insecure']                             = "Nesiguran";
 // Placeholder
-$_['placeholder_expect_ct_report_uri']          = "Type report url address..";
-$_['placeholder_expect_ct_max_age']             = "Type max age in seconds..";
-$_['placeholder_strict_transport_security']     = "Type max age in seconds..";
+$_['placeholder_expect_ct_report_uri']          = "Upišite url adresu izvješća..";
+$_['placeholder_expect_ct_max_age']             = "Upišite maksimalnu dob u sekundama..";
+$_['placeholder_strict_transport_security']     = "Upišite maksimalnu dob u sekundama..";
 // Entry
-$_['entry_status']                              = "Extension Status";
+$_['entry_status']                              = "Status proširenja";
 $_['entry_X_Powered_By']                        = "X-Powered-By";
-$_['entry_X_HTTP_Method_Override']              = "X-HTTP-Method-Override";
-$_['entry_proxy']                               = "HTTP Proxy";
-$_['entry_forward']                             = "HTTP Forwards";
-$_['entry_ranges']                              = "HTTP Ranges";
-$_['entry_X_XSS_Protection']                    = "X-XSS-Protection";
-$_['entry_X_Frame_Options']                     = "X-Frame-Options";
+$_['entry_X_HTTP_Method_Override']              = "X-HTTP-Nadjačavanje metode";
+$_['entry_proxy']                               = "HTTP proxy";
+$_['entry_forward']                             = "HTTP prosljeđivanja";
+$_['entry_ranges']                              = "HTTP rasponi";
+$_['entry_X_XSS_Protection']                    = "X-XSS-Zaštita";
+$_['entry_X_Frame_Options']                     = "X-Frame-Opcije";
 $_['entry_X_Content_Type_Options']              = "X-Content-Type-Options";
-$_['entry_Referrer_Policy']                     = "Referrer-Policy";
-$_['entry_Content_Security_Policy']             = "Content-Security-Policy";
-$_['entry_max_age']                             = "Max-Age";
+$_['entry_Referrer_Policy']                     = "Politika preporuke";
+$_['entry_Content_Security_Policy']             = "Sadržaj-Sigurnosna-Politika";
+$_['entry_max_age']                             = "Maks. dob";
 
 // About
-$_['about_extension']                           = 'HTTP headers let the client and the server pass additional information with an HTTP request or response. An HTTP header consists of its case-insensitive name followed by a colon (:), then by its value. Whitespace before the value is ignored.<br/><br/>There are a lot of things to consider to when securing your website or web application, but a good place to start is to explore your HTTP security headers and ensure you are keeping up with best practices. In many cases they are very easy to implement and only require a slight web server configuration change. HTTP security headers provide yet another layer of security by helping to mitigate attacks and security vulnerabilities.<br/></br/>Whenever a browser requests a page from a web server, the server responds with the content along with HTTP response headers. Some of these headers contain content meta data such as the content-encoding, cache-control, status error codes, etc.<br/>
+$_['about_extension']                           = 'HTTP zaglavlja omogućuju klijentu i poslužitelju da proslijede dodatne informacije uz HTTP zahtjev ili odgovor. HTTP zaglavlje sastoji se od imena koje nije osjetljivo na velika i mala slova nakon čega slijedi dvotočka (:), a zatim njegova vrijednost. Razmak prije nego što se vrijednost zanemaruje.<br/><br/>Postoji mnogo stvari koje treba uzeti u obzir kada osiguravate svoje web mjesto ili web aplikaciju, ali dobro je mjesto za početak istražiti svoja HTTP sigurnosna zaglavlja i osigurati da ste u korak s najboljim praksama. U mnogim slučajevima vrlo ih je jednostavno implementirati i zahtijevaju samo malu promjenu konfiguracije web poslužitelja. HTTP sigurnosna zaglavlja pružaju još jedan sloj sigurnosti pomažući u ublažavanju napada i sigurnosnih ranjivosti.<br/></br/>Kad god preglednik zatraži stranicu od web poslužitelja, poslužitelj odgovara sadržajem zajedno s HTTP zaglavljima odgovora. Neka od ovih zaglavlja sadrže metapodatke o sadržaju kao što su kodiranje sadržaja, kontrola predmemorije, kodovi grešaka statusa itd.<br/>
 <br/>
-Along with these are also HTTP security headers that tell your browser how to behave when handling your website’s content. For example, by using the strict-transport-security you can force the browser to communicate solely over HTTPS. There are six different HTTP security headers that we will explore below (in no particular order) that you should be aware of and we recommend implementing if possible.';
+Uz njih postoje i HTTP sigurnosna zaglavlja koja govore vašem pregledniku kako da se ponaša prilikom rukovanja sadržajem vaše web stranice. Na primjer, korištenjem strict-transport-security možete natjerati preglednik da komunicira isključivo preko HTTPS-a. Postoji šest različitih HTTP sigurnosnih zaglavlja koje ćemo istražiti u nastavku (bez određenog redoslijeda) kojih biste trebali biti svjesni i preporučujemo implementaciju ako je moguće.';
 
-$_['about_X_Powered_By']                        = "May be set by hosting environments or other frameworks and contains information about them while not providing any usefulness to the application or its visitors. Unset this header to avoid exposing potential vulnerabilities.<br/><br/><strong>Recommendation: </strong>Disabled";
+$_['about_X_Powered_By']                        = "Mogu ga postaviti hosting okruženja ili drugi okviri i sadrži informacije o njima, a ne pruža nikakvu korisnost aplikaciji ili njezinim posjetiteljima. Poništite ovo zaglavlje kako biste izbjegli izlaganje potencijalnih ranjivosti.<br/><br/><strong>Preporuka: </strong>Onemogućeno";
 
-$_['about_X_XSS_Protection']                    = "The x-xss-protection header is designed to enable the cross-site scripting (XSS) filter built into modern web browsers. This is usually enabled by default, but using it will enforce it. It is supported by Internet Explorer 8+, Chrome, and Safari.<br/>The HTTP X-XSS-Protection response header is a feature of Internet Explorer, Chrome and Safari that stops pages from loading when they detect reflected cross-site scripting (XSS) attacks. Although these protections are largely unnecessary in modern browsers when sites implement a strong Content-Security-Policy that disables the use of inline JavaScript ('unsafe-inline'), they can still provide protections for users of older web browsers that don't yet support CSP.<br/><strong>Recommendation: </strong>1; mode=block";
+$_['about_X_XSS_Protection']                    = "Zaglavlje x-xss-protection osmišljeno je kako bi se omogućio filtar skriptiranja na različitim mjestima (XSS) ugrađen u moderne web preglednike. To je obično omogućeno prema zadanim postavkama, ali njegova uporaba će ga primijeniti. Podržavaju ga Internet Explorer 8+, Chrome i Safari.<br/>Zaglavlje odgovora HTTP X-XSS-Protection značajka je Internet Explorera, Chromea i Safarija koja zaustavlja učitavanje stranica kada otkriju reflektirane napade skriptiranjem na više stranica (XSS). Iako su ove zaštite uvelike nepotrebne u modernim preglednicima kada web-mjesta provode snažnu Content-Security-Policy koja onemogućuje upotrebu ugrađenog JavaScripta (\'unsafe-inline\'), one i dalje mogu pružiti zaštitu za korisnike starijih web preglednika koji još ne podržavaju CSP.<br/><strong>Preporuka: </strong>1; mod=blok";
 
-$_['about_X_Frame_Options']                     = 'The x-frame-options header provides clickjacking protection by not allowing iframes to load on your website. It is supported by IE 8+, Chrome 4.1+, Firefox 3.6.9+, Opera 10.5+, Safari 4+.<br/>The <strong>X-Frame-Options</strong> HTTP response header can be used to indicate whether or not a browser should be allowed to render a page in a <i>frame</i>, <i>iframe</i>, <i>embed</i> or <i>object</i>. Sites can use this to avoid clickjacking attacks, by ensuring that their content is not embedded into other sites.<br/>
+$_['about_X_Frame_Options']                     = 'Zaglavlje x-frame-options pruža zaštitu od klikova ne dopuštajući učitavanje iframeova na vašoj web stranici. Podržavaju ga IE 8+, Chrome 4.1+, Firefox 3.6.9+, Opera 10.5+, Safari 4+.<br/>Zaglavlje HTTP odgovora <strong>X-Frame-Options</strong> može se koristiti za označavanje treba li pregledniku biti dopušteno prikazati stranicu u <i>okviru</i>, <i>iframe</i>, <i>ugraditi</i> ili <i>objekt</i>. Web-mjesta to mogu koristiti za izbjegavanje napada clickjackinga, osiguravajući da njihov sadržaj nije ugrađen u druga web-mjesta.<br/>
 <br/>
-The added security is only provided if the user accessing the document is using a browser supporting X-Frame-Options.<br/><strong>Recommendation: </strong>Same Origin';
+Dodatna sigurnost dostupna je samo ako korisnik koji pristupa dokumentu koristi preglednik koji podržava X-Frame-Options.<br/><strong>Preporuka: </strong>Same Origin';
 
-$_['about_X_Content_Type_Options']              = 'The x-content-type-options header prevents Internet Explorer and Google Chrome from sniffing a response away from the declared content-type. This helps reduce the danger of drive-by downloads and helps treat the content the right way.<br/>The <strong>X-Content-Type-Options</strong> response HTTP header is a marker used by the server to indicate that the MIME types advertised in the Content-Type headers should not be changed and be followed. This allows to opt-out of MIME type sniffing, or, in other words, it is a way to say that the webmasters knew what they were doing.<br/>
+$_['about_X_Content_Type_Options']              = 'Zaglavlje x-content-type-options sprječava Internet Explorer i Google Chrome da nanjuše odgovor od deklarirane vrste sadržaja. Ovo pomaže u smanjenju opasnosti od nasilnih preuzimanja i pomaže u tretiranju sadržaja na pravi način. <strong>X-Content-Type-Options</strong> HTTP zaglavlje odgovora je oznaka koju poslužitelj koristi za označavanje da se MIME tipovi oglašeni u zaglavljima Content-Type ne bi trebali mijenjati i slijediti. Ovo omogućuje isključivanje MIME tipa njuškanja, ili, drugim riječima, to je način da se kaže da su webmasteri znali što rade.<br/>
 <br/>
-This header was introduced by Microsoft in IE 8 as a way for webmasters to block content sniffing that was happening and could transform non-executable MIME types into executable MIME types. Since then, other browsers have introduced it, even if their MIME sniffing algorithms were less aggressive.<br/>
+Ovo je zaglavlje uveo Microsoft u IE 8 kao način za webmastere da blokiraju njuškanje sadržaja koje se događalo i moglo transformirati neizvršne MIME tipove u izvršne MIME tipove. Od tada su ga uveli i drugi preglednici, čak i ako su njihovi MIME algoritmi za njuškanje bili manje agresivni.<br/>
 <br/>
-Site security testers usually expect this header to be set.<br/><strong>Recommendation: </strong>No Sniff';
+Testeri sigurnosti web-mjesta obično očekuju da ovo zaglavlje bude postavljeno.<br/><strong>Preporuka: </strong>Bez njuškanja';
 
-$_['about_Referrer_Policy']                     = 'When a user clicks a link on one site, the origin, that takes them to another site, the destination, the destination site receives information about the origin the user came from. This is how we get metrics like those provided by Google Analytics on where our traffic came from. I know that 4,000 users came from Twitter this week because when they visit my site they set the referer[sic] header in their request.<br/><br/>
-<strong>Directives</strong>
+$_['about_Referrer_Policy']                     = 'Kada korisnik klikne poveznicu na jednom mjestu, izvoru, koji ga vodi na drugo mjesto, odredište, odredišno mjesto prima informacije o izvoru s kojeg je korisnik došao. Ovo je način na koji dobivamo mjerne podatke poput onih koje pruža Google Analytics o tome odakle dolazi naš promet. Znam da je 4000 korisnika došlo s Twittera ovaj tjedan jer kada posjete moju stranicu, postave referer[sic] zaglavlje u svom zahtjevu.<br/><br/>
+<strong>Direktive</strong>
 <br/><br/>
-<strong>no-referrer</strong>
-<p>The Referer header will be omitted entirely. No referrer information is sent along with requests.</p>
-<strong>no-referrer-when-downgrade (default)</strong>
-<p>This is the default behavior if no policy is specified, or if the provided value is invalid. The origin, path, and querystring of the URL are sent as a referrer when the protocol security level stays the same (HTTP→HTTP, HTTPS→HTTPS) or improves (HTTP→HTTPS), but isn\'t sent to less secure destinations (HTTPS→HTTP).</p>
-<strong>origin</strong>
-<p>Only send the origin of the document as the referrer.</p>
-<p>For example, a document at https://example.com/page.html will send the referrer https://example.com/.</p>
-<strong>origin-when-cross-origin</strong>
-<p>Send the origin, path, and query string when performing a same-origin request, but only send the origin of the document for other cases.</p>
-<strong>same-origin</strong>
-<p>A referrer will be sent for same-site origins, but cross-origin requests will send no referrer information.</p>
-<strong>strict-origin</strong>
-<p>Only send the origin of the document as the referrer when the protocol security level stays the same (HTTPS→HTTPS), but don\'t send it to a less secure destination (HTTPS→HTTP).</p>
-<strong>strict-origin-when-cross-origin</strong>
-<p>Send the origin, path, and querystring when performing a same-origin request, only send the origin when the protocol security level stays the same (HTTPS→HTTPS), and send no header to a less secure destination (HTTPS→HTTP).</p>
-<strong>unsafe-url</strong>
-<p>Send the origin, path, and query string when performing any request, regardless of security.</p>
-<strong>Recommendation: </strong>Strict When Cross Origin';
+<strong>bez preporuke</strong>
+<p>Zaglavlje Referer bit će u potpunosti izostavljeno. Uz zahtjeve se ne šalju informacije o preporuci.</p>
+<strong>no-referrer-when-downgrade (zadano)</strong>
+<p>Ovo je zadano ponašanje ako nije navedeno pravilo ili ako je navedena vrijednost nevažeća. Izvor, put i niz upita URL-a šalju se kao preporuka kada razina sigurnosti protokola ostane ista (HTTP→HTTP, HTTPS→HTTPS) ili se poboljša (HTTP→HTTPS), ali se\\'ne šalje na manje sigurna odredišta (HTTPS→HTTP).</p>
+<strong>podrijetlo</strong>
+<p>Samo pošaljite izvor dokumenta kao preporuku.</p>
+<p>Na primjer, dokument na https://example.com/page.html će poslati referera https://example.com/.</p>
+<strong>podrijetlo-prilikom-prijenosa</strong>
+<p>Pošalji podrijetlo, putanju i niz upita kada izvodite zahtjev istog podrijetla, ali pošaljite samo podrijetlo dokumenta za druge slučajeve.</p>
+<strong>isto porijeklo</strong>
+<p>Preporuka će biti poslana za izvore s istog mjesta, ali zahtjevi s različitim izvorima neće slati informacije o preporuci.</p>
+<strong>striktnog porijekla</strong>
+<p>Samo pošaljite izvor dokumenta kao preporuku kada razina sigurnosti protokola ostane ista (HTTPS→HTTPS), ali ga nemojte\\'ne slati na manje sigurno odredište (HTTPS→HTTP).</p>
+<strong>striktno-podrijetlo-prilikom-prelaska</strong>
+<p>Pošalji podrijetlo, stazu i niz upita prilikom izvođenja zahtjeva istog podrijetla, pošalji podrijetlo samo kada razina sigurnosti protokola ostane ista (HTTPS→HTTPS) i ne šalji zaglavlje na manje sigurno odredište (HTTPS→HTTP).</p>
+<strong>nesiguran-url</strong>
+<p>Pošalji izvor, put i niz upita prilikom izvođenja bilo kojeg zahtjeva, bez obzira na sigurnost.</p>
+<strong>Preporuka: </strong>Strogo kada je drugo podrijetlo';
 
-$_['about_Strict_Transport_Security']           = 'The <strong>Strict Transport Security</strong> header is a security enhancement that restricts web browsers to access web servers solely over HTTPS. This ensures the connection cannot be establish through an insecure HTTP connection which could be susceptible to attacks.<br/><br/><strong>An example scenario</strong><br/>
+$_['about_Strict_Transport_Security']           = 'Zaglavlje <strong>Strict Transport Security</strong> je sigurnosno poboljšanje koje web preglednicima ograničava pristup web poslužiteljima isključivo putem HTTPS-a. Ovo osigurava da se veza ne može uspostaviti putem nesigurne HTTP veze koja bi mogla biti podložna napadima.<br/><br/><strong>Primjer scenarija</strong><br/>
 <br/>
-You log into a free WiFi access point at an airport and start surfing the web, visiting your online banking service to check your balance and pay a couple of bills. Unfortunately, the access point you\'re using is actually a hacker\'s laptop, and they\'re intercepting your original HTTP request and redirecting you to a clone of your bank\'s site instead of the real thing. Now your private data is exposed to the hacker.<br/><br/>
-<strong>Strict Transport Security</strong> resolves this problem; as long as you\'ve accessed your bank\'s web site once using HTTPS, and the bank\'s web site uses <strong>Strict Transport Security</strong>, your browser will know to automatically use only HTTPS, which prevents hackers from performing this sort of man-in-the-middle attack.<br/><br/><strong>How the browser handles it</strong>
+Prijavite se na besplatnu WiFi pristupnu točku u zračnoj luci i počnete surfati webom, posjećujući svoju internetsku bankarsku uslugu kako biste provjerili stanje i platili nekoliko računa. Nažalost, pristupna točka koju\\'koristite zapravo je prijenosno računalo hakera\\', a oni\\'presreću vaš izvorni HTTP zahtjev i preusmjeravaju vas na klon stranice vaše banke\\' umjesto na pravu stvar. Sada su vaši privatni podaci izloženi hakeru.<br/><br/>
+<strong>Strict Transport Security</strong> rješava ovaj problem; sve dok ste\\' jednom pristupili web stranici svoje banke\\' pomoću HTTPS-a, a web stranica banke\\' koristi <strong>Strict Transport Security</strong>, vaš će preglednik znati automatski koristiti samo HTTPS, što sprječava hakere u izvođenju ove vrste čovjek-u-sredi napad.<br/><br/><strong>Kako preglednik to rješava</strong>
 <br/>
-The first time your site is accessed using HTTPS and it returns the <strong>Strict-Transport-Security</strong> header, the browser records this information, so that future attempts to load the site using HTTP will automatically use HTTPS instead.<br/>
+Prvi put kada se vašoj web stranici pristupi pomoću HTTPS-a i ona vrati zaglavlje <strong>Strict-Transport-Security</strong>, preglednik bilježi ove informacije, tako da će budući pokušaji učitavanja stranice pomoću HTTP-a automatski koristiti HTTPS umjesto njega.<br/>
 <br/>
-When the expiration time specified by the <strong>Strict-Transport-Security</strong> header elapses, the next attempt to load the site via HTTP will proceed as normal instead of automatically using HTTPS.<br/>
+Kada istekne vrijeme isteka navedeno u zaglavlju <strong>Strict-Transport-Security</strong>, sljedeći pokušaj učitavanja stranice putem HTTP-a nastavit će se normalno umjesto automatskim korištenjem HTTPS-a.<br/>
 <br/>
-Whenever the <strong>Strict-Transport-Security</strong> header is delivered to the browser, it will update the expiration time for that site, so sites can refresh this information and prevent the timeout from expiring. Should it be necessary to disable <strong>Strict-Transport-Security</strong>, setting the max-age to 0 (over a https connection) will immediately expire the <strong>Strict-Transport-Security</strong> header, allowing access via http.<br/>
-<strong>Recommendations: </strong><br/>Increase the time periodically.';
+Kad god se zaglavlje <strong>Strict-Transport-Security</strong> isporuči pregledniku, ono će ažurirati vrijeme isteka za tu stranicu, tako da stranice mogu osvježiti ove informacije i spriječiti istek vremenskog ograničenja. Ako bude potrebno onemogućiti <strong>Strict-Transport-Security</strong>, postavljanje max-age na 0 (preko https veze) odmah će isteći zaglavlje <strong>Strict-Transport-Security</strong>, dopuštajući pristup putem http.<br/>
+<strong>Preporuke: </strong><br/>Povremeno povećavajte vrijeme.';
 
-$_['about_Expect_CT']                           = 'The <strong>Expect-CT</strong> header prevents misissued certificates from being used by allowing websites to report and optionally enforce Certificate Transparency requirements. When this header is enabled the website is requesting the browser to verify whether or not the certificate appears in the public CT logs.<br/><br/>The <strong>Expect-CT</strong> header allows sites to opt in to reporting and/or enforcement of Certificate Transparency requirements, which prevents the use of misissued certificates for that site from going unnoticed.<br/>
+$_['about_Expect_CT']                           = 'Zaglavlje <strong>Expect-CT</strong> sprječava korištenje pogrešno izdanih certifikata dopuštajući web stranicama izvješćivanje i opcionalno provođenje zahtjeva transparentnosti certifikata. Kada je ovo zaglavlje omogućeno, web-mjesto traži od preglednika da provjeri pojavljuje li se certifikat u javnim CT zapisima ili ne.<br/><br/>Zaglavlje <strong>Expect-CT</strong> omogućuje web-lokacijama da se uključe u izvješćivanje i/ili provedbu zahtjeva za transparentnošću certifikata, što sprječava upotrebu pogrešno izdanih certifikata za tu web-lokaciju neprimjetno.<br/>
 <br/>
-CT requirements can be satisfied by servers via any one of the following mechanisms:
+CT zahtjeve poslužitelji mogu zadovoljiti putem bilo kojeg od sljedećih mehanizama:
 <ul>
-   <li>X.509v3 certificate extension to allow embedding of signed certificate timestamps issued by individual logs</li>
-   <li>A TLS extension of type signed_certificate_timestamp sent during the handshake</li>
-   <li>Supporting OCSP stapling (that is, the status_request TLS extension) and providing a SignedCertificateTimestampList</li>
+   <li>X.509v3 proširenje certifikata za dopuštanje ugradnje potpisanih vremenskih oznaka certifikata koje izdaju pojedinačni zapisnici</li>
+   <li>TLS proširenje tipa signed_certificate_timestamp poslano tijekom rukovanja</li>
+   <li>Podržavanje OCSP klamanja (tj. status_request TLS ekstenzije) i pružanje SignedCertificateTimestampList</li>
 </ul>
 <br/><br/>
-<strong>Recommendations: </strong><br/>max-age: Increase the time periodically<br/>Report-Uri: https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct';
+<strong>Preporuke: </strong><br/>max-age: Povremeno povećavajte vrijeme<br/>Report-Uri: https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct';
 
-$_['about_Content_Security_Policy']             = 'The content-security-policy header provides an additional layer of security. This policy helps prevent attacks such as Cross Site Scripting (XSS) and other code injection attacks by defining content sources which are approved and thus allowing the browser to load them.
+$_['about_Content_Security_Policy']             = 'Zaglavlje content-security-policy pruža dodatni sloj sigurnosti. Ovo pravilo pomaže u sprječavanju napada poput Cross Site Scripting (XSS) i drugih napada ubacivanjem koda definiranjem izvora sadržaja koji su odobreni i na taj način dopušta pregledniku da ih učita.
 <br/><br/>
-All major browsers currently offer full or partial support for content security policy. And it won’t break delivery of the content if it does happen to be delivered to an older browser, it will simply not be executed.
+Svi glavni preglednici trenutno nude potpunu ili djelomičnu podršku za politiku sigurnosti sadržaja. I neće prekinuti isporuku sadržaja ako se isporuči u stariji preglednik, jednostavno se neće izvršiti.
 <br/><br/>
-There are many directives which you can use with content security policy. This example below allows scripts from both the current domain (defined by ‘self’) as well as google-analytics.com.<br/><strong>Content Security Policy</strong> (CSP) is an added layer of security that helps to detect and mitigate certain types of attacks, including Cross Site Scripting (XSS) and data injection attacks. These attacks are used for everything from data theft to site defacement to distribution of malware.<br/>
+Postoje mnoge direktive koje možete koristiti s politikom sigurnosti sadržaja. Ovaj primjer u nastavku dopušta skripte s trenutne domene (definirane sa \'self\') kao i google-analytics.com.<br/><strong>Content Security Policy</strong> (CSP) je dodatni sloj sigurnosti koji pomaže u otkrivanju i ublažavanju određenih vrsta napada, uključujući Cross Site Scripting (XSS) i napade ubacivanjem podataka. Ovi se napadi koriste za sve, od krađe podataka do narušavanja stranice do distribucije zlonamjernog softvera.<br/>
 <br/>
-CSP is designed to be fully backward compatible (except CSP version 2 where there are some explicitly-mentioned inconsistencies in backward compatibility; more details here section 1.1). Browsers that don\'t support it still work with servers that implement it, and vice-versa: browsers that don\'t support CSP simply ignore it, functioning as usual, defaulting to the standard same-origin policy for web content. If the site doesn\'t offer the CSP header, browsers likewise use the standard same-origin policy.<br/>
+CSP je dizajniran da bude potpuno kompatibilan sa starijim verzijama (osim CSP verzije 2 gdje postoje neke izričito navedene nedosljednosti u kompatibilnosti sa prethodnim verzijama; više detalja ovdje, odjeljak 1.1). Preglednici koji ga ne\\'ne podržavaju i dalje rade s poslužiteljima koji ga implementiraju, i obrnuto: preglednici koji ne\\'ne podržavaju CSP jednostavno ga ignoriraju, funkcioniraju kao i obično, prema zadanim postavkama prema standardnoj politici istog porijekla za web sadržaj. Ako web mjesto\\'ne nudi CSP zaglavlje, preglednici također koriste standardna pravila istog porijekla.<br/>
 <br/>
-To enable CSP, you need to configure your web server to return the <strong>Content-Security-Policy</strong> HTTP header (sometimes you will see mentions of the X-Content-Security-Policy header, but that\'s an older version and you don\'t need to specify it anymore).<br/><br/><strong>Recommendations: </strong><br/>upgrade-insecure-requests';
+Da biste omogućili CSP, morate konfigurirati svoj web poslužitelj da vraća <strong>Content-Security-Policy</strong> HTTP zaglavlje (ponekad ćete vidjeti spominjanje zaglavlja X-Content-Security-Policy, ali to\\'je starija verzija i ne\\'ne morate je specificirati više).<br/><br/><strong>Preporuke: </strong><br/>upgrade-insecure-requests';
 
-$_['about_X_HTTP_Method_Override']             = 'In certain situations (for example, when the service or its consumers are behind an overzealous corporate firewall, or if the main consumer is a web page), only the GET and POST HTTP methods might be available. In such a case, it is possible to emulate the missing verbs by passing a custom header in the requests.
+$_['about_X_HTTP_Method_Override']             = 'U određenim situacijama (na primjer, kada su usluga ili njezini korisnici iza pretjerano revnog korporativnog vatrozida ili ako je glavni potrošač web stranica), mogu biti dostupne samo GET i POST HTTP metode. U takvom slučaju, moguće je emulirati glagole koji nedostaju prosljeđivanjem prilagođenog zaglavlja u zahtjevima.
 <br/><br/>
-For example, resource updates can be handled using POST requests by setting a custom header (for example, X-HTTP-Method-Override) to PUT to indicate we are emulating a PUT request via a POST request.<br/><br/><strong>Recommendations: </strong><br/>Disabled';
+Na primjer, ažuriranjem resursa može se upravljati pomoću POST zahtjeva postavljanjem prilagođenog zaglavlja (na primjer, X-HTTP-Method-Override) na PUT kako bi se naznačilo da emuliramo PUT zahtjev putem POST zahtjeva.<br/><br/><strong>Preporuke: </strong><br/>Onemogućeno';
 
-$_['about_forward']                            = 'When a client connects to a server through a proxy or a load balancer, it’s imperative for an endpoint to use custom HTTP headers to be able to forward the identity of a the connecting client.
+$_['about_forward']                            = 'Kada se klijent povezuje s poslužiteljem putem proxyja ili balansera opterećenja, neophodno je da krajnja točka koristi prilagođena HTTP zaglavlja kako bi mogla proslijediti identitet klijenta koji se povezuje.
 <br/><br/>
-X-Forwarded-For (XFF) header is one of the mostly used HTTP header for that purpose. It serves a place where every forwarding node uses to store its direct client’s IP address using a comma as the separator forming a historical HTTP connection path. However HTTP is a text-based standard and it’s super easy to forge any part of it’s content. 
+X-Forwarded-For (XFF) zaglavlje jedno je od najčešće korištenih HTTP zaglavlja za tu svrhu. Služi kao mjesto na kojem svaki čvor za prosljeđivanje pohranjuje IP adresu svog izravnog klijenta koristeći zarez kao razdjelnik formirajući povijesni put HTTP veze. Međutim, HTTP je standard temeljen na tekstu i vrlo je lako krivotvoriti bilo koji dio njegovog sadržaja. 
 <br/><br/>
- By forging XFF header in this way the client may reach unauthorized parts of an application, create possible denial of service attacks or forge IP addresses logged. 
+ Krivotvorenjem XFF zaglavlja na ovaj način klijent može doći do neovlaštenih dijelova aplikacije, stvoriti moguće napade uskraćivanjem usluge ili krivotvoriti zabilježene IP adrese. 
  <br/>
-<strong>Forwarded</strong>
-<p>Contains information from the client-facing side of proxy servers that is altered or lost when a proxy is involved in the path of the request.</p>
-<strong>X-Forwarded-For</strong>
-<p>Identifies the originating IP addresses of a client connecting to a web server through an HTTP proxy or a load balancer.</p>
-<strong>X-Forwarded-Host</strong>
-<p>Identifies the original host requested that a client used to connect to your proxy or load balancer.</p>
-<strong>X-Forwarded-Proto</strong>
-<p>Identifies the protocol (HTTP or HTTPS) that a client used to connect to your proxy or load balancer.</p>
+<strong>Proslijeđeno</strong>
+<p>Sadrži informacije s klijentske strane proxy poslužitelja koje se mijenjaju ili gube kada je proxy uključen u put zahtjeva.</p>
+<strong>X-Proslijeđeno-Za</strong>
+<p>Identificira izvorne IP adrese klijenta koji se spaja na web poslužitelj preko HTTP proxyja ili balansera opterećenja.</p>
+<strong>X-Proslijeđeno-Host</strong>
+<p>Identificira originalni host koji je klijent tražio da se poveže s vašim proxyjem ili balanserom opterećenja.</p>
+<strong>X-Proslijeđeno-Proto</strong>
+<p>Identificira protokol (HTTP ili HTTPS) koji je klijent koristio za povezivanje s vašim proxyjem ili balanserom opterećenja.</p>
 <strong>Via</strong>
-<p>Added by proxies, both forward and reverse proxies, and can appear in the request headers and the response headers.</p>
-<strong>Recommendations: </strong><br/>Disabled';
+<p>Dodaju proxy-i, i prosljeđujući i obrnuti proxy-ji, i mogu se pojaviti u zaglavljima zahtjeva i zaglavljima odgovora.</p>
+<strong>Preporuke: </strong><br/>Onemogućeno';
 
-$_['about_ranges']                              = 'The "Range" header is meant to be used to support partial downloads. A client may request just part of a file, instead of asking for the entire file.<br/>
+$_['about_ranges']                              = 'Zaglavlje "Raspon" namijenjeno je za podršku djelomičnim preuzimanjima. Klijent može zatražiti samo dio datoteke, umjesto da traži cijelu datoteku.<br/>
 <br/>
-RFC 2616 is a bit ambiguous when it comes to "Range" headers. First of all, it introduces the "Accept-Ranges" header, which can be used by the server to signal that it supports the "Range" header. Next, it states that the client may send a request using a "Range" header anyway, even if the server doesn\'t advertise support for it. The server also has the option to send "Accept-Ranges: none" to explicitly state that it does not support this type of header.<br/>
+RFC 2616 je pomalo dvosmislen kada su u pitanju zaglavlja "Range". Prije svega, uvodi zaglavlje "Accept-Ranges", koje poslužitelj može koristiti za signaliziranje da podržava zaglavlje "Range". Dalje, stoji da klijent svejedno može poslati zahtjev koristeći zaglavlje "Range", čak i ako poslužitelj ne\\'oglašava podršku za to. Poslužitelj također ima opciju slanja "Accept-Ranges: none" kako bi eksplicitno naveo da ne podržava ovu vrstu zaglavlja.<br/>
 <br/>
-So what\'s the problem? It turns out that different HTTP clients appear to deal with "Range" headers slightly differently. In particular the iOS Podcast client requires support for the Range header, and will only download parts of the file if they are not supported. Apple recently advised iTunes publishers of this issue and requires content to be hosted on servers that support the Range header.<br/>
+Dakle, u čemu je problem\\'? Ispada da se različiti HTTP klijenti malo drugačije bave zaglavljima "Range". Konkretno, iOS Podcast klijent zahtijeva podršku za zaglavlje Range i preuzet će samo dijelove datoteke ako nisu podržani. Apple je nedavno obavijestio iTunes izdavače o ovom problemu i zahtijeva da se sadržaj nalazi na poslužiteljima koji podržavaju zaglavlje Range.<br/>
 <br/>
-For a server, this is usually not a problem, wouldn\'t it be for a recent Apache DoS attack that caused some to block Range requests.<br/>
+Za poslužitelj to obično nije problem, zar\\'ne bi bilo nedavnog Apache DoS napada koji je prouzročio blokiranje Range zahtjeva.<br/>
 <br/>
-Range is used in the request, to ask for a particular range (or ranges) of bytes. Content-Range is used in the response, to indicate which bytes the server is giving you (which may be different than the range you requested), as well as how long the entire content is (if known).<br/><br/><strong>Recommendations: </strong><br/>Disabled';
+Raspon se koristi u zahtjevu za traženje određenog raspona (ili raspona) bajtova. Content-Range se koristi u odgovoru, za označavanje koje vam bajtove poslužitelj daje (koji se mogu razlikovati od raspona koji ste tražili), kao i koliko je dug cijeli sadržaj (ako je poznat).<br/><br/><strong>Preporuke: </strong><br/>Onemogućeno';
 
-$_['about_proxy']                              = '<strong>httpoxy</strong> is a set of vulnerabilities that affect application code running in CGI, or CGI-like environments. It comes down to a simple namespace conflict:
+$_['about_proxy']                              = '<strong>httpoxy</strong> je skup ranjivosti koje utječu na kod aplikacije koji se izvodi u CGI ili okruženjima sličnim CGI. Svodi se na jednostavan sukob imenskog prostora:
 <ul>
-    <li>RFC 3875 (CGI) puts the HTTP Proxy header from a request into the environment variables as HTTP_PROXY</li>
-    <li>HTTP_PROXY is a popular environment variable used to configure an outgoing proxy</li>
+    <li>RFC 3875 (CGI) stavlja HTTP proxy zaglavlje iz zahtjeva u varijable okruženja kao HTTP_PROXY</li>
+    <li>HTTP_PROXY je popularna varijabla okruženja koja se koristi za konfiguriranje odlaznog proxyja</li>
 </ul>
-This leads to a remotely exploitable vulnerability. If you’re running PHP or CGI, you should block the Proxy header. Here’s how.
+To dovodi do ranjivosti koja se može daljinski iskoristiti. Ako koristite PHP ili CGI, trebali biste blokirati proxy zaglavlje. Evo kako.
 <br/><br/>
-<strong>httpoxy</strong> is a vulnerability for server-side web applications. If you’re not deploying code, you don’t need to worry.
-What can happen if my web application is vulnerable?
+<strong>httpoxy</strong> je ranjivost za web aplikacije na strani poslužitelja. Ako ne implementirate kod, ne morate se brinuti.
+Što se može dogoditi ako je moja web aplikacija ranjiva?
 <br/><br/>
-If a vulnerable HTTP client makes an outgoing HTTP connection, while running in a server-side CGI application, an attacker may be able to:
+Ako ranjivi HTTP klijent uspostavi odlaznu HTTP vezu dok radi u CGI aplikaciji na strani poslužitelja, napadač bi mogao:
 <ul>
-    <li>Proxy the outgoing HTTP requests made by the web application</li>
-    <li>Direct the server to open outgoing connections to an address and port of their choosing</li>
-    <li>Tie up server resources by forcing the vulnerable software to use a malicious proxy</li>
+    <li>Proxy odlazne HTTP zahtjeve koje je napravila web aplikacija</li>
+    <li>Usmjeriti poslužitelj da otvori odlazne veze na adresu i port po vlastitom izboru</li>
+    <li>Vežite resurse poslužitelja prisiljavajući ranjivi softver da koristi zlonamjerni proxy</li>
 </ul>
-<strong>httpoxy</strong> is extremely easy to exploit in basic form. And we expect security researchers to be able to scan for it quickly. Luckily, if you read on and find you are affected, easy mitigations are available.<br/>
-Isn’t this old news? Is this still a problem?
+<strong>httpoxy</strong> iznimno je lako iskoristiti u osnovnom obliku. I očekujemo da će ga istraživači sigurnosti moći brzo skenirati. Srećom, ako nastavite čitati i ustanovite da ste pogođeni, dostupna su jednostavna ublažavanja.<br/>
+Nije li ovo stara vijest? Je li to još uvijek problem?
 <br/><br/>
-<strong>httpoxy</strong> was disclosed in mid-2016. If you’re reading about it now for the first time, you can probably relax and take your time reading about this quaint historical bug that hopefully no longer affects any of the applications you maintain. But you should verify that to your own satisfaction.
+<strong>httpoxy</strong> otkriven je sredinom 2016. Ako sada prvi put čitate o tome, vjerojatno se možete opustiti i odvojiti vrijeme za čitanje o ovom neobičnom povijesnom bugu za koji se nadamo da više ne utječe na aplikacije koje održavate. Ali trebali biste to provjeriti na vlastito zadovoljstvo.
 <br/><br/>
-The content below this point reflects the original disclosure, and I’ll be leaving the site up and mostly unchanged, other than noting fix versions where I can. I guess I’m just saying: the time for urgency was last year.<br/><br/><strong>Recommendations: </strong><br/>Disabled';
+Sadržaj ispod ove točke odražava izvornu objavu i ostavit ću web-mjesto otvoreno i uglavnom nepromijenjeno, osim što ću navesti verzije popravka gdje mogu. Pretpostavljam da samo kažem: vrijeme za hitnost bilo je prošle godine.<br/><br/><strong>Preporuke: </strong><br/>Onemogućeno';
 
-$_['about_Feature_Policy']                      = 'The HTTP Feature-Policy header provides a mechanism to allow and deny the use of browser features in its own frame, and in content within any "iframe" elements in the document.<br/><br/>Feature Policy is being created to allow site owners to enable and disable certain web platform features on their own pages and those they embed. Being able to restrict the features your site can use is really nice but being able to restrict features that sites you embed can use is an even better protection to have.<br/><br/>Delivering a Feature Policy via HTTP response header is just as simple as issuing the other various security headers we have available to us. You simply need to decide the restrictions you\'d like to place on your page and build the policy to return.<br/><strong>Directives</strong>
+$_['about_Feature_Policy']                      = 'HTTP Feature-Policy zaglavlje pruža mehanizam za dopuštanje i onemogućavanje korištenja značajki preglednika u vlastitom okviru i u sadržaju unutar bilo kojeg "iframe" elementa u dokumentu.<br/><br/>Pravila značajki se stvaraju kako bi se vlasnicima stranica omogućilo da omoguće i onemoguće određene značajke web platforme na svojim stranicama i stranicama koje ugrađuju. Mogućnost ograničavanja značajki koje vaša web-lokacija može koristiti je stvarno lijepa, ali mogućnost ograničavanja značajki koje web-lokacije koje ugradite mogu koristiti još je bolja zaštita.<br/><br/>Dostavljanje pravila o značajkama putem HTTP zaglavlja odgovora jednako je jednostavno kao i izdavanje drugih raznih sigurnosnih zaglavlja koja su nam dostupna. Jednostavno trebate odlučiti o ograničenjima koja\\' želite postaviti na svoju stranicu i izgraditi pravila za povratak.<br/><strong>Direktive</strong>
 <br/>
-<i>ambient-light-sensor</i>
-<p>Controls whether the current document is allowed to gather information about the amount of light in the environment around the device through the AmbientLightSensor interface.</p>
-<i>autoplay</i>
-<p>Controls whether the current document is allowed to autoplay media requested through the HTMLMediaElement interface. When this policy is enabled and there were no user gestures, the Promise returned by HTMLMediaElement.play() will reject with a DOMException. The autoplay attribute on <i>audio</i> and <i>video</i> elements will be ignored.</p>
-<i>accelerometer</i>
-<p>Controls whether the current document is allowed to gather information about the acceleration of the device through the Accelerometer interface.</p>
-<i>battery</i>
-<p>Controls whether the use of the Battery Status API is allowed. When this policy is enaled, the Promise returned by Navigator.getBattery() will reject with a NotAllowedError DOMException.</p>
-<i>camera</i>
-<p>Controls whether the current document is allowed to use video input devices. When this policy is enabled, the Promise returned by getUserMedia() will reject with a NotAllowedError DOMException.</p>
+<i>senzor-ambijentalnog-svjetla</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o količini svjetla u okruženju oko uređaja putem sučelja AmbientLightSensor.</p>
+<i>automatska reprodukcija</i>
+<p>Kontrolira je li trenutnom dokumentu dopuštena automatska reprodukcija medija zatraženih putem sučelja HTMLMediaElement. Kada je ovo pravilo omogućeno i nije bilo gesta korisnika, obećanje koje vraća HTMLMediaElement.play() odbacit će se uz DOMException. Atribut automatske reprodukcije na elementima <i>audio</i> i <i>video</i> bit će zanemaren.</p>
+<i>akcelerometar</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o ubrzanju uređaja putem sučelja mjerača ubrzanja.</p>
+<i>baterija</i>
+<p>Kontrolira je li dopuštena upotreba Battery Status API-ja. Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.getBattery() odbacit će se s NotAllowedError DOMException.</p>
+<i>kamera</i>
+<p>Kontrolira je li trenutnom dokumentu dopuštena upotreba video ulaznih uređaja. Kada je ovo pravilo omogućeno, obećanje koje vraća getUserMedia() će odbiti s NotAllowedError DOMException.</p>
 <i>display-capture</i>
-<p>Controls whether or not the current document is permitted to use the getDisplayMedia() method to capture screen contents. When this policy is enabled, the promise returned by getDisplayMedia() will reject with a NotAllowedError if permission is not obtained to capture the display\'s contents.</p>
-<i>document-domain</i>
-<p>Controls whether the current document is allowed to set document.domain. When this policy is enabled, attempting to set document.domain will fail and cause a SecurityError DOMException to be be thrown.</p>
-<i>encrypted-media</i>
-<p>Controls whether the current document is allowed to use the Encrypted Media Extensions API (EME). When this policy is enabled, the Promise returned by Navigator.requestMediaKeySystemAccess() will reject with a DOMException.</p>
-<i>execution-while-not-rendered</i>
-<p>Controls whether tasks should execute in frames while they\'re not being rendered (e.g. if an iframe is hidden or display: none).</p>
-<i>execution-while-out-of-viewport</i>
-<p>Controls whether tasks should execute in frames while they\'re outside of the visible viewport.</p>
-<i>fullscreen</i>
-<p>Controls whether the current document is allowed to use Element.requestFullScreen(). When this policy is enabled, the returned Promise rejects with a TypeError DOMException.</p>
-<i>geolocation</i>
-<p>Controls whether the current document is allowed to use the Geolocation Interface. When this policy is enabled, calls to getCurrentPosition() and watchPosition() will cause those function\'s callbacks to be invoked with a PositionError code of PERMISSION_DENIED.</p>
-<i>gyroscope</i>
-<p>Controls whether the current document is allowed to gather information about the orientation of the device through the Gyroscope interface.</p>
-<i>magnetometer</i>
-<p>Controls whether the current document is allowed to gather information about the orientation of the device through the Magnetometer interface.</p>
-<i>microphone</i>
-<p>Controls whether the current document is allowed to use audio input devices. When this policy is enabled, the Promise returned by MediaDevices.getUserMedia() will reject with a NotAllowedError.</p>
+<p>Kontrolira je li trenutnom dokumentu dopušteno korištenje metode getDisplayMedia() za snimanje sadržaja zaslona. Kada je ovo pravilo omogućeno, obećanje koje vraća getDisplayMedia() odbacit će se s NotAllowedError ako se ne dobije dopuštenje za snimanje sadržaja display\\'s.</p>
+<i>domena-dokumenta</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno postaviti document.domain. Kada je ovo pravilo omogućeno, pokušaj postavljanja document.domain neće uspjeti i uzrokovati izbacivanje SecurityError DOMException.</p>
+<i>kriptirani-medij</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno korištenje API-ja proširenja šifriranih medija (EME). Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.requestMediaKeySystemAccess() će odbiti uz DOMException.</p>
+<i>izvršenje-dok-nije-renderirano</i>
+<p>Kontrolira trebaju li se zadaci izvršavati u okvirima dok\\'se ne prikazuju (npr. ako je iframe skriven ili prikazan: ništa).</p>
+<i>izvršenje-izvan okvira za prikaz</i>
+<p>Kontrolira trebaju li se zadaci izvršavati u okvirima dok su\\'izvan vidljivog okvira za prikaz.</p>
+<i>cijeli zaslon</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti Element.requestFullScreen(). Kada je ovo pravilo omogućeno, vraćeni Promise odbija se s TypeError DOMException.</p>
+<i>geolokacija</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti Geolocation Interface. Kada je ovo pravilo omogućeno, pozivi getCurrentPosition() i watchPosition() uzrokovat će pozivanje tih povratnih poziva funkcije\\' s kodom PositionError PERMISSION_DENIED.</p>
+<i>žiroskop</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o orijentaciji uređaja putem sučelja žiroskopa.</p>
+<i>magnetometar</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o orijentaciji uređaja putem sučelja magnetometra.</p>
+<i>mikrofon</i>
+<p>Kontrolira je li trenutnom dokumentu dopuštena upotreba audio ulaznih uređaja. Kada je ovo pravilo omogućeno, obećanje koje vraća MediaDevices.getUserMedia() odbacit će se s NotAllowedError.</p>
 <i>midi</i>
-<p>Controls whether the current document is allowed to use the Web MIDI API. When this policy is enabled, the Promise returned by Navigator.requestMIDIAccess() will reject with a DOMException.</p>
-<i>payment</i>
-<p>Controls whether the current document is allowed to use the Payment Request API. When this policy is enabled, the PaymentRequest() constructor will throw a SecurityError DOMException.</p>
-<i>picture-in-picture</i>
-<p>Controls whether the current document is allowed to play a video in a Picture-in-Picture mode via the corresponding API.</p>
-<i>publickey-credentials</i>
-<p>Controls whether the current document is allowed to use Web Authentication API to create, store, and retreive public-key credentials.</p>
-<i>speaker</i>
-<p>Controls whether the current document is allowed to play audio via any methods.</p>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti Web MIDI API. Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.requestMIDIAccess() će odbiti s DOMException.</p>
+<i>plaćanje</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti API zahtjeva za plaćanje. Kada je ovo pravilo omogućeno, konstruktor PaymentRequest() izbacit će SecurityError DOMException.</p>
+<i>slika u slici</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno reproducirati video u načinu slike u slici putem odgovarajućeg API-ja.</p>
+<i>publickey-vjerodajnice</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti API za web autentifikaciju za stvaranje, pohranjivanje i dohvaćanje vjerodajnica javnog ključa.</p>
+<i>zvučnik</i>
+<p>Kontrolira je li trenutnom dokumentu dopušteno reproducirati zvuk putem bilo koje metode.</p>
 <i>sync-xhr</i>
-<p>Controls whether the current document is allowed to make synchronous XMLHttpRequest requests.</p>
+<p>Kontrolira je li trenutnom dokumentu dopušteno slanje sinkronih XMLHttpRequest zahtjeva.</p>
 <i>usb</i>
-<p>Controls whether the current document is allowed to use the WebUSB API.</p>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti WebUSB API.</p>
 <i>wake-lock</i>
-<p>Controls whether the current document is allowed to use Wake Lock API to indicate that device should not enter power-saving mode.</p>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti Wake Lock API za označavanje da uređaj ne bi trebao ući u način rada za uštedu energije.</p>
 <i>vr</i>
-<p>Controls whether the current document is allowed to use the WebVR API. When this policy is enabled, the Promise returned by Navigator.getVRDisplays() will reject with a DOMException. Keep in mind that the WebVR standard is in the process of being replaced with WebXR.</p>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti WebVR API. Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.getVRDisplays() odbacit će se uz DOMException. Imajte na umu da je WebVR standard u procesu zamjene s WebXR.</p>
 <i>xr-spatial-tracking</i>
-<p>Controls whether or not the current document is allowed to use the WebXR Device API to interact with a WebXR session. </p><br/>';
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti WebXR Device API za interakciju s WebXR sesijom. </p><br/>';
 
 
 // Warning Info - Notes
-$_['warning_Strict_Transport_Security']         = "<strong>Note:</strong><br/>The <strong>Strict-Transport-Security</strong> header is ignored by the browser when your site is accessed using HTTP; this is because an attacker may intercept HTTP connections and inject the header or remove it. When your site is accessed over HTTPS with no certificate errors, the browser knows your site is HTTPS capable and will honor the <strong>Strict-Transport-Security</strong> header.";
+$_['warning_Strict_Transport_Security']         = "<strong>Napomena:</strong><br/>Preglednik zanemaruje zaglavlje <strong>Strict-Transport-Security</strong> kada se vašoj stranici pristupa putem HTTP-a; to je zato što napadač može presresti HTTP veze i ubaciti zaglavlje ili ga ukloniti. Kada se vašem web-mjestu pristupa preko HTTPS-a bez grešaka certifikata, preglednik zna da vaše web-mjesto podržava HTTPS i poštovat će zaglavlje <strong>Strict-Transport-Security</strong>.";
 
-$_['warning_Expect_CT']                         = '<strong>Note:</strong><br/>When a site enables the <strong>Expect-CT</strong> header, they are requesting that the browser check that any certificate for that site appears in public CT logs.<br/>
+$_['warning_Expect_CT']                         = '<strong>Napomena:</strong><br/>Kada web mjesto omogući <strong>Expect-CT</strong> zaglavlje, zahtijeva da preglednik provjeri pojavljuje li se bilo koji certifikat za to mjesto u javnim CT zapisnicima.<br/>
 <br/>
-Browsers ignore the <strong>Expect-CT</strong> header when sent over HTTP, the header only has effect on HTTPS connections.';
+Preglednici ignoriraju zaglavlje <strong>Expect-CT</strong> kada se šalje preko HTTP-a, zaglavlje ima učinak samo na HTTPS veze.';
 
-$_['warning_Referrer_Policy']                   = "<strong>Note:</strong><br/>The original header name <strong>Referer</strong> is a misspelling of the word \"referrer\". The <strong>Referrer-Policy</strong> header does not share this misspelling.";
+$_['warning_Referrer_Policy']                   = "<strong>Napomena:</strong><br/>Originalni naziv zaglavlja <strong>Referer</strong> pogrešno je napisana riječ \\"referrer\\". Zaglavlje <strong>Referrer-Policy</strong> ne dijeli ovu pravopisnu pogrešku.";
 
-$_['warning_X_Content_Type_Options']            = "<strong>Note:</strong><br/>X-Content-Type-Options only apply request-blocking due to nosniff for request destinations of \"script\" and \"style\". However, it also enables Cross-Origin Read Blocking (CORB) for HTML, TXT, JSON and XML files (excluding SVG image/svg+xml).";
+$_['warning_X_Content_Type_Options']            = "<strong>Napomena:</strong><br/>X-Content-Type-Options samo primjenjuje blokiranje zahtjeva zbog nosniffa za odredišta zahtjeva \\"script\\" i \\"style\\". Međutim, također omogućuje Cross-Origin Read Blocking (CORB) za HTML, TXT, JSON i XML datoteke (isključujući SVG image/svg+xml).";
 
-$_['warning_X_Frame_Options']                   = "<strong>Note:</strong><br/>The Content-Security-Policy HTTP header has a frame-ancestors directive which obsoletes this header for supporting browsers.";
+$_['warning_X_Frame_Options']                   = "<strong>Napomena:</strong><br/>HTTP zaglavlje Content-Security-Policy ima direktivu frame-ancestors koja zastarijeva ovo zaglavlje za podršku preglednicima.";
 
-$_['warning_X_XSS_Protection']                  = '<strong>Note:</strong>
+$_['warning_X_XSS_Protection']                  = '<strong>Napomena:</strong>
 <ul>
-<li>Chrome has an "Intent to Deprecate and Remove the XSS Auditor"</li>
-<li>Firefox have not, and will not implement X-XSS-Protection</li>
-<li>Edge have retired their XSS filter</li>
+<li>Chrome ima "Namjeru obustaviti i ukloniti XSS revizor"</li>
+<li>Firefox nije i neće implementirati X-XSS-Protection</li>
+<li>Edge je povukao svoj XSS filtar</li>
 </ul>
-<br/>This means that if you do not need to support legacy browsers, it is recommended that you use Content-Security-Policy without allowing unsafe-inline scripts instead.
-';
+<br/>To znači da ako ne trebate podržavati naslijeđene preglednike, preporučuje se da umjesto toga koristite Content-Security-Policy bez dopuštanja nesigurnih inline skripti.';
 
 // Legends
-$_['legend_extension']                          = "About Extension";
+$_['legend_extension']                          = "O proširenju";
 $_['legend_X_Powered_By']                       = "X-Powered-By";
-$_['legend_X_HTTP_Method_Override']             = "X-HTTP-Method-Override";
-$_['legend_proxy']                              = "HTTP Proxy - (HTTPoxy)";
-$_['legend_forward']                            = "HTTP Forwards";
-$_['legend_ranges']                             = "HTTP Ranges";
-$_['legend_X_XSS_Protection']                   = "X-XSS-Protection";
-$_['legend_X_Frame_Options']                    = "X-Frame-Options";
+$_['legend_X_HTTP_Method_Override']             = "X-HTTP-Nadjačavanje metode";
+$_['legend_proxy']                              = "HTTP proxy - (HTTPoxy)";
+$_['legend_forward']                            = "HTTP prosljeđivanja";
+$_['legend_ranges']                             = "HTTP rasponi";
+$_['legend_X_XSS_Protection']                   = "X-XSS-Zaštita";
+$_['legend_X_Frame_Options']                    = "X-Frame-Opcije";
 $_['legend_X_Content_Type_Options']             = "X-Content-Type-Options";
-$_['legend_Referrer_Policy']                    = "Referrer-Policy";
-$_['legend_Content_Security_Policy']            = "Content-Security-Policy";
-$_['legend_Strict_Transport_Security']          = "Strict-Transport-Security";
-$_['legend_Expect_CT']                          = "Expect-CT";
-$_['legend_Feature_Policy']                     = "Feature-Policy";
+$_['legend_Referrer_Policy']                    = "Politika preporuke";
+$_['legend_Content_Security_Policy']            = "Sadržaj-Sigurnosna-Politika";
+$_['legend_Strict_Transport_Security']          = "Stroga-transportna-sigurnost";
+$_['legend_Expect_CT']                          = "Očekivati-CT";
+$_['legend_Feature_Policy']                     = "Politika značajki";
 
 // Feature Policies
-$_['type_accelerometer']			= "Accelerometer";
-$_['type_ambient_light_sensor']			= "Ambient light sensor";
-$_['type_autoplay']				= "Autoplay";
-$_['type_camera']				= "Camera";
-$_['type_fullscreen']				= "Fullscreen";
-$_['type_display_capture']			= "Display capture";
-$_['type_document_domain']			= "Document domain";
-$_['type_encrypted_media']			= "Encrypted media";
-$_['type_geolocation']				= "Geolocation";
-$_['type_gyroscope']				= "Gyroscope";
-$_['type_layout_animations']			= "Layout animations";
-$_['type_legacy_image_format']			= "Legacy image format";
-$_['type_magnetometer']				= "Magnetometer";
-$_['type_microphone']				= "Microphone";
+$_['type_accelerometer']			= "Akcelerometar";
+$_['type_ambient_light_sensor']			= "Senzor ambijentalnog svjetla";
+$_['type_autoplay']				= "Automatska reprodukcija";
+$_['type_camera']				= "Fotoaparat";
+$_['type_fullscreen']				= "Cijeli zaslon";
+$_['type_display_capture']			= "Prikaz snimanja";
+$_['type_document_domain']			= "Domena dokumenta";
+$_['type_encrypted_media']			= "Šifrirani mediji";
+$_['type_geolocation']				= "Geolokacija";
+$_['type_gyroscope']				= "Žiroskop";
+$_['type_layout_animations']			= "Animacije izgleda";
+$_['type_legacy_image_format']			= "Naslijeđeni format slike";
+$_['type_magnetometer']				= "Magnetometar";
+$_['type_microphone']				= "Mikrofon";
 $_['type_midi']					= "Midi";
-$_['type_oversized_images']			= "Oversized images";
-$_['type_payment']				= "Payment";
-$_['type_picture_in_picture']			= "Picture in picture";
-$_['type_speaker']				= "Speaker";
-$_['type_sync_xhr']				= "Sync xhr";
-$_['type_unoptimized_images']			= "Unoptimized images";
-$_['type_unsized_media']			= "Unsized media";
-$_['type_usb']					= "Usb";
+$_['type_oversized_images']			= "Predimenzionirane slike";
+$_['type_payment']				= "Plaćanje";
+$_['type_picture_in_picture']			= "Slika u slici";
+$_['type_speaker']				= "Zvučnik";
+$_['type_sync_xhr']				= "Sinkronizacija xhr";
+$_['type_unoptimized_images']			= "Neoptimizirane slike";
+$_['type_unsized_media']			= "Mediji bez veličine";
+$_['type_usb']					= "USB";
 $_['type_vr']					= "Vr";
-$_['type_vibrate']				= "Vibrate";
+$_['type_vibrate']				= "Vibrirati";
 $_['type_webauthn']				= "Webauthn";
 
 // Help Tooltip Feature Policies
-$_['help_accelerometer']			= "Controls whether the current document is allowed to gather information about the acceleration of the device through the Accelerometer interface.";
-$_['help_ambient_light_sensor']			= "Controls whether the current document is allowed to gather information about the amount of light in the environment around the device through the AmbientLightSensor interface.";
-$_['help_autoplay']				= "Controls whether the current document is allowed to autoplay media requested through the HTMLMediaElement interface. When this policy is enabled and there were no user gestures, the Promise returned by HTMLMediaElement.play() will reject with a DOMException. The autoplay attribute on \"audio\" and \"video\" elements will be ignored.";
-$_['help_camera']				= "Controls whether the current document is allowed to use video input devices. When this policy is enabled, the Promise returned by getUserMedia() will reject with a NotAllowedError DOMException.";
-$_['help_fullscreen']				= "Controls whether the current document is allowed to use Element.requestFullScreen(). When this policy is enabled, the returned Promise rejects with a TypeError DOMException.";
-$_['help_display_capture']			= "Controls whether or not the current document is permitted to use the getDisplayMedia() method to capture screen contents. When this policy is enabled, the promise returned by getDisplayMedia() will reject with a NotAllowedError if permission is not obtained to capture the display's contents.";
-$_['help_document_domain']			= "Controls whether the current document is allowed to set document.domain. When this policy is enabled, attempting to set document.domain will fail and cause a SecurityError DOMException to be be thrown.";
-$_['help_encrypted_media']			= "Controls whether the current document is allowed to use the Encrypted Media Extensions API (EME). When this policy is enabled, the Promise returned by Navigator.requestMediaKeySystemAccess() will reject with a DOMException.";
-$_['help_geolocation']				= "Controls whether the current document is allowed to use the Geolocation Interface. When this policy is enabled, calls to getCurrentPosition() and watchPosition() will cause those function's callbacks to be invoked with a PositionError code of PERMISSION_DENIED.";
-$_['help_gyroscope']				= "Controls whether the current document is allowed to gather information about the orientation of the device through the Gyroscope interface.";
-$_['help_layout_animations']			= "The HTTP Feature-Policy header layout-animations directive controls whether the current document is allowed to show layout animations.";
-$_['help_legacy_image_format']			= "The HTTP Feature-Policy header legacy-image-formats directive controls whether the current document is allowed to display images in legacy formats.";
-$_['help_magnetometer']				= "Controls whether the current document is allowed to gather information about the orientation of the device through the Magnetometer interface.";
-$_['help_microphone']				= "Controls whether the current document is allowed to use audio input devices. When this policy is enabled, the Promise returned by MediaDevices.getUserMedia() will reject with a NotAllowedError.";
-$_['help_midi']					= "Controls whether the current document is allowed to use the Web MIDI API. When this policy is enabled, the Promise returned by Navigator.requestMIDIAccess() will reject with a DOMException.";
-$_['help_oversized_images']			= "The HTTP Feature-Policy header oversized-images directive controls whether the current document is allowed to download and display large images.";
-$_['help_payment']				= "Controls whether the current document is allowed to use the Payment Request API. When this policy is enabled, the PaymentRequest() constructor will throw a SecurityError DOMException.";
-$_['help_picture_in_picture']			= "Controls whether the current document is allowed to play a video in a Picture-in-Picture mode via the corresponding API.";
-$_['help_speaker']				= "Controls whether the current document is allowed to play audio via any methods.";
-$_['help_sync_xhr']				= "Controls whether the current document is allowed to make synchronous XMLHttpRequest requests.";
-$_['help_unoptimized_images']			= "The HTTP Feature-Policy header unoptimized-images directive controls whether the current document is allowed to download and display unoptimized images.";
-$_['help_unsized_media']			= "The HTTP Feature-Policy header unsized-media directive controls whether the current document is allowed to change the size of media elements after the initial layout is complete. This restriction solves \"layout instability\" problem caused by providing default dimensions for images whose size is not specified in advance so that image doesn't change size after loading.";
-$_['help_usb']					= "Controls whether the current document is allowed to use the WebUSB API.";
-$_['help_vr']					= "Controls whether the current document is allowed to use the WebVR API. When this policy is enabled, the Promise returned by Navigator.getVRDisplays() will reject with a DOMException. Keep in mind that the WebVR standard is in the process of being replaced with WebXR.";
-$_['help_vibrate']				= "The HTTP Feature-Policy header vibrate directive controls whether the current document is allowed to trigger device vibrations via Vibration API.";
-$_['help_webauthn']				= "The HTTP Feature-Policy header publickey-credentials directive controls whether the current document is allowed to access Web Authentcation API, i.e, via navigator.credentials.create({publicKey: ...,...}) and navigator.credentials.get({publicKey: ...,...}). When this policy is enabled, any attempt to create or query public key credentials will result in an error.";
+$_['help_accelerometer']			= "Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o ubrzanju uređaja putem sučelja mjerača ubrzanja.";
+$_['help_ambient_light_sensor']			= "Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o količini svjetla u okruženju oko uređaja putem sučelja AmbientLightSensor.";
+$_['help_autoplay']				= "Kontrolira je li trenutnom dokumentu dopuštena automatska reprodukcija medija zatraženih putem sučelja HTMLMediaElement. Kada je ovo pravilo omogućeno i nije bilo gesta korisnika, obećanje koje vraća HTMLMediaElement.play() odbacit će se uz DOMException. Atribut automatske reprodukcije na elementima \\"audio\\" i \\"video\\" bit će zanemaren.";
+$_['help_camera']				= "Kontrolira je li trenutnom dokumentu dopuštena upotreba video ulaznih uređaja. Kada je ovo pravilo omogućeno, obećanje koje vraća getUserMedia() odbacit će se uz NotAllowedError DOMException.";
+$_['help_fullscreen']				= "Kontrolira smije li trenutni dokument koristiti Element.requestFullScreen(). Kada je ovo pravilo omogućeno, vraćeni Promise odbija se uz TypeError DOMException.";
+$_['help_display_capture']			= "Kontrolira je li trenutnom dokumentu dopušteno korištenje metode getDisplayMedia() za snimanje sadržaja zaslona. Kada je ovo pravilo omogućeno, obećanje koje vraća getDisplayMedia() odbacit će se s NotAllowedError ako se ne dobije dopuštenje za snimanje sadržaja zaslona.";
+$_['help_document_domain']			= "Kontrolira je li trenutnom dokumentu dopušteno postaviti document.domain. Kada je ovo pravilo omogućeno, pokušaj postavljanja document.domain neće uspjeti i uzrokovati izbacivanje SecurityError DOMException.";
+$_['help_encrypted_media']			= "Kontrolira je li trenutnom dokumentu dopušteno korištenje API-ja proširenja šifriranih medija (EME). Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.requestMediaKeySystemAccess() će odbiti uz DOMException.";
+$_['help_geolocation']				= "Kontrolira je li trenutnom dokumentu dopušteno koristiti Geolocation Interface. Kada je ovo pravilo omogućeno, pozivi getCurrentPosition() i watchPosition() uzrokovat će pozivanje povratnih poziva tih funkcija s kodom PositionError PERMISSION_DENIED.";
+$_['help_gyroscope']				= "Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o orijentaciji uređaja putem sučelja Gyroscope.";
+$_['help_layout_animations']			= "HTTP Feature-Policy zaglavlje layout-animations direktiva kontrolira je li trenutnom dokumentu dopušteno prikazivati ​​animacije izgleda.";
+$_['help_legacy_image_format']			= "Direktiva HTTP Feature-Policy zaglavlja legacy-image-formats kontrolira je li trenutnom dokumentu dopušteno prikazivati ​​slike u naslijeđenim formatima.";
+$_['help_magnetometer']				= "Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o orijentaciji uređaja putem sučelja magnetometra.";
+$_['help_microphone']				= "Kontrolira je li trenutnom dokumentu dopuštena upotreba audio ulaznih uređaja. Kada je ovo pravilo omogućeno, obećanje koje vraća MediaDevices.getUserMedia() odbit će s NotAllowedError.";
+$_['help_midi']					= "Kontrolira je li trenutnom dokumentu dopušteno koristiti Web MIDI API. Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.requestMIDIAccess() će odbiti uz DOMException.";
+$_['help_oversized_images']			= "HTTP Feature-Policy zaglavlje oversized-images direktiva kontrolira je li trenutnom dokumentu dopušteno preuzimanje i prikaz velikih slika.";
+$_['help_payment']				= "Kontrolira je li trenutnom dokumentu dopušteno koristiti API zahtjeva za plaćanje. Kada je ovo pravilo omogućeno, konstruktor PaymentRequest() izbacit će iznimku SecurityError DOMException.";
+$_['help_picture_in_picture']			= "Kontrolira smije li trenutačni dokument reproducirati videozapis u načinu slike u slici putem odgovarajućeg API-ja.";
+$_['help_speaker']				= "Kontrolira je li trenutnom dokumentu dopušteno reproducirati zvuk putem bilo koje metode.";
+$_['help_sync_xhr']				= "Kontrolira je li trenutnom dokumentu dopušteno slanje sinkronih XMLHttpRequest zahtjeva.";
+$_['help_unoptimized_images']			= "HTTP Feature-Policy zaglavlje unoptimized-images direktiva kontrolira je li trenutnom dokumentu dopušteno preuzimanje i prikaz neoptimiziranih slika.";
+$_['help_unsized_media']			= "HTTP Feature-Policy zaglavlje unsized-media direktiva kontrolira je li trenutnom dokumentu dopušteno mijenjati veličinu medijskih elemenata nakon završetka početnog izgleda. Ovo ograničenje rješava problem \\"nestabilnosti izgleda\\" uzrokovan pružanjem zadanih dimenzija za slike čija veličina nije unaprijed navedena tako da slika ne mijenja veličinu nakon učitavanja.";
+$_['help_usb']					= "Kontrolira smije li trenutni dokument koristiti WebUSB API.";
+$_['help_vr']					= "Kontrolira je li trenutnom dokumentu dopušteno koristiti WebVR API. Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.getVRDisplays() odbacit će se uz DOMException. Imajte na umu da je WebVR standard u procesu zamjene s WebXR.";
+$_['help_vibrate']				= "HTTP Feature-Policy zaglavlje vibrate direktiva kontrolira smije li trenutni dokument pokretati vibracije uređaja putem Vibration API-ja.";
+$_['help_webauthn']				= "Direktiva publickey-credentials zaglavlja HTTP Feature-Policy kontrolira je li trenutnom dokumentu dopušten pristup API-ju Web Authentcation, tj. putem navigator.credentials.create({publicKey: ...,...}) i navigator.credentials.get({publicKey: ...,...}). Kada je ovo pravilo omogućeno, svaki pokušaj stvaranja vjerodajnica javnog ključa ili upita za njih rezultirat će pogreškom.";
 
 // Error
-$_['error_permission']                          = "Warning: You do not have permission to modify Opencart Security Headers!";
-$_['error_expect_ct_report_uri']                = "Warning: <strong>Expect-CT</strong> Report-Uri is empty. Recommendation: https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct";
-$_['error_data']                                = "Warning: Please check the form carefully for errors!";
+$_['error_permission']                          = "Upozorenje: Nemate dozvolu za izmjenu Opencart sigurnosnih zaglavlja!";
+$_['error_expect_ct_report_uri']                = "Upozorenje: <strong>Expect-CT</strong> Report-Uri je prazan. Preporuka: https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct";
+$_['error_data']                                = "Upozorenje: Pažljivo provjerite obrazac za pogreške!";

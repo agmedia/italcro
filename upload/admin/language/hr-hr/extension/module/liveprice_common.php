@@ -9,7 +9,7 @@ $_['text_edit']     = "Edit '.\$_['module_name'].' Module";
 
 // Text
 $_['text_module']                    = "Moduli";
-$_['text_success']                   = "Module \"'.\$_['heading_title'].'\" successfully updated!";
+$_['text_success']                   = "Module \\"'.\$_['heading_title'].'\\" successfully updated!";
 $_['text_content_top']               = "Sadržaj Vrh";
 $_['text_content_bottom']            = "Sadržaj Dno";
 $_['text_column_left']               = "Stupac lijevo";
@@ -69,20 +69,20 @@ $_['entry_percent_special_to_total']            = "Primijenite posebni postotak 
 $_['entry_entry_percent_special_to_total_help'] = "Primjena posebnog postotka na ukupnu cijenu (uključujući modifikatore cijene opcije)";
 
 $_['entry_default_price']      = "Prikaz cijena sa zadanim opcijama";
-$_['entry_default_price_help'] = "Prikaz cijena proizvoda uključujući modifikatore cijena zadanih vrijednosti opcija na popisima proizvoda kao što su stranica kategorije, modul \"Najnovije\" itd. (potreban je modul Poboljšane opcije)";
-$_['entry_default_price_mods'] = "Zadane opcije treba postaviti modul <a href=\"http://www.opencart.com/index.php?route=extension/extension/info&extension_id=33774\" target=\"_blank\">Improved Options</a>";
+$_['entry_default_price_help'] = "Prikaz cijena proizvoda uključujući modifikatore cijena zadanih vrijednosti opcija na popisima proizvoda kao što su stranica kategorije, modul \\"Najnovije\\" itd. (potreban je modul Poboljšane opcije)";
+$_['entry_default_price_mods'] = "Zadane opcije treba postaviti modul <a href=\\"http://www.opencart.com/index.php?route=extension/extension/info&extension_id=33774\\" target=\\"_blank\\">Improved Options</a>";
 
 $_['entry_starting_from']      = "Najniže moguće cijene u listama";
-$_['entry_starting_from_help'] = "Prikaz najnižih mogućih cijena proizvoda u popisima proizvoda (poput stranice kategorije, modula \"Najnovije\", itd.) na temelju opcija (uzimajući u obzir akcije, ali ne i popuste), ili na temelju popusta (ignorirajući opcije)";
+$_['entry_starting_from_help'] = "Prikaz najnižih mogućih cijena proizvoda u popisima proizvoda (poput stranice kategorije, modula \\"Najnovije\\", itd.) na temelju opcija (uzimajući u obzir akcije, ali ne i popuste), ili na temelju popusta (ignorirajući opcije)";
 
-$_['entry_show_from']      = "Prefiks \"od\" za cijene u listama";
-$_['entry_show_from_help'] = "Prikažite prefiks \"od\" za cijene proizvoda na popisima proizvoda kao što je stranica kategorije, modul \"Najnovije\" itd.";
+$_['entry_show_from']      = "Prefiks \\"od\\" za cijene u listama";
+$_['entry_show_from_help'] = "Prikažite prefiks \\"od\\" za cijene proizvoda na popisima proizvoda kao što je stranica kategorije, modul \\"Najnovije\\" itd.";
 
 $_['entry_starting_from_current']      = "Trenutna najniža cijena na stranici proizvoda";
 $_['entry_starting_from_current_help'] = "Prikaži najnižu moguću cijenu proizvoda (uključujući akcije, ali ne i popuste) na stranici proizvoda u skladu s trenutno odabranim opcijama";
 
-$_['entry_show_from_current']      = "Prefiks \"od\" za stranicu proizvoda";
-$_['entry_show_from_current_help'] = "Prikaz prefiksa \"od\" u slučaju prikaza najniže trenutne cijene proizvoda na stranici proizvoda";
+$_['entry_show_from_current']      = "Prefiks \\"od\\" za stranicu proizvoda";
+$_['entry_show_from_current_help'] = "Prikaz prefiksa \\"od\\" u slučaju prikaza najniže trenutne cijene proizvoda na stranici proizvoda";
 
 $_['entry_discount_like_special']      = "Prikažite popuste u stilu posebnih ponuda";
 $_['entry_discount_like_special_help'] = "Prikažite primijenjene popuste koristeći stil posebnih ponuda na stranici proizvoda u odjeljku za kupce";
@@ -108,8 +108,8 @@ $_['entry_animation_help'] = "Blijeda animacija, ne radi za sve teme";
 $_['text_success']      = "Postavke su izmijenjene!";
 $_['text_update_alert'] = "(dostupna nova verzija)";
 
-$_['text_relatedoptions_notify']     = "Potrebno proširenje: <a href=\"https://www.opencart.com/index.php?route=marketplace/extension/info&extension_id=31606\" target=\"_blank\" title=\"Related Options for OpenCart\">Srodne opcije</a> ili <a href=\"https://isenselabs.com/products/view/related-options-pro-take-product-options-to-the-next-level?pa=41075\" target=\"_blank\" title=\"Related Options PRO for OpenCart\">Srodne opcije PRO</a>";
-$_['text_relatedoptions_pro_notify'] = "Potrebno proširenje: <a href=\"https://isenselabs.com/products/view/related-options-pro-take-product-options-to-the-next-level?pa=41075\" target=\"_blank\" title=\"Related Options PRO for OpenCart\">Srodne opcije PRO</a>";
+$_['text_relatedoptions_notify']     = "Potrebno proširenje: <a href=\\"https://www.opencart.com/index.php?route=marketplace/extension/info&extension_id=31606\\" target=\\"_blank\\" title=\\"Related Options for OpenCart\\">Srodne opcije</a> ili <a href=\\"https://isenselabs.com/products/view/related-options-pro-take-product-options-to-the-next-level?pa=41075\\" target=\\"_blank\\" title=\\"Related Options PRO for OpenCart\\">Srodne opcije PRO</a>";
+$_['text_relatedoptions_pro_notify'] = "Potrebno proširenje: <a href=\\"https://isenselabs.com/products/view/related-options-pro-take-product-options-to-the-next-level?pa=41075\\" target=\\"_blank\\" title=\\"Related Options PRO for OpenCart\\">Srodne opcije PRO</a>";
 
 $_['module_description'] = '"'.$_['module_name'].'" module is designed to improve the pricing functionality of OpenCart.<br><br>
 Main module features:
@@ -136,7 +136,7 @@ $_['module_copyright'] = '"'.$_['module_name'].'" is a commercial extension. Ple
 If you want to use the module on multiple sites, you should purchase a separate copy for each site. Thank you.';
 
 $_['text_module_version'] = $_['module_name'].', version';
-$_['text_module_support'] = "Programer: <a href=\"https://liveopencart.com\" target=\"_blank\">liveopencart.com</a> | Podrška, pitanja i prijedlozi: <a href=\"mailto:support@liveopencart.com\">support@liveopencart.com</a>";
+$_['text_module_support'] = "Programer: <a href=\\"https://liveopencart.com\\" target=\\"_blank\\">liveopencart.com</a> | Podrška, pitanja i prijedlozi: <a href=\\"mailto:support@liveopencart.com\\">support@liveopencart.com</a>";
 
 // Error
-$_['error_permission'] = "Warning: You do not have permission to modify module \"'.\$_['heading_title'].'\"!";
+$_['error_permission'] = "Warning: You do not have permission to modify module \\"'.\$_['heading_title'].'\\"!";

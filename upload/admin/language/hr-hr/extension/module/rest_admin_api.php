@@ -2,30 +2,30 @@
 
 $_['heading_title']         = "Rest Admin API";
 
-$_['text_enabled']			= "Enabled";
-$_['text_disabled']			= "Disabled";
-$_['text_feed']				= "Modules";
-$_['text_success']			= "Settings saved";
-$_['text_extension']		= "Extensions";
-$_['button_save']			= "Save";
-$_['button_cancel']			= "Cancel";
-$_['button_generate_api_key'] = "Generate API Secret key";
+$_['text_enabled']			= "Omogućeno";
+$_['text_disabled']			= "Onesposobljeno";
+$_['text_feed']				= "Moduli";
+$_['text_success']			= "Postavke su spremljene";
+$_['text_extension']		= "Ekstenzije";
+$_['button_save']			= "Uštedjeti";
+$_['button_cancel']			= "Otkazati";
+$_['button_generate_api_key'] = "Generiraj tajni ključ API-ja";
 $_['tab_general']			= "General";
-$_['text_edit']    			= "Rest Admin API settings";
+$_['text_edit']    			= "Ostatak Admin API postavki";
 $_['entry_status']			= "Status:";
-$_['entry_key']				= "Secret Key:";
-$_['text_thumb_width']		= "Thumbnail image width:";
-$_['text_thumb_height']		= "Thumbnail image height:";
-$_['text_secret_key']       = "You can set any string as secret key.";
-$_['text_order_id']         = "You can find your order ID in your confirmation email, or you can find it on your PayPal transaction details page! If you have bought the extension on opencart.com you received an order ID from opencart.com.";
+$_['entry_key']				= "Tajni ključ:";
+$_['text_thumb_width']		= "Širina sličice:";
+$_['text_thumb_height']		= "Visina sličice:";
+$_['text_secret_key']       = "Možete postaviti bilo koji niz kao tajni ključ.";
+$_['text_order_id']         = "ID svoje narudžbe možete pronaći u svojoj e-poruci potvrde ili ga možete pronaći na stranici s detaljima transakcije na PayPalu! Ako ste kupili proširenje na opencart.com, primili ste ID narudžbe od opencart.com.";
 
-$_['entry_enable_logging'] = "Enable logging:";
-$_['text_enable_logging'] = "Log REST API requests and responses in your Opencart log folder. Note: this may log personal information. We recommend using this for debugging purposes only and deleting the logs when finished.";
+$_['entry_enable_logging'] = "Omogući bilježenje:";
+$_['text_enable_logging'] = "Zabilježite REST API zahtjeve i odgovore u svoju Opencart mapu dnevnika. Napomena: ovo može zabilježiti osobne podatke. Preporučujemo da ovo koristite samo u svrhu otklanjanja pogrešaka i brisanje zapisa kada završite.";
 
 
-$_['entry_order_id']        = "Your order id:";
+$_['entry_order_id']        = "Vaš ID narudžbe:";
 
-$_['entry_allowed_ip']      = "IP address:";
-$_['text_allowed_ip']       = "Allow access to the API from only the listed IP addresses (Comma separated list of IP addresses). You can leave it blank, if you do not want enable IP validation.";
+$_['entry_allowed_ip']      = "IP adresa:";
+$_['text_allowed_ip']       = "Dopusti pristup API-ju samo s navedenih IP adresa (popis IP adresa odvojen zarezima). Možete ga ostaviti praznim ako ne želite omogućiti IP provjeru valjanosti.";
 
-$_['error']                 = "Please set your order id! You can find it in your order email.";
+$_['error']                 = "Molimo postavite svoj ID narudžbe! Možete ga pronaći u e-poruci svoje narudžbe.";

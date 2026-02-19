@@ -329,6 +329,16 @@ class ModelCustomerCustomerApproval extends Model {
 			KEY `idx_delivery_place` (`delivery_place_id`),
 			KEY `idx_sales_rep` (`sales_rep_id`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_postcode_lookup` (
+			`city_key` VARCHAR(191) NOT NULL,
+			`city_name` VARCHAR(191) NOT NULL,
+			`postcode` VARCHAR(16) NOT NULL,
+			`source` VARCHAR(64) NOT NULL DEFAULT 'manual',
+			`date_modified` DATETIME NOT NULL,
+			PRIMARY KEY (`city_key`),
+			KEY `idx_postcode` (`postcode`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 	}
 
 	private function parseCityAndPostcode($raw_place) {
@@ -349,10 +359,88 @@ class ModelCustomerCustomerApproval extends Model {
 			}
 		}
 
+		// 1) Lookup iz tablice popunjene iz mjestaRh.xlsx
+		if ($postcode === '' && $city !== '') {
+			$postcode = $this->getPostcodeFromLookupByCity($city);
+		}
+
+		// 2) Fallback mapa u kodu (zadnja rezerva)
+		if ($postcode === '' && $city !== '') {
+			$postcode = $this->guessCroatianPostcodeByCity($city);
+		}
+
 		return array(
 			'postcode' => $postcode,
 			'city' => $city
 		);
+	}
+
+	private function guessCroatianPostcodeByCity($city) {
+		$key = $this->normalizeCityKey($city);
+
+		$map = array(
+			'ZAGREB' => '10000',
+			'RIJEKA' => '51000',
+			'SPLIT' => '21000',
+			'OSIJEK' => '31000',
+			'ZADAR' => '23000',
+			'VARAZDIN' => '42000',
+			'ČAKOVEC' => '40000',
+			'CAKOVEC' => '40000',
+			'PULA' => '52100',
+			'SLAVONSKI BROD' => '35000',
+			'VELIKA GORICA' => '10410',
+			'SISAK' => '44000',
+			'KARLOVAC' => '47000',
+			'DUBROVNIK' => '20000',
+			'ŠIBENIK' => '22000',
+			'SIBENIK' => '22000',
+			'KOPRIVNICA' => '48000',
+			'BJELOVAR' => '43000',
+			'POZEGA' => '34000',
+			'POŽEGA' => '34000',
+			'VINKOVCI' => '32100',
+			'VUKOVAR' => '32000'
+		);
+
+		if (isset($map[$key])) {
+			return $map[$key];
+		}
+
+		return '';
+	}
+
+	private function getPostcodeFromLookupByCity($city) {
+		$key = $this->normalizeCityKey($city);
+
+		if ($key === '') {
+			return '';
+		}
+
+		$query = $this->db->query("SELECT postcode
+			FROM `" . DB_PREFIX . "qiqo_postcode_lookup`
+			WHERE city_key = '" . $this->db->escape($key) . "'
+			LIMIT 1");
+
+		if ($query->num_rows && !empty($query->row['postcode'])) {
+			return trim((string)$query->row['postcode']);
+		}
+
+		return '';
+	}
+
+	private function normalizeCityKey($city) {
+		$key = trim((string)$city);
+		$key = preg_replace('/\([^)]*\)/u', ' ', $key);
+		$key = strtr($key, array(
+			'Č' => 'C', 'Ć' => 'C', 'Đ' => 'D', 'Š' => 'S', 'Ž' => 'Z',
+			'č' => 'C', 'ć' => 'C', 'đ' => 'D', 'š' => 'S', 'ž' => 'Z'
+		));
+		$key = utf8_strtoupper($key);
+		$key = preg_replace('/[^A-Z0-9 ]+/u', ' ', $key);
+		$key = preg_replace('/\s+/u', ' ', $key);
+
+		return trim($key);
 	}
 
 	private function getCroatiaCountryId() {

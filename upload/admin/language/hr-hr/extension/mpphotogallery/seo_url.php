@@ -1,14 +1,14 @@
 <?php
 // Text
-$_['text_keyword'] = "Do not use spaces, instead replace spaces with - and make sure the SEO URL is globally unique.";
+$_['text_keyword'] = "Nemojte koristiti razmake, umjesto toga zamijenite razmake sa - i provjerite je li SEO URL globalno jedinstven.";
 
 // Entry
 $_['entry_keyword'] = "SEO URL";
-$_['entry_store'] = "Stores";
+$_['entry_store'] = "Trgovine";
 
 // Help
-$_['help_keyword'] = "Do Not Use Spaces, Instead Replace Spaces With - And Make Sure The Seo Url Is Globally Unique.";
+$_['help_keyword'] = "Nemojte koristiti razmake, umjesto toga zamijenite razmake s - i pobrinite se da je SEO url globalno jedinstven.";
 
 // Error
-$_['error_keyword'] = "SEO URL already in use!";
-$_['error_unique'] = "SEO URL must be unique!";
+$_['error_keyword'] = "SEO URL već u upotrebi!";
+$_['error_unique'] = "SEO URL mora biti jedinstven!";

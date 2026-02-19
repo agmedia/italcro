@@ -3,7 +3,7 @@
 $_['heading_title']		 				= "PayPal Commerce Platform";
 
 // Text
-$_['text_paypal']		 				= "<a target=\"_BLANK\" href=\"https://www.paypal.com/uk/mrb/pal=V4T754QB63XXL\"><img src=\"view/image/payment/paypal.png\" alt=\"PayPal Commerce Platform\" title=\"PayPal Commerce Platform\" style=\"border: 1px solid #EEEEEE;\" /></a>";
+$_['text_paypal']		 				= "<a target=\\"_BLANK\\" href=\\"https://www.paypal.com/uk/mrb/pal=V4T754QB63XXL\\"><img src=\\"view/image/payment/paypal.png\\" alt=\\"PayPal Commerce Platform\\" title=\\"PayPal Commerce Platform\\" style=\\"border: 1px solid #EEEEEE;\\" /></a>";
 $_['text_extensions']     				= "Extensions";
 $_['text_edit']          				= "Edit PayPal";
 $_['text_general']				 	 	= "General";
@@ -115,7 +115,7 @@ $_['entry_message_flex_color'] 			= "Message Banner Color";
 $_['entry_message_flex_ratio'] 			= "Message Banner Ratio";
 
 // Help
-$_['help_checkout_express']				= "If your country is not available in the list when going through the PayPal onboarding experience please <a id=\"button_connect_express_checkout\" href=\"%s\" target=\"_blank\" data-paypal-onboard-complete=\"onBoardedCallback\">click here</a>.";
+$_['help_checkout_express']				= "If your country is not available in the list when going through the PayPal onboarding experience please <a id=\\"button_connect_express_checkout\\" href=\\"%s\\" target=\\"_blank\\" data-paypal-onboard-complete=\\"onBoardedCallback\\">click here</a>.";
 $_['help_checkout_express_status']		= "When activated PayPal will display personalized Smart Buttons avalible to your customers based on their location.";
 $_['help_checkout_card_status']			= "PayPal verifies if you are eligible for advanced card payment and will display this option on the checkout step if available.";
 $_['help_checkout_message_status']		= "Add pay later messaging to your site.";

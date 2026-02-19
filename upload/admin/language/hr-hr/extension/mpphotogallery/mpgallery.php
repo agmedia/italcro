@@ -1,81 +1,81 @@
 <?php
 // Heading
-$_['heading_title'] = "Albums";
+$_['heading_title'] = "Albumi";
 
 // Text
-$_['text_success'] = "Success: You Have Modified Albums!";
-$_['text_list'] = "Albums List";
-$_['text_add'] = "Add New Album";
-$_['text_edit'] = "Edit Album";
-$_['text_highlight'] = "Highlight";
+$_['text_success'] = "Uspjeh: izmijenili ste albume!";
+$_['text_list'] = "Popis albuma";
+$_['text_add'] = "Dodaj novi album";
+$_['text_edit'] = "Uredi album";
+$_['text_highlight'] = "Istaknuti";
 
 // Button
-// $_['button_save'] = 'Save & Close';
-$_['button_video_add'] = "Add Video";
+// $_['button_save'] = 'Spremi i zatvori';
+$_['button_video_add'] = "Dodaj video";
 
 // Column
-$_['column_name'] = "Album Name";
-$_['column_image'] = "Image";
-$_['column_sort_order'] = "Sort Order";
-$_['column_viewed'] = "Viewed";
+$_['column_name'] = "Naziv albuma";
+$_['column_image'] = "Slika";
+$_['column_sort_order'] = "Redoslijed sortiranja";
+$_['column_viewed'] = "Gledano";
 $_['column_status'] = "Status";
-$_['column_action'] = "Action";
+$_['column_action'] = "Akcijski";
 // gallery for product task starts
 // 07-05-2022: updation task start
-$_['column_product_image'] = "Image";
-$_['column_product_name'] = "Name";
-$_['column_mpgallery_video'] = "Include Gallery Videos?";
-$_['column_mpgallery_image'] = "Include Gallery Photos?";
-$_['column_remove'] = "Remove";
+$_['column_product_image'] = "Slika";
+$_['column_product_name'] = "Ime";
+$_['column_mpgallery_video'] = "Uključiti galerijske videozapise?";
+$_['column_mpgallery_image'] = "Uključiti galerijske fotografije?";
+$_['column_remove'] = "Ukloniti";
 // 07-05-2022: updation task end
 // gallery for product task ends
 // Entry
-$_['entry_title'] = "Title";
-$_['entry_highlight'] = "Highlight";
-$_['entry_description']  = "Short Desription On Display Listing";
-$_['entry_top_description'] = "Top Description";
-$_['entry_bottom_description'] = "Bottom Description";
+$_['entry_title'] = "Titula";
+$_['entry_highlight'] = "Istaknuti";
+$_['entry_description']  = "Kratki opis na popisu za prikaz";
+$_['entry_top_description'] = "Vrhunski opis";
+$_['entry_bottom_description'] = "Donji opis";
 $_['entry_status'] = "Status";
-$_['entry_sort_order'] = "Sort Order";
-$_['entry_photo'] = "Photo";
-$_['entry_image'] = "Image";
-$_['entry_meta_keyword'] = "Meta Keyword";
-$_['entry_meta_description'] = "Meta Description";
-$_['entry_meta_title'] = "Meta Title";
-$_['entry_photo_image'] = "Image Size";
+$_['entry_sort_order'] = "Redoslijed sortiranja";
+$_['entry_photo'] = "Fotografija";
+$_['entry_image'] = "Slika";
+$_['entry_meta_keyword'] = "Meta ključna riječ";
+$_['entry_meta_description'] = "Meta opis";
+$_['entry_meta_title'] = "Meta naslov";
+$_['entry_photo_image'] = "Veličina slike";
 $_['entry_link'] = "Link";
-$_['entry_width'] = "Width";
-$_['entry_height'] = "Height";
-$_['entry_video_thumb'] = "Thumbnail";
-$_['entry_video_thumb_size'] = "Thumbnail Size";
+$_['entry_width'] = "Širina";
+$_['entry_height'] = "Visina";
+$_['entry_video_thumb'] = "Sličica";
+$_['entry_video_thumb_size'] = "Veličina sličice";
 // gallery for product task starts
-$_['entry_product'] = "Gallery Products";
+$_['entry_product'] = "Galerija proizvoda";
 // gallery for product task ends
 
 // Help
-$_['help_photo_image'] = "This Size Apply When User Visit <strong>All Albums & Photos Listing</strong> Page. This Is Because On This Page User Can See All Alumbs, So Albums With Different Image Size Is The Requirement. You May Leave This Size Empty And Default Image From <strong>All Albums & Photos Listing</strong> Setting.";
-$_['help_video_thumb_image'] = "Video Thumbnail Size (W X H)";
+$_['help_photo_image'] = "Ova se veličina primjenjuje kada korisnik posjeti stranicu <strong>Svi popisi albuma i fotografija</strong>. To je zato što na ovoj stranici korisnik može vidjeti sve alumbe, pa su albumi s različitim veličinama slike uvjet. Ovu veličinu možete ostaviti praznom i zadanu sliku iz postavke <strong>Popis svih albuma i fotografija</strong>.";
+$_['help_video_thumb_image'] = "Veličina sličice videozapisa (Š X V)";
 // gallery for product task starts
-$_['help_product'] = "(Autocomple)";
+$_['help_product'] = "(Automatsko dovršavanje)";
 // gallery for product task ends
 
 // Tab
-$_['tab_albumsetting'] = "Album Setting";
-$_['tab_languagesetting'] = "Language Setting";
-$_['tab_photo'] = "Photos";
-$_['tab_video'] = "Videos";
+$_['tab_albumsetting'] = "Postavka albuma";
+$_['tab_languagesetting'] = "Postavka jezika";
+$_['tab_photo'] = "Fotografije";
+$_['tab_video'] = "Video zapisi";
 // gallery for product task starts
-$_['tab_links'] = "Links";
+$_['tab_links'] = "Linkovi";
 // gallery for product task ends
 $_['tab_seo'] = "SEO URL";
 
 // Button
-$_['button_photo_add'] = "Add Photos";
+$_['button_photo_add'] = "Dodajte fotografije";
 
 // Error
-$_['error_permission'] = "Warning: You Do Not Have Permission To Modify Albums!";
-$_['error_warning'] = "Warning: Please Check The Form Carefully For Errors!";
-$_['error_title'] = "Title Must Be Between 1 And 255 Characters!";
-$_['error_mpgallery_photo'] = "Photo Title Must Be Between 1 And 128 Characters!";
-$_['error_mpgallery_video'] = "Title Must Be Between 1 And 128 Characters!";
-$_['error_meta_title'] = "Meta Title Must Be Greater Than 3 And Less Than 255 Characters!";
+$_['error_permission'] = "Upozorenje: Nemate dozvolu za mijenjanje albuma!";
+$_['error_warning'] = "Upozorenje: Pažljivo provjerite ima li u obrascu pogrešaka!";
+$_['error_title'] = "Naslov mora imati između 1 i 255 znakova!";
+$_['error_mpgallery_photo'] = "Naslov fotografije mora biti između 1 i 128 znakova!";
+$_['error_mpgallery_video'] = "Naslov mora imati između 1 i 128 znakova!";
+$_['error_meta_title'] = "Meta naslov mora biti veći od 3 i manji od 255 znakova!";

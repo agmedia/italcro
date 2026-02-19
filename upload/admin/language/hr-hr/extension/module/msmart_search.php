@@ -47,8 +47,8 @@ $_['text_delete_all_chistory'] = "Izbriši svu povijest";
 $_['text_select_date'] = "Odaberite datum";
 $_['text_number_of_results'] = "Broj rezultata";
 $_['text_no_results'] = "Nema rezultata";
-$_['text_strict_search'] = "Ako je ova opcija omogućena, izraz pretražuje isključivo cijeli izraz kakav jest (na primjer: \\"izraz za pretraživanje\\" podudarat će se sa svim stavkama koje sadrže cijeli izraz \\"izraz za pretraživanje\\"). Ako je ova opcija onemogućena, pretražit će cijeli izraz i zasebne riječi (na primjer: \\"izraz za pretraživanje\\" će se podudarati sa svim stavkama koje sadrže \\"izraz za pretraživanje\\" ili \\"pretraži\\" i \\"izraz\\").";
-$_['text_singularisation'] = "Ako je ova opcija uključena, riječi će se tražiti u obliku jednine i množine. Ovu opciju možete koristiti samo ako je \\"Strogo pretraživanje\\" onemogućeno.";
+$_['text_strict_search'] = "Ako je ova opcija omogućena, izraz pretražuje isključivo cijeli izraz kakav jest (na primjer: \\\"izraz za pretraživanje\\\" podudarat će se sa svim stavkama koje sadrže cijeli izraz \\\"izraz za pretraživanje\\\"). Ako je ova opcija onemogućena, pretražit će cijeli izraz i zasebne riječi (na primjer: \\\"izraz za pretraživanje\\\" će se podudarati sa svim stavkama koje sadrže \\\"izraz za pretraživanje\\\" ili \\\"pretraži\\\" i \\\"izraz\\\").";
+$_['text_singularisation'] = "Ako je ova opcija uključena, riječi će se tražiti u obliku jednine i množine. Ovu opciju možete koristiti samo ako je \\\"Strogo pretraživanje\\\" onemogućeno.";
 $_['text_add_rule'] = "Dodaj pravilo";
 $_['text_quantity'] = "Količina";
 $_['text_product_status'] = "Status proizvoda";
@@ -56,25 +56,25 @@ $_['text_stock_status_id'] = "ID stanja zaliha";
 $_['text_product_id'] = "ID proizvoda";
 $_['text_category_id'] = "ID kategorije";
 $_['text_remove'] = "Ukloniti";
-$_['text_exclude_products'] = "Nakon što omogućite ovu opciju, možete definirati popis uvjeta za isključivanje proizvoda. Imajte na umu da vam operator \\"IN\\" omogućuje pisanje nekoliko vrijednosti odvojenih zarezom. Nemojte koristiti nikakav razmak između njih.";
+$_['text_exclude_products'] = "Nakon što omogućite ovu opciju, možete definirati popis uvjeta za isključivanje proizvoda. Imajte na umu da vam operator \\\"IN\\\" omogućuje pisanje nekoliko vrijednosti odvojenih zarezom. Nemojte koristiti nikakav razmak između njih.";
 $_['text_type'] = "Tip";
 $_['text_operator'] = "Operater";
 $_['text_value'] = "Vrijednost";
 $_['text_empty_list'] = "Lista je prazna";
-$_['text_new_version_is_available'] = "Nova verzija %s od \'. \$_[\'heading_title\'] . \' je dostupan. <a href=\\"https://support.ocdemo.eu/how-to-download-purchased-extension?e=msmart_search\\" target=\\"_blank\\">Kliknite ovdje</a> za preuzimanje";
+$_['text_new_version_is_available'] = "Nova verzija %s od \'. \$_[\'heading_title\'] . \' je dostupan. <a href=\\\"https://support.ocdemo.eu/how-to-download-purchased-extension?e=msmart_search\\\" target=\\\"_blank\\\">Kliknite ovdje</a> za preuzimanje";
 $_['text_new_activation_data'] = "Zbog promjene aktivacijskog sustava molimo ponovno unesite svoje aktivacijske podatke. Ispričavamo se zbog neugodnosti.";
 $_['text_open_documentation'] = "Otvorena dokumentacija";
 $_['text_go_to_support'] = "Idi na podršku";
 $_['text_open_forum'] = "Otvoreni forum";
 $_['text_regex'] = "Regex";
-$_['text_regex_help'] = "Ako želite koristiti regularni izraz, označite potvrdni okvir \\"Regex\\". Na primjer, za pretraživanje svih ključnih riječi bez zadnjeg znaka, postavite <pre>/note.*/i</pre> <i class=\\"fa fa-arrow-right\\"></i> <pre>notebook</pre> koji će odgovarati svim izrazima za pretraživanje koji sadrže \\"note\\" i zamijeniti ih \\"note\\".";
+$_['text_regex_help'] = "Ako želite koristiti regularni izraz, označite potvrdni okvir \\\"Regex\\\". Na primjer, za pretraživanje svih ključnih riječi bez zadnjeg znaka, postavite <pre>/note.*/i</pre> <i class=\\\"fa fa-arrow-right\\\"></i> <pre>notebook</pre> koji će odgovarati svim izrazima za pretraživanje koji sadrže \\\"note\\\" i zamijeniti ih \\\"note\\\".";
 $_['text_required_number_of_results_help'] = 'Kako bi optimizirao pretraživanje, MSF ograničava količinu upita kada prvi upit dosegne potrebnu minimalnu količinu proizvoda, a sljedeći naveden u kartici "Konfiguracija" se ne izvrši 
 (na primjer, nitko ne pregledava svih pretraživanih 1000 rezultata, ali obično prvih 5 stranica i možete ih smanjiti)';
 $_['text_display_categories_first_guide'] = "Prema zadanim postavkama proizvodi se prikazuju prvi, ali ako želite, možete zamijeniti redoslijed sortiranja i prikazati popis kategorija prije proizvoda";
 $_['text_recommended_products_guide'] = "Ova vam značajka omogućuje prikaz preporučenih proizvoda kada korisnik unese izraz bez ikakvih rezultata.";
 $_['text_enabled'] = "Omogućeno";
 $_['text_disabled'] = "Onesposobljeno";
-$_['text_fix_polish_l'] = "Ako koristite poljski jezik u svojoj trgovini, trebali biste omogućiti ovu opciju kako biste riješili problem s traženjem riječi koje sadrže poseban znak \\"ł\\"";
+$_['text_fix_polish_l'] = "Ako koristite poljski jezik u svojoj trgovini, trebali biste omogućiti ovu opciju kako biste riješili problem s traženjem riječi koje sadrže poseban znak \\\"ł\\\"";
 $_['text_save'] = "Uštedjeti";
 
 //recommended
@@ -83,11 +83,11 @@ $_['text_status'] = "Status";
 $_['text_show_recommended_in_live_search'] = "Prikaži preporučene proizvode u live pretraživanju";
 $_['text_show_recommended_in_search_page'] = "Prikaži preporučene proizvode na stranici pretraživanja";
 $_['text_if_no_results'] = "Tekst u zaglavlju kada nema rezultata pretraživanja";
-$_['text_if_no_results_info'] = "Ovdje možete zamijeniti zadani tekst u zaglavlju Live Filtera i na stranici pretraživanja.<br />U Live Filteru bit će prikazan samo ako ste omogućili opciju Prikaži zaglavlje \\"Proizvodi\\" u MSF-u -> kartica Live Filter -> kartica Proizvodi";
+$_['text_if_no_results_info'] = "Ovdje možete zamijeniti zadani tekst u zaglavlju Live Filtera i na stranici pretraživanja.<br />U Live Filteru bit će prikazan samo ako ste omogućili opciju Prikaži zaglavlje \\\"Proizvodi\\\" u MSF-u -> kartica Live Filter -> kartica Proizvodi";
 $_['text_status_info'] = "Prikaži preporučene proizvode kada nema rezultata pretraživanja";
 $_['text_recommended_products'] = "Preporučeni proizvodi";
 $_['text_recommended_info'] = "Ovi će proizvodi biti prikazani u Live Filteru i na stranici za pretraživanje.";
-$_['text_recommended_in_live_search'] = "Ova opcija radi samo ako ste omogućili \\"Proizvodi\\" u Live Filteru";
+$_['text_recommended_in_live_search'] = "Ova opcija radi samo ako ste omogućili \\\"Proizvodi\\\" u Live Filteru";
 
 // Fields
 $_['text_field_name'] = "Ime";
@@ -118,14 +118,14 @@ $_['text_only_for_standard_mode'] = "Samo za standardni mod";
 $_['text_only_for_tabs_mode'] = "Samo za način rada s karticama";
 $_['text_standard_mode'] = "Standardni način rada";
 $_['text_tabs_mode'] = "Način rada s karticama";
-$_['text_any_keyword'] = "Ako nema rezultata, također pokušajte pretražiti proizvode po bilo kojoj ključnoj riječi. Ovu opciju možete koristiti samo ako je \\"Strogo pretraživanje\\" onemogućeno.";
+$_['text_any_keyword'] = "Ako nema rezultata, također pokušajte pretražiti proizvode po bilo kojoj ključnoj riječi. Ovu opciju možete koristiti samo ako je \\\"Strogo pretraživanje\\\" onemogućeno.";
 $_['text_back_to_list'] = "Povratak na popis";
 $_['text_condition'] = "stanje";
 $_['text_join'] = "spojiti stol";
-$_['text_add_extra_field_guide'] = "Ako želite pretraživati ​​u tablici koja nije `{table}`, prvo morate spojiti sve povezane tablice uključujući njihove odnose u bazi podataka. Više informacija možete pronaći u <a href=\\"https://docs.ocdemo.eu/mss/en/features.html#add-extra-field\\" target=\\"_blank\\" class=\\"btn btn-default btn-xs\\"><i class=\\"fa fa-external-link\\"></i>našoj dokumentaciji</a>";
+$_['text_add_extra_field_guide'] = "Ako želite pretraživati ​​u tablici koja nije `{table}`, prvo morate spojiti sve povezane tablice uključujući njihove odnose u bazi podataka. Više informacija možete pronaći u <a href=\\\"https://docs.ocdemo.eu/mss/en/features.html#add-extra-field\\\" target=\\\"_blank\\\" class=\\\"btn btn-default btn-xs\\\"><i class=\\\"fa fa-external-link\\\"></i>našoj dokumentaciji</a>";
 $_['text_please_select_table'] = "molimo odaberite stol";
 $_['text_select_table'] = "odaberite tablicu";
-$_['text_search_history_is_disabled'] = "Spremanje povijesti pretraživanja trenutno je onemogućeno. Da biste to promijenili, idite na karticu \\"Postavke\\".";
+$_['text_search_history_is_disabled'] = "Spremanje povijesti pretraživanja trenutno je onemogućeno. Da biste to promijenili, idite na karticu \\\"Postavke\\\".";
 $_['text_add_extra_field'] = "Dodajte dodatno polje";
 $_['text_condition_table'] = "Tablica stanja";
 $_['text_condition_column'] = "Stupac uvjeta";
@@ -166,10 +166,10 @@ $_['entry_show_manufacturer'] = "Prikaži naziv proizvođača:";
 $_['entry_show_model'] = "Prikaži naziv modela:";
 $_['entry_custom_css'] = "Prilagođeni CSS:";
 $_['entry_show_loading_icon'] = "Prikaži ikonu učitavanja dok klijent čeka rezultate:";
-$_['entry_show_button_view_all'] = "Prikaži gumb \\"Prikaži sve rezultate\\"";
+$_['entry_show_button_view_all'] = "Prikaži gumb \\\"Prikaži sve rezultate\\\"";
 $_['entry_min_length'] = "Minimalna duljina znakova potrebna prije početka prikazivanja prijedloga:";
-$_['entry_show_header_products'] = "Prikaži zaglavlje \\"Proizvodi\\" u standardnom načinu rada ili \\"Najbolji rezultati\\" u načinu rada kartica:";
-$_['entry_show_header_categories'] = "Prikaži zaglavlje \\"Kategorije\\":";
+$_['entry_show_header_products'] = "Prikaži zaglavlje \\\"Proizvodi\\\" u standardnom načinu rada ili \\\"Najbolji rezultati\\\" u načinu rada kartica:";
+$_['entry_show_header_categories'] = "Prikaži zaglavlje \\\"Kategorije\\\":";
 $_['entry_show_description'] = "Prikaži opis:";
 $_['entry_description_max_length'] = "Maksimalna duljina opisa:";
 $_['entry_redirect_if_1_result'] = "Preusmjeri na proizvod ako se pronađe 1 rezultat:";
@@ -181,16 +181,16 @@ $_['entry_mode'] = "Način rada";
 $_['entry_product_columns'] = "Stupci proizvoda:";
 $_['entry_any_keyword'] = "Bilo koja ključna riječ:";
 $_['entry_display_categories_first'] = "Prvo prikaži kategorije:";
-$_['entry_fix_polish_l'] = "Ispravite MySQL bug s poliranjem \\"ł\\":";
+$_['entry_fix_polish_l'] = "Ispravite MySQL bug s poliranjem \\\"ł\\\":";
 $_['entry_type'] = "Tip";
-$_['entry_search_in_product_descriptions'] = "Pretražite i u opisima proizvoda nakon klika na gumb \\"Prikaži sve rezultate\\"";
+$_['entry_search_in_product_descriptions'] = "Pretražite i u opisima proizvoda nakon klika na gumb \\\"Prikaži sve rezultate\\\"";
 
 // styles
 
 $_['entry_custom_colors'] = "Prilagođene boje:";
 $_['entry_products_header_color'] = "Pozadina naslova proizvoda";
 $_['entry_categories_header_color'] = "Pozadina zaglavlja kategorija";
-$_['entry_button_more_color'] = "Pozadina gumba \\"Prikaži sve\\".";
+$_['entry_button_more_color'] = "Pozadina gumba \\\"Prikaži sve\\\".";
 $_['entry_header_text_color'] = "Tekst zaglavlja";
 $_['entry_results_background'] = "Pozadina za rezultate";
 $_['entry_results_hover'] = "Rezultati lebde u sjeni";
@@ -200,12 +200,12 @@ $_['entry_border_results'] = "Granice za rezultate";
 $_['entry_price_results'] = "Rezultati cijena";
 
 // ext
-$_['ext_author'] = "<a href=\\"mailto:info@ocdemo.eu\\" target=\\"_blank\\">info@ocdemo.eu</a>";
+$_['ext_author'] = "<a href=\\\"mailto:info@ocdemo.eu\\\" target=\\\"_blank\\\">info@ocdemo.eu</a>";
 
 // Error
 $_['error_permission'] = "Upozorenje: Nemate dopuštenje za izmjenu modula \' . \$_[\'naziv_naslova\'] . \'!";
-$_['error_css_file'] = "Upozorenje: datoteka /catalog/view/theme/default/stylesheet/msf/style-2.css ne postoji ili nemate dopuštenje za pisanje! Sve dok ne riješite ovaj problem, vaši prilagođeni CSS stilovi neće raditi. Molimo stvorite ovu datoteku i promijenite joj dopuštenja na 666.<br /><br />Evo primjera kako promijeniti dopuštenja za datoteku:<br /><br /><img src=\\"{HTTP_URL}view/stylesheet/msf/images/permissions.jpg\\" style=\\"max-width: 100%; border: 1px solid #ccc; padding: 5px;\\" />";
-$_['error_js_file'] = "Upozorenje: datoteka <strong>/catalog/view/javascript/msf/js_params.js</strong> ne postoji ili nemate dopuštenje za pisanje! Dok ne riješite ovaj problem, live filter neće raditi. Molimo izradite ovu datoteku i promijenite joj dozvole na 666.<br /><br /><img src=\\"{HTTP_URL}view/stylesheet/msf/images/permissions-js.jpg\\" style=\\"max-width: 100%; border: 1px solid #ccc; padding: 5px;\\" />";
+$_['error_css_file'] = "Upozorenje: datoteka /catalog/view/theme/default/stylesheet/msf/style-2.css ne postoji ili nemate dopuštenje za pisanje! Sve dok ne riješite ovaj problem, vaši prilagođeni CSS stilovi neće raditi. Molimo stvorite ovu datoteku i promijenite joj dopuštenja na 666.<br /><br />Evo primjera kako promijeniti dopuštenja za datoteku:<br /><br /><img src=\\\"{HTTP_URL}view/stylesheet/msf/images/permissions.jpg\\\" style=\\\"max-width: 100%; border: 1px solid #ccc; padding: 5px;\\\" />";
+$_['error_js_file'] = "Upozorenje: datoteka <strong>/catalog/view/javascript/msf/js_params.js</strong> ne postoji ili nemate dopuštenje za pisanje! Dok ne riješite ovaj problem, live filter neće raditi. Molimo izradite ovu datoteku i promijenite joj dozvole na 666.<br /><br /><img src=\\\"{HTTP_URL}view/stylesheet/msf/images/permissions-js.jpg\\\" style=\\\"max-width: 100%; border: 1px solid #ccc; padding: 5px;\\\" />";
 $_['error_phrase_exists'] = "Ovaj izraz već postoji";
 $_['error_phrase_regex'] = "Uzorak regularnog izraza nije točan. Ako ne znate kako koristiti ovu značajku, pročitajte našu dokumentaciju.";
 $_['error_please_fill_all_fields'] = "Molimo ispunite sva polja";

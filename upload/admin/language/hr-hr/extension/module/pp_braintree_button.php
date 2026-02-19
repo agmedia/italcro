@@ -1,20 +1,20 @@
 <?php
 // Heading
-$_['heading_title']    = "PayPal (Powered by Braintree) Button";
+$_['heading_title']    = "Gumb PayPal (pokreće Braintree).";
 
 // Text
-$_['text_extension']   = "Extensions";
-$_['text_success']     = "Success: You have modified PayPal (Powered by Braintree) Button module!";
-$_['text_edit']        = "Edit PayPal (Powered by Braintree) Button Module";
-$_['text_info']        = "The button will <u>not</u> appear under certain conditions:";
-$_['text_info_li1']    = "The cart is empty and no vouchers have been applied";
-$_['text_info_li2']    = "The cart has downloads or recurring payments and the user is not logged in";
-$_['text_info_li3']    = "Out of stock item checkout is disabled and the cart contains an out of stock item";
-$_['text_layouts']     = "After enabling the module, use the layout manager to add the button to areas on the store.";
-$_['text_layout_link'] = "Click here to access layouts page";
+$_['text_extension']   = "Ekstenzije";
+$_['text_success']     = "Uspjeh: izmijenili ste modul gumba PayPal (Powered by Braintree)!";
+$_['text_edit']        = "Uredi PayPal (Powered by Braintree) modul gumba";
+$_['text_info']        = "Gumb se <u>neće</u> pojaviti pod određenim uvjetima:";
+$_['text_info_li1']    = "Košarica je prazna i nijedan vaučer nije iskorišten";
+$_['text_info_li2']    = "Košarica ima preuzimanja ili ponavljajuća plaćanja, a korisnik nije prijavljen";
+$_['text_info_li3']    = "Provjera artikla koji nije na zalihama je onemogućena, a košarica sadrži artikl koji nije na zalihama";
+$_['text_layouts']     = "Nakon što omogućite modul, upotrijebite upravitelj izgleda da biste dodali gumb područjima u trgovini.";
+$_['text_layout_link'] = "Kliknite ovdje za pristup stranici s izgledima";
 
 // Entry
 $_['entry_status']     = "Status";
 
 // Error
-$_['error_permission'] = "Warning: You do not have permission to modify PayPal (Powered by Braintree) Button module!";
+$_['error_permission'] = "Upozorenje: Nemate dopuštenje za izmjenu modula gumba PayPal (Powered by Braintree)!";

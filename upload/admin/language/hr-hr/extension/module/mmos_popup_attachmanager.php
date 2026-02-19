@@ -9,7 +9,7 @@ $_['text_directory'] = "Uspjeh: Imenik je kreiran!";
 $_['text_delete'] = "Uspjeh: Vaša datoteka ili direktorij su izbrisani!";
 
 $_['text_mmosrefesh'] = "Očisti zapisnik i osvježi popis datoteka";
-$_['text_root'] = "<i class=\"fa fa-globe\"></i> Korijen";
+$_['text_root'] = "<i class=\\"fa fa-globe\\"></i> Korijen";
 
 
 // Entry

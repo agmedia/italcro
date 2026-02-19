@@ -5,189 +5,186 @@
 
 // Heading
 $_['heading_title']    = 'LIVEOPENCART: '.$_['module_name'];
-$_['text_edit']        = "Edit '.\$_['module_name'].' Module";
+$_['text_edit']        = "Uredi \'.\$_[\'naziv_modula\'].\' Modul";
 $_['poip_module_name'] = $_['module_name'];
 
 // Text
-$_['text_module']         = "Modules";
-$_['text_success']        = "Success: \"'.\$_['module_name'] .'\" settings changed!";
-$_['text_content_top']    = "Content Top";
-$_['text_content_bottom'] = "Content Bottom";
-$_['text_column_left']    = "Column Left";
-$_['text_column_right']   = "Column Right";
+$_['text_module']         = "Moduli";
+$_['text_success']        = "Uspjeh: \\\"\'.\$_[\'module_name\'] .\'\\\" postavke su promijenjene!";
+$_['text_content_top']    = "Sadržaj Vrh";
+$_['text_content_bottom'] = "Sadržaj Dno";
+$_['text_column_left']    = "Stupac lijevo";
+$_['text_column_right']   = "Stupac desno";
 
 // Column
-$_['column_poip_ocfilter_option_value'] = "Option value to get appropriate images using the product filter";
+$_['column_poip_ocfilter_option_value'] = "Vrijednost opcije za dobivanje odgovarajućih slika pomoću filtra proizvoda";
 
 // Entry
-$_['entry_settings']             = "Module settings";
-$_['entry_custom_theme_id']      = "Custom theme ID";
-$_['entry_custom_theme_id_help'] = "Should be filled only if an original directory of the used theme is renamed or if the name of the theme directory is not unique";
-$_['entry_import']               = "Import";
-$_['entry_import_description']   = 'Import file format: XLSX. Import uses only the first sheet to read the data.
-<br>The first row (head) should contain names of fields: product_id, option_value_id, image (not product_option_id)
-<br>Next rows should contain the data accordingly to the names in the first row.';
-$_['entry_import_nothing_before'] = "Don't delete option images before import";
-$_['entry_import_delete_before']  = "Delete all option images before import";
-$_['error_xlsx_lib_is_not_found'] = "%s library is not found (it is necessary for import/export features only).";
-//$_['error_php_excel_is_not_found']                = '<b><a href="https://liveopencart.com/PHPExcel" target="_blank">PHPExcel</a></b> is not found (<b><a href="https://liveopencart.com/PHPExcel" target="_blank">What is PHPExcel ?</a></b>). Not found file: ';
-$_['error_php_excel_is_necessary_for_xls'] = " (PHPExcel is necessary for importing XLS) ";
-//$_['error_box_spout_is_not_found']    = 'The library "Box/Spout" is not found (necessary for import/export features only).';
-$_['error_source_file_is_not_found'] = "Source file is not found";
-$_['error_wrong_hash_remote']        = "Wrong remote file hash";
-$_['error_wrong_hash_local']         = "Wrong downloaded file hash";
-$_['button_install_xlsx_lib']        = "Click to install %s automatically";
-$_['success_install_xlsx_lib']       = "%s is installed. Please reload the page.";
-$_['button_upload']                  = "Import file";
-$_['button_upload_help']             = "import will start immediately after selecting the file";
-$_['entry_server_response']          = "Server answer";
+$_['entry_settings']             = "Postavke modula";
+$_['entry_custom_theme_id']      = "ID prilagođene teme";
+$_['entry_custom_theme_id_help'] = "Treba se ispuniti samo ako je izvorni direktorij korištene teme preimenovan ili ako naziv direktorija tema nije jedinstven";
+$_['entry_import']               = "Uvoz";
+$_['entry_import_description']   = 'Format datoteke za uvoz: XLSX. Uvoz koristi samo prvi list za čitanje podataka.
+<br>Prvi red (glava) treba sadržavati nazive polja: product_id, option_value_id, image (ne product_option_id)
+<br>Sljedeći redovi trebaju sadržavati podatke u skladu s imenima u prvom retku.';
+$_['entry_import_nothing_before'] = "Nemojte brisati slike opcija prije uvoza";
+$_['entry_import_delete_before']  = "Izbrišite sve slike opcija prije uvoza";
+$_['error_xlsx_lib_is_not_found'] = "Biblioteka %s nije pronađena (potrebna je samo za značajke uvoza/izvoza).";
+//$_['error_php_excel_is_not_found']                = '<b><a href="https://liveopencart.com/PHPExcel" target="_blank">PHPExcel</a></b> nije pronađen (<b><a href="https://liveopencart.com/PHPExcel" target="_blank">Što je PHPExcel?</a></b>). Nije pronađena datoteka:';
+$_['error_php_excel_is_necessary_for_xls'] = "(PHPExcel je neophodan za uvoz XLS-a)";
+//$_['error_box_spout_is_not_found']    = 'Biblioteka "Kutija/izljev" nije pronađena (potrebna samo za značajke uvoza/izvoza).';
+$_['error_source_file_is_not_found'] = "Izvorna datoteka nije pronađena";
+$_['error_wrong_hash_remote']        = "Pogrešno hash udaljene datoteke";
+$_['error_wrong_hash_local']         = "Pogrešno hash preuzete datoteke";
+$_['button_install_xlsx_lib']        = "Kliknite za automatsku instalaciju %s";
+$_['success_install_xlsx_lib']       = "%s je instaliran. Molimo ponovno učitajte stranicu.";
+$_['button_upload']                  = "Uvezi datoteku";
+$_['button_upload_help']             = "uvoz će započeti odmah nakon odabira datoteke";
+$_['entry_server_response']          = "Odgovor poslužitelja";
 
-$_['entry_import_result']                = "Processed rows/images/skipped";
-$_['entry_import_result_done']           = "Importing finished, please check the details";
-$_['entry_import_result_details']        = "Importing details (row numbers)";
-$_['entry_import_result_toggle_details'] = "Show/hide details";
-$_['entry_import_result_rows']           = "Processed rows: ";
-$_['entry_import_result_added']          = "Added: ";
-$_['entry_import_result_skipped']        = "Skipped (unknown reason): ";
-$_['entry_import_result_not_found']      = "Product option is not found: ";
-$_['entry_import_result_no_image']       = "No image in the row: ";
-$_['entry_import_result_already_exist']  = "Image already set for the option: ";
+$_['entry_import_result']                = "Obrađeni redovi/slike/preskočeno";
+$_['entry_import_result_done']           = "Uvoz je završen, provjerite detalje";
+$_['entry_import_result_details']        = "Uvoz pojedinosti (brojevi redaka)";
+$_['entry_import_result_toggle_details'] = "Prikaži/sakrij detalje";
+$_['entry_import_result_rows']           = "Obrađeni redovi:";
+$_['entry_import_result_added']          = "Dodano:";
+$_['entry_import_result_skipped']        = "Preskočeno (nepoznat razlog):";
+$_['entry_import_result_not_found']      = "Opcija proizvoda nije pronađena:";
+$_['entry_import_result_no_image']       = "Nema slike u redu:";
+$_['entry_import_result_already_exist']  = "Slika je već postavljena za opciju:";
 
-$_['entry_export']             = "Export";
-$_['button_export']            = "Export data";
-$_['entry_export_description'] = 'Export product option images data. File format: XLSX. The export uses only the first sheet to place the data.
-<br>The first row (head) contains names of fields: product_id, option_value_id, image (not product_option_id)
-<br>Next rows contain the data accordingly to the names in the first row.';
-$_['entry_export_options_without_images'] = "Include product options having no images";
-$_['entry_export_names']                  = "Include product and option names";
-$_['entry_export_first_product_id']       = "First product id";
-$_['entry_export_last_product_id']        = "Last product id";
+$_['entry_export']             = "Izvoz";
+$_['button_export']            = "Izvoz podataka";
+$_['entry_export_description'] = 'Izvoz podataka o slikama opcija proizvoda. Format datoteke: XLSX. Izvoz koristi samo prvi list za postavljanje podataka.
+<br>Prvi red (glava) sadrži nazive polja: product_id, option_value_id, image (ne product_option_id)
+<br>Sljedeći redovi sadrže podatke u skladu s imenima u prvom redu.';
+$_['entry_export_options_without_images'] = "Uključi opcije proizvoda bez slika";
+$_['entry_export_names']                  = "Uključite nazive proizvoda i opcija";
+$_['entry_export_first_product_id']       = "Prvi ID proizvoda";
+$_['entry_export_last_product_id']        = "Zadnji ID proizvoda";
 $_['entry_export_min_product_id']         = "min ID:";
 $_['entry_export_max_product_id']         = "max ID:";
 
-$_['entry_layout']           = "Layout:";
-$_['entry_position']         = "Position:";
+$_['entry_layout']           = "Izgled:";
+$_['entry_position']         = "Položaj:";
 $_['entry_status']           = "Status:";
-$_['entry_sort_order']       = "Sort Order:";
-$_['entry_sort_order_short'] = "sort:";
-$_['entry_settings_default'] = "global settings";
-$_['entry_settings_yes']     = "On";
-$_['entry_settings_no']      = "Off";
+$_['entry_sort_order']       = "Redoslijed sortiranja:";
+$_['entry_sort_order_short'] = "vrsta:";
+$_['entry_settings_default'] = "globalne postavke";
+$_['entry_settings_yes']     = "Na";
+$_['entry_settings_no']      = "Isključeno";
 
-$_['entry_no_value']       = "no value";
-$_['entry_no_value_help']  = "display the image if the option is not selected (it makes sense only if at least one value of the option is checked for the image)";
-$_['entry_any_value']      = "any value";
-$_['entry_any_value_help'] = "display the image if any value the option is selected (it can be useful when this image should not be dispalayed until the option is selected)";
+$_['entry_no_value']       = "nema vrijednosti";
+$_['entry_no_value_help']  = "prikaži sliku ako opcija nije odabrana (ima smisla samo ako je za sliku označena barem jedna vrijednost opcije)";
+$_['entry_any_value']      = "bilo koju vrijednost";
+$_['entry_any_value_help'] = "prikaži sliku ako je odabrana bilo koja vrijednost opcije (može biti korisno kada ova slika ne bi trebala biti prikazana dok se opcija ne odabere)";
 
-$_['entry_options_images_edit']      = "Way to edit option images";
-$_['entry_options_images_edit_help'] = "set a method (place) to edit option images";
-$_['entry_options_images_edit_v0']   = "Images for options (edit on the product edit page 'Option' tab)";
-$_['entry_options_images_edit_v1']   = "Options for images (edit on the product edit page 'Image' tab)";
+$_['entry_options_images_edit']      = "Način uređivanja slika opcija";
+$_['entry_options_images_edit_help'] = "postavite metodu (mjesto) za uređivanje slika opcija";
+$_['entry_options_images_edit_v0']   = "Slike za opcije (uredite na kartici \'Opcija\' na stranici za uređivanje proizvoda)";
+$_['entry_options_images_edit_v1']   = "Opcije za slike (uredite na kartici \'Slika\' na stranici za uređivanje proizvoda)";
 
-$_['entry_tab_image_use_selects']      = "Use inputs";
-$_['entry_tab_image_use_selects_v0']   = "Checkboxes";
-$_['entry_tab_image_use_selects_v1']   = "Drop-down selects";
-$_['entry_tab_image_use_selects_v2']   = "Disabled";
-$_['entry_tab_image_use_selects_help'] = "Checkboxes allows to link an image with several values of one option, drop-down selects take less space on the page but allow to link no more than 1 value or every option, 'Disabled' disallows to use options for linking with images (can be defined per option, on the option edit page)";
+$_['entry_tab_image_use_selects']      = "Koristite ulaze";
+$_['entry_tab_image_use_selects_v0']   = "Potvrdni okviri";
+$_['entry_tab_image_use_selects_v1']   = "Padajući izbornik odabire";
+$_['entry_tab_image_use_selects_v2']   = "Onesposobljeno";
+$_['entry_tab_image_use_selects_help'] = "Potvrdni okviri omogućuju povezivanje slike s nekoliko vrijednosti jedne opcije, padajući odabir zauzima manje prostora na stranici, ali dopušta povezivanje ne više od 1 vrijednosti ili svake opcije, \'Onemogućeno\' onemogućuje korištenje opcija za povezivanje sa slikama (može se definirati po opciji, na stranici za uređivanje opcija)";
 
-$_['entry_images_for_ro']         = "Images for related options";
-$_['entry_images_for_ro_help']    = "set images for combinations of related options (by modules Related Options or Related Options PRO)";
-$_['entry_images_for_ro_details'] = 'requires
-<a href="https://liveopencart.com/opencart-extension/related-options" target="_blank">Related Options</a>
-( <a href="https://www.opencart.com/index.php?route=marketplace/extension/info&filter_member=liveopencart&extension_id=31606" target="_blank" title="Related Options on opencart.com">opencart.com</a> )
-or
-<a href="https://liveopencart.com/opencart-extension/related-options-pro" target="_blank">Related Options PRO</a>
-( <a href="https://www.opencart.com/index.php?route=marketplace/extension/info&filter_member=liveopencart&extension_id=31605" target="_blank" title="Related Options PRO on opencart.com">opencart.com</a> | <a href="https://isenselabs.com/products/view/related-options-pro-take-product-options-to-the-next-level?pa=41075" target="_blank"  title="Related Options PRO on isenselabs.com">isenselabs.com</a> )
-';
+$_['entry_images_for_ro']         = "Slike za povezane opcije";
+$_['entry_images_for_ro_help']    = "postavite slike za kombinacije povezanih opcija (prema modulima Related Options ili Related Options PRO)";
+$_['entry_images_for_ro_details'] = 'zahtijeva
+<a href="https://liveopencart.com/opencart-extension/related-options" target="_blank">Srodne opcije</a>
+(<a href="https://www.opencart.com/index.php?route=marketplace/extension/info&filter_member=liveopencart&extension_id=31606" target="_blank" title="Related Options on opencart.com">opencart.com</a>)
+ili
+<a href="https://liveopencart.com/opencart-extension/related-options-pro" target="_blank">Srodne opcije PRO</a>
+(<a href="https://www.opencart.com/index.php?route=marketplace/extension/info&filter_member=liveopencart&extension_id=31605" target="_blank" title="Related Options PRO on opencart.com">opencart.com</a> | <a href="https://isenselabs.com/products/view/related-options-pro-take-product-options-to-the-next-level?pa=41075" target="_blank"  title="Related Options PRO on isenselabs.com">isenselabs.com</a>)';
 
-$_['entry_img_use_v0'] = "Off";
-$_['entry_img_use_v1'] = "On (for all)";
-$_['entry_img_use_v2'] = "On (for selected option values)";
-$_['entry_img_use_v3'] = "On (for selected option values, but exclude forcibly if no option selected)";
+$_['entry_img_use_v0'] = "Isključeno";
+$_['entry_img_use_v1'] = "Uključeno (za sve)";
+$_['entry_img_use_v2'] = "Uključeno (za odabrane vrijednosti opcije)";
+$_['entry_img_use_v3'] = "Uključeno (za odabrane vrijednosti opcije, ali prisilno isključi ako opcija nije odabrana)";
 
-$_['entry_img_first_v0'] = "Do not touch";
-$_['entry_img_first_v1'] = "Replace with first product option images";
-$_['entry_img_first_v2'] = "Use like product option images";
+$_['entry_img_first_v0'] = "Ne dirajte";
+$_['entry_img_first_v1'] = "Zamijenite slikama prve opcije proizvoda";
+$_['entry_img_first_v2'] = "Koristite slike opcija sličnih proizvoda";
 
 // Entry Module Settings
-$_['entry_img_change']                  = "Change the main product image on option select";
-$_['entry_img_change_help']             = "change the main product image on the product page in the customer section on an option select (use the first option image)";
-$_['entry_img_hover']                   = "Swap image on mouseover";
-$_['entry_img_hover_help']              = "change the main product image on the product page in the customer section on mouse over an additional product image";
-$_['entry_img_click']                   = "Swap image on click";
-$_['entry_img_click_help']              = "change the main product image on the product page in the customer section by click on additional product image (not all themes are supported)";
-$_['entry_img_main_to_additional']      = "Add the main image to additional";
-$_['entry_img_main_to_additional_help'] = "add the main product image to the list of additional product images on the product page in the customer section";
-$_['entry_img_main_to_additional_v0']   = "Disabled (default)";
-$_['entry_img_main_to_additional_v1']   = "Enabled";
-$_['entry_img_main_to_additional_v2']   = "Enabled only if other additional product images exist";
+$_['entry_img_change']                  = "Promijenite glavnu sliku proizvoda pri odabiru opcije";
+$_['entry_img_change_help']             = "promijenite glavnu sliku proizvoda na stranici proizvoda u odjeljku za korisnike na odabiru opcije (koristite sliku prve opcije)";
+$_['entry_img_hover']                   = "Zamijeni sliku pri prelasku miša";
+$_['entry_img_hover_help']              = "promijenite glavnu sliku proizvoda na stranici proizvoda u odjeljku za kupce mišem preko dodatne slike proizvoda";
+$_['entry_img_click']                   = "Zamijeni sliku na klik";
+$_['entry_img_click_help']              = "promijeniti glavnu sliku proizvoda na stranici proizvoda u odjeljku za korisnike klikom na dodatnu sliku proizvoda (nisu sve teme podržane)";
+$_['entry_img_main_to_additional']      = "Dodajte glavnu sliku dodatnoj";
+$_['entry_img_main_to_additional_help'] = "dodajte glavnu sliku proizvoda na popis dodatnih slika proizvoda na stranici proizvoda u odjeljku za kupce";
+$_['entry_img_main_to_additional_v0']   = "Onemogućeno (zadano)";
+$_['entry_img_main_to_additional_v1']   = "Omogućeno";
+$_['entry_img_main_to_additional_v2']   = "Omogućeno samo ako postoje druge dodatne slike proizvoda";
 
-$_['entry_img_use']      = "Add product option images to additional";
-$_['entry_img_use_help'] = "add product option images to the list of additional product images on the product page in the customer section";
+$_['entry_img_use']      = "Dodajte slike opcija proizvoda u dodatne";
+$_['entry_img_use_help'] = "dodajte slike opcija proizvoda na popis dodatnih slika proizvoda na stranici proizvoda u odjeljku za kupce";
 
-$_['entry_img_limit']                                = "Filter additional images";
-$_['entry_img_limit_help']                           = "display only suitable images (accordingly to selected product options) in the list of additional images on the product page in the customer section<br> works only with feature \"'.\$_['entry_img_use'].'\"";
-$_['entry_img_limit_v0']                             = "Off";
-$_['entry_img_limit_v1']                             = "All additional images";
-$_['entry_img_limit_v2']                             = "Only images of selected options";
-$_['entry_img_limit_v3']                             = "Only images of selected options, but strict (applying to identitial product images too)";
-$_['entry_img_filter_by_comb']                       = "Filter by complete set of options";
-$_['entry_img_filter_by_comb_help']                  = "If an image is linked with values of several options, filter the image out until all the option values are selected";
-$_['entry_img_filter_checkbox_use_exact_match']      = "Full match for checkboxes";
-$_['entry_img_filter_checkbox_use_exact_match_help'] = "Filter out image linked with a checkbox option if values checked for the image do not exactly match the values currectly checked by customer on the product page";
+$_['entry_img_limit']                                = "Filtrirajte dodatne slike";
+$_['entry_img_limit_help']                           = "prikaži samo prikladne slike (u skladu s odabranim opcijama proizvoda) na popisu dodatnih slika na stranici proizvoda u odjeljku za korisnike<br> radi samo sa značajkom \\\"\'.\$_[\'entry_img_use\'].\'\\\"";
+$_['entry_img_limit_v0']                             = "Isključeno";
+$_['entry_img_limit_v1']                             = "Sve dodatne slike";
+$_['entry_img_limit_v2']                             = "Samo slike odabranih opcija";
+$_['entry_img_limit_v3']                             = "Samo slike odabranih opcija, ali stroge (primjenjujući se i na identične slike proizvoda)";
+$_['entry_img_filter_by_comb']                       = "Filtrirajte prema kompletnom skupu opcija";
+$_['entry_img_filter_by_comb_help']                  = "Ako je slika povezana s vrijednostima nekoliko opcija, filtrirajte sliku dok se ne odaberu sve vrijednosti opcija";
+$_['entry_img_filter_checkbox_use_exact_match']      = "Potpuno podudaranje za potvrdne okvire";
+$_['entry_img_filter_checkbox_use_exact_match_help'] = "Filtrirajte sliku povezanu s opcijom potvrdnog okvira ako se vrijednosti provjerene za sliku ne podudaraju točno s vrijednostima koje je korisnik trenutno provjerio na stranici proizvoda";
 
-$_['entry_img_gal']      = "Filter popup gallery";
-$_['entry_img_gal_help'] = "display only suitable images (accordingly to selected product options) in the popup gallery on the product page in the customer section, recommended to use with features \"'.\$_['entry_img_use'].'\" and \"'.\$_['entry_img_limit'].'\"";
+$_['entry_img_gal']      = "Filtriraj skočnu galeriju";
+$_['entry_img_gal_help'] = "prikaži samo prikladne slike (u skladu s odabranim opcijama proizvoda) u skočnoj galeriji na stranici proizvoda u odjeljku za korisnike, preporučuje se korištenje sa značajkama \\\"\'.\$_[\'entry_img_use\'].\'\\\" i \\\"\'.\$_[\'entry_img_limit\'].\'\\\"";
 
-$_['entry_img_option']      = "Display images below option";
-$_['entry_img_option_v0']   = "Off";
-$_['entry_img_option_v1']   = "On (all images of the selected option value)";
-$_['entry_img_option_v2']   = "On (images filtered by all selected options)";
-$_['entry_img_option_help'] = "display relevant product option images below selected option value select/radio/checkbox on the product page in the customer section";
+$_['entry_img_option']      = "Opcija prikaza slika ispod";
+$_['entry_img_option_v0']   = "Isključeno";
+$_['entry_img_option_v1']   = "Uključeno (sve slike odabrane vrijednosti opcije)";
+$_['entry_img_option_v2']   = "Uključeno (slike filtrirane prema svim odabranim opcijama)";
+$_['entry_img_option_help'] = "prikaži relevantne slike opcija proizvoda ispod odabrane vrijednosti opcije odaberite/radio/potvrdni okvir na stranici proizvoda u odjeljku za korisnike";
 
-$_['entry_img_load_outofstock']      = "Images for out of stock options";
-$_['entry_img_load_outofstock_help'] = "load images for out of stock option values (can be useful in case of a modification displaying out of stock option values even if 'Subtract stock' for them is set to 'Yes' or in case of filtering out product images linked with out of stock option values)";
+$_['entry_img_load_outofstock']      = "Slike za opcije rasprodanih";
+$_['entry_img_load_outofstock_help'] = "učitavanje slika za vrijednosti opcije rasprodaje (može biti korisno u slučaju izmjene koja prikazuje vrijednosti opcije rasprodaje čak i ako je \'Oduzimanje zaliha\' za njih postavljeno na \'Da\' ili u slučaju filtriranja slika proizvoda povezanih s vrijednostima opcije rasprodaje)";
 
-$_['entry_img_category']            = "Display option thumbs in product lists";
-$_['entry_img_category_help']       = "display thumbs of product option values on product lists (category pages, manufaturer pages, standard modules \"Latest\", \"Bestsellers\", \"Special\", \"Featured\", etc.)";
-$_['entry_img_category_click']      = "Swap image in product lists by click";
-$_['entry_img_category_click_help'] = "change the main product image to appropriate option value image on click (otherwise, by mouseover), makes sense only in case of enabled setting ''.\$_['entry_img_category'].'' ";
-$_['entry_custom_thumb_size']       = "Custom size of option thumbs in product lists";
-$_['entry_custom_thumb_size_help']  = "set specific width/height for product option value thumbs displayed in product lists (otherwise, the thumb size will be determined automatically), makes sense only in case of enabled setting ''.\$_['entry_img_category'].'' ";
-$_['entry_custom_thumb_width']      = "Width (px)";
-$_['entry_custom_thumb_height']     = "Height (px)";
+$_['entry_img_category']            = "Prikaži opcije opcija na popisima proizvoda";
+$_['entry_img_category_help']       = "prikaz vrijednosti opcija proizvoda na popisima proizvoda (stranice kategorija, stranice proizvođača, standardni moduli \\\"Najnovije\\\", \\\"Bestsellers\\\", \\\"Posebno\\\", \\\"Istaknuto\\\", itd.)";
+$_['entry_img_category_click']      = "Zamijenite sliku na popisu proizvoda klikom";
+$_['entry_img_category_click_help'] = "promjena glavne slike proizvoda na odgovarajuću sliku vrijednosti opcije na klik (inače, prelaskom miša), ima smisla samo u slučaju uključene postavke \'\'.\$_[\'entry_img_category\'].\'\'";
+$_['entry_custom_thumb_size']       = "Prilagođena veličina sličica opcija na popisima proizvoda";
+$_['entry_custom_thumb_size_help']  = "postavite određenu širinu/visinu za palice vrijednosti opcije proizvoda prikazane na popisima proizvoda (inače će se veličina palca odrediti automatski), ima smisla samo u slučaju uključene postavke \'\'.\$_[\'entry_img_category\'].\'\'";
+$_['entry_custom_thumb_width']      = "Širina (px)";
+$_['entry_custom_thumb_height']     = "Visina (px)";
 
 //$_['entry_img_sort']            = 'Сквозная сортировка изображений';
 //$_['entry_img_sort_help']       = 'сортировать изображения в соответствии с указанным порядком вне зависимости от опций к которым они привязаны';
-$_['entry_img_first']      = "Standard images of options";
-$_['entry_img_first_help'] = "use standard option images added on the option edit page (menu Catalog - Options - etc)";
-$_['entry_img_cart']       = "Display option images in the cart";
-$_['entry_img_cart_help']  = "display images relevant to selected options in the shopping cart";
+$_['entry_img_first']      = "Standardne slike opcija";
+$_['entry_img_first_help'] = "koristiti standardne slike opcija dodane na stranici za uređivanje opcija (izbornik Katalog - Opcije - itd.)";
+$_['entry_img_cart']       = "Slike opcija prikaza u košarici";
+$_['entry_img_cart_help']  = "prikazati slike relevantne za odabrane opcije u košarici";
 
-$_['entry_show_settings']                                 = "Display settings";
-$_['entry_hide_settings']                                 = "Hide settings";
-$_['entry_show_hide']                                     = "show/hide";
-$_['entry_img_radio_checkbox']                            = "Display thumbnails for checkboxes";
-$_['entry_img_radio_checkbox_help']                       = "display thumbnails for options with type 'Checkbox' like it works by default for the option type 'Radio' (compatible only with some themes)";
-$_['entry_dependent_thumbnails']                          = "Dependent option thumbnails";
-$_['entry_dependent_thumbnails_help']                     = "change option thumbnails on the product page in the customer section depending on other selected options";
-$_['entry_disable_product_image_drag_and_drop_sort']      = "No drag-and-drop sort";
-$_['entry_disable_product_image_drag_and_drop_sort_help'] = "disable drag-and-drop sort feature for product images (product edit page tab 'Image')";
+$_['entry_show_settings']                                 = "Postavke zaslona";
+$_['entry_hide_settings']                                 = "Sakrij postavke";
+$_['entry_show_hide']                                     = "pokazati/sakrij";
+$_['entry_img_radio_checkbox']                            = "Prikaz minijatura za potvrdne okvire";
+$_['entry_img_radio_checkbox_help']                       = "prikaži minijature za opcije s vrstom \'Checkbox\' kao što radi prema zadanim postavkama za vrstu opcije \'Radio\' (kompatibilno samo s nekim temama)";
+$_['entry_dependent_thumbnails']                          = "Sličice ovisne opcije";
+$_['entry_dependent_thumbnails_help']                     = "promijeniti sličice opcija na stranici proizvoda u odjeljku za korisnike ovisno o drugim odabranim opcijama";
+$_['entry_disable_product_image_drag_and_drop_sort']      = "Nema sortiranja povuci i ispusti";
+$_['entry_disable_product_image_drag_and_drop_sort_help'] = "onemogućite značajku sortiranja povlačenjem i ispuštanjem za slike proizvoda (kartica stranice za uređivanje proizvoda \'Slika\')";
 
-$_['text_update_alert'] = "(new version is available)";
+$_['text_update_alert'] = "(nova verzija je dostupna)";
 
-$_['button_select_images'] = "Select checked images (one or many)";
-$_['button_add_images']    = "Add images (one or many)";
+$_['button_select_images'] = "Odaberite označene slike (jednu ili više)";
+$_['button_add_images']    = "Dodajte slike (jednu ili više)";
 
-$_['entry_about']        = "About";
-$_['module_description'] = '
-The module module is designed to improve standard OpenCart functionality of product images. It allows to assign images to product options (from 1 to several images per option value) and use them to better visualize a product together with its options for customers.
-<br>Compatible types of options: "Select", "Radio", "Checkbox".
-';
+$_['entry_about']        = "Oko";
+$_['module_description'] = 'Modul modula dizajniran je za poboljšanje standardne OpenCart funkcionalnosti slika proizvoda. Omogućuje dodjeljivanje slika opcijama proizvoda (od 1 do nekoliko slika po vrijednosti opcije) i njihovu upotrebu za bolju vizualizaciju proizvoda zajedno s njegovim opcijama za kupce.
+<br>Kompatibilne vrste opcija: "Odaberi", "Radio", "Potvrdni okvir".';
 
-$_['text_conversation'] = "We are open for conversation. If you need to modify or integrate our modules, to add a new functionality or develop a new extension, email as to <b>support@liveopencart.com</b>.";
+$_['text_conversation'] = "Otvoreni smo za razgovor. Ako trebate modificirati ili integrirati naše module, dodati novu funkcionalnost ili razviti novo proširenje, pošaljite e-poruku na <b>support@liveopencart.com</b>.";
 
-$_['entry_we_recommend'] = "We also recommend:";
+$_['entry_we_recommend'] = "Također preporučujemo:";
 $_['text_we_recommend']  = '
 
 ';
@@ -198,7 +195,7 @@ If you want to use the module on multiple sites, you should purchase a separate 
 ';
 
 // Error
-$_['error_permission'] = "Warning: You do not have а permission to modify the module \"'.\$_['module_name'] .'\"!";
+$_['error_permission'] = "Upozorenje: Nemate dopuštenje za izmjenu modula \\\"\'.\$_[\'module_name\'] .\'\\\"!";
 
 $_['text_module_version'] = $_['module_name'].', version';
-$_['text_module_support'] = "Developer: <a href=\"http://liveopencart.com\" target=\"_blank\">liveopencart.com</a> | Support, questions and suggestions: <a href=\"mailto:support@liveopencart.com\">support@liveopencart.com</a>";
+$_['text_module_support'] = "Programer: <a href=\\\"http://liveopencart.com\\\" target=\\\"_blank\\\">liveopencart.com</a> | Podrška, pitanja i prijedlozi: <a href=\\\"mailto:support@liveopencart.com\\\">support@liveopencart.com</a>";

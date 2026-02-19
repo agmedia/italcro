@@ -137,7 +137,7 @@ $_['text_click_save']                           = "Kliknite na gumb za spremanje
 
 $_['text_insert_success']                       = "Uspjeh: URL(ovi) umetnuti u bazu podataka!";
 $_['text_open_new_tab']                         = "Otvori vezu u novoj kartici";
-$_['text_redirect_updated']                     = "Automatski spremljeno... <a href=\"%s\" target=\"_blank\">Testna veza !</a>";
+$_['text_redirect_updated']                     = "Automatski spremljeno... <a href=\\"%s\\" target=\\"_blank\\">Testna veza !</a>";
 
 $_['error_redirect_type']                         	= "Odaberite odgovarajuću vrstu preusmjeravanja!";
 $_['error_improper_data']                         	= "Neispravni podaci. Molimo provjerite sva polja!";

@@ -3,84 +3,84 @@
 $_['heading_title']              = "Flexi filter";
 
 // Text
-$_['text_extension']             = "Extensions";
-$_['text_success']               = "Success: You have modified Flexi filter module!";
-$_['text_edit']                  = "Edit Flexi filter Module";
+$_['text_extension']             = "Ekstenzije";
+$_['text_success']               = "Uspjeh: Modificirali ste Flexi filter modul!";
+$_['text_edit']                  = "Uredite Flexi filter modul";
 $_['text_general']               = "General";
 $_['text_radio']                 = "Radio";
-$_['text_checkbox']              = "Checkbox";
-$_['text_select']                = "Select";
-$_['text_range']                 = "Range";
+$_['text_checkbox']              = "Potvrdni okvir";
+$_['text_select']                = "Odaberite";
+$_['text_range']                 = "Raspon";
 $_['text_link']                  = "Link";
-$_['text_text']                  = "Text";
-$_['text_image']                 = "Image";
-$_['text_both']                  = "Both";
+$_['text_text']                  = "Tekst";
+$_['text_image']                 = "Slika";
+$_['text_both']                  = "Oba";
 $_['text_filter']                = "Filter";
-$_['text_always']                = "Always";
-$_['text_on_demand']             = "On demand";
-$_['text_setting']               = "Setting";
-$_['text_filter_column']         = "Filter group column";
-$_['text_scroll']                = "Scroll";
-$_['text_more']                  = "See More";
-$_['text_filter_value']          = "Filter value";
-$_['text_hide']	                 = "Hide";
+$_['text_always']                = "Uvijek";
+$_['text_on_demand']             = "Na zahtjev";
+$_['text_setting']               = "Postavka";
+$_['text_filter_column']         = "Stupac grupe filtera";
+$_['text_scroll']                = "Svitak";
+$_['text_more']                  = "Vidi više";
+$_['text_filter_value']          = "Vrijednost filtra";
+$_['text_hide']	                 = "Sakriti";
 
    
 // Entry   
-$_['entry_module_name']          = "Module Name";
+$_['entry_module_name']          = "Naziv modula";
 $_['entry_status']               = "Status";
-$_['entry_title']                = "Title";
-$_['entry_name']                 = "Name";
-$_['entry_price']                = "Price";
-$_['entry_sub_category']         = "Sub category";
-$_['entry_manufacturer']         = "Manufacturer";
-$_['entry_availability']         = "Availability";
-$_['entry_stock_status']         = "Stock status";
-$_['entry_discount']             = "Discount";
-$_['entry_rating']               = "Rating";
-$_['entry_custom']               = "Custom";
-$_['entry_sort_order']           = "Sort order";
-$_['entry_collapse']             = "Collapse by default";
-$_['entry_input_type']           = "Input type";
-$_['entry_list_type']            = "List type";
-$_['entry_image_width']          = "Image Width";
-$_['entry_image_height']         = "Image Height";
+$_['entry_title']                = "Titula";
+$_['entry_name']                 = "Ime";
+$_['entry_price']                = "Cijena";
+$_['entry_sub_category']         = "Podkategorija";
+$_['entry_manufacturer']         = "Proizvođač";
+$_['entry_availability']         = "Dostupnost";
+$_['entry_stock_status']         = "Stanje zaliha";
+$_['entry_discount']             = "Popust";
+$_['entry_rating']               = "Ocjena";
+$_['entry_custom']               = "Običaj";
+$_['entry_sort_order']           = "Redoslijed sortiranja";
+$_['entry_collapse']             = "Sažmi prema zadanim postavkama";
+$_['entry_input_type']           = "Vrsta unosa";
+$_['entry_list_type']            = "Vrsta popisa";
+$_['entry_image_width']          = "Širina slike";
+$_['entry_image_height']         = "Visina slike";
 $_['entry_filter']               = "Filter";
-$_['entry_search']               = "Search";
-$_['entry_count_product']        = "Count products";
-$_['entry_placeholder']          = "Placeholder";
-$_['entry_require_category']     = "Require category";
-$_['entry_show_search']          = "Show search";
-$_['entry_cache']                = "Cache";
+$_['entry_search']               = "Pretraživanje";
+$_['entry_count_product']        = "Brojite proizvode";
+$_['entry_placeholder']          = "Rezervirano mjesto";
+$_['entry_require_category']     = "Zahtijevaj kategoriju";
+$_['entry_show_search']          = "Prikaži pretraživanje";
+$_['entry_cache']                = "Predmemorija";
 $_['entry_ajax']                 = "Ajax";
-$_['entry_delay']                = "Delay";
-$_['entry_reset_all']            = "Reset all";
-$_['entry_reset_group']          = "Reset per group";
-$_['entry_sub_category']         = "Sub category";
-$_['entry_description']          = "Search in description";
-$_['entry_column_xs']            = "Phones";
-$_['entry_column_sm']            = "Tablets";
-$_['entry_column_md']            = "Laptops";
-$_['entry_column_lg']            = "Desktops";
-$_['entry_overflow']             = "Overflow";
-$_['entry_hide_zero_filter']     = "Zero count";
+$_['entry_delay']                = "Odgoditi";
+$_['entry_reset_all']            = "Resetiraj sve";
+$_['entry_reset_group']          = "Reset po grupi";
+$_['entry_sub_category']         = "Podkategorija";
+$_['entry_description']          = "Traži u opisu";
+$_['entry_column_xs']            = "telefoni";
+$_['entry_column_sm']            = "Tablete";
+$_['entry_column_md']            = "Prijenosna računala";
+$_['entry_column_lg']            = "Stolna računala";
+$_['entry_overflow']             = "Preljev";
+$_['entry_hide_zero_filter']     = "Nulti broj";
 
 // Tab
-$_['tab_layout']                 = "Layout";
+$_['tab_layout']                 = "Izgled";
 
 // Button
 
 // Help
-$_['help_discount']               = "Discount of special price!";
-$_['help_custom']                 = "Custom filter base on attribute, options and filter. <a href='%s'>create now</a>!";
-$_['help_filter']                 = "Show opencart default filter. <a href='%s'>create now</a>!";
-$_['help_require_category']       = "Show filters only when category is selected!";
-$_['help_delay']                  = "Delay to filter after user selection!";
-$_['help_stock_status']           = "List of out of stock's status";
-$_['help_hide_zero_filter']       = "How to show filter values which product count is zero. disable it or hide it";
-//$_['help_sub_category']           = 'Show products of sub categories!';
+$_['help_discount']               = "Popust po akcijskoj cijeni!";
+$_['help_custom']                 = "Prilagođeni filtar temeljen na atributu, opcijama i filtru. <a href=\'%s\'>stvori sada</a>!";
+$_['help_filter']                 = "Prikaži opencart zadani filter. <a href=\'%s\'>stvori sada</a>!";
+$_['help_require_category']       = "Prikaži filtere samo kada je odabrana kategorija!";
+$_['help_delay']                  = "Odgoda za filtriranje nakon odabira korisnika!";
+$_['help_stock_status']           = "Popis statusa out of stock";
+$_['help_hide_zero_filter']       = "Kako prikazati vrijednosti filtra čiji je broj proizvoda nula. onemogućiti ili sakriti";
+//$_['help_sub_category']           = 'Prikaži proizvode podkategorija!';
 
 // Error
-$_['error_warning']               = "Warning: Please check the form carefully for errors!";
-$_['error_permission']            = "Warning: You do not have permission to modify maza filter module!";
-$_['error_module_name']           = "Module Name must be between 3 and 64 characters!";
+$_['error_warning']               = "Upozorenje: Pažljivo provjerite obrazac za pogreške!";
+$_['error_permission']            = "Upozorenje: Nemate dopuštenje za izmjenu maza filter modula!";
+$_['error_module_name']           = "Naziv modula mora imati između 3 i 64 znaka!";

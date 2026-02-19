@@ -1,38 +1,38 @@
 <?php
-$_['heading_title'] = 'BNIT - Italian';
+$_['heading_title'] = "BNIT - talijanski";
 
-$_['text_language_status_str'] = 'Language Status: ';
+$_['text_language_status_str'] = "Status jezika:";
 
-$_['text_language_status0'] = 'Not Installed ';
-$_['text_language_status1'] = 'Base language version ';
-$_['text_language_status2'] = 'Full version Installed';
-$_['text_language_status3'] = 'Language detected but not installed/configured with the extension';
+$_['text_language_status0'] = "Nije instalirano";
+$_['text_language_status1'] = "Verzija na osnovnom jeziku";
+$_['text_language_status2'] = "Puna verzija instalirana";
+$_['text_language_status3'] = "Jezik je otkriven, ali nije instaliran/konfiguriran s proširenjem";
 
-$_['text_title_install_full'] = 'Installa la versione completamente in italiano - Install the full Italian language';
-$_['text_install_full'] = '<img src="language/en-gb/en-gb.png" /> Installs and configures the italian language for almost anything in front and backend.<br><span class="tile-warning">Not Suggested for non-italian Shops</span><br><span class="tile-success">Suggested for mainly Italian Shops</span><br><br><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAALCAIAAAD5gJpuAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAE2SURBVHjaYmSYyMDwgwEE/jEw/GF4mvT0HyqQUlX9B5aEIIAAYmH4wlDtWg1SDwT//0lKSv7/D+T9/w+nYmL+//79/88fIPll0yaAAGJhYAGJP/n69O+/v0CAUAcHt2////ULqJpRVhZoA0AAsQCtAZoMVP0HiP7+RlcNBEDVYA0Mv38DNQAEEMj8vwx//wCt/AdC/zEBkgagYoAAYgF6FGj277+///wlpAEoz8AAEEAgDX/BZv/69wuoB48GRrCTAAKICajh9//fv/6CVP/++wu7BrDxQFf/YWAACCCwk0BKf0MQdg1/gBqAPv0L9ANAALEAY+33vz+S3JIgb/z5C45CBkZGRgY4UFICKQUjoJMAAoiRoZSB4RMojkHx/YPhbNVZoM3AOISQQPUK9vaQOIYAgAADAC5Wd4RRwnKfAAAAAElFTkSuQmCC" /> Installa la versione completamente in italiano e configura la lingua italiana per frontend e backend.<br><span class="tile-success">Consigliato per negozi gestiti principalmente in Italiano</span><br><span class="tile-warning">Non consigliabile per negozi gestiti principalmente in lingue diverse dall&apos;italiano</span><br><br>';
-$_['text_title_install_eng'] = 'Install the base language for non-italian shops - Installa la lingua senza impostarla come principale<br>';
-$_['text_install_eng'] = '<img src="language/en-gb/en-gb.png" /> Install the Italian language for non-italian shops. The Italian language will be correctly configured but will not be the main language in the backend. Highly suggested for shops where the italian is a secondary/facultative language.<br><span class="tile-success">Suggested for shops where the main language is not Italian</span><br><br><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAALCAIAAAD5gJpuAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAE2SURBVHjaYmSYyMDwgwEE/jEw/GF4mvT0HyqQUlX9B5aEIIAAYmH4wlDtWg1SDwT//0lKSv7/D+T9/w+nYmL+//79/88fIPll0yaAAGJhYAGJP/n69O+/v0CAUAcHt2////ULqJpRVhZoA0AAsQCtAZoMVP0HiP7+RlcNBEDVYA0Mv38DNQAEEMj8vwx//wCt/AdC/zEBkgagYoAAYgF6FGj277+///wlpAEoz8AAEEAgDX/BZv/69wuoB48GRrCTAAKICajh9//fv/6CVP/++wu7BrDxQFf/YWAACCCwk0BKf0MQdg1/gBqAPv0L9ANAALEAY+33vz+S3JIgb/z5C45CBkZGRgY4UFICKQUjoJMAAoiRoZSB4RMojkHx/YPhbNVZoM3AOISQQPUK9vaQOIYAgAADAC5Wd4RRwnKfAAAAAElFTkSuQmCC" /> Installa la versione italiana mantenendo la lingua principale attualmente configurata. Consigliato per negozi gestiti principalmente in lingue diverse dall&apos;italiano<br><span class="tile-success">Consigliato per negozi gestiti principalmente in lingue diverse dall&apos;Italiano</span><br>';
-$_['text_title_install_extra'] = 'Install the extra translations only (the main translation is already installed)<br>';
-$_['text_install_extra'] = '<img src="language/en-gb/en-gb.png" /> <span class="tile-warning">Not Suggested for non-italian Shops</span> Installs and configures the italian language for almost anything in front and backend';
-$_['text_title_languninstall'] = 'Uninstall the language<br>';
-$_['text_languninstall'] = 'The language will be removed from opencart and eventual extra translations will be reverted to the default english. <b>You must remove the ocmod or manually delete the php files of the language.</b>';
-$_['text_title_langinstrepair'] = 'Reconfigure language with the extension<br>';
-$_['text_langinstrepair'] = 'It will detect the the older installation of the language and will reconfigure the extension to enable its functionalities.<br>';
-$_['text_extension_version'] = 'Extension Version: ';
+$_['text_title_install_full'] = "Installa la versione completamente in italiano - Instalirajte puni talijanski jezik";
+$_['text_install_full'] = "<img src=\\"language/en-gb/en-gb.png\\" /> Instalira i konfigurira talijanski jezik za gotovo sve ispred i pozadinu.<br><span class=\\"tile-warning\\">Ne preporučuje se za netalijanske trgovine</span><br><span class=\\"tile-success\\">Preporučuje se uglavnom za talijanske trgovine</span><br><br><img src=\\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAALCAIAAAD5gJpuAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAE2SURBVHjaYmSYyMDwgwEE/jEw/GF4mvT0HyqQUlX9B5aEIIAAYmH4wlDtWg1SDwT//0lKSv7/D+T9/w+nYmL+//79/88fIPll0yaAAGJhYAGJP/n69O+/v0CAUAcHt2////ULqJpRVhZoA0AAsQCtAZoMVP0HiP7+RlcNBEDVYA0Mv38DNQAEEMj8vwx//wCt/AdC/zEBkgagYoAAYgF6FGj277+///wlpAEoz8AAEEAgDX/BZv/69wuoB48GRrCTAAKICajh9//fv/6CVP/++wu7BrDxQFf/YWAACCCwk0BKf0MQdg1/gBqAPv0L9ANAALEAY+33vz+S3JIgb/z5C45CBkZGRgY4UFICKQUjoJMAAoiRoZSB4RMojkHx/YPhbNVZoM3AOISQQPUK9vaQOIYAgAADAC5Wd4RRwnKfAAAAAElFTkSuQmCC\\" /> Installa la versione completamente in italiano e configura la lingua italiana per frontend e backend.<br><span class=\\"tile-success\\">Consigliato per negozi gestiti principalmente in Italiano</span><br><span class=\\"tile-warning\\">Non consigliabile per negozi gestiti principalmente in lingue diverse dall&apos;talijansko</span><br><br>";
+$_['text_title_install_eng'] = "Instalirajte osnovni jezik za trgovine koje nisu na talijanskom - Installa la lingua senza impostarla come principale<br>";
+$_['text_install_eng'] = "<img src=\\"language/en-gb/en-gb.png\\" /> Instalirajte talijanski jezik za trgovine koje nisu na talijanskom. Talijanski jezik bit će ispravno konfiguriran, ali neće biti glavni jezik u pozadini. Izuzetno preporučljivo za trgovine u kojima je talijanski sekundarni/fakultativni jezik.<br><span class=\\"tile-success\\">Preporučeno za trgovine u kojima glavni jezik nije talijanski</span><br><br><img src=\\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAALCAIAAAD5gJpuAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAE2SURBVHjaYmSYyMDwgwEE/jEw/GF4mvT0HyqQUlX9B5aEIIAAYmH4wlDtWg1SDwT//0lKSv7/D+T9/w+nYmL+//79/88fIPll0yaAAGJhYAGJP/n69O+/v0CAUAcHt2////ULqJpRVhZoA0AAsQCtAZoMVP0HiP7+RlcNBEDVYA0Mv38DNQAEEMj8vwx//wCt/AdC/zEBkgagYoAAYgF6FGj277+///wlpAEoz8AAEEAgDX/BZv/69wuoB48GRrCTAAKICajh9//fv/6CVP/++wu7BrDxQFf/YWAACCCwk0BKf0MQdg1/gBqAPv0L9ANAALEAY+33vz+S3JIgb/z5C45CBkZGRgY4UFICKQUjoJMAAoiRoZSB4RMojkHx/YPhbNVZoM3AOISQQPUK9vaQOIYAgAADAC5Wd4RRwnKfAAAAAElFTkSuQmCC\\" /> Installa la versione italiana mantenendo la lingua principale attualmente configurata. Consigliato per negozi gestiti principalmente in lingue diverse dall&apos;italiano<br><span class=\\"tile-success\\">Consigliato per negozi gestiti principalmente in lingue diverse dall&apos;Italiano</span><br>";
+$_['text_title_install_extra'] = "Instalirajte samo dodatne prijevode (glavni prijevod je već instaliran)<br>";
+$_['text_install_extra'] = "<img src=\\"language/en-gb/en-gb.png\\" /> <span class=\\"tile-warning\\">Nije preporučeno za trgovine koje nisu na talijanskom</span> Instalira i konfigurira talijanski jezik za gotovo sve u prednjem i stražnjem dijelu";
+$_['text_title_languninstall'] = "Deinstaliraj jezik<br>";
+$_['text_languninstall'] = "Jezik će biti uklonjen iz opencart-a, a eventualni dodatni prijevodi vratit će se na zadani engleski. <b>Morate ukloniti ocmod ili ručno izbrisati php datoteke jezika.</b>";
+$_['text_title_langinstrepair'] = "Ponovno konfigurirajte jezik s ekstenzijom<br>";
+$_['text_langinstrepair'] = "Otkrit će stariju instalaciju jezika i ponovno će konfigurirati proširenje kako bi omogućio svoje funkcije.<br>";
+$_['text_extension_version'] = "Verzija proširenja:";
 
-$_['error_message'] = 'Error';
+$_['error_message'] = "Greška";
 
-$_['error_permission'] = 'You don\\'t have permission to manage this extension';
-$_['error_dbcollation'] = 'Before proceeding the COLLATION of the current connection (%s) must be the same of the tables and columns!';
-$_['error_langinstallation'] = 'An error occurred during the Installation of the language!';
-$_['error_ocversion'] = 'Wrong Extension! Use it at your own risk or try a manual installation. The current extension is meant for Opencart ';
+$_['error_permission'] = "Nemate dozvolu za upravljanje ovim proširenjem";
+$_['error_dbcollation'] = "Prije nastavka KOLACIJA trenutne veze (%s) mora biti ista u tablicama i stupcima!";
+$_['error_langinstallation'] = "Došlo je do pogreške tijekom instalacije jezika!";
+$_['error_ocversion'] = "Pogrešna ekstenzija! Koristite ga na vlastitu odgovornost ili pokušajte s ručnom instalacijom. Trenutačno proširenje je namijenjeno Opencart-u";
 
-$_['button_save'] = 'Save';
-$_['button_reconfig'] = 'Reconfigure';
-$_['button_install'] = 'Install';
-$_['button_uninstall'] = 'Uninstall';
+$_['button_save'] = "Uštedjeti";
+$_['button_reconfig'] = "Ponovno konfigurirajte";
+$_['button_install'] = "Instalirati";
+$_['button_uninstall'] = "Deinstaliraj";
 
-$_['text_extension'] = 'Extensions';
-$_['text_header2'] = 'Language Installation';
-$_['text_success'] = 'Action Completed Successfully!';
-$_['text_confirm'] = 'Are you sure that you want to continue?';
+$_['text_extension'] = "Ekstenzije";
+$_['text_header2'] = "Instalacija jezika";
+$_['text_success'] = "Akcija uspješno završena!";
+$_['text_confirm'] = "Jeste li sigurni da želite nastaviti?";

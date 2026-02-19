@@ -1,7 +1,7 @@
 <?php
 // Croatian   v.2.x.x     Datum: 01.10.2014		Author: Gigo (Igor Ilić - igor@iligsoft.hr)
 // Heading
-$_['heading_title']                = 'Nadzorna ploča';
+$_['heading_title']                = "Nadzorna ploča";
 
 // Text
 // $_['text_order_total']             = 'Ukupno narudžbi'; // postojalo u verziji OC 2.2.0.0
@@ -21,4 +21,4 @@ $_['heading_title']                = 'Nadzorna ploča';
 // $_['text_view']                    = 'Detaljnije...'; // postojalo u verziji OC 2.2.0.0
 
 // Error
-$_['error_install']                = 'Upozorenje: Install direktorij/folder još uvijek postoji i trebali bi ga obrisati zbog sigurnosnih razloga!';
+$_['error_install']                = "Upozorenje: Install direktorij/folder još uvijek postoji i trebali bi ga obrisati zbog sigurnosnih razloga!";

@@ -3,7 +3,7 @@
 //  Product Option Image Ultimate / Изображения опций Ultimate
 //  Support: support@liveopencart.com / Поддержка: help@liveopencart.ru
 
-$_['module_name'] = 'Product option image Ultimate';
+$_['module_name'] = "Product option image Ultimate";
 $_['module_page'] = '
 <a href="https://www.opencart.com/index.php?route=marketplace/extension/info&extension_id=32391" target="_blank">'.$_['module_name'].' on opencart.com</a>
 ';

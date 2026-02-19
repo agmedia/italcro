@@ -1,14 +1,14 @@
 <?php
 // Heading
-$_['heading_title']    = 'Basel Blog: Categories';
+$_['heading_title']    = "Baselski blog: Kategorije";
 
 // Text
-$_['text_module']      = 'Modules';
-$_['text_success']     = 'Success: You have modified blog category module';
-$_['text_edit']        = 'Edit Module';
+$_['text_module']      = "Moduli";
+$_['text_success']     = "Uspjeh: izmijenili ste modul kategorije bloga";
+$_['text_edit']        = "Uredi modul";
 
 // Entry
-$_['entry_status']     = 'Status';
+$_['entry_status']     = "Status";
 
 // Error
-$_['error_permission'] = 'Warning: You do not have permission to modify blog category module';
+$_['error_permission'] = "Upozorenje: Nemate dopuštenje za izmjenu modula kategorije bloga";

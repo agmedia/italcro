@@ -1,3 +1,3 @@
 <?php
 
-$_['text_mpgdpr_processrestrict']      = 'Restricted Processing';
+$_['text_mpgdpr_processrestrict']      = "Restricted Processing";

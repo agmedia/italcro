@@ -1,18 +1,18 @@
 <?php
 // Heading
-$_['heading_title']         = '<span style="color:#006bb3;">Image Crop</span>';
+$_['heading_title']         = "<span style=\\"color:#006bb3;\\">Izrezivanje slike</span>";
 
 // Text
-$_['text_module']           = 'Modules';
-$_['text_success']          = 'Success: You have modified module Image Crop!';
-$_['text_edit']             = 'Edit Module Image Crop';
-$_['text_congratulations']  = 'Congratulations! Extension has been installed!';
-$_['text_message']          = 'All you need to do now is to delete your image cache folder and you are good to go.';
-$_['text_cache_cleared']    = 'Your image cache folder has been cleared!';
+$_['text_module']           = "Moduli";
+$_['text_success']          = "Uspjeh: Izmijenili ste modul Image Crop!";
+$_['text_edit']             = "Modul Uredi Obrezivanje slike";
+$_['text_congratulations']  = "čestitamo! Ekstenzija je instalirana!";
+$_['text_message']          = "Sve što sada trebate učiniti je izbrisati mapu predmemorije slika i spremni ste.";
+$_['text_cache_cleared']    = "Vaša mapa predmemorije slika je očišćena!";
 
 // Entry
-$_['entry_status']          = 'Status';
-$_['entry_clear_cache']     = 'Clear Image Cache';
+$_['entry_status']          = "Status";
+$_['entry_clear_cache']     = "Očisti predmemoriju slika";
 
 // Button
-$_['button_clear_cache']    = 'Clear Image Cache';
+$_['button_clear_cache']    = "Očisti predmemoriju slika";

@@ -1,19 +1,19 @@
 <?php
 // Heading
-$_['heading_title']          	= 'ModulePoints Import/Export Hub';
+$_['heading_title']          	= "Središte za uvoz/izvoz ModulePoints";
 
 
 // Text
-$_['text_menu']          	= 'ModulePoints Import/Export Hub';
-$_['text_form']          	= 'ModulePoints Import/Export Hub';
-$_['text_extension']          	= 'Extensions';
-$_['text_files_permission']          	= 'Some Import/Export files exists in folder, but have no permission to access them.';
-$_['text_success_files_permission']          	= 'Success: Files add in permissions list!';
+$_['text_menu']          	= "Središte za uvoz/izvoz ModulePoints";
+$_['text_form']          	= "Središte za uvoz/izvoz ModulePoints";
+$_['text_extension']          	= "Ekstenzije";
+$_['text_files_permission']          	= "Neke datoteke za uvoz/izvoz postoje u mapi, ali nemaju dozvolu za pristup.";
+$_['text_success_files_permission']          	= "Uspjeh: datoteke su dodane na popis dopuštenja!";
 
 // Button
-$_['button_files_permission']          	= 'Add files in permissions list';
-$_['button_import']          	= 'Import';
-$_['button_export']          	= 'Export';
+$_['button_files_permission']          	= "Dodajte datoteke na popis dopuštenja";
+$_['button_import']          	= "Uvoz";
+$_['button_export']          	= "Izvoz";
 
 // Error
-$_['error_permission']       	 = 'Warning: You Do Not Have Permission To Modify ModulePoints Import/Export Hub!';
+$_['error_permission']       	 = "Upozorenje: Nemate dozvolu za izmjenu ModulePoints Import/Export Hub!";

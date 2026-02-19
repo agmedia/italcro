@@ -1,100 +1,100 @@
 <?php
 // Heading
-$_['heading_title']    = 'Basel Mega Menu';
-$_['heading_title_so']    = 'Basel Mega Menu';
+$_['heading_title']    = "Basel Mega meni";
+$_['heading_title_so']    = "Basel Mega meni";
 // Text
 
-$_['text_creat_new_item']      			= 'Add new menu item';
-$_['text_expand_all']      				= '+ Expand All';
-$_['text_collapse_all']      			= '- Collapse All';
-$_['text_edit_item']      				= 'Edit Menu Item (ID:';
-$_['text_name']      					= 'Name';
-$_['text_label']      					= 'Label';
-$_['text_label_item']      				= 'Label Item';
-$_['text_icon_font']      				= 'Icon font';
-$_['text_type_link']      				= 'Type Link';
-$_['text_categories']      				= 'Categories';
-$_['text_all_categories']      			= 'All Categories';
-$_['text_link_in_new_window']      		= 'Open link in new tab';
-$_['text_disabled']      				= 'Disabled';
-$_['text_enabled']      				= 'Enabled';
-$_['text_status']      					= 'Status';
-$_['text_class_menu']      				= 'Custom Class';
-$_['text_position']      				= 'Background Image Position';
-$_['text_submenu_width']      			= 'Dropdown Width';
-$_['text_example']      				= 'Example: 100%, 250px';
-$_['text_content_config']      			= 'This is a sub menu item';
-$_['text_content_item']      			= 'Select this if the menu item will take place inside a parent drop down';
-$_['text_parent_config']      			= 'This is a top level menu item';
-$_['text_parent_item']      			= 'Select this if this will be a top level item';
-$_['text_content_width']      			= 'Content width';
-$_['text_content_type']      			= 'Content type';
-$_['text_name']       					= 'Item Name';
-$_['text_name_desc']         			= 'Module must have a name';
-$_['text_basic_configuration']     		= 'Menu Module Settings';
-$_['text_orientation']     				= 'Orientation';
-$_['text_number_load_vertical']     	= 'Limit item visible';
+$_['text_creat_new_item']      			= "Dodajte novu stavku izbornika";
+$_['text_expand_all']      				= "+ Proširi sve";
+$_['text_collapse_all']      			= "- Sažmi sve";
+$_['text_edit_item']      				= "Uredi stavku izbornika (ID:";
+$_['text_name']      					= "Ime";
+$_['text_label']      					= "Označiti";
+$_['text_label_item']      				= "Stavka oznake";
+$_['text_icon_font']      				= "Font ikone";
+$_['text_type_link']      				= "Upišite Link";
+$_['text_categories']      				= "kategorije";
+$_['text_all_categories']      			= "Sve kategorije";
+$_['text_link_in_new_window']      		= "Otvori vezu u novoj kartici";
+$_['text_disabled']      				= "Onesposobljeno";
+$_['text_enabled']      				= "Omogućeno";
+$_['text_status']      					= "Status";
+$_['text_class_menu']      				= "Prilagođena klasa";
+$_['text_position']      				= "Položaj pozadinske slike";
+$_['text_submenu_width']      			= "Širina padajućeg izbornika";
+$_['text_example']      				= "Primjer: 100%, 250 px";
+$_['text_content_config']      			= "Ovo je stavka podizbornika";
+$_['text_content_item']      			= "Odaberite ovo ako će se stavka izbornika nalaziti unutar nadređenog padajućeg izbornika";
+$_['text_parent_config']      			= "Ovo je stavka izbornika najviše razine";
+$_['text_parent_item']      			= "Odaberite ovo ako će ovo biti stavka najviše razine";
+$_['text_content_width']      			= "Širina sadržaja";
+$_['text_content_type']      			= "Vrsta sadržaja";
+$_['text_name']       					= "Naziv artikla";
+$_['text_name_desc']         			= "Modul mora imati naziv";
+$_['text_basic_configuration']     		= "Postavke modula izbornika";
+$_['text_orientation']     				= "Orijentacija";
+$_['text_number_load_vertical']     	= "Ograničenje vidljivosti stavke";
 
 
-$_['text_home_item']     			= 'Home item';
-$_['text_home_text']     			= 'Home Text';
+$_['text_home_item']     			= "Početna stavka";
+$_['text_home_text']     			= "Domaći tekst";
 
-$_['text_module']      					= 'Modules';
-$_['text_success']     					= 'Success: You have modified basel megamenu module';
-$_['text_success_menu_delete']    		= 'Success: You have modified menu manager';
-$_['text_error_menu_item_delete']    	= 'You can not delete an item holding one or multiple sub items';
-$_['text_success_menu_item_add']    	= 'Success: You have add menu item manager';
-$_['text_success_menu_item_edit']    	= 'Success: You have edit menu item manager';
-$_['text_success_menu_item_delete']    	= 'Success: Menu item was deleted';
+$_['text_module']      					= "Moduli";
+$_['text_success']     					= "Uspjeh: izmijenili ste basel megamenu modul";
+$_['text_success_menu_delete']    		= "Uspjeh: Izmijenili ste upravitelja izbornika";
+$_['text_error_menu_item_delete']    	= "Ne možete izbrisati stavku koja sadrži jednu ili više podstavki";
+$_['text_success_menu_item_add']    	= "Uspjeh: Imate upravitelja za dodavanje stavki izbornika";
+$_['text_success_menu_item_edit']    	= "Uspjeh: Imate upravitelja stavki izbornika za uređivanje";
+$_['text_success_menu_item_delete']    	= "Uspjeh: Stavka izbornika je izbrisana";
 
-$_['text_edit']        					= 'Drag &amp; Drop items to arrange them';
+$_['text_edit']        					= "Povucite &amp; Ispustite stavke da biste ih rasporedili";
 
-$_['entry_display_mobile_module']     		= 'Show On Mobile Devices';
-$_['entry_menu_manager']     	= 'Menu Manager';
-$_['entry_menu_items']     		= 'Menu Items Manager';
-$_['entry_head_name']     		= 'Menu Title';
-$_['entry_description_name']     		= 'Item Name';
-$_['entry_please_select']		= '--Please Select--';
+$_['entry_display_mobile_module']     		= "Prikaži na mobilnim uređajima";
+$_['entry_menu_manager']     	= "Upravitelj izbornika";
+$_['entry_menu_items']     		= "Upravitelj stavki izbornika";
+$_['entry_head_name']     		= "Naslov izbornika";
+$_['entry_description_name']     		= "Naziv artikla";
+$_['entry_please_select']		= "--Odaberite--";
 
 //Menu manager
-$_['entry_menu_groups_id']       			= 'Id';
-$_['entry_menu_groups_title']       		= 'Title';
-$_['entry_menu_groups_title_desc']      	= 'Title';
-$_['entry_menu_groups_status']       		= 'Status';
-$_['entry_menu_groups_action']       		= 'Action';
-$_['entry_button_edit']       				= 'Edit';
-$_['entry_text_confirm']       				= 'Are you sure ?';
-$_['entry_button_delete']       			= 'Delete';
-$_['entry_menu_groups_content']       		= 'Content';
-$_['entry_menu_groups_content_desc']    	= 'Content';
-$_['entry_menu_groups_theme']       		= 'Select template';
-$_['entry_menu_groups_theme_desc']      	= 'Select template';
-$_['entry_menu_groups_effect']       		= 'Select Effect';
-$_['entry_menu_groups_effect_desc']      	= 'Select Effect';
-$_['entry_menu_groups_duration']       		= 'Effect Duration';
-$_['entry_menu_groups_duration_desc']      	= 'Effect Duration';
-$_['entry_menu_groups_startLevel']       	= 'Start Level';
-$_['entry_menu_groups_startLevel_desc']     = 'Start Level';
-$_['entry_menu_groups_endLevel']       		= 'End Level';
-$_['entry_menu_groups_endLevel_desc']     	= 'End Level';
+$_['entry_menu_groups_id']       			= "Id";
+$_['entry_menu_groups_title']       		= "Titula";
+$_['entry_menu_groups_title_desc']      	= "Titula";
+$_['entry_menu_groups_status']       		= "Status";
+$_['entry_menu_groups_action']       		= "Akcijski";
+$_['entry_button_edit']       				= "Uredi";
+$_['entry_text_confirm']       				= "Jeste li sigurni?";
+$_['entry_button_delete']       			= "Izbrisati";
+$_['entry_menu_groups_content']       		= "Sadržaj";
+$_['entry_menu_groups_content_desc']    	= "Sadržaj";
+$_['entry_menu_groups_theme']       		= "Odaberite predložak";
+$_['entry_menu_groups_theme_desc']      	= "Odaberite predložak";
+$_['entry_menu_groups_effect']       		= "Odaberite Efekt";
+$_['entry_menu_groups_effect_desc']      	= "Odaberite Efekt";
+$_['entry_menu_groups_duration']       		= "Trajanje učinka";
+$_['entry_menu_groups_duration_desc']      	= "Trajanje učinka";
+$_['entry_menu_groups_startLevel']       	= "Početna razina";
+$_['entry_menu_groups_startLevel_desc']     = "Početna razina";
+$_['entry_menu_groups_endLevel']       		= "Završna razina";
+$_['entry_menu_groups_endLevel_desc']     	= "Završna razina";
 
 
 // Help
-$_['help_product']     = '(Autocomplete)';
-$_['entry_status']     = 'Status';
+$_['help_product']     = "(Samodovršavanje)";
+$_['entry_status']     = "Status";
 // Error
-$_['error_permission'] = 'Warning: You do not have permission to modify featured module';
-$_['error_name']       = 'Module Name must be between 3 and 64 characters';
-$_['error_title']      = 'Title must be between 3 and 64 characters';
-$_['error_width']      = 'Width required';
-$_['error_description_name']     = 'Description required';
-$_['error_name']     = 'Name required';
+$_['error_permission'] = "Upozorenje: nemate dozvolu za izmjenu istaknutog modula";
+$_['error_name']       = "Naziv modula mora imati između 3 i 64 znaka";
+$_['error_title']      = "Naslov mora imati između 3 i 64 znaka";
+$_['error_width']      = "Potrebna širina";
+$_['error_description_name']     = "Opis je potreban";
+$_['error_name']     = "Ime je potrebno";
 
 // Text
-$_['text_module']      = 'Modules';
-$_['text_success']     = 'Success: You have modified module Mega Menu';
-$_['text_warning']     = 'Warning: Changes have not been saved Make sure you have completed all fields well.';
-$_['error_name']       = 'Module Name must be between 3 and 64 characters';
+$_['text_module']      = "Moduli";
+$_['text_success']     = "Uspjeh: Izmijenili ste modul Mega Menu";
+$_['text_warning']     = "Upozorenje: Promjene nisu spremljene Provjerite jeste li dobro ispunili sva polja.";
+$_['error_name']       = "Naziv modula mora imati između 3 i 64 znaka";
 // Error
-$_['error_permission'] = 'Warning: You do not have permission to modify module Mega Menu';
+$_['error_permission'] = "Upozorenje: Nemate dozvolu za izmjenu modula Mega Menu";
 

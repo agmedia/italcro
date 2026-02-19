@@ -1,34 +1,34 @@
 <?php
 // Heading
-$_['heading_title']    	= 'ModulePoints - Gallery Photo';
+$_['heading_title']    	= "ModulePoints - Galerija fotografija";
 
 // Text
-$_['text_extension']   	= 'Extensions';
-$_['text_success']     	= 'Success: You Have Modified Gallery Photo Module!';
-$_['text_edit']        	= 'Edit Gallery Photo Module';
-// $_['text_none']        	= '---None---';
+$_['text_extension']   	= "Ekstenzije";
+$_['text_success']     	= "Uspjeh: izmijenili ste foto modul galerije!";
+$_['text_edit']        	= "Uredi galerijski foto modul";
+// $_['text_none']        	= '---Ništa---';
 
 // Button
-// $_['button_save']      	= 'Save & Close';
+// $_['button_save']      	= 'Spremi i zatvori';
 
 // Entry
-$_['entry_name']       	= 'Module Name';
-$_['entry_title']      	= 'Title';
-$_['entry_photo']      	= 'Album';
-$_['entry_limit']      	= 'Limit';
-$_['entry_width']      	= 'Width';
-$_['entry_height']     	= 'Height';
-$_['entry_status']     	= 'Status';
-$_['entry_carousel']   	= 'Carousel';
-$_['entry_extitle']     = 'Display Title';
+$_['entry_name']       	= "Naziv modula";
+$_['entry_title']      	= "Titula";
+$_['entry_photo']      	= "Album";
+$_['entry_limit']      	= "Ograničiti";
+$_['entry_width']      	= "Širina";
+$_['entry_height']     	= "Visina";
+$_['entry_status']     	= "Status";
+$_['entry_carousel']   	= "Karusel";
+$_['entry_extitle']     = "Prikaz naslova";
 
 // Help
-$_['help_photo']     	= '(Autocomplete)';
+$_['help_photo']     	= "(Samodovršavanje)";
 
 // Error
-$_['error_permission'] 	= 'Warning: You Do Not Have Permission To Modify ModulePoints - Gallery Photo Module!';
-$_['error_name']       	= 'Module Name Must Be Between 3 And 64 Characters!';
-$_['error_title']      	= 'Title Must Be Between 1 And 255 Characters!';
-$_['error_width']      	= 'Image Width Required!';
-$_['error_height']     	= 'Image Height Required!';
-$_['error_photo_name']  = 'Album Required!';
+$_['error_permission'] 	= "Upozorenje: Nemate dopuštenje za izmjenu ModulePoints - Galerijski foto modul!";
+$_['error_name']       	= "Naziv modula mora biti između 3 i 64 znaka!";
+$_['error_title']      	= "Naslov mora imati između 1 i 255 znakova!";
+$_['error_width']      	= "Potrebna širina slike!";
+$_['error_height']     	= "Potrebna visina slike!";
+$_['error_photo_name']  = "Potreban album!";

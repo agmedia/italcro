@@ -1,78 +1,78 @@
 <?php
 // Heading
-$_['heading_title']    = 'Translate Expert (Full)';
+$_['heading_title']    = "Stručnjak za prevođenje (cijeli)";
 
 // Text
-$_['text_extension']   = 'Modules';
-$_['text_success']     = 'Module settings updated!';
-$_['text_edit']        = 'Editing a module';
+$_['text_extension']   = "Moduli";
+$_['text_success']     = "Postavke modula ažurirane!";
+$_['text_edit']        = "Uređivanje modula";
 
-$_['text_login_is_correct']        = '<div class="translate_expert_correct"> Authorization check succeeded. </div>';
-$_['text_need_to_login'] = '<div class="translate_expert_incorrect"> Authorization check is NOT successful.</div><br> To receive the key, register or log in to the website <a href="https://translator.codeguild.com.ua/">https://translator.codeguild.com.ua/</a> ';
-$_['text_need_to_pay'] = '<div class="translate_expert_incorrect"> You have run out or very few characters left to translate.</div><br> Go to the website and buy additional symbols <a href="https://translator.codeguild.com.ua/">https://translator.codeguild.com.ua/</a> ';
-$_['text_no_need_to_pay'] = '<div class="translate_expert_correct"> You still have a lot of characters to translate.</div> ';
-$_['text_about_page']        = '<div class="panel-body"><h2>Thank you for using our module!</h2><h4>Support <a href="mailto:admin@codeguild.com.ua"><b>admin@codeguild.com.ua</b></a></h4><div class="alert bg-success"><h4>The module was tested on standard pages of the admin part, write to the mail if you need to adapt to any other pages.<p></p><p>All users are provided with a free consultation and support on the operation of the module via e-mail.</p><p>Page <a href="https://translator.codeguild.com.ua/uk-ua/about-us" target="_blank">All about the Translate Expert module.</a></p><p>Page <a href="https://translator.codeguild.com.ua/en-gb/translate-opencart-in-few-clicks" target="_blank">How to use the module for analysis and / or translation of the whole site.</a></p></h4></div></div>';
-$_['text_current_module_version']        = 'The current version of the module <b>{current_module_version}</b>';
-$_['text_newest_module_version']        = 'The latest available version of the module <b>{newest_module_version}</b>';
-$_['text_you_need_to_update_module']        = '<div class="translate_expert_incorrect">For the correct operation of the module, we recommend you upgrade the module to a newer version. <br>You can always find the latest version on the <a href="https://translator.codeguild.com.ua/en-gb/releases" target="_blank">https://translator.codeguild.com.ua/en-gb/releases</a></div>';
-$_['text_you_have_the_newest_version_of_module']        = '<div class="translate_expert_correct">Congratulations you have the latest version of the module.</div>';
-$_['text_debug_log']        = 'Debug log';
-$_['text_clear_debug_log_success']	   = 'Success: You have successfully cleared your debug log!';
-$_['text_clear_confirm']	   = 'Are you sure you want to delete the debug log file?';
+$_['text_login_is_correct']        = "<div class=\\"translate_expert_correct\\"> Provjera autorizacije uspjela. </div>";
+$_['text_need_to_login'] = "<div class=\\"translate_expert_incorrect\\"> Provjera autorizacije NIJE uspješna.</div><br> Da biste dobili ključ, registrirajte se ili prijavite na web stranicu <a href=\\"https://translator.codeguild.com.ua/\\">https://translator.codeguild.com.ua/</a>";
+$_['text_need_to_pay'] = "<div class=\\"translate_expert_incorrect\\"> Ponestalo vam je ili je ostalo vrlo malo znakova za prijevod.</div><br> Idite na web mjesto i kupite dodatne simbole <a href=\\"https://translator.codeguild.com.ua/\\">https://translator.codeguild.com.ua/</a>";
+$_['text_no_need_to_pay'] = "<div class=\\"translate_expert_correct\\"> Još uvijek imate puno znakova za prevesti.</div>";
+$_['text_about_page']        = "<div class=\\"panel-body\\"><h2>Hvala što koristite naš modul!</h2><h4>Podrška <a href=\\"mailto:admin@codeguild.com.ua\\"><b>admin@codeguild.com.ua</b></a></h4><div class=\\"alert bg-success\\"><h4>Modul je testiran na standardnim stranicama administratorskog dijela, pišite na mail ako trebate prilagoditi svim drugim stranicama.<p></p><p>Svim korisnicima omogućeno je besplatno savjetovanje i podrška o radu modula putem e-pošte.</p><p>Stranica <a href=\\"https://translator.codeguild.com.ua/uk-ua/about-us\\" target=\\"_blank\\">Sve o modulu Translate Expert.</a></p><p>Stranica <a href=\\"https://translator.codeguild.com.ua/en-gb/translate-opencart-in-few-clicks\\" target=\\"_blank\\">Kako koristiti modul za analizu i/ili prijevod cijele stranice.</a></p></h4></div></div>";
+$_['text_current_module_version']        = "Trenutna verzija modula <b>{current_module_version}</b>";
+$_['text_newest_module_version']        = "Najnovija dostupna verzija modula <b>{newest_module_version}</b>";
+$_['text_you_need_to_update_module']        = "<div class=\\"translate_expert_incorrect\\">Za ispravan rad modula preporučamo nadogradnju modula na noviju verziju. <br>Zadnju verziju uvijek možete pronaći na <a href=\\"https://translator.codeguild.com.ua/en-gb/releases\\" target=\\"_blank\\">https://translator.codeguild.com.ua/en-gb/releases</a></div>";
+$_['text_you_have_the_newest_version_of_module']        = "<div class=\\"translate_expert_correct\\">Čestitamo, imate najnoviju verziju modula.</div>";
+$_['text_debug_log']        = "Dnevnik otklanjanja pogrešaka";
+$_['text_clear_debug_log_success']	   = "Uspjeh: Uspješno ste izbrisali svoj dnevnik otklanjanja pogrešaka!";
+$_['text_clear_confirm']	   = "Jeste li sigurni da želite izbrisati datoteku dnevnika otklanjanja pogrešaka?";
 
 // Entry;
-$_['entry_key'] = 'Key';
-$_['entry_server_key'] = 'Google Translate Api Key';
-$_['entry_limit'] = 'Limit';
-$_['entry_image'] = 'Image (width x height)';
-$_['entry_width'] = 'Width';
-$_['entry_height'] = 'Height';
-$_['entry_status'] = 'Status';
-$_['entry_login'] = 'Your login';
-$_['entry_name'] = 'Title';
-$_['entity_table'] = 'Table';
-$_['entity_column'] = 'Column';
-$_['entity_language'] = 'Language';
-$_['entry_info'] = 'Information';
-$_['entry_char_quantity'] = 'Number of characters available for translation';
-$_['entry_analization'] = 'Analize non-translated strings';
-$_['entity_begin_analization'] = 'Analyze';
-$_['entry_analization_result'] = 'Analysis Result';
-$_['entry_analization_mode'] = 'Analysis mode';
-$_['entry_stop_modal_process'] = 'Stop';
-$_['entry_stop_modal_process_confirmation'] = 'Are you sure you want to stop current process?';
-$_['entry_time_in_sec'] = 'Time: <strong id="timeInSec">{timeInSec} seconds</strong> ';
-$_['entry_summ'] = 'All languages';
-$_['entry_close'] = 'Close';
-$_['entry_try_translate']     = 'Translation verification form<br>API key test';
-$_['entry_try_translate_text']     = 'Translation verification form';
-$_['entry_translate_expert_version']     = 'Module version';
-$_['entry_php_version']     = 'PHP version';
-$_['entry_opencart_version']= 'Opencart version';
-$_['entry_license_info']= 'License information';
-$_['entry_debug_status']     = 'Debug mode status';
-$_['entry_table']     = 'Table';
-$_['entry_analization_language_from'] = 'The language from which to translate';
-$_['entry_analization_language_to'] = 'What language to translate';
-$_['entry_all_tables']     = 'All tables';
-$_['entry_table_deep']     = 'Deep analize';
-$_['entry_table_deep_description']     = 'Full analysis of the entire table (Turn off if the analysis takes a very long time)';
+$_['entry_key'] = "Ključ";
+$_['entry_server_key'] = "Google Translate API ključ";
+$_['entry_limit'] = "Ograničiti";
+$_['entry_image'] = "Slika (širina x visina)";
+$_['entry_width'] = "Širina";
+$_['entry_height'] = "Visina";
+$_['entry_status'] = "Status";
+$_['entry_login'] = "Vaša prijava";
+$_['entry_name'] = "Titula";
+$_['entity_table'] = "Stol";
+$_['entity_column'] = "stupac";
+$_['entity_language'] = "Jezik";
+$_['entry_info'] = "Informacija";
+$_['entry_char_quantity'] = "Broj znakova dostupnih za prijevod";
+$_['entry_analization'] = "Analizirajte neprevedene nizove";
+$_['entity_begin_analization'] = "Analizirati";
+$_['entry_analization_result'] = "Rezultat analize";
+$_['entry_analization_mode'] = "Način analize";
+$_['entry_stop_modal_process'] = "Stop";
+$_['entry_stop_modal_process_confirmation'] = "Jeste li sigurni da želite zaustaviti trenutni proces?";
+$_['entry_time_in_sec'] = "Vrijeme: <strong id=\\"timeInSec\\">{timeInSec} sekundi</strong>";
+$_['entry_summ'] = "Svi jezici";
+$_['entry_close'] = "Zatvoriti";
+$_['entry_try_translate']     = "Obrazac za provjeru prijevoda<br>API ključni test";
+$_['entry_try_translate_text']     = "Obrazac za provjeru prijevoda";
+$_['entry_translate_expert_version']     = "Verzija modula";
+$_['entry_php_version']     = "PHP verzija";
+$_['entry_opencart_version']= "Opencart verzija";
+$_['entry_license_info']= "Podaci o licenci";
+$_['entry_debug_status']     = "Status načina otklanjanja pogrešaka";
+$_['entry_table']     = "Stol";
+$_['entry_analization_language_from'] = "Jezik s kojeg se prevodi";
+$_['entry_analization_language_to'] = "Koji jezik prevesti";
+$_['entry_all_tables']     = "Svi stolovi";
+$_['entry_table_deep']     = "Duboka analiza";
+$_['entry_table_deep_description']     = "Potpuna analiza cijele tablice (Isključite ako analiza traje jako dugo)";
 
 // remove translation
-$_['entry_remove_translation_records_from_db'] = 'Remove translation value from the database';
-$_['entity_begin_removing_data_from_db'] = 'Remove translation';
-$_['entry_remove_translation_records_from_db_confirmation'] = 'WARNING! We strongly recommend making a backup of the database. Are you sure you want to delete the {langCode} language translation value from the database?';
-$_['entry_removing_data_from_db_process_is_started'] = 'Removing data from the database is started.';
-$_['message_remove_data_from_db_start'] = 'Removing data from the database is started.';
-$_['message_remove_data_from_table'] = 'Translation of Table {table} is started.';
-$_['message_remove_data_from_table_column'] = '- {textColumnName}.';
-$_['message_remove_data_from_db_finish'] = 'Removing data from the database is finished.';
-$_['message_remove_data_from_db_completed'] = 'Removing data from the database is completed.';
+$_['entry_remove_translation_records_from_db'] = "Ukloni vrijednost prijevoda iz baze podataka";
+$_['entity_begin_removing_data_from_db'] = "Ukloni prijevod";
+$_['entry_remove_translation_records_from_db_confirmation'] = "UPOZORENJE! Toplo preporučujemo izradu sigurnosne kopije baze podataka. Jeste li sigurni da želite izbrisati vrijednost prijevoda jezika {langCode} iz baze podataka?";
+$_['entry_removing_data_from_db_process_is_started'] = "Pokrenuto je uklanjanje podataka iz baze.";
+$_['message_remove_data_from_db_start'] = "Pokrenuto je uklanjanje podataka iz baze.";
+$_['message_remove_data_from_table'] = "Započet je prijevod tablice {table}.";
+$_['message_remove_data_from_table_column'] = "- {textColumnName}.";
+$_['message_remove_data_from_db_finish'] = "Uklanjanje podataka iz baze je završeno.";
+$_['message_remove_data_from_db_completed'] = "Uklanjanje podataka iz baze je završeno.";
 
 // char count
-$_['entry_server_show_translation_char_count_globally'] = 'Show translation char count globally in the header';
-$_['entry_server_reset_translation_char_count_on_start_month'] = 'Reset the character count for translations at the beginning of every month';
-$_['entry_server_translation_char_count'] = 'Translation char count';
+$_['entry_server_show_translation_char_count_globally'] = "Prikaži globalni broj znakova prijevoda u zaglavlju";
+$_['entry_server_reset_translation_char_count_on_start_month'] = "Ponovno postavite broj znakova za prijevode na početku svakog mjeseca";
+$_['entry_server_translation_char_count'] = "Broj znakova prijevoda";
 $_['entry_server_translation_char_count_info'] = "
 <div id='translation_char_count_info_container' title='Translated char count: {charCount}. Month free limit: {monthFreeLimit}. Estimated cost: {costOverFreeLimit}.'>
 	<div id='translation_char_count_info' class='{color}'>Translated char count:<br>{charCount} / {monthFreeLimit} ({costOverFreeLimit})</div>
@@ -81,70 +81,70 @@ $_['entry_server_translation_char_count_info'] = "
 ";
 
 // reset cache
-$_['entry_reset_translation_cache'] = 'Reset translation cache';
+$_['entry_reset_translation_cache'] = "Poništi predmemoriju prijevoda";
 
-$_['entry_localization_language_from'] = 'Language to translate from';
-$_['entry_localization_language_to'] = 'Language to translate to';
-$_['entry_localization_analization'] = 'Analyze unlocalized values';
-$_['entry_localization_analization_result'] = 'Analysis result';
-$_['entry_localization_file_to_translate_info'] = '{path}: <b>{count} values not translated</b>';
-$_['entry_localization_file_to_translate_info_full_translated'] = '{path}: Fully translated';
+$_['entry_localization_language_from'] = "Jezik s kojeg se prevodi";
+$_['entry_localization_language_to'] = "Jezik za prijevod";
+$_['entry_localization_analization'] = "Analizirajte nelokalizirane vrijednosti";
+$_['entry_localization_analization_result'] = "Rezultat analize";
+$_['entry_localization_file_to_translate_info'] = "{path}: <b>{count} vrijednosti nisu prevedene</b>";
+$_['entry_localization_file_to_translate_info_full_translated'] = "{path}: Potpuno prevedeno";
 
-$_['entry_fileCount'] = 'Total files';
-$_['entry_needToTranslateFileCount'] = 'No files translated';
-$_['entry_needToTranslateValueCount'] = 'Values not translated';
-$_['entry_needToTranslateCharCount'] = 'Number of characters not translated';
-$_['entry_TranslateAll'] = 'Translate All';
+$_['entry_fileCount'] = "Ukupno datoteka";
+$_['entry_needToTranslateFileCount'] = "Nema prevedenih datoteka";
+$_['entry_needToTranslateValueCount'] = "Vrijednosti nisu prevedene";
+$_['entry_needToTranslateCharCount'] = "Broj znakova koji nisu prevedeni";
+$_['entry_TranslateAll'] = "Prevedi sve";
 
 // Tabs;
-$_['tab_general'] = 'General';
-$_['tab_translate_site'] = 'Website content translation';
-$_['tab_localization']   = 'Localization files translation';
-$_['tab_debug']          = 'Debug';
-$_['tab_about'] = 'About module';
+$_['tab_general'] = "General";
+$_['tab_translate_site'] = "Prijevod sadržaja web stranica";
+$_['tab_localization']   = "Prijevod lokalizacijskih datoteka";
+$_['tab_debug']          = "Debug";
+$_['tab_about'] = "O modulu";
 
 // Value;
-$_['value_analization_mode_only_empty'] = 'Search for empty values only';
-$_['value_analization_mode_same_value'] = 'Search for duplicate values';
-$_['value_analization_mode_both'] = 'Search for empty and identical values';
+$_['value_analization_mode_only_empty'] = "Traži samo prazne vrijednosti";
+$_['value_analization_mode_same_value'] = "Potražite duplicirane vrijednosti";
+$_['value_analization_mode_both'] = "Traženje praznih i identičnih vrijednosti";
 
 // Html Title attributes;
-$_['title_translate_all_tables'] = 'Translate all tables';
-$_['title_translate_table'] = 'Translate table {table}';
-$_['title_translate_table_column'] = 'Translate the {textColumnName} column of the {table}';
-$_['title_translate_table_confirmation'] = 'You really want to {translateTableTitle}?';
-$_['title_translate_to_lang_suffix'] = '(language {langCode})';
-$_['title_not_translater_char_count'] = 'Number of characters not translated';
+$_['title_translate_all_tables'] = "Prevedite sve tablice";
+$_['title_translate_table'] = "Prevedi tablicu {table}";
+$_['title_translate_table_column'] = "Prevedi stupac {textColumnName} od {table}";
+$_['title_translate_table_confirmation'] = "Stvarno želiš {translateTableTitle}?";
+$_['title_translate_to_lang_suffix'] = "(jezik {langCode})";
+$_['title_not_translater_char_count'] = "Broj znakova koji nisu prevedeni";
 
 // js constants;
-$_['js_const_done_status'] = 'Completed!';
-$_['js_const_in_progress_status'] = "In Progress...";
-$_['js_const_statistic_html'] = "<div id='statusLog'> {historyLog}</div><div id='statusCurrent'> Таблиця <strong>{table}</strong>, translated: <strong class='statusTranslatedCharCount'>{translatedCharCount}</strong>, Status: <strong class='translatedStatus'>{status}</strong></div>";
-$_['js_const_analization_process_is_started'] = "Analyzation process is in progress...<br>Table: <strong id='analization_current_table'></strong><br>Request number: <strong id='analization_request_number'>1</strong>";
+$_['js_const_done_status'] = "Završeno!";
+$_['js_const_in_progress_status'] = "U tijeku...";
+$_['js_const_statistic_html'] = "<div id=\'statusLog\'> {historyLog}</div><div id=\'statusCurrent\'> Tablica <strong>{table}</strong>, prevedeno: <strong class=\'statusTranslatedCharCount\'>{translatedCharCount}</strong>, Status: <strong class=\'translatedStatus\'>{status}</strong></div>";
+$_['js_const_analization_process_is_started'] = "Proces analize je u tijeku...<br>Tablica: <strong id=\'analization_current_table\'></strong><br>Broj zahtjeva: <strong id=\'analization_request_number\'>1</strong>";
 
 // Error;
-$_['error_permission'] = 'You do not have permission to manage this module!';
-$_['Error_name'] = 'The module name must be between 3 and 64 characters!';
-$_['error_width'] =' You must specify the width! ';
-$_['error_height'] =' You must specify the height! ';
-$_['error_unlicensed'] = 'You are using the unlicensed version of the module! <br> We recommend buying the module on the website <a href="https://translator.codeguild.com.ua/"> https://translator.codeguild.com.ua/ </a> or contact the module support by email admin@codeguild.com.ua';
-$_['error_unlicensed_active'] = 'You are using the unlicensed version of the module! <br>The module works in Demo mode and will soon stop working.<br> We recommend buying the module on the website <a href="https://translator.codeguild.com.ua/"> https://translator.codeguild.com.ua/ </a> or contact the module support by email admin@codeguild.com.ua';
-$_['error_debug_log_warning']	   = 'Warning: Your debug log file %s is %s!';
+$_['error_permission'] = "Nemate dopuštenje za upravljanje ovim modulom!";
+$_['Error_name'] = "Ime modula mora biti između 3 i 64 znaka!";
+$_['error_width'] ="Morate navesti širinu!";
+$_['error_height'] ="Morate navesti visinu!";
+$_['error_unlicensed'] = "Koristite nelicenciranu verziju modula! <br> Preporučujemo kupnju modula na web stranici <a href=\\"https://translator.codeguild.com.ua/\\"> https://translator.codeguild.com.ua/ </a> ili kontaktirajte podršku modula putem e-pošte admin@codeguild.com.ua";
+$_['error_unlicensed_active'] = "Koristite nelicenciranu verziju modula! <br>Modul radi u demo načinu rada i uskoro će prestati raditi.<br> Preporučujemo kupnju modula na web stranici <a href=\\"https://translator.codeguild.com.ua/\\"> https://translator.codeguild.com.ua/ </a> ili kontaktirajte podršku modula putem e-pošte admin@codeguild.com.ua";
+$_['error_debug_log_warning']	   = "Upozorenje: Vaša datoteka dnevnika otklanjanja pogrešaka %s je %s!";
 
-$_['error_lang_from_folder_is_not_exists']	   = 'Localization files folder for "Language to translate from" not found: ';
-$_['error_lang_to_folder_is_not_exists']	   = 'Localization files folder for "Language to translate to" not found: ';
-$_['error_lang_from_and_lang_to_are_equal']	   = 'Select language to translate to';
+$_['error_lang_from_folder_is_not_exists']	   = "Mapa datoteka lokalizacije za \\"Jezik za prijevod\\" nije pronađena:";
+$_['error_lang_to_folder_is_not_exists']	   = "Mapa datoteka lokalizacije za \\"Jezik za prijevod\\" nije pronađena:";
+$_['error_lang_from_and_lang_to_are_equal']	   = "Odaberite jezik na koji želite prevesti";
 
 // Messages;
-$_['message_analize_global_info'] =' <b>All tables</b> ';
-$_['message_analize_table_head_info'] = ' <strong class="et_table" id="et_{table}">{table}</strong> ';
-$_['message_analize_field_head_info'] = 'Text field <strong class="et_field" id="et_{table}_{textColumnName}">{textColumnName}</strong> ';
+$_['message_analize_global_info'] ="<b>Sve tablice</b>";
+$_['message_analize_table_head_info'] = "<strong class=\\"et_table\\" id=\\"et_{table}\\">{table}</strong>";
+$_['message_analize_field_head_info'] = "Tekstualno polje <strong class=\\"et_field\\" id=\\"et_{table}_{textColumnName}\\">{textColumnName}</strong>";
 
 
 
-$_['entry_table_product_filter'] = 'Product filter';
-$_['entry_table_product_status_filter'] = 'Product status filter, only active products';
-$_['entry_table_product_quantity_filter'] = 'Product quantity filter, only products with quantity > 0)';
-$_['entry_table_product_category_id_filter'] = 'Product category filter';
-$_['entry_table_product_stock_status_filter'] = 'Product stock status filter';
-$_['entry_filter_all'] = '';
+$_['entry_table_product_filter'] = "Filter proizvoda";
+$_['entry_table_product_status_filter'] = "Filtar statusa proizvoda, samo aktivni proizvodi";
+$_['entry_table_product_quantity_filter'] = "Filter količine proizvoda, samo proizvodi s količinom > 0)";
+$_['entry_table_product_category_id_filter'] = "Filtar kategorije proizvoda";
+$_['entry_table_product_stock_status_filter'] = "Filtar stanja zaliha proizvoda";
+$_['entry_filter_all'] = "";

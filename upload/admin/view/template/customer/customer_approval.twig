@@ -100,7 +100,7 @@ $('#customer-approval').delegate('.pagination a', 'click', function(e) {
   
 $('#customer-approval').load('index.php?route=customer/customer_approval/customer_approval&user_token={{ user_token }}');
 
-$('#customer-approval').on('click', '.btn-success, .btn-danger', function(e) {
+$('#customer-approval').on('click', '.btn-danger', function(e) {
 	e.preventDefault();
 	
 	var element = this;
@@ -127,12 +127,134 @@ $('#customer-approval').on('click', '.btn-success, .btn-danger', function(e) {
 				$('#customer-approval').before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
 			}
 		},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			}
+		});
+	});
+
+var approveUrl = '';
+var approveCustomerId = 0;
+
+function resetApprovalModal() {
+	$('#auth-partner-id').val('');
+	$('#auth-partner-name').val('');
+	$('#auth-partner-discount').val('');
+	$('#auth-delivery-place').html('<option value="">-- odaberite --</option>');
+	$('#auth-sales-rep').html('<option value="">-- odaberite --</option>');
+}
+
+$('#customer-approval').on('click', '.btn-approve', function(e) {
+	e.preventDefault();
+
+	var element = $(this);
+	var typeCode = element.data('type-code');
+
+	if (typeCode !== 'customer') {
+		$.ajax({
+			url: element.attr('href'),
+			dataType: 'json',
+			success: function(json) {
+				$('.alert-dismissible').remove();
+				if (json['error']) {
+					$('#customer-approval').before('<div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+				}
+				if (json['success']) {
+					$('#customer-approval').load('index.php?route=customer/customer_approval/customer_approval&user_token={{ user_token }}');
+					$('#customer-approval').before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+				}
+			}
+		});
+		return;
+	}
+
+	approveUrl = element.attr('href');
+	approveCustomerId = element.data('customer-id');
+	resetApprovalModal();
+	$('#approve-customer-name').text(element.data('customer-name'));
+	$('#modal-approve-auth').modal('show');
+});
+
+$('#button-load-partner').on('click', function() {
+	var partnerId = $('#auth-partner-id').val();
+	if (!partnerId) {
+		alert('Upišite šifru partnera.');
+		return;
+	}
+
+	$.ajax({
+		url: 'index.php?route=customer/customer_approval/partnerInfo&user_token={{ user_token }}&partner_id=' + encodeURIComponent(partnerId),
+		dataType: 'json',
+		success: function(json) {
+			if (json['error']) {
+				alert(json['error']);
+				return;
+			}
+
+			$('#auth-partner-name').val(json.partner.name + ' (#' + json.partner.partner_id + ')');
+			$('#auth-partner-discount').val(json.partner.base_discount);
+
+			var deliveryHtml = '<option value="">-- odaberite --</option>';
+			for (var i = 0; i < json.delivery_places.length; i++) {
+				var p = json.delivery_places[i];
+				deliveryHtml += '<option value="' + p.delivery_place_id + '">' + p.code + ' - ' + p.name + ' (' + p.place + ')</option>';
+			}
+			$('#auth-delivery-place').html(deliveryHtml);
+
+			var repHtml = '<option value="">-- odaberite --</option>';
+			for (var j = 0; j < json.sales_reps.length; j++) {
+				var r = json.sales_reps[j];
+				repHtml += '<option value="' + r.sales_rep_id + '">' + r.code + ' - ' + r.name + '</option>';
+			}
+			$('#auth-sales-rep').html(repHtml);
+		},
 		error: function(xhr, ajaxOptions, thrownError) {
 			alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
 		}
 	});
 });
 
+$('#button-confirm-approve').on('click', function() {
+	var partnerId = $('#auth-partner-id').val();
+	var deliveryPlaceId = $('#auth-delivery-place').val();
+	var salesRepId = $('#auth-sales-rep').val();
+	var partnerDiscount = $('#auth-partner-discount').val();
+
+	if (!partnerId || !deliveryPlaceId) {
+		alert('Partner i mjesto isporuke su obavezni.');
+		return;
+	}
+
+	$.ajax({
+		url: approveUrl,
+		type: 'post',
+		dataType: 'json',
+		data: {
+			partner_id: partnerId,
+			delivery_place_id: deliveryPlaceId,
+			sales_rep_id: salesRepId,
+			partner_discount: partnerDiscount
+		},
+		success: function(json) {
+			$('.alert-dismissible').remove();
+
+			if (json['error']) {
+				$('#customer-approval').before('<div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> ' + json['error'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+				return;
+			}
+
+			if (json['success']) {
+				$('#modal-approve-auth').modal('hide');
+				$('#customer-approval').load('index.php?route=customer/customer_approval/customer_approval&user_token={{ user_token }}');
+				$('#customer-approval').before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+			}
+		},
+		error: function(xhr, ajaxOptions, thrownError) {
+			alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+		}
+	});
+});
+	
 $('#button-filter').on('click', function() {
 	url = '';
 	
@@ -216,4 +338,55 @@ $('.date').datetimepicker({
 	pickTime: false
 });
 //--></script></div>
+<div class="modal fade" id="modal-approve-auth" tabindex="-1" role="dialog" aria-labelledby="modalApproveAuthTitle">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Zatvori"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalApproveAuthTitle">Autorizacija kupca</h4>
+      </div>
+      <div class="modal-body">
+        <p><strong>Kupac:</strong> <span id="approve-customer-name"></span></p>
+
+        <div class="form-group">
+          <label for="auth-partner-id">Šifra partnera</label>
+          <div class="input-group">
+            <input type="text" id="auth-partner-id" class="form-control" placeholder="npr. 1020054">
+            <span class="input-group-btn">
+              <button type="button" id="button-load-partner" class="btn btn-default">Učitaj</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-partner-name">Partner</label>
+          <input type="text" id="auth-partner-name" class="form-control" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-partner-discount">Rabat (%)</label>
+          <input type="text" id="auth-partner-discount" class="form-control" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-delivery-place">Mjesto isporuke</label>
+          <select id="auth-delivery-place" class="form-control">
+            <option value="">-- odaberite --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-sales-rep">Komercijalist</label>
+          <select id="auth-sales-rep" class="form-control">
+            <option value="">-- odaberite --</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Odustani</button>
+        <button type="button" id="button-confirm-approve" class="btn btn-success">Odobri</button>
+      </div>
+    </div>
+  </div>
+</div>
 {{ footer }}

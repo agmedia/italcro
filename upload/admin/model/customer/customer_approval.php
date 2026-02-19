@@ -98,5 +98,93 @@ class ModelCustomerCustomerApproval extends Model {
 	
 	public function denyAffiliate($customer_id) {
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_approval` WHERE customer_id = '" . (int)$customer_id . "' AND `type` = 'affiliate'");
-	}	
-}
+	}
+
+	public function getQiqoPartnerById($partner_id) {
+		$this->ensureQiqoAuthorizationTables();
+
+		$query = $this->db->query("SELECT *
+			FROM `" . DB_PREFIX . "qiqo_partner`
+			WHERE partner_id = '" . (int)$partner_id . "'
+			LIMIT 1");
+
+		return $query->row;
+	}
+
+	public function getQiqoDeliveryPlacesByPartnerId($partner_id) {
+		$this->ensureQiqoAuthorizationTables();
+
+		$query = $this->db->query("SELECT *
+			FROM `" . DB_PREFIX . "qiqo_delivery_place`
+			WHERE partner_id = '" . (int)$partner_id . "'
+			ORDER BY name ASC");
+
+		return $query->rows;
+	}
+
+	public function getQiqoSalesReps() {
+		$this->ensureQiqoAuthorizationTables();
+
+		$query = $this->db->query("SELECT *
+			FROM `" . DB_PREFIX . "qiqo_sales_rep`
+			WHERE active = '1'
+			ORDER BY name ASC");
+
+		return $query->rows;
+	}
+
+	public function saveCustomerQiqoAuthorization($customer_id, $data, $approved_by_user_id) {
+		$this->ensureQiqoAuthorizationTables();
+
+		$partner_id = (int)$data['partner_id'];
+		$delivery_place_id = (int)$data['delivery_place_id'];
+		$sales_rep_id = isset($data['sales_rep_id']) && $data['sales_rep_id'] !== '' ? (int)$data['sales_rep_id'] : 0;
+		$partner_discount = (float)$data['partner_discount'];
+
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "customer_qiqo_authorization`
+			SET customer_id = '" . (int)$customer_id . "',
+				partner_id = '" . $partner_id . "',
+				delivery_place_id = '" . $delivery_place_id . "',
+				sales_rep_id = " . ($sales_rep_id ? "'" . $sales_rep_id . "'" : "NULL") . ",
+				partner_discount = '" . $partner_discount . "',
+				approved_by_user_id = '" . (int)$approved_by_user_id . "',
+				approved_at = NOW(),
+				date_modified = NOW()
+			ON DUPLICATE KEY UPDATE
+				partner_id = VALUES(partner_id),
+				delivery_place_id = VALUES(delivery_place_id),
+				sales_rep_id = VALUES(sales_rep_id),
+				partner_discount = VALUES(partner_discount),
+				approved_by_user_id = VALUES(approved_by_user_id),
+				approved_at = NOW(),
+				date_modified = NOW()");
+	}
+
+	private function ensureQiqoAuthorizationTables() {
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_sales_rep` (
+			`sales_rep_id` INT(11) NOT NULL AUTO_INCREMENT,
+			`code` VARCHAR(64) NOT NULL,
+			`name` VARCHAR(255) NOT NULL,
+			`active` TINYINT(1) NOT NULL DEFAULT 1,
+			`date_added` DATETIME NOT NULL,
+			`date_modified` DATETIME NOT NULL,
+			PRIMARY KEY (`sales_rep_id`),
+			UNIQUE KEY `uq_code` (`code`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_qiqo_authorization` (
+			`customer_id` INT(11) NOT NULL,
+			`partner_id` INT(11) NOT NULL,
+			`delivery_place_id` INT(11) NOT NULL,
+			`sales_rep_id` INT(11) NULL,
+			`partner_discount` DECIMAL(10,4) NOT NULL DEFAULT 0,
+			`approved_by_user_id` INT(11) NOT NULL,
+			`approved_at` DATETIME NOT NULL,
+			`date_modified` DATETIME NOT NULL,
+			PRIMARY KEY (`customer_id`),
+			KEY `idx_partner` (`partner_id`),
+			KEY `idx_delivery_place` (`delivery_place_id`),
+			KEY `idx_sales_rep` (`sales_rep_id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+	}
+}	

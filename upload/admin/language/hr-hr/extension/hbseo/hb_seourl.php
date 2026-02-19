@@ -95,18 +95,18 @@ $_['text_keyword']                 = "Ključna riječ";
 
 $_['text_action']     = "Akcijski";
 
-$_['success_route_updated']         = "Ključna riječ rute \\"%s\\" uspješno je ažurirana za jezik %s";
+$_['success_route_updated']         = "Ključna riječ rute \"%s\" uspješno je ažurirana za jezik %s";
 $_['success_routes_deleted']        = "%s odabrano preusmjereno uspješno izbrisano";
 $_['success_route_reset']           = "Resetiranje rute uspješno";
 
 $_['error_route_invalid']           = "Nevažeća ruta";
-$_['error_route_exists']            = "Ključna riječ rute \\"%s\\" već postoji. Koristite drugu ključnu riječ";
+$_['error_route_exists']            = "Ključna riječ rute \"%s\" već postoji. Koristite drugu ključnu riječ";
 $_['error_no_record_selected']      = "Odaberite retke za brisanje";
 
 //SETTINGS BLOCK
 $_['text_product_template']         = "Predložak ključne riječi proizvoda";
 $_['text_transliterate']            = "Omogućite transliteraciju za znakove koji nisu engleski";
-$_['text_product_template_shortcodes'] = "Kratki kodovi uzorka ključne riječi proizvoda <a href=\\"https://www.huntbee.com/documentation/docs/seo-url-keyword-generator-for-opencart-4/short-codes/\\" target=\\"_blank\\">Popis referenci</a>";
+$_['text_product_template_shortcodes'] = "Kratki kodovi uzorka ključne riječi proizvoda <a href=\"https://www.huntbee.com/documentation/docs/seo-url-keyword-generator-for-opencart-4/short-codes/\" target=\"_blank\">Popis referenci</a>";
 $_['text_auto_mode']                = "Automatski dodajte ključnu riječ SEO URL kada se doda nova stavka";
 $_['text_url_dynamic']              = "Omogući dinamičko generiranje puža";
 $_['text_preserve_keyword']         = "Ažurirajte novu ključnu riječ na sačuvani popis";

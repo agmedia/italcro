@@ -247,6 +247,7 @@ class ControllerProductManufacturer extends Controller {
 
                 $data['products'][] = array(
 					'product_id'  => $result['product_id'],
+					'quantity'    => isset($result['quantity']) ? (int)$result['quantity'] : 0,
 					'thumb'       => $image,
 					'name'        => $result['name'],
                     'name_add'        => $result['name_add'],

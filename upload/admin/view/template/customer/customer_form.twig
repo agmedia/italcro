@@ -233,39 +233,70 @@
                         {% endif %}
                         {% endfor %}
                       </fieldset>
-                      {% if qiqo_authorization %}
+                      {% if customer_id %}
                       <fieldset>
                         <legend>QIQO autorizacija</legend>
                         <div class="form-group">
+                          <label class="col-sm-2 control-label">Šifra partnera</label>
+                          <div class="col-sm-10">
+                            <div class="input-group">
+                              <input type="text" name="qiqo_partner_id" id="input-qiqo-partner-id" value="{{ qiqo_partner_id }}" class="form-control" placeholder="npr. 1020054" />
+                              <span class="input-group-btn">
+                                <button type="button" id="button-load-qiqo-partner" class="btn btn-default">Učitaj</button>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="form-group">
                           <label class="col-sm-2 control-label">Partner</label>
                           <div class="col-sm-10">
-                            <input type="text" value="#{{ qiqo_authorization.partner_id }} - {{ qiqo_authorization.partner_name }}" class="form-control" readonly />
+                            <input type="text" name="qiqo_partner_name" id="input-qiqo-partner-name" value="{{ qiqo_partner_name }}" class="form-control" readonly />
                           </div>
                         </div>
                         <div class="form-group">
                           <label class="col-sm-2 control-label">Rabat partnera (%)</label>
                           <div class="col-sm-10">
-                            <input type="text" value="{{ qiqo_authorization.partner_discount }}" class="form-control" readonly />
+                            <input type="text" name="qiqo_partner_discount" id="input-qiqo-partner-discount" value="{{ qiqo_partner_discount }}" class="form-control" />
                           </div>
                         </div>
                         <div class="form-group">
                           <label class="col-sm-2 control-label">Mjesto isporuke</label>
                           <div class="col-sm-10">
-                            <input type="text" value="#{{ qiqo_authorization.delivery_place_id }} - {{ qiqo_authorization.delivery_place_code }} - {{ qiqo_authorization.delivery_place_name }} ({{ qiqo_authorization.delivery_place_city }})" class="form-control" readonly />
+                            <select name="qiqo_delivery_place_id" id="input-qiqo-delivery-place" class="form-control">
+                              <option value="">-- odaberite --</option>
+                              {% for place in qiqo_delivery_places %}
+                              {% if place.delivery_place_id == qiqo_delivery_place_id %}
+                              <option value="{{ place.delivery_place_id }}" selected="selected">{{ place.code }} - {{ place.name }} ({{ place.place }})</option>
+                              {% else %}
+                              <option value="{{ place.delivery_place_id }}">{{ place.code }} - {{ place.name }} ({{ place.place }})</option>
+                              {% endif %}
+                              {% endfor %}
+                            </select>
                           </div>
                         </div>
                         <div class="form-group">
                           <label class="col-sm-2 control-label">Komercijalist</label>
                           <div class="col-sm-10">
-                            <input type="text" value="{% if qiqo_authorization.sales_rep_id %}#{{ qiqo_authorization.sales_rep_id }} - {{ qiqo_authorization.sales_rep_code }} - {{ qiqo_authorization.sales_rep_name }}{% else %}-{% endif %}" class="form-control" readonly />
+                            <select name="qiqo_sales_rep_id" id="input-qiqo-sales-rep" class="form-control">
+                              <option value="">-- odaberite --</option>
+                              {% for rep in qiqo_sales_reps %}
+                              {% if rep.sales_rep_id == qiqo_sales_rep_id %}
+                              <option value="{{ rep.sales_rep_id }}" selected="selected">{{ rep.code }} - {{ rep.name }}</option>
+                              {% else %}
+                              <option value="{{ rep.sales_rep_id }}">{{ rep.code }} - {{ rep.name }}</option>
+                              {% endif %}
+                              {% endfor %}
+                            </select>
                           </div>
                         </div>
+                        {% if qiqo_authorization %}
                         <div class="form-group">
                           <label class="col-sm-2 control-label">Odobrio</label>
                           <div class="col-sm-10">
                             <input type="text" value="{{ qiqo_authorization.approved_by_name }}{% if qiqo_authorization.approved_at %} ({{ qiqo_authorization.approved_at }}){% endif %}" class="form-control" readonly />
                           </div>
                         </div>
+                        {% endif %}
                       </fieldset>
                       {% endif %}
                       <fieldset>
@@ -1220,6 +1251,47 @@
   });
 
   $('#customer-orders').load('index.php?route=customer/customer/orders&user_token={{ user_token }}&customer_id={{ customer_id }}');
+  //--></script> 
+  <script type="text/javascript"><!--
+  $(document).on('click', '#button-load-qiqo-partner', function() {
+    var partnerId = $('#input-qiqo-partner-id').val();
+
+    if (!partnerId) {
+      alert('Upišite šifru partnera.');
+      return;
+    }
+
+    $.ajax({
+      url: 'index.php?route=customer/customer/qiqoPartnerInfo&user_token={{ user_token }}&partner_id=' + encodeURIComponent(partnerId),
+      dataType: 'json',
+      success: function(json) {
+        if (json['error']) {
+          alert(json['error']);
+          return;
+        }
+
+        $('#input-qiqo-partner-name').val(json.partner.name + ' (#' + json.partner.partner_id + ')');
+        $('#input-qiqo-partner-discount').val(json.partner.base_discount);
+
+        var deliveryHtml = '<option value="">-- odaberite --</option>';
+        for (var i = 0; i < json.delivery_places.length; i++) {
+          var p = json.delivery_places[i];
+          deliveryHtml += '<option value="' + p.delivery_place_id + '">' + p.code + ' - ' + p.name + ' (' + p.place + ')</option>';
+        }
+        $('#input-qiqo-delivery-place').html(deliveryHtml);
+
+        var repHtml = '<option value="">-- odaberite --</option>';
+        for (var j = 0; j < json.sales_reps.length; j++) {
+          var r = json.sales_reps[j];
+          repHtml += '<option value="' + r.sales_rep_id + '">' + r.code + ' - ' + r.name + '</option>';
+        }
+        $('#input-qiqo-sales-rep').html(repHtml);
+      },
+      error: function(xhr, ajaxOptions, thrownError) {
+        alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+      }
+    });
+  });
   //--></script> 
   <script type="text/javascript"><!--
   $('#history').delegate('.pagination a', 'click', function(e) {

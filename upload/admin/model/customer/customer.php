@@ -418,6 +418,36 @@ class ModelCustomerCustomer extends Model {
 		return $query->row['total'];
 	}
 
+	public function getOrders($customer_id, $start = 0, $limit = 10) {
+		if ($start < 0) {
+			$start = 0;
+		}
+
+		if ($limit < 1) {
+			$limit = 10;
+		}
+
+		$query = $this->db->query("SELECT o.order_id, o.total, o.currency_code, o.currency_value, o.date_added, os.name AS order_status
+			FROM `" . DB_PREFIX . "order` o
+			LEFT JOIN `" . DB_PREFIX . "order_status` os ON (
+				o.order_status_id = os.order_status_id
+				AND os.language_id = '" . (int)$this->config->get('config_language_id') . "'
+			)
+			WHERE o.customer_id = '" . (int)$customer_id . "'
+			ORDER BY o.date_added DESC
+			LIMIT " . (int)$start . ", " . (int)$limit);
+
+		return $query->rows;
+	}
+
+	public function getTotalOrders($customer_id) {
+		$query = $this->db->query("SELECT COUNT(*) AS total
+			FROM `" . DB_PREFIX . "order`
+			WHERE customer_id = '" . (int)$customer_id . "'");
+
+		return (int)$query->row['total'];
+	}
+
 	public function addReward($customer_id, $description = '', $points = '', $order_id = 0) {
 		$this->db->query("INSERT INTO " . DB_PREFIX . "customer_reward SET customer_id = '" . (int)$customer_id . "', order_id = '" . (int)$order_id . "', points = '" . (int)$points . "', description = '" . $this->db->escape($description) . "', date_added = NOW()");
 	}

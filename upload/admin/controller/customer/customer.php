@@ -1280,6 +1280,54 @@ class ControllerCustomerCustomer extends Controller {
 		$this->response->setOutput($this->load->view('customer/customer_history', $data));
 	}
 
+	public function orders() {
+		$this->load->language('customer/customer');
+		$this->load->language('sale/order');
+
+		$this->load->model('customer/customer');
+
+		if (isset($this->request->get['page'])) {
+			$page = (int)$this->request->get['page'];
+		} else {
+			$page = 1;
+		}
+
+		$limit = $this->config->get('config_limit_admin');
+
+		$data['orders'] = array();
+
+		$results = $this->model_customer_customer->getOrders($this->request->get['customer_id'], ($page - 1) * $limit, $limit);
+
+		foreach ($results as $result) {
+			$data['orders'][] = array(
+				'order_id'     => (int)$result['order_id'],
+				'order_status' => $result['order_status'] ? $result['order_status'] : $this->language->get('text_missing'),
+				'total'        => $this->currency->format($result['total'], $result['currency_code'], $result['currency_value']),
+				'date_added'   => date($this->language->get('date_format_short'), strtotime($result['date_added'])),
+				'view'         => $this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . (int)$result['order_id'], true)
+			);
+		}
+
+		$order_total = $this->model_customer_customer->getTotalOrders($this->request->get['customer_id']);
+
+		$pagination = new Pagination();
+		$pagination->total = $order_total;
+		$pagination->page = $page;
+		$pagination->limit = $limit;
+		$pagination->url = $this->url->link('customer/customer/orders', 'user_token=' . $this->session->data['user_token'] . '&customer_id=' . $this->request->get['customer_id'] . '&page={page}', true);
+
+		$data['pagination'] = $pagination->render();
+		$data['results'] = sprintf(
+			$this->language->get('text_pagination'),
+			($order_total) ? (($page - 1) * $limit) + 1 : 0,
+			((($page - 1) * $limit) > ($order_total - $limit)) ? $order_total : ((($page - 1) * $limit) + $limit),
+			$order_total,
+			ceil($order_total / $limit)
+		);
+
+		$this->response->setOutput($this->load->view('customer/customer_order_history', $data));
+	}
+
 	public function addHistory() {
 		$this->load->language('customer/customer');
 

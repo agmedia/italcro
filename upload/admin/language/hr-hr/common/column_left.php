@@ -13,6 +13,7 @@ $_['text_country']                   = 'Države';
 $_['text_coupon']                    = 'Kuponi';
 $_['text_currency']                  = 'Valute';
 $_['text_customer']                  = 'Kupci';
+$_['text_customer_approval']          = 'Odobrenja kupaca';
 $_['text_customer_group']            = 'Grupe kupaca';
 $_['text_custom_field']              = 'Prilagođena polja';
 $_['text_dashboard']                 = 'Nadzorna ploča';

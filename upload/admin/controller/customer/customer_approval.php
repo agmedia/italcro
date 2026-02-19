@@ -81,6 +81,20 @@ class ControllerCustomerCustomerApproval extends Controller {
 
 		$data['user_token'] = $this->session->data['user_token'];
 
+		if (isset($this->session->data['error_warning'])) {
+			$data['error_warning'] = $this->session->data['error_warning'];
+			unset($this->session->data['error_warning']);
+		} else {
+			$data['error_warning'] = '';
+		}
+
+		if (isset($this->session->data['success'])) {
+			$data['success'] = $this->session->data['success'];
+			unset($this->session->data['success']);
+		} else {
+			$data['success'] = '';
+		}
+
 		$this->load->model('customer/customer_group');
 
 		$data['customer_groups'] = $this->model_customer_customer_group->getCustomerGroups();

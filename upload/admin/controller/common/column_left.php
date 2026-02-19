@@ -325,6 +325,14 @@ class ControllerCommonColumnLeft extends Controller {
 				);
 			}
 
+			if ($this->user->hasPermission('access', 'customer/qiqo_sales_rep')) {
+				$customer[] = array(
+					'name'	   => $this->language->get('text_qiqo_sales_rep'),
+					'href'     => $this->url->link('customer/qiqo_sales_rep', 'user_token=' . $this->session->data['user_token'], true),
+					'children' => array()
+				);
+			}
+
 			if ($this->user->hasPermission('access', 'customer/custom_field')) {
 				$customer[] = array(
 					'name'	   => $this->language->get('text_custom_field'),

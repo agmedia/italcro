@@ -51,7 +51,7 @@
     }
 
     public function getProductattachmanager($product_id) {
-        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_attach_file WHERE product_id = '" . (int) $product_id . "' ORDER BY `sort_order` ASC");
+        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_attach_file WHERE product_id = '" . (int) $product_id . "' ORDER BY `sort_order` ASC, `product_attach_file_id` DESC");
         return $query->rows;
     }
 

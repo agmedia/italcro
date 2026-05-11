@@ -317,8 +317,13 @@ class ControllerExtensionModuleQiqo extends Controller
 
             // Prođi sve fajlove u tom SKU folderu
             $files = glob($sku_dir . '/*');
+            if (is_array($files)) {
+                sort($files, SORT_NATURAL | SORT_FLAG_CASE);
+            }
 
-            foreach ($files as $file) {
+            $this->model_extension_module_qiqo->clearSyncedProductDocuments($product_id, $sku, (array)$files);
+
+            foreach ((array)$files as $file) {
                 if (!is_file($file)) continue;
 
                 $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));

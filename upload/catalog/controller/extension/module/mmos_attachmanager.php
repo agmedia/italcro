@@ -48,6 +48,7 @@
              $results = $this->getProductattachmanager($this->request->get['product_id']);
              $resultlinks = $this->getExtenlinkdownload($this->request->get['product_id']);
              $mmos_images_type = array('jpg', 'jpeg', 'gif', 'png');
+             $seen_attach_names = array();
              foreach ($results as $result) {
                  if (file_exists(DIR_IMAGE . '' . $result['filename'])) {
                      $size = filesize(DIR_IMAGE . '' . $result['filename']);
@@ -95,8 +96,18 @@
                      } else {
                          $url_get_file = $http_protocol . 'index.php?route=extension/module/mmos_attachmanager/getfile&product_attach_file_id=' . $result['product_attach_file_id'];
                      }
+
+                     $display_name = ($result['mask']) ? $result['mask'] . '.' . $exten : $filename . '.' . $exten;
+                     $display_key = strtolower(trim($display_name));
+
+                     if (isset($seen_attach_names[$display_key])) {
+                         continue;
+                     }
+
+                     $seen_attach_names[$display_key] = true;
+
                      $data['product_attachs'][] = array(
-                            'name' => ($result['mask']) ? $result['mask'] . '.' . $exten : $filename . '.' . $exten,
+                            'name' => $display_name,
                             'thumb' => $thumb,
                             'size' => round(substr($size, 0, strpos($size, '.') + 4), 2) . $suffix[$i],
                             'download' => $result['download'],
@@ -250,7 +261,7 @@
 
      public function getProductattachmanager($product_id)
      {
-         $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_attach_file WHERE product_id = '" . (int) $product_id . "' ORDER BY `sort_order` ASC");
+         $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_attach_file WHERE product_id = '" . (int) $product_id . "' ORDER BY `sort_order` ASC, `product_attach_file_id` DESC");
 
          return $query->rows;
      }

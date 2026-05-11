@@ -443,6 +443,9 @@ class ModelExtensionModuleQiqo extends Model
 
             // 1) Prođi kroz fajlove da vidimo ima li uopće išta (slike/dokumenti)
             $files          = glob($folder_path . '*');
+            if (is_array($files)) {
+                sort($files, SORT_NATURAL | SORT_FLAG_CASE);
+            }
             $fs_image_count = 0;
             $fs_doc_count   = 0;
 
@@ -548,6 +551,8 @@ class ModelExtensionModuleQiqo extends Model
 
             // 4) Imamo i product i folder s fajlovima → SYNC
             $this->log('Assets', "SKU {$sku}: product_id={$product_id}, syncam fajlove ({$fs_image_count} slika / {$fs_doc_count} dokumenata).");
+            $this->clearSyncedProductDocuments($product_id, $sku, (array)$files);
+            $synced_document_names = [];
 
             // ponovno prođi fajlove i pozovi sync metode
             foreach ((array)$files as $file) {
@@ -560,6 +565,14 @@ class ModelExtensionModuleQiqo extends Model
                 if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
                     $this->syncProductImageFromFile($product_id, $sku, $file, $target_base_dir);
                 } elseif (in_array($ext, $document_extensions, true)) {
+                    $document_key = strtolower($this->getAssetDocumentMask(basename($file), $ext) . '.' . $ext);
+
+                    if (isset($synced_document_names[$document_key])) {
+                        $this->log('Assets', "SKU {$sku}: preskačem dupli dokument {$document_key} ({$file}).");
+                        continue;
+                    }
+
+                    $synced_document_names[$document_key] = true;
                     $this->syncProductDocumentFromFile($product_id, $sku, $file, $target_base_dir);
                 }
             }
@@ -1236,6 +1249,65 @@ class ModelExtensionModuleQiqo extends Model
 
 
 
+    public function clearSyncedProductDocuments(int $product_id, string $sku, array $files = []): void
+    {
+        $conditions = [];
+        $prefix = strtolower('catalog/products/' . trim($sku, '/\\') . '/');
+        $current_paths = [];
+        $legacy_filenames = [];
+        $document_extensions = $this->getAssetDocumentExtensions();
+
+        foreach ($files as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
+
+            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+            if (in_array($ext, $document_extensions, true)) {
+                $filename = strtolower(basename($file));
+                $current_paths[] = $prefix . $filename;
+                $legacy_filenames[] = $filename;
+            }
+        }
+
+        $path_conditions = [];
+        foreach ($document_extensions as $extension) {
+            $extension = strtolower(trim($extension));
+
+            if ($extension !== '') {
+                $path_conditions[] = "LOWER(filename) LIKE '" . $this->db->escape($prefix . '%.' . $extension) . "'";
+            }
+        }
+
+        if ($path_conditions) {
+            $path_condition_sql = '(' . implode(' OR ', $path_conditions) . ')';
+
+            if ($current_paths) {
+                $escaped_paths = array_map(function ($path) {
+                    return "'" . $this->db->escape($path) . "'";
+                }, array_unique($current_paths));
+                $conditions[] = "(" . $path_condition_sql . " AND LOWER(filename) NOT IN (" . implode(',', $escaped_paths) . "))";
+            } else {
+                $conditions[] = $path_condition_sql;
+            }
+        }
+
+        foreach (array_unique($legacy_filenames) as $filename) {
+            $conditions[] = "LOWER(filename) = '" . $this->db->escape($filename) . "'";
+        }
+
+        $conditions = array_unique($conditions);
+
+        if (!$conditions) {
+            return;
+        }
+
+        $this->db->query("DELETE FROM " . DB_PREFIX . "product_attach_file
+        WHERE product_id = '" . (int)$product_id . "'
+          AND (" . implode(' OR ', $conditions) . ")");
+    }
+
     public function syncProductDocumentFromFile(int $product_id, string $sku, string $src_file, string $base_dir)
     {
         $filename   = basename($src_file);      // npr. 511541_skl.pdf
@@ -1285,13 +1357,21 @@ class ModelExtensionModuleQiqo extends Model
         $has_hash_column = $this->ensureProductAttachHashColumn();
         $hash_select = $has_hash_column ? ', hash' : '';
 
-        $q = $this->db->query("SELECT product_attach_file_id, mask" . $hash_select . "
+        $q = $this->db->query("SELECT product_attach_file_id, filename, mask" . $hash_select . "
         FROM " . DB_PREFIX . "product_attach_file
         WHERE product_id = '" . (int)$product_id . "'
-          AND filename = '" . $this->db->escape($relative_path) . "'");
+          AND (
+              filename = '" . $this->db->escape($relative_path) . "'
+              OR (mask = '" . $this->db->escape($mask) . "' AND LOWER(filename) LIKE '" . $this->db->escape('%.' . $ext) . "')
+          )
+        ORDER BY CASE WHEN filename = '" . $this->db->escape($relative_path) . "' THEN 0 ELSE 1 END ASC,
+                 product_attach_file_id DESC
+        LIMIT 1");
 
+        $attach_file_id = 0;
         if ($q->num_rows) {
-            $needs_update = ($q->row['mask'] !== $mask);
+            $attach_file_id = (int)$q->row['product_attach_file_id'];
+            $needs_update = ($q->row['filename'] !== $relative_path || $q->row['mask'] !== $mask);
 
             if ($has_hash_column && (empty($q->row['hash']) || $q->row['hash'] !== $hash)) {
                 $needs_update = true;
@@ -1302,8 +1382,9 @@ class ModelExtensionModuleQiqo extends Model
 
                 $this->db->query("UPDATE " . DB_PREFIX . "product_attach_file
                 SET " . $hash_update . "
+                    filename = '" . $this->db->escape($relative_path) . "',
                     mask = '" . $this->db->escape($mask) . "'
-                WHERE product_attach_file_id = '" . (int)$q->row['product_attach_file_id'] . "'");
+                WHERE product_attach_file_id = '" . (int)$attach_file_id . "'");
             }
         } else {
             $hash_insert = $has_hash_column ? ",
@@ -1316,6 +1397,15 @@ class ModelExtensionModuleQiqo extends Model
             login_required = 0,
             download       = 0,
             sort_order     = 0" . $hash_insert);
+            $attach_file_id = (int)$this->db->getLastId();
+        }
+
+        if ($attach_file_id > 0) {
+            $this->db->query("DELETE FROM " . DB_PREFIX . "product_attach_file
+            WHERE product_id = '" . (int)$product_id . "'
+              AND product_attach_file_id <> '" . (int)$attach_file_id . "'
+              AND mask = '" . $this->db->escape($mask) . "'
+              AND LOWER(filename) LIKE '" . $this->db->escape('%.' . $ext) . "'");
         }
     }
 

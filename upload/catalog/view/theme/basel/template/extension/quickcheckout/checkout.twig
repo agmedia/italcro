@@ -58,8 +58,10 @@
                       <div class="quickcheckout-content"></div>
                   </div>
               {% endif %}
-              <div id="payment-method"{{ logged or not payment_module ? ' style="display:none;"' }}>
+              <div id="payment-method"{{ not payment_module ? ' style="display:none;"' }}>
+                  {% if not logged %}
                   <div class="quickcheckout-heading"><i class="fa fa-credit-card"></i> {{ text_checkout_payment_method }}</div>
+                  {% endif %}
                   <div class="quickcheckout-content"></div>
               </div>
 		  </div>

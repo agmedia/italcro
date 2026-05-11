@@ -1,7 +1,7 @@
 {% if error_warning %} 
 <div class="alert alert-danger">{{ error_warning }}</div>
 {% endif %} 
-{% if payment_methods %}
+{% if payment_methods and not logged %}
 <p>{{ text_payment_method }}</p>
 {% if payment %}
 <table class="table">

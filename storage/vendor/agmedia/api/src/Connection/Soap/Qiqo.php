@@ -202,9 +202,34 @@ class Qiqo
         $nsDIFF = 'urn:schemas-microsoft-com:xml-diffgram-v1';
         
         $body = $parsed->children($nsSOAP)->Body;
-        $result = $body->children($nsQIQO)
-            ->{$method . 'Response'}
-            ->{$method . 'Result'};
+
+        if (!isset($body[0])) {
+            Log::store("❌ SOAP body not found in {$method}", 'qiqo_error');
+            return [];
+        }
+
+        $fault = $body->children($nsSOAP)->Fault ?? $body->Fault ?? null;
+        if ($fault && isset($fault[0])) {
+            $faultMessage = trim((string)($fault->faultstring ?? 'SOAP fault'));
+            Log::store("❌ SOAP fault in {$method}: {$faultMessage}", 'qiqo_error');
+            return [];
+        }
+
+        $responseName = $method . 'Response';
+        $resultName = $method . 'Result';
+        $response = $body->children($nsQIQO)->{$responseName} ?? null;
+
+        if (!$response || !isset($response[0])) {
+            Log::store("❌ {$responseName} not found in SOAP response", 'qiqo_error');
+            return [];
+        }
+
+        $result = $response->{$resultName} ?? null;
+
+        if (!$result || !isset($result[0])) {
+            Log::store("❌ {$resultName} not found in SOAP response", 'qiqo_error');
+            return [];
+        }
 
         // Pokušaj dohvatiti diffgram s namespace-om
         $diffgram = $result->children($nsDIFF)->diffgram ?? null;

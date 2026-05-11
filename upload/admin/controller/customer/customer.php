@@ -76,6 +76,7 @@ class ControllerCustomerCustomer extends Controller {
 		$this->load->model('customer/customer');
 
 		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {
+			$this->applyQiqoPartnerDetailsToPost();
 			$this->model_customer_customer->editCustomer($this->request->get['customer_id'], $this->request->post);
 			$this->saveQiqoAuthorizationFromPost((int)$this->request->get['customer_id']);
 
@@ -733,12 +734,6 @@ class ControllerCustomerCustomer extends Controller {
 			$data['qiqo_partner_name'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_name'] : '';
 		}
 
-		if (isset($this->request->post['qiqo_partner_oib'])) {
-			$data['qiqo_partner_oib'] = $this->request->post['qiqo_partner_oib'];
-		} else {
-			$data['qiqo_partner_oib'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_oib'] : '';
-		}
-
 		if (isset($this->request->post['qiqo_partner_discount'])) {
 			$data['qiqo_partner_discount'] = $this->request->post['qiqo_partner_discount'];
 		} else {
@@ -1253,6 +1248,75 @@ class ControllerCustomerCustomer extends Controller {
 		}
 
 		return !$this->error;
+	}
+
+	private function applyQiqoPartnerDetailsToPost() {
+		$partner_id = isset($this->request->post['qiqo_partner_id']) ? (int)$this->request->post['qiqo_partner_id'] : 0;
+
+		if (!$partner_id) {
+			return;
+		}
+
+		$this->load->model('customer/customer_approval');
+
+		$partner = $this->model_customer_customer_approval->getQiqoPartnerById($partner_id);
+
+		if (!$partner) {
+			return;
+		}
+
+		$this->setAccountCustomFieldPostValue(array('Naziv tvrtke', 'Tvrtka', 'Firma'), (string)$partner['name']);
+		$this->setAccountCustomFieldPostValue(array('OIB'), (string)$partner['oib']);
+	}
+
+	private function setAccountCustomFieldPostValue($field_names, $value) {
+		$value = trim((string)$value);
+
+		if ($value === '') {
+			return;
+		}
+
+		$this->load->model('customer/custom_field');
+
+		$filter_data = array(
+			'filter_customer_group_id' => isset($this->request->post['customer_group_id']) ? (int)$this->request->post['customer_group_id'] : 0
+		);
+
+		$custom_fields = $this->model_customer_custom_field->getCustomFields($filter_data);
+		$normalized_names = array();
+
+		foreach ($field_names as $field_name) {
+			$normalized_names[] = $this->normalizeCustomFieldName($field_name);
+		}
+
+		foreach ($custom_fields as $custom_field) {
+			if ($custom_field['location'] !== 'account') {
+				continue;
+			}
+
+			if (!in_array($this->normalizeCustomFieldName($custom_field['name']), $normalized_names, true)) {
+				continue;
+			}
+
+			if (!isset($this->request->post['custom_field']) || !is_array($this->request->post['custom_field'])) {
+				$this->request->post['custom_field'] = array();
+			}
+
+			$this->request->post['custom_field'][(int)$custom_field['custom_field_id']] = $value;
+		}
+	}
+
+	private function normalizeCustomFieldName($value) {
+		$value = trim((string)$value);
+		$value = strtr($value, array(
+			'Č' => 'C', 'Ć' => 'C', 'Đ' => 'D', 'Š' => 'S', 'Ž' => 'Z',
+			'č' => 'c', 'ć' => 'c', 'đ' => 'd', 'š' => 's', 'ž' => 'z'
+		));
+		$value = function_exists('utf8_strtolower') ? utf8_strtolower($value) : strtolower($value);
+		$value = preg_replace('/[^a-z0-9]+/u', ' ', $value);
+		$value = preg_replace('/\s+/u', ' ', $value);
+
+		return trim($value);
 	}
 
 	protected function validateDelete() {

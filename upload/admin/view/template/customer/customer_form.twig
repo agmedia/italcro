@@ -275,12 +275,6 @@
                           </div>
                         </div>
                         <div class="form-group">
-                          <label class="col-sm-2 control-label">OIB</label>
-                          <div class="col-sm-10">
-                            <input type="text" name="qiqo_partner_oib" id="input-qiqo-partner-oib" value="{{ qiqo_partner_oib }}" class="form-control" readonly />
-                          </div>
-                        </div>
-                        <div class="form-group">
                           <label class="col-sm-2 control-label">Komercijalist</label>
                           <div class="col-sm-10">
                             <select name="qiqo_sales_rep_id" id="input-qiqo-sales-rep" class="form-control">
@@ -1273,6 +1267,41 @@
     return text;
   }
 
+  function qiqoNormalizeLabel(value) {
+    return String(value || '').toLowerCase()
+      .replace(/[čć]/g, 'c')
+      .replace(/[đ]/g, 'd')
+      .replace(/[š]/g, 's')
+      .replace(/[ž]/g, 'z')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function qiqoFillCustomerField(labels, value) {
+    if (!value) {
+      return;
+    }
+
+    var normalizedLabels = $.map(labels, function(label) {
+      return qiqoNormalizeLabel(label);
+    });
+
+    $('.custom-field').each(function() {
+      var label = qiqoNormalizeLabel($(this).children('label').first().text());
+
+      if ($.inArray(label, normalizedLabels) === -1) {
+        return;
+      }
+
+      var input = $(this).find('input[name^="custom_field["][type!="hidden"], textarea[name^="custom_field["]').first();
+
+      if (input.length) {
+        input.val(value);
+      }
+    });
+  }
+
   $(document).on('click', '#button-load-qiqo-partner', function() {
     var partnerId = $('#input-qiqo-partner-id').val();
 
@@ -1291,7 +1320,8 @@
         }
 
         $('#input-qiqo-partner-name').val(json.partner.name + ' (#' + json.partner.partner_id + ')');
-        $('#input-qiqo-partner-oib').val(json.partner.oib || '');
+        qiqoFillCustomerField(['Naziv tvrtke', 'Tvrtka', 'Firma'], json.partner.name || '');
+        qiqoFillCustomerField(['OIB'], json.partner.oib || '');
         $('#input-qiqo-partner-discount').val(json.partner.base_discount);
 
         var deliveryHtml = '<option value="">-- odaberite --</option>';

@@ -48,6 +48,43 @@
     </style>
 {% endif %}
 
+<style>
+    .mpn-variants .qiqo-action-cell {
+        width: 44px;
+        min-width: 44px;
+        text-align: center;
+    }
+    .mpn-variants .qiqo-action-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 0;
+        background: #ec008c;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1;
+    }
+    .mpn-variants .mpn-packaging {
+        white-space: nowrap;
+    }
+    .mpn-variants .mpn-vpc,
+    .mpn-variants .mpn-final-price {
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .mpn-variants .mpn-qty-input {
+        width: 92px;
+        min-width: 92px;
+        text-align: center;
+    }
+    .mpn-variants .mpn-addtocart {
+        min-width: 190px;
+    }
+</style>
+
 <ul class="breadcrumb">
     {% for breadcrumb in breadcrumbs %}
         <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
@@ -144,133 +181,97 @@
 
                             <div class="mpn-variants table-responsive">
                                 <table class="table table-bordered table-striped">
-                                    <thead>
-                                    <tr>
-                                        <th>Šifra</th>
-                                        <th>Barcode</th>
-                                        <th>Atribut</th>
-                                        <th>Pakiranje</th>
-                                        <th>JM.</th>
-                                        {% if price %}
-                                        <th class="text-right">Zaliha</th>
-                                            {% if same_mpn_has_c100 %}
-                                            <th class="text-right">C-100</th>
-                                            {% endif %}
-                                        <th class="text-right">Rabat</th>
-                                        <th class="text-right">Predračun</th>
-                                        <th class="text-right price">Cijena</th>
-                                        <th class="text-right price">Ukupno</th>
-                                        <th class="text-right price">Dodaj</th>
-                                            <th></th>
-                                        {% endif %}
+	                                    <thead>
+	                                    <tr>
+	                                        <th class="qiqo-action-cell"></th>
+	                                        <th>Šifra</th>
+	                                        <th>Barcode</th>
+	                                        <th>Atribut</th>
+	                                        <th>Pakiranje</th>
+	                                        {% if price %}
+	                                        <th class="text-right">Zaliha</th>
+	                                            {% if same_mpn_has_c100 %}
+	                                            <th class="text-right">C-100</th>
+	                                            {% endif %}
+	                                        <th class="text-right price">VPC</th>
+	                                        <th class="text-right">Rabat</th>
+	                                        <th class="text-right price">Cijena</th>
+	                                        <th class="text-right price">Dodaj</th>
+	                                            <th></th>
+	                                        {% endif %}
                                     </tr>
                                     </thead>
 
                                     <tbody>
-                                    {% for p in same_mpn_products %}
-                                        <tr>
-                                            <td>{{ p.code }}</td>
-                                            <td>{{ p.barcode }}</td>
+	                                    {% for p in same_mpn_products %}
+	                                        <tr>
+	                                            <td class="qiqo-action-cell">
+	                                                {% if p.qiqo_action is defined and p.qiqo_action %}
+	                                                    <button type="button"
+	                                                            class="qiqo-action-button"
+	                                                            data-toggle="modal"
+	                                                            data-target="#qiqoActionModal{{ p.product_id }}"
+	                                                            title="Uvjeti akcijskog cjenika"
+	                                                            aria-label="Uvjeti akcijskog cjenika za artikl {{ p.code }}">A</button>
+	                                                {% endif %}
+	                                            </td>
+	                                            <td>{{ p.code }}</td>
+	                                            <td>{{ p.barcode }}</td>
 
-                                            <td>{{ p.name_add }}</td>
-                                            <td>{{ p.minimum }}</td>
-                                            <td>{{ p.ean }}</td>
-                                            {% if price %}
-                                                        <td class="text-right">{{ p.stock }}</td>
-                                                {% if same_mpn_has_c100 %}
-                                                <td class="text-right">{{ p.cent }}</td>
-                                                {% endif %}
-                                                        <td class="text-right">
-                                                            {% if p.qiqo_discount_percent is defined and p.qiqo_discount_percent > 0 %}
-                                                                -{{ p.qiqo_discount_percent|number_format(0, '.', '') }}%
-                                                            {% else %}
-                                                                -
-                                                            {% endif %}
-                                                        </td>
-                                                        <td class="text-right">
-                                                            {% if p.qiqo_proforma_extra_percent is defined and p.qiqo_proforma_extra_percent > 0 %}
-                                                                +{{ p.qiqo_proforma_extra_percent|number_format(0, '.', '') }}%
-                                                            {% else %}
-                                                                -
-                                                            {% endif %}
-                                                        </td>
-                                                        {# -------- CIJENA / SPECIAL -------- #}
-                                                <td class="text-right price">
-                                                {% set min_qty = (p.minimumifc100 is defined and p.minimumifc100 > 1) ? p.minimum : 1 %}
+	                                            <td>{{ p.name_add }}</td>
+	                                            <td class="mpn-packaging">{{ p.packaging is defined ? p.packaging : (p.ean ~ ' ' ~ p.minimum) }}</td>
+	                                            {% if price %}
+	                                                        <td class="text-right">{{ p.stock }}</td>
+	                                                {% if same_mpn_has_c100 %}
+	                                                <td class="text-right">{{ p.cent }}</td>
+	                                                {% endif %}
+	                                                        <td class="text-right price mpn-vpc">{{ p.vpc is defined ? p.vpc : p.price }}</td>
+	                                                        <td class="text-right">
+	                                                            {% if p.qiqo_discount_percent is defined and p.qiqo_discount_percent > 0 %}
+	                                                                -{{ p.qiqo_discount_percent|number_format(0, '.', '') }}%
+	                                                            {% else %}
+	                                                                -
+	                                                            {% endif %}
+	                                                        </td>
+	                                                <td class="text-right price mpn-final-price">{{ p.final_price is defined ? p.final_price : p.price }}</td>
 
-                                                    {% if min_qty > 1 %}
-                                                        {# prikaz za minimum (× minimum) #}
-                                                        {% if p.preview_price_old %}
-                                                            <span style="color:#d9534f; font-weight:bold;">{{ p.preview_price_new }}</span><br>
-                                                            <span style="text-decoration: line-through; color:#777;">{{ p.preview_price_old }}</span>
-                                                        {% else %}
-                                                            <span style="font-weight:bold;">{{ p.preview_price_new }}</span>
-                                                        {% endif %}
-                                                    {% else %}
-                                                        {# standardni prikaz po komadu #}
-                                                        {% if p.special %}
-                                                            <span style="color:#d9534f; font-weight:bold;">{{ p.special }}</span><br>
-                                                            <span style="text-decoration: line-through; color:#777;">{{ p.price }}</span>
-                                                        {% else %}
-                                                            {{ p.price }}
-                                                        {% endif %}
-                                                    {% endif %}
-                                                </td>
-
-
-                                                {# -------- UKUPNO (cijena * količina) -------- #}
-                                                                                    <td class="text-right price">
-                                                       <span class="mpn-total" id="mpn_total_{{ p.product_id }}">
-                                                          {% set min_qty = (p.minimumifc100 is defined and p.minimumifc100 > 1) ? p.minimum : 1 %}
-
-                                                           {% if p.special_value is defined and p.special_value %}
-                                                               {{ (p.special_value * min_qty)|number_format(2, '.', '') }}
-                                                           {% elseif p.price_value is defined %}
-                                                               {{ (p.price_value * min_qty)|number_format(2, '.', '') }}
-                                                           {% else %}
-                                                               0.00
-                                                           {% endif %}
-</span>
-                                                                                    </td>
-
-                                                                                    <td class="text-right price">
-                                                           <div class="input-group addtocart" style="max-width:180px; margin-left:auto;">
+	                                                                                    <td class="text-right price">
+	                                                           <div class="input-group addtocart mpn-addtocart" style="margin-left:auto;">
 
                                                                 <span class="input-group-btn">
-                                                                    <button type="button"
-                                                                            class="btn btn-default btn-number"
-                                                                            data-type="minus"
-                                                                            onclick="descrement($(this).closest('.addtocart')); updateMpnTotal($(this).closest('.addtocart').find('.input-number')); ">
-                                                                        <span class="glyphicon glyphicon-minus"></span>
-                                                                    </button>
+	                                                                    <button type="button"
+	                                                                            class="btn btn-default btn-number"
+	                                                                            data-type="minus"
+	                                                                            onclick="descrement($(this).closest('.addtocart')); ">
+	                                                                        <span class="glyphicon glyphicon-minus"></span>
+	                                                                    </button>
                                                                 </span>
 
-                                                               <input type="text"
-                                                                      name="quantity_{{ p.product_id }}"
-                                                                      class="form-control input-number"
-                                                                      value="{{ p.minimumifc100 }}"
-
-                                                                      min="{{ p.minimumifc100 }}"
-                                                                      min-step="{{ p.minimumifc100 }}"
-                                                                      data-id="{{ p.product_id }}"
-                                                                      data-price="{% if p.special_value is defined and p.special_value %}{{ p.special_value }}{% elseif p.price_value is defined %}{{ p.price_value }}{% else %}0{% endif %}"
-                                                                      onkeyup="updateMpnTotal(this)"
-                                                                      onchange="updateMpnTotal(this)" readonly>
+	                                                               <input type="text"
+	                                                                      name="quantity_{{ p.product_id }}"
+	                                                                      class="form-control input-number mpn-qty-input"
+	                                                                      value="{{ p.minimumifc100 }}"
+	                                                                      min="{{ p.minimumifc100 }}"
+	                                                                      min-step="{{ p.minimumifc100 }}"
+	                                                                      data-id="{{ p.product_id }}"
+	                                                                      inputmode="decimal"
+	                                                                      maxlength="8"
+	                                                                      aria-label="Količina">
 
                                                              <span class="input-group-btn">
-                                                                <button type="button"
-                                                                        class="btn btn-default btn-number"
-                                                                        data-type="plus"
-                                                                        onclick="increment($(this).closest('.addtocart')); updateMpnTotal($(this).closest('.addtocart').find('.input-number')); ">
+	                                                                <button type="button"
+	                                                                        class="btn btn-default btn-number"
+	                                                                        data-type="plus"
+	                                                                        onclick="increment($(this).closest('.addtocart')); ">
                                                                     <span class="glyphicon glyphicon-plus"></span>
                                                                 </button>
                                                             </span>
 
                                                                                         <span class="input-group-btn">
-                                                                <button type="button"
-                                                                        class="btn btn-neutral"
+	                                                                <button type="button"
+	                                                                        class="btn btn-neutral"
 
-                                                                        onclick="cart.add('{{ p.product_id }}', $(this).closest('.addtocart').find('.input-number').val());">
+	                                                                        onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ p.product_id }}', quantityInput.val().replace(/\./g, '').replace(',', '.'));">
                                                                     <span class="global-cart"></span>
                                                                 </button>
                                                             </span>
@@ -287,19 +288,56 @@
                                             {% endif %}
 
 
-                                        </tr>
-                                        {% if p.description_add !='' %}
-                                        <tr>
-                                            <td colspan="7"><small>{{ p.description_add }}</small></td>
-                                        </tr>
-                                        {% endif %}
-                                    {% endfor %}
-                                    </tbody>
+	                                        </tr>
+	                                        {% if p.description_add !='' %}
+	                                        <tr>
+	                                            <td colspan="12"><small>{{ p.description_add }}</small></td>
+	                                        </tr>
+	                                        {% endif %}
+	                                    {% endfor %}
+	                                    </tbody>
 
-                                </table>
-                            </div>
+	                                </table>
+	                            </div>
 
-                            {% if manufacturer %}
+	                            {% for p in same_mpn_products %}
+	                                {% if p.qiqo_action is defined and p.qiqo_action and p.qiqo_action_conditions is defined and p.qiqo_action_conditions|length > 0 %}
+	                                    <div class="modal fade qiqo-action-modal" id="qiqoActionModal{{ p.product_id }}" tabindex="-1" role="dialog" aria-labelledby="qiqoActionModalLabel{{ p.product_id }}">
+	                                        <div class="modal-dialog" role="document">
+	                                            <div class="modal-content">
+	                                                <div class="modal-header">
+	                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Zatvori"><span aria-hidden="true">&times;</span></button>
+	                                                    <h4 class="modal-title" id="qiqoActionModalLabel{{ p.product_id }}">Akcijski uvjeti - {{ p.code }}</h4>
+	                                                </div>
+	                                                <div class="modal-body">
+	                                                    <table class="table table-condensed table-bordered">
+	                                                        <thead>
+	                                                        <tr>
+	                                                            <th>Oznaka</th>
+	                                                            <th class="text-right">Količina</th>
+	                                                            <th class="text-right">Cijena</th>
+	                                                            <th class="text-right">Rabat</th>
+	                                                        </tr>
+	                                                        </thead>
+	                                                        <tbody>
+	                                                        {% for condition in p.qiqo_action_conditions %}
+	                                                            <tr>
+	                                                                <td>{{ condition.indicator }}</td>
+	                                                                <td class="text-right">{{ condition.quantity }}</td>
+	                                                                <td class="text-right">{{ condition.price }}</td>
+	                                                                <td class="text-right">{{ condition.discount }}</td>
+	                                                            </tr>
+	                                                        {% endfor %}
+	                                                        </tbody>
+	                                                    </table>
+	                                                </div>
+	                                            </div>
+	                                        </div>
+	                                    </div>
+	                                {% endif %}
+	                            {% endfor %}
+
+	                            {% if manufacturer %}
                                 <p class="info"><b>{{ text_manufacturer }}</b> <a class="hover_uline" href="{{ manufacturers }}">{{ manufacturer }}</a></p>
                             {% endif %}
 
@@ -687,14 +725,11 @@
                                 {% if sku %}
                                 <p class="info"><b>Šifra:</b> {{ sku }}</p>
                                 {% endif %}
-                                {% if qiqo_discount_percent is defined and qiqo_discount_percent > 0 %}
-                                    <p class="info"><b>Rabat:</b> -{{ qiqo_discount_percent|number_format(0, '.', '') }}%</p>
-                                {% endif %}
-                                {% if qiqo_proforma_extra_percent is defined and qiqo_proforma_extra_percent > 0 %}
-                                    <p class="info"><b>Napomena:</b> kod plaćanja predračunom moguć dodatni popust +{{ qiqo_proforma_extra_percent|number_format(0, '.', '') }}%.</p>
-                                {% endif %}
+	                                {% if qiqo_discount_percent is defined and qiqo_discount_percent > 0 %}
+	                                    <p class="info"><b>Rabat:</b> -{{ qiqo_discount_percent|number_format(0, '.', '') }}%</p>
+	                                {% endif %}
 
-                                {% if model %}
+	                                {% if model %}
                                     <p class="info"><b>Barcode:</b> {{ model }}</p>
                                 {% endif %}
 
@@ -1373,25 +1408,4 @@
 
     });
 
-</script>
-<script>
-    function updateMpnTotal(input) {
-        var $input = $(input);
-        var qty = parseFloat($input.val());
-
-        if (isNaN(qty) || qty < 1) {
-            qty = 1;
-            $input.val(qty);
-        }
-
-        var price = parseFloat($input.data('price'));
-        if (isNaN(price)) {
-            price = 0;
-        }
-
-        var id = $input.data('id');
-        var total = (qty * price).toFixed(2);
-
-        $('#mpn_total_' + id).text(total);
-    }
 </script>

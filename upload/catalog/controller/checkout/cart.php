@@ -377,7 +377,8 @@ class ControllerCheckoutCart extends Controller {
 		if ($product_info) {
 			$minimum_step = 1;
 			$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_info['cent']));
-			if ($cent_normalized === 'C100') {
+			$pak_required = isset($product_info['pak']) && (int)$product_info['pak'] === 1;
+			if ($cent_normalized === 'C100' || $pak_required) {
 				$minimum_step = $product_info['minimum'] ? (int)$product_info['minimum'] : 1;
 			}
 			if ($minimum_step < 1) {

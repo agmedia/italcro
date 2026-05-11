@@ -41,10 +41,56 @@ class ModelExtensionModuleQiqo extends Model
         return $ok;
     }
 
+    private function ensureProductPakColumn(): bool
+    {
+        if ($this->tableColumnExists('product', 'pak')) {
+            return true;
+        }
+
+        $this->db->query("ALTER TABLE `" . DB_PREFIX . "product`
+            ADD COLUMN `pak` TINYINT(1) NOT NULL DEFAULT 0 AFTER `cent`,
+            ADD INDEX `idx_pak` (`pak`)");
+
+        unset($this->columnExistsCache['product.pak']);
+
+        $ok = $this->tableColumnExists('product', 'pak');
+        if ($ok) {
+            $this->log('Products', 'Dodana kolona oc_product.pak.');
+        } else {
+            $this->log('Products', 'Nije moguće dodati kolonu oc_product.pak.');
+        }
+
+        return $ok;
+    }
+
+    private function ensureProductVpcColumn(): bool
+    {
+        if ($this->tableColumnExists('product', 'vpc')) {
+            return true;
+        }
+
+        $this->db->query("ALTER TABLE `" . DB_PREFIX . "product`
+            ADD COLUMN `vpc` DECIMAL(15,4) NOT NULL DEFAULT 0 AFTER `price`,
+            ADD INDEX `idx_vpc` (`vpc`)");
+
+        unset($this->columnExistsCache['product.vpc']);
+
+        $ok = $this->tableColumnExists('product', 'vpc');
+        if ($ok) {
+            $this->log('Products', 'Dodana kolona oc_product.vpc.');
+        } else {
+            $this->log('Products', 'Nije moguće dodati kolonu oc_product.vpc.');
+        }
+
+        return $ok;
+    }
+
     public function importArticles(): int
     {
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
         $this->ensureProductPartnerColumn();
+        $this->ensureProductPakColumn();
+        $this->ensureProductVpcColumn();
 
         $groups   = collect($qiqo->getGroups());
         $articles = collect($qiqo->getArticles());
@@ -71,7 +117,8 @@ class ModelExtensionModuleQiqo extends Model
             $name = trim((string) ($group['naziv'] ?? 'Artikl ' . $a['id']));
             $dimmodel = trim((string)($a['dimmodel'] ?? ''));
             $opiskatalog  = trim((string)($a['opiskatalog'] ?? ''));
-            $price = (float)($a['cijena'] ?? 0);
+            $vpc = (float)($a['cijena'] ?? 0);
+            $price = $vpc;
             $cent  = trim((string)($a['cent'] ?? null));
             $sortid = (int)($a['sortid'] ?? 0);
 
@@ -99,7 +146,9 @@ class ModelExtensionModuleQiqo extends Model
                 'ean'         => $a['jm'],
                 'quantity'    => (float) ($a['zaliha'] ?? 0),
                 'price'       => $price,
+                'vpc'         => $vpc,
                 'cent'        => $cent,
+                'pak'         => (int)($a['pak'] ?? 0),
                 'minimum'     => $a['pakkol'],
                 'sort_order'  => $sortid,
                 'status'      => $a['aktivan'] === 'true' ? 1 : 0,
@@ -201,6 +250,7 @@ class ModelExtensionModuleQiqo extends Model
     public function updateQuantities(): int
     {
         $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $hasPakColumn = $this->ensureProductPakColumn();
         $articles = collect($qiqo->getArticles());
         $updated  = 0;
 
@@ -217,18 +267,19 @@ class ModelExtensionModuleQiqo extends Model
             $pak        = (int)($a['pak'] ?? 0);
             $pakkol     = (float)($a['pakkol'] ?? 0);
             $sortid     = (int)($a['sortid'] ?? 0);
+            $pakSql     = $hasPakColumn ? "pak = '{$pak}', " : "";
 
             // Ako je pak=1 → postavi minimum = pakkol
             if ($pakkol > 1) {
                 $this->db->query("UPDATE " . DB_PREFIX . "product 
-                              SET quantity = '{$quantity}', minimum = '{$pakkol}', sort_order = '{$sortid}', date_modified = NOW()
-                              WHERE product_id = '{$product_id}'");
+	                              SET quantity = '{$quantity}', {$pakSql}minimum = '{$pakkol}', sort_order = '{$sortid}', date_modified = NOW()
+	                              WHERE product_id = '{$product_id}'");
                 $this->log('Quantities', "SKU {$sku} → pak=1, količina={$quantity}, minimum={$pakkol}");
             } else {
                 // standardno ažuriranje
                 $this->db->query("UPDATE " . DB_PREFIX . "product 
-                              SET quantity = '{$quantity}', minimum = 1, sort_order = '{$sortid}', date_modified = NOW()
-                              WHERE product_id = '{$product_id}'");
+	                              SET quantity = '{$quantity}', {$pakSql}minimum = 1, sort_order = '{$sortid}', date_modified = NOW()
+	                              WHERE product_id = '{$product_id}'");
             }
 
             $updated++;
@@ -242,6 +293,7 @@ class ModelExtensionModuleQiqo extends Model
     public function updatePrices(): int
     {
         $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $hasVpcColumn = $this->ensureProductVpcColumn();
         $articles = collect($qiqo->getArticles());
         $updated  = 0;
 
@@ -253,8 +305,10 @@ class ModelExtensionModuleQiqo extends Model
             if (!$exists->num_rows) continue;
 
             $product_id = (int)$exists->row['product_id'];
-            $price = (float)($a['cijena'] ?? 0);
+            $vpc = (float)($a['cijena'] ?? 0);
+            $price = $vpc;
             $cent  = trim((string)($a['cent'] ?? null));
+            $vpcSql = $hasVpcColumn ? "vpc = '{$vpc}', " : "";
 
             // Ako ERP šalje "C-100", cijenu dijelimo sa 100
             if ($cent && strtoupper($cent) === 'C-100') {
@@ -264,8 +318,8 @@ class ModelExtensionModuleQiqo extends Model
             }
 
             $this->db->query("UPDATE " . DB_PREFIX . "product 
-                          SET price = '{$price}', cent = '{$cent}', date_modified = NOW()
-                          WHERE product_id = '{$product_id}'");
+	                          SET price = '{$price}', {$vpcSql}cent = '{$cent}', date_modified = NOW()
+	                          WHERE product_id = '{$product_id}'");
 
             $updated++;
         }
@@ -1452,9 +1506,19 @@ class ModelExtensionModuleQiqo extends Model
     {
         $image_path = '';
         $partnerSql = '';
+        $pakSql = '';
+        $vpcSql = '';
 
         if ($this->tableColumnExists('product', 'partner')) {
             $partnerSql = "partner = '" . (int)($data['partner_id'] ?? 0) . "',";
+        }
+
+        if ($this->tableColumnExists('product', 'pak')) {
+            $pakSql = "pak = '" . (int)($data['pak'] ?? 0) . "',";
+        }
+
+        if ($this->tableColumnExists('product', 'vpc')) {
+            $vpcSql = "vpc = '" . (float)($data['vpc'] ?? 0) . "',";
         }
 
         // 🖼️ Preuzmi sliku ako postoji picpath
@@ -1469,7 +1533,9 @@ class ModelExtensionModuleQiqo extends Model
         " . $partnerSql . "
         quantity = '" . (float) $data['quantity'] . "',
         price = '" . (float) $data['price'] . "',
+        " . $vpcSql . "
         cent = '" . $this->db->escape($data['cent']) . "',
+        " . $pakSql . "
         minimum = '" . (int) $data['minimum'] . "',
         sort_order = '" . (int) $data['sort_order'] . "',
         status = '" . (int) $data['status'] . "',

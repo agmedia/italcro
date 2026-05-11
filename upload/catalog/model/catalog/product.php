@@ -2,6 +2,8 @@
 class ModelCatalogProduct extends Model {
 	private $qiqo_tables_ready = null;
 	private $qiqo_action_price_table_ready = null;
+	private $product_pak_column_ready = null;
+	private $product_vpc_column_ready = null;
 
 	public function updateViewed($product_id) {
 		$this->db->query("UPDATE " . DB_PREFIX . "product SET viewed = (viewed + 1) WHERE product_id = '" . (int)$product_id . "'");
@@ -78,19 +80,21 @@ class ModelCatalogProduct extends Model {
 				'model'            => $query->row['model'],
 				'sku'              => $query->row['sku'],
 				'upc'              => $query->row['upc'],
-				'ean'              => $query->row['ean'],
-				'jan'              => $query->row['jan'],
-				'isbn'             => $query->row['isbn'],
-				'mpn'              => $query->row['mpn'],
-                'mpn_count'        => (int)$query->row['mpn_count'], // <-- OVO NOVO
+					'ean'              => $query->row['ean'],
+					'jan'              => $query->row['jan'],
+					'isbn'             => $query->row['isbn'],
+					'mpn'              => $query->row['mpn'],
+					'pak'              => isset($query->row['pak']) ? (int)$query->row['pak'] : 0,
+	                'mpn_count'        => (int)$query->row['mpn_count'], // <-- OVO NOVO
 				'location'         => $query->row['location'],
                 'cent'         => $query->row['cent'],
 				'quantity'         => $query->row['quantity'],
 				'stock_status'     => $query->row['stock_status'],
 				'image'            => $query->row['image'],
 				'manufacturer_id'  => $query->row['manufacturer_id'],
-				'manufacturer'     => $query->row['manufacturer'],
-				'base_price'        => $query->row['price'],
+					'manufacturer'     => $query->row['manufacturer'],
+					'vpc'              => isset($query->row['vpc']) ? (float)$query->row['vpc'] : 0.0,
+					'base_price'        => $query->row['price'],
 				'price'            => ($query->row['discount'] ? $query->row['discount'] : $query->row['price']),
 				'special'          => $query->row['special'],
 				'reward'           => $query->row['reward'],
@@ -686,9 +690,11 @@ class ModelCatalogProduct extends Model {
     public function getProductsByMPN($mpn, $exclude_product_id = 0) {
         if (!$mpn) return [];
 
-        $store_id = (int)$this->config->get('config_store_id');
-        $lang_id  = (int)$this->config->get('config_language_id');
-        $customer_group_id = (int)$this->config->get('config_customer_group_id');
+	        $store_id = (int)$this->config->get('config_store_id');
+	        $lang_id  = (int)$this->config->get('config_language_id');
+	        $customer_group_id = (int)$this->config->get('config_customer_group_id');
+	        $pak_select = $this->hasProductPakColumn() ? "p.pak," : "0 AS pak,";
+	        $vpc_select = $this->hasProductVpcColumn() ? "p.vpc," : "0 AS vpc,";
 
         // Special (akcijska) cijena po productu (ako postoji i u datumu)
         $sql = "
@@ -696,14 +702,16 @@ class ModelCatalogProduct extends Model {
             p.product_id,
             p.model,
             p.sku,
-            p.ean,
-            p.mpn,
-            p.cent,
+	            p.ean,
+	            p.mpn,
+	            " . $pak_select . "
+	            p.cent,
             p.quantity,
             p.minimum,
-            p.sort_order,
-            p.price,
-            p.tax_class_id,
+	            p.sort_order,
+	            p.price,
+	            " . $vpc_select . "
+	            p.tax_class_id,
             pd.name,
             pd.description,
             pd.name_add,
@@ -902,10 +910,57 @@ class ModelCatalogProduct extends Model {
 
 		$query = $this->db->query("SELECT DISTINCT article_code
 			FROM `" . DB_PREFIX . "qiqo_action_price`
-			WHERE article_code IN (" . $in . ")");
+			WHERE article_code IN (" . $in . ")
+			  AND UPPER(indicator) <> 'X'");
 
 		foreach ($query->rows as $row) {
 			$map[(string)$row['article_code']] = true;
+		}
+
+		return $map;
+	}
+
+	public function getQiqoActionDetailsMap($sku_list = array()) {
+		$map = array();
+
+		if (!$sku_list || !$this->hasQiqoActionPriceTable()) {
+			return $map;
+		}
+
+		$clean = array();
+		foreach ($sku_list as $sku) {
+			$sku = trim((string)$sku);
+			if ($sku !== '') {
+				$clean[] = $sku;
+			}
+		}
+
+		$clean = array_values(array_unique($clean));
+		if (!$clean) {
+			return $map;
+		}
+
+		$in = $this->buildEscapedInList($clean);
+
+		$query = $this->db->query("SELECT article_code, indicator, quantity, price, discount
+			FROM `" . DB_PREFIX . "qiqo_action_price`
+			WHERE article_code IN (" . $in . ")
+			  AND UPPER(indicator) <> 'X'
+			ORDER BY article_code ASC, indicator ASC, quantity ASC");
+
+		foreach ($query->rows as $row) {
+			$code = (string)$row['article_code'];
+
+			if (!isset($map[$code])) {
+				$map[$code] = array();
+			}
+
+			$map[$code][] = array(
+				'indicator' => strtoupper(trim((string)$row['indicator'])),
+				'quantity'  => (float)$row['quantity'],
+				'price'     => (float)$row['price'],
+				'discount'  => (float)$row['discount']
+			);
 		}
 
 		return $map;
@@ -938,6 +993,7 @@ class ModelCatalogProduct extends Model {
 			INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku)
 			INNER JOIN `" . DB_PREFIX . "product_to_store` p2s ON (p.product_id = p2s.product_id)
 			WHERE p.mpn IN (" . $in . ")
+			  AND UPPER(qap.indicator) <> 'X'
 			  AND p.status = '1'
 			  AND p.date_available <= NOW()
 			  AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'");
@@ -1119,6 +1175,28 @@ class ModelCatalogProduct extends Model {
 		$this->qiqo_action_price_table_ready = (bool)$q->num_rows;
 
 		return $this->qiqo_action_price_table_ready;
+	}
+
+	private function hasProductPakColumn() {
+		if ($this->product_pak_column_ready !== null) {
+			return $this->product_pak_column_ready;
+		}
+
+		$q = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE 'pak'");
+		$this->product_pak_column_ready = (bool)$q->num_rows;
+
+		return $this->product_pak_column_ready;
+	}
+
+	private function hasProductVpcColumn() {
+		if ($this->product_vpc_column_ready !== null) {
+			return $this->product_vpc_column_ready;
+		}
+
+		$q = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE 'vpc'");
+		$this->product_vpc_column_ready = (bool)$q->num_rows;
+
+		return $this->product_vpc_column_ready;
 	}
 
 

@@ -37,9 +37,8 @@
     function recomputeFromStateAndApply(){
       $.get('index.php?route=extension/module/quick_order/cartState&_=' + Date.now(), function(res){
         if(!res || !res.items){ baselSetCounters(0, '0'); return; }
-        var count=0,total=0;
+        var count=res.items.length,total=0;
         res.items.forEach(function(it){
-          count += (it.quantity||0);
           total += (it.price_raw||0) * (it.quantity||0);
         });
         $.post('index.php?route=extension/module/quick_order/format', { amount: total }, function(fmt){

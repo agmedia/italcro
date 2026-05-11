@@ -1,5 +1,12 @@
 <?php
 	$this->load->language('basel/basel_theme');
+	$this->load->language('common/header');
+
+	$data['text_account'] = $this->language->get('text_account');
+	$data['text_login'] = $this->language->get('text_login');
+	$data['text_logout'] = $this->language->get('text_logout');
+	$data['text_register'] = $this->language->get('text_register');
+
 	// Widhlist Items
 	if ($this->customer->isLogged()) {
 		$this->load->model('account/wishlist');
@@ -13,7 +20,15 @@
 	$data['compare'] = $this->url->link('product/compare');
 	$data['text_compare'] = sprintf($this->language->get('text_compare'), $data['compare_counter']);
 	// Cart Items
-	$data['cart_items'] = $this->cart->countProducts() + (isset($this->session->data['vouchers']) ? count($this->session->data['vouchers']) : 0);
+	$data['cart_items'] = count($this->cart->getProducts()) + (isset($this->session->data['vouchers']) ? count($this->session->data['vouchers']) : 0);
+
+	$data['customer_email'] = '';
+	$data['customer_display_name'] = '';
+	if ($this->customer->isLogged()) {
+		$data['customer_email'] = $this->customer->getEmail();
+		$customer_name = trim($this->customer->getFirstName() . ' ' . $this->customer->getLastName());
+		$data['customer_display_name'] = $customer_name ? $customer_name : $data['customer_email'];
+	}
 	
 	// Cart Total
 	$data['cart_amount'] = $this->load->controller('extension/basel/basel_features/total_amount');

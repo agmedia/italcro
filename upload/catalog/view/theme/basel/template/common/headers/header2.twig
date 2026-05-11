@@ -76,9 +76,15 @@
 
        
 
+             {% if logged %}
+             <a class="shortcut-wrapper wishlist account-shortcut" title="{{ customer_email ? customer_email : text_account }}" href="{{ account }}">
+                 <i class="icon-user icon"></i><span class="account-label hidden-xs">{{ customer_display_name ? customer_display_name : text_account }}</span>
+             </a>
+             {% else %}
              <a class="shortcut-wrapper wishlist" title="Korisnički račun" href="{{ login }}">
                  <div class="wishlist-hover"><i class="icon-user icon"></i></div>
-        </a>
+             </a>
+             {% endif %}
           
        
         

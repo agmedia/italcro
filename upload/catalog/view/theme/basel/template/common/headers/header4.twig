@@ -125,7 +125,7 @@
                 {% if header_login %}
                 <div class="shortcut-wrapper sign-in hidden-sx hidden-sm hidden-xs">
                 {% if logged %}
-                <a class="anim-underline" href="{{ account }}">{{ text_account }}</a> &nbsp;/&nbsp; 
+                <a class="anim-underline" href="{{ account }}">{{ customer_display_name ? customer_display_name : text_account }}</a> &nbsp;/&nbsp;
                 <a class="anim-underline" href="{{ logout }}">{{ text_logout }}</a>
                 {% else %}
                 <a class="anim-underline" href="{{ login }}">{{ text_login }} / {{ text_register }}</a>

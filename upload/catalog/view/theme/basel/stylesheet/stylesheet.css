@@ -1609,6 +1609,32 @@ div.required .control-label:after {
 .shortcut-wrapper.wishlist {
 	padding:0 12px 0 8px;
 }
+.shortcut-wrapper.account-shortcut {
+	display:inline-flex;
+	align-items:center;
+	max-width:130px;
+	gap:6px;
+	padding:0 6px 0 8px;
+}
+.shortcut-wrapper.account-shortcut .account-label {
+	display:inline-block;
+	max-width:95px;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	white-space:nowrap;
+	font-size:11px;
+	line-height:42px;
+	vertical-align:top;
+}
+@media (max-width: 1199px) {
+	.shortcut-wrapper.account-shortcut {
+		max-width:42px;
+		gap:0;
+	}
+	.shortcut-wrapper.account-shortcut .account-label {
+		display:none;
+	}
+}
 /* Wishlist hover */
 .wishlist-hover .icon-heart:after {
 	position:absolute;

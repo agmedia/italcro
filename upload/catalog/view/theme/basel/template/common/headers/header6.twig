@@ -79,8 +79,11 @@
            <div class="icon-element is_wishlist">
 
                {% if logged %}
-                   <a class="shortcut-wrapper wishlist " title="Moj račun" href="{{ login }}"><i class="icon-user icon"></i></a><a class="shortcut-wrapper wishlist hidden-xs"  title="Odjava" href="{{ logout }}"> Odjava<div class="wishlist-hover"></div>
-               </a>
+                   <a class="shortcut-wrapper wishlist account-shortcut" title="{{ customer_email ? customer_email : text_account }}" href="{{ account }}">
+                       <i class="icon-user icon"></i><span class="account-label hidden-xs">{{ customer_display_name ? customer_display_name : text_account }}</span>
+                   </a>
+                   <a class="shortcut-wrapper wishlist hidden-xs" title="Odjava" href="{{ logout }}"> Odjava<div class="wishlist-hover"></div>
+                   </a>
                {% else %}
                    <a class="shortcut-wrapper wishlist" title="Moj račun" href="{{ login }}">
                        <div class="wishlist-hover"><i class="icon-user icon"></i></div>

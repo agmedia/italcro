@@ -572,6 +572,10 @@ class ModelExtensionMazaTfProduct extends Model {
                     $sql .= ', p.manufacturer_id';
                 }
 
+                if(in_array('p.mpn', $additional_field)){
+                    $sql .= ', p.mpn';
+                }
+
                 if(in_array('p.stock_status_id', $additional_field)){
             $sql .= ', p.stock_status_id';
         }

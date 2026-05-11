@@ -136,7 +136,7 @@ $_['entry_img_filter_checkbox_use_exact_match']      = "Potpuno podudaranje za p
 $_['entry_img_filter_checkbox_use_exact_match_help'] = "Filtrirajte sliku povezanu s opcijom potvrdnog okvira ako se vrijednosti provjerene za sliku ne podudaraju točno s vrijednostima koje je korisnik trenutno provjerio na stranici proizvoda";
 
 $_['entry_img_gal']      = "Filtriraj skočnu galeriju";
-$_['entry_img_gal_help'] = "prikaži samo prikladne slike (u skladu s odabranim opcijama proizvoda) u skočnoj galeriji na stranici proizvoda u odjeljku za korisnike, preporučuje se korištenje sa značajkama \\"\'.\$_[\'entry_img_use\'].\'\\" i \\"\'.\$_[\'entry_img_limit\'].\'\\"";
+$_['entry_img_gal_help'] = 'prikaži samo prikladne slike (u skladu s odabranim opcijama proizvoda) u skočnoj galeriji na stranici proizvoda u odjeljku za korisnike, preporučuje se korištenje sa značajkama "'.$_['entry_img_use'].'" i "'.$_['entry_img_limit'].'"';
 
 $_['entry_img_option']      = "Opcija prikaza slika ispod";
 $_['entry_img_option_v0']   = "Isključeno";
@@ -148,11 +148,11 @@ $_['entry_img_load_outofstock']      = "Slike za opcije rasprodanih";
 $_['entry_img_load_outofstock_help'] = "učitavanje slika za vrijednosti opcije rasprodaje (može biti korisno u slučaju izmjene koja prikazuje vrijednosti opcije rasprodaje čak i ako je \'Oduzimanje zaliha\' za njih postavljeno na \'Da\' ili u slučaju filtriranja slika proizvoda povezanih s vrijednostima opcije rasprodaje)";
 
 $_['entry_img_category']            = "Prikaži opcije opcija na popisima proizvoda";
-$_['entry_img_category_help']       = "prikaz vrijednosti opcija proizvoda na popisima proizvoda (stranice kategorija, stranice proizvođača, standardni moduli \\"Najnovije\\", \\"Bestsellers\\", \\"Posebno\\", \\"Istaknuto\\", itd.)";
+$_['entry_img_category_help']       = 'prikaz vrijednosti opcija proizvoda na popisima proizvoda (stranice kategorija, stranice proizvođača, standardni moduli "Najnovije", "Bestsellers", "Posebno", "Istaknuto", itd.)';
 $_['entry_img_category_click']      = "Zamijenite sliku na popisu proizvoda klikom";
-$_['entry_img_category_click_help'] = "promjena glavne slike proizvoda na odgovarajuću sliku vrijednosti opcije na klik (inače, prelaskom miša), ima smisla samo u slučaju uključene postavke \'\'.\$_[\'entry_img_category\'].\'\'";
+$_['entry_img_category_click_help'] = 'promjena glavne slike proizvoda na odgovarajuću sliku vrijednosti opcije na klik (inače, prelaskom miša), ima smisla samo u slučaju uključene postavke \''.$_['entry_img_category'].'\' ';
 $_['entry_custom_thumb_size']       = "Prilagođena veličina sličica opcija na popisima proizvoda";
-$_['entry_custom_thumb_size_help']  = "postavite određenu širinu/visinu za palice vrijednosti opcije proizvoda prikazane na popisima proizvoda (inače će se veličina palca odrediti automatski), ima smisla samo u slučaju uključene postavke \'\'.\$_[\'entry_img_category\'].\'\'";
+$_['entry_custom_thumb_size_help']  = 'postavite određenu širinu/visinu za palice vrijednosti opcije proizvoda prikazane na popisima proizvoda (inače će se veličina palca odrediti automatski), ima smisla samo u slučaju uključene postavke \''.$_['entry_img_category'].'\' ';
 $_['entry_custom_thumb_width']      = "Širina (px)";
 $_['entry_custom_thumb_height']     = "Visina (px)";
 
@@ -195,7 +195,7 @@ If you want to use the module on multiple sites, you should purchase a separate 
 ';
 
 // Error
-$_['error_permission'] = "Upozorenje: Nemate dopuštenje za izmjenu modula \\"\'.\$_[\'module_name\'] .\'\\"!";
+$_['error_permission'] = 'Upozorenje: Nemate dopuštenje za izmjenu modula "'.$_['module_name'].'"!';
 
 $_['text_module_version'] = $_['module_name'].', version';
-$_['text_module_support'] = "Programer: <a href=\\"http://liveopencart.com\\" target=\\"_blank\\">liveopencart.com</a> | Podrška, pitanja i prijedlozi: <a href=\\"mailto:support@liveopencart.com\\">support@liveopencart.com</a>";
+$_['text_module_support'] = 'Programer: <a href="http://liveopencart.com" target="_blank">liveopencart.com</a> | Podrška, pitanja i prijedlozi: <a href="mailto:support@liveopencart.com">support@liveopencart.com</a>';

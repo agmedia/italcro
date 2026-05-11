@@ -52,7 +52,7 @@ $_['about_Referrer_Policy']                     = 'Kada korisnik klikne poveznic
 <strong>bez preporuke</strong>
 <p>Zaglavlje Referer bit će u potpunosti izostavljeno. Uz zahtjeve se ne šalju informacije o preporuci.</p>
 <strong>no-referrer-when-downgrade (zadano)</strong>
-<p>Ovo je zadano ponašanje ako nije navedeno pravilo ili ako je navedena vrijednost nevažeća. Izvor, put i niz upita URL-a šalju se kao preporuka kada razina sigurnosti protokola ostane ista (HTTP→HTTP, HTTPS→HTTPS) ili se poboljša (HTTP→HTTPS), ali se\\'ne šalje na manje sigurna odredišta (HTTPS→HTTP).</p>
+<p>Ovo je zadano ponašanje ako nije navedeno pravilo ili ako je navedena vrijednost nevažeća. Izvor, put i niz upita URL-a šalju se kao preporuka kada razina sigurnosti protokola ostane ista (HTTP→HTTP, HTTPS→HTTPS) ili se poboljša (HTTP→HTTPS), ali se ne šalje na manje sigurna odredišta (HTTPS→HTTP).</p>
 <strong>podrijetlo</strong>
 <p>Samo pošaljite izvor dokumenta kao preporuku.</p>
 <p>Na primjer, dokument na https://example.com/page.html će poslati referera https://example.com/.</p>
@@ -61,7 +61,7 @@ $_['about_Referrer_Policy']                     = 'Kada korisnik klikne poveznic
 <strong>isto porijeklo</strong>
 <p>Preporuka će biti poslana za izvore s istog mjesta, ali zahtjevi s različitim izvorima neće slati informacije o preporuci.</p>
 <strong>striktnog porijekla</strong>
-<p>Samo pošaljite izvor dokumenta kao preporuku kada razina sigurnosti protokola ostane ista (HTTPS→HTTPS), ali ga nemojte\\'ne slati na manje sigurno odredište (HTTPS→HTTP).</p>
+<p>Samo pošaljite izvor dokumenta kao preporuku kada razina sigurnosti protokola ostane ista (HTTPS→HTTPS), ali ga nemojte slati na manje sigurno odredište (HTTPS→HTTP).</p>
 <strong>striktno-podrijetlo-prilikom-prelaska</strong>
 <p>Pošalji podrijetlo, stazu i niz upita prilikom izvođenja zahtjeva istog podrijetla, pošalji podrijetlo samo kada razina sigurnosti protokola ostane ista (HTTPS→HTTPS) i ne šalji zaglavlje na manje sigurno odredište (HTTPS→HTTP).</p>
 <strong>nesiguran-url</strong>
@@ -70,8 +70,8 @@ $_['about_Referrer_Policy']                     = 'Kada korisnik klikne poveznic
 
 $_['about_Strict_Transport_Security']           = 'Zaglavlje <strong>Strict Transport Security</strong> je sigurnosno poboljšanje koje web preglednicima ograničava pristup web poslužiteljima isključivo putem HTTPS-a. Ovo osigurava da se veza ne može uspostaviti putem nesigurne HTTP veze koja bi mogla biti podložna napadima.<br/><br/><strong>Primjer scenarija</strong><br/>
 <br/>
-Prijavite se na besplatnu WiFi pristupnu točku u zračnoj luci i počnete surfati webom, posjećujući svoju internetsku bankarsku uslugu kako biste provjerili stanje i platili nekoliko računa. Nažalost, pristupna točka koju\\'koristite zapravo je prijenosno računalo hakera\\', a oni\\'presreću vaš izvorni HTTP zahtjev i preusmjeravaju vas na klon stranice vaše banke\\' umjesto na pravu stvar. Sada su vaši privatni podaci izloženi hakeru.<br/><br/>
-<strong>Strict Transport Security</strong> rješava ovaj problem; sve dok ste\\' jednom pristupili web stranici svoje banke\\' pomoću HTTPS-a, a web stranica banke\\' koristi <strong>Strict Transport Security</strong>, vaš će preglednik znati automatski koristiti samo HTTPS, što sprječava hakere u izvođenju ove vrste čovjek-u-sredi napad.<br/><br/><strong>Kako preglednik to rješava</strong>
+Prijavite se na besplatnu WiFi pristupnu točku u zračnoj luci i počnete surfati webom, posjećujući svoju internetsku bankarsku uslugu kako biste provjerili stanje i platili nekoliko računa. Nažalost, pristupna točka koju koristite zapravo je prijenosno računalo hakera, a oni presreću vaš izvorni HTTP zahtjev i preusmjeravaju vas na klon stranice vaše banke umjesto na pravu stvar. Sada su vaši privatni podaci izloženi hakeru.<br/><br/>
+<strong>Strict Transport Security</strong> rješava ovaj problem; sve dok ste jednom pristupili web stranici svoje banke pomoću HTTPS-a, a web stranica banke koristi <strong>Strict Transport Security</strong>, vaš će preglednik znati automatski koristiti samo HTTPS, što sprječava hakere u izvođenju ove vrste čovjek-u-sredi napad.<br/><br/><strong>Kako preglednik to rješava</strong>
 <br/>
 Prvi put kada se vašoj web stranici pristupi pomoću HTTPS-a i ona vrati zaglavlje <strong>Strict-Transport-Security</strong>, preglednik bilježi ove informacije, tako da će budući pokušaji učitavanja stranice pomoću HTTP-a automatski koristiti HTTPS umjesto njega.<br/>
 <br/>
@@ -97,9 +97,9 @@ Svi glavni preglednici trenutno nude potpunu ili djelomičnu podršku za politik
 <br/><br/>
 Postoje mnoge direktive koje možete koristiti s politikom sigurnosti sadržaja. Ovaj primjer u nastavku dopušta skripte s trenutne domene (definirane sa \'self\') kao i google-analytics.com.<br/><strong>Content Security Policy</strong> (CSP) je dodatni sloj sigurnosti koji pomaže u otkrivanju i ublažavanju određenih vrsta napada, uključujući Cross Site Scripting (XSS) i napade ubacivanjem podataka. Ovi se napadi koriste za sve, od krađe podataka do narušavanja stranice do distribucije zlonamjernog softvera.<br/>
 <br/>
-CSP je dizajniran da bude potpuno kompatibilan sa starijim verzijama (osim CSP verzije 2 gdje postoje neke izričito navedene nedosljednosti u kompatibilnosti sa prethodnim verzijama; više detalja ovdje, odjeljak 1.1). Preglednici koji ga ne\\'ne podržavaju i dalje rade s poslužiteljima koji ga implementiraju, i obrnuto: preglednici koji ne\\'ne podržavaju CSP jednostavno ga ignoriraju, funkcioniraju kao i obično, prema zadanim postavkama prema standardnoj politici istog porijekla za web sadržaj. Ako web mjesto\\'ne nudi CSP zaglavlje, preglednici također koriste standardna pravila istog porijekla.<br/>
+CSP je dizajniran da bude potpuno kompatibilan sa starijim verzijama (osim CSP verzije 2 gdje postoje neke izričito navedene nedosljednosti u kompatibilnosti sa prethodnim verzijama; više detalja ovdje, odjeljak 1.1). Preglednici koji ga ne podržavaju i dalje rade s poslužiteljima koji ga implementiraju, i obrnuto: preglednici koji ne podržavaju CSP jednostavno ga ignoriraju, funkcioniraju kao i obično, prema zadanim postavkama prema standardnoj politici istog porijekla za web sadržaj. Ako web mjesto ne nudi CSP zaglavlje, preglednici također koriste standardna pravila istog porijekla.<br/>
 <br/>
-Da biste omogućili CSP, morate konfigurirati svoj web poslužitelj da vraća <strong>Content-Security-Policy</strong> HTTP zaglavlje (ponekad ćete vidjeti spominjanje zaglavlja X-Content-Security-Policy, ali to\\'je starija verzija i ne\\'ne morate je specificirati više).<br/><br/><strong>Preporuke: </strong><br/>upgrade-insecure-requests';
+Da biste omogućili CSP, morate konfigurirati svoj web poslužitelj da vraća <strong>Content-Security-Policy</strong> HTTP zaglavlje (ponekad ćete vidjeti spominjanje zaglavlja X-Content-Security-Policy, ali to je starija verzija i ne morate je specificirati više).<br/><br/><strong>Preporuke: </strong><br/>upgrade-insecure-requests';
 
 $_['about_X_HTTP_Method_Override']             = 'U određenim situacijama (na primjer, kada su usluga ili njezini korisnici iza pretjerano revnog korporativnog vatrozida ili ako je glavni potrošač web stranica), mogu biti dostupne samo GET i POST HTTP metode. U takvom slučaju, moguće je emulirati glagole koji nedostaju prosljeđivanjem prilagođenog zaglavlja u zahtjevima.
 <br/><br/>
@@ -125,11 +125,11 @@ X-Forwarded-For (XFF) zaglavlje jedno je od najčešće korištenih HTTP zaglavl
 
 $_['about_ranges']                              = 'Zaglavlje "Raspon" namijenjeno je za podršku djelomičnim preuzimanjima. Klijent može zatražiti samo dio datoteke, umjesto da traži cijelu datoteku.<br/>
 <br/>
-RFC 2616 je pomalo dvosmislen kada su u pitanju zaglavlja "Range". Prije svega, uvodi zaglavlje "Accept-Ranges", koje poslužitelj može koristiti za signaliziranje da podržava zaglavlje "Range". Dalje, stoji da klijent svejedno može poslati zahtjev koristeći zaglavlje "Range", čak i ako poslužitelj ne\\'oglašava podršku za to. Poslužitelj također ima opciju slanja "Accept-Ranges: none" kako bi eksplicitno naveo da ne podržava ovu vrstu zaglavlja.<br/>
+RFC 2616 je pomalo dvosmislen kada su u pitanju zaglavlja "Range". Prije svega, uvodi zaglavlje "Accept-Ranges", koje poslužitelj može koristiti za signaliziranje da podržava zaglavlje "Range". Dalje, stoji da klijent svejedno može poslati zahtjev koristeći zaglavlje "Range", čak i ako poslužitelj ne oglašava podršku za to. Poslužitelj također ima opciju slanja "Accept-Ranges: none" kako bi eksplicitno naveo da ne podržava ovu vrstu zaglavlja.<br/>
 <br/>
-Dakle, u čemu je problem\\'? Ispada da se različiti HTTP klijenti malo drugačije bave zaglavljima "Range". Konkretno, iOS Podcast klijent zahtijeva podršku za zaglavlje Range i preuzet će samo dijelove datoteke ako nisu podržani. Apple je nedavno obavijestio iTunes izdavače o ovom problemu i zahtijeva da se sadržaj nalazi na poslužiteljima koji podržavaju zaglavlje Range.<br/>
+Dakle, u čemu je problem? Ispada da se različiti HTTP klijenti malo drugačije bave zaglavljima "Range". Konkretno, iOS Podcast klijent zahtijeva podršku za zaglavlje Range i preuzet će samo dijelove datoteke ako nisu podržani. Apple je nedavno obavijestio iTunes izdavače o ovom problemu i zahtijeva da se sadržaj nalazi na poslužiteljima koji podržavaju zaglavlje Range.<br/>
 <br/>
-Za poslužitelj to obično nije problem, zar\\'ne bi bilo nedavnog Apache DoS napada koji je prouzročio blokiranje Range zahtjeva.<br/>
+Za poslužitelj to obično nije problem, zar ne bi bilo nedavnog Apache DoS napada koji je prouzročio blokiranje Range zahtjeva.<br/>
 <br/>
 Raspon se koristi u zahtjevu za traženje određenog raspona (ili raspona) bajtova. Content-Range se koristi u odgovoru, za označavanje koje vam bajtove poslužitelj daje (koji se mogu razlikovati od raspona koji ste tražili), kao i koliko je dug cijeli sadržaj (ako je poznat).<br/><br/><strong>Preporuke: </strong><br/>Onemogućeno';
 
@@ -156,7 +156,7 @@ Nije li ovo stara vijest? Je li to još uvijek problem?
 <br/><br/>
 Sadržaj ispod ove točke odražava izvornu objavu i ostavit ću web-mjesto otvoreno i uglavnom nepromijenjeno, osim što ću navesti verzije popravka gdje mogu. Pretpostavljam da samo kažem: vrijeme za hitnost bilo je prošle godine.<br/><br/><strong>Preporuke: </strong><br/>Onemogućeno';
 
-$_['about_Feature_Policy']                      = 'HTTP Feature-Policy zaglavlje pruža mehanizam za dopuštanje i onemogućavanje korištenja značajki preglednika u vlastitom okviru i u sadržaju unutar bilo kojeg "iframe" elementa u dokumentu.<br/><br/>Pravila značajki se stvaraju kako bi se vlasnicima stranica omogućilo da omoguće i onemoguće određene značajke web platforme na svojim stranicama i stranicama koje ugrađuju. Mogućnost ograničavanja značajki koje vaša web-lokacija može koristiti je stvarno lijepa, ali mogućnost ograničavanja značajki koje web-lokacije koje ugradite mogu koristiti još je bolja zaštita.<br/><br/>Dostavljanje pravila o značajkama putem HTTP zaglavlja odgovora jednako je jednostavno kao i izdavanje drugih raznih sigurnosnih zaglavlja koja su nam dostupna. Jednostavno trebate odlučiti o ograničenjima koja\\' želite postaviti na svoju stranicu i izgraditi pravila za povratak.<br/><strong>Direktive</strong>
+$_['about_Feature_Policy']                      = 'HTTP Feature-Policy zaglavlje pruža mehanizam za dopuštanje i onemogućavanje korištenja značajki preglednika u vlastitom okviru i u sadržaju unutar bilo kojeg "iframe" elementa u dokumentu.<br/><br/>Pravila značajki se stvaraju kako bi se vlasnicima stranica omogućilo da omoguće i onemoguće određene značajke web platforme na svojim stranicama i stranicama koje ugrađuju. Mogućnost ograničavanja značajki koje vaša web-lokacija može koristiti je stvarno lijepa, ali mogućnost ograničavanja značajki koje web-lokacije koje ugradite mogu koristiti još je bolja zaštita.<br/><br/>Dostavljanje pravila o značajkama putem HTTP zaglavlja odgovora jednako je jednostavno kao i izdavanje drugih raznih sigurnosnih zaglavlja koja su nam dostupna. Jednostavno trebate odlučiti o ograničenjima koja želite postaviti na svoju stranicu i izgraditi pravila za povratak.<br/><strong>Direktive</strong>
 <br/>
 <i>senzor-ambijentalnog-svjetla</i>
 <p>Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o količini svjetla u okruženju oko uređaja putem sučelja AmbientLightSensor.</p>
@@ -169,19 +169,19 @@ $_['about_Feature_Policy']                      = 'HTTP Feature-Policy zaglavlje
 <i>kamera</i>
 <p>Kontrolira je li trenutnom dokumentu dopuštena upotreba video ulaznih uređaja. Kada je ovo pravilo omogućeno, obećanje koje vraća getUserMedia() će odbiti s NotAllowedError DOMException.</p>
 <i>display-capture</i>
-<p>Kontrolira je li trenutnom dokumentu dopušteno korištenje metode getDisplayMedia() za snimanje sadržaja zaslona. Kada je ovo pravilo omogućeno, obećanje koje vraća getDisplayMedia() odbacit će se s NotAllowedError ako se ne dobije dopuštenje za snimanje sadržaja display\\'s.</p>
+<p>Kontrolira je li trenutnom dokumentu dopušteno korištenje metode getDisplayMedia() za snimanje sadržaja zaslona. Kada je ovo pravilo omogućeno, obećanje koje vraća getDisplayMedia() odbacit će se s NotAllowedError ako se ne dobije dopuštenje za snimanje sadržaja zaslona.</p>
 <i>domena-dokumenta</i>
 <p>Kontrolira je li trenutnom dokumentu dopušteno postaviti document.domain. Kada je ovo pravilo omogućeno, pokušaj postavljanja document.domain neće uspjeti i uzrokovati izbacivanje SecurityError DOMException.</p>
 <i>kriptirani-medij</i>
 <p>Kontrolira je li trenutnom dokumentu dopušteno korištenje API-ja proširenja šifriranih medija (EME). Kada je ovo pravilo omogućeno, obećanje koje vraća Navigator.requestMediaKeySystemAccess() će odbiti uz DOMException.</p>
 <i>izvršenje-dok-nije-renderirano</i>
-<p>Kontrolira trebaju li se zadaci izvršavati u okvirima dok\\'se ne prikazuju (npr. ako je iframe skriven ili prikazan: ništa).</p>
+<p>Kontrolira trebaju li se zadaci izvršavati u okvirima dok se ne prikazuju (npr. ako je iframe skriven ili prikazan: ništa).</p>
 <i>izvršenje-izvan okvira za prikaz</i>
-<p>Kontrolira trebaju li se zadaci izvršavati u okvirima dok su\\'izvan vidljivog okvira za prikaz.</p>
+<p>Kontrolira trebaju li se zadaci izvršavati u okvirima dok su izvan vidljivog okvira za prikaz.</p>
 <i>cijeli zaslon</i>
 <p>Kontrolira je li trenutnom dokumentu dopušteno koristiti Element.requestFullScreen(). Kada je ovo pravilo omogućeno, vraćeni Promise odbija se s TypeError DOMException.</p>
 <i>geolokacija</i>
-<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti Geolocation Interface. Kada je ovo pravilo omogućeno, pozivi getCurrentPosition() i watchPosition() uzrokovat će pozivanje tih povratnih poziva funkcije\\' s kodom PositionError PERMISSION_DENIED.</p>
+<p>Kontrolira je li trenutnom dokumentu dopušteno koristiti Geolocation Interface. Kada je ovo pravilo omogućeno, pozivi getCurrentPosition() i watchPosition() uzrokovat će pozivanje tih povratnih poziva funkcije s kodom PositionError PERMISSION_DENIED.</p>
 <i>žiroskop</i>
 <p>Kontrolira je li trenutnom dokumentu dopušteno prikupljanje informacija o orijentaciji uređaja putem sučelja žiroskopa.</p>
 <i>magnetometar</i>

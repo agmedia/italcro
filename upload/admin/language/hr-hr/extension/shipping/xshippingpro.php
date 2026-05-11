@@ -338,7 +338,7 @@ $_['text_eq_weight_free_product'] = "Ukupna težina besplatnih proizvoda";
 $_['text_eq_total_gift_product'] = "Ukupno X-Gifted proizvoda";
 $_['text_eq_weight_gift_product'] = "Težina X-Gifted proizvoda";
 $_['text_eq_no_block'] = "Broj bloka";
-$_['text_product_rules'] = "Please <a href=\\"https://docs.google.com/document/d/1u8KUVlbzO2mOAOsStxPqB_EIQXtZCUqQcw2-p8rFH8M/edit\\" target=\\"_blank\\">check this document</a> to understand the difference between various modes.";
+$_['text_product_rules'] = 'Please <a href="https://docs.google.com/document/d/1u8KUVlbzO2mOAOsStxPqB_EIQXtZCUqQcw2-p8rFH8M/edit" target="_blank">check this document</a> to understand the difference between various modes.';
 $_['text_product_rules_advanced'] = "U većini slučajeva ne morate konfigurirati sljedeće opcije i radi sa zadanim postavkama. Međutim, možete ih prilagoditi ako smatrate da vam trebaju.";
 $_['text_reveal_options'] = "Otkrij sve podopcije...";
 // Global text across mods
@@ -392,7 +392,7 @@ $_['help_sort_order'] = "Redoslijed sortiranja između metoda koje je stvorio X-
 $_['help_status'] = "Omogućite/onemogućite samo ovu određenu metodu";
 $_['help_store']  = $_['help_zone'] = $_['help_customer_group'] = $_['help_currency'] = $_['help_geo_zone'] = $_['help_country'] = $_['help_payment'] = $_['help_city_all'] = $_['help_postal_all'] = $_['help_coupon_all'] = $_['help_days'] = $_['help_customer_all'] = $_['help_custom_all'] = $_['help_xlevel'] = 'Ako želite navesti bilo koju određenu stavku, poništite oznaku `Za bilo koju` kako bi se prikazale dostupne opcije';
 $_['help_customer_rule'] = $_['help_coupon_rule'] = $_['help_postal_rule'] = $_['help_city_rule']= '<b>Inlcusive:</b> Način dostave pojavit će se samo za unesene stavke. <b>Ekskluzivno:</b> Način dostave pojavit će se samo za stavke koje nisu unesene.';
-$_['help_weight'] = $_['help_quantity'] = $_['help_order_total']  = 'Inclusive value. Additional restriction rule if you want to use. If you don\\'t need, just keep blank. Noted that this rule does not respect product rules i.e. it would consider whole cart value.';
+$_['help_weight'] = $_['help_quantity'] = $_['help_order_total']  = 'Inclusive value. Additional restriction rule if you want to use. If you don\'t need, just keep blank. Noted that this rule does not respect product rules i.e. it would consider whole cart value.';
 $_['help_display'] = "Samo za administratorsku upotrebu. Pomaže vam da razlikujete metodu od drugih koje dijele isto ime.";
 $_['help_city']  = "Podržano je više gradova. Novi red/razdvojeni zarezima";
 $_['help_desc'] = "Opis bi se pojavio odmah nakon naziva načina dostave. Podržava nekoliko kratkih kodova, npr. [datum]3[/datum]";
@@ -403,7 +403,7 @@ $_['help_date']  = "Ako želite ograničiti način dostave po datumskom rasponu,
 $_['help_logo'] = "Neobavezno polje. Možete unijeti URL slike ili klasu izvrsne ikone fonta. Ovaj će se logotip pojaviti neposredno prije naslova otpreme";
 $_['help_postal']="Novi red/razdvojeni zarezima. Podrška za zamjenske znakove (*, ?) i podrška za raspon. <br /><b>Primjer:</b><br />12345,443300-443399,9843*,875*22,45433?,S3432?2 <br /><b>Objašnjenje</b>:<br /> 12345: jedan poštanski broj <br /> 443300-443399: Poštanski broj počinje od 443300 do 443399<br /> 9843*: Svaki kôd koji počinje s 9843 <br />875*22: Svaki kôd koji počinje s 875 i završava s 22 <br /> 45433?: Bilo koji kôd koji počinje s 45433 i završava bilo kojim pojedinačnim alfanumeričkim znakom. <br /> SE-1-10: Poštanski broj počinje od 1 do 10 s prefiksom SE tj. SE9 <br /> PA-1-10-NK: Poštanski broj počinje od 1 do 10 s prefiksom PK i sufiksom NK tj. PA9NK";
 $_['help_additional'] ='If it turns out that the target value does not fall under the above ranges, X-Shippingpro will calculate the shipping costs for additional items based on these fields. <br> <br />For Product Based shipping, these fields will be treated as shipping cost for all non-listed products.
-   <br><br /> If you put @ in the `Additional Price` field in place of cost,  X-Shippingpro iterates the above ranges and cumulates the cost until it finds the target value. <br /><br /> If you don\\'t want to auto calculate, keep it blank. Default Max Limit is unlimited.';
+   <br><br /> If you put @ in the `Additional Price` field in place of cost,  X-Shippingpro iterates the above ranges and cumulates the cost until it finds the target value. <br /><br /> If you don\'t want to auto calculate, keep it blank. Default Max Limit is unlimited.';
 $_['help_custom_css'] = "Nemojte stavljati unutarnju oznaku stila. Samo unesite svoje css pravilo. npr. .box {background:#2f96c9;}";
 $_['help_module_status'] = "Omogući/onemogući X-Shippingpro";
 $_['help_module_sort_order'] = "Redoslijed sortiranja između ostalih modula za otpremu";

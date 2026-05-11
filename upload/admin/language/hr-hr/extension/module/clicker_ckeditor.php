@@ -69,7 +69,7 @@ $_['entry_entities_greek']       = "Entiteti grčki";
 $_['entry_entities_processNumerical'] = "Brojčani entiteti";
 
 $_['help_entities']              = "Treba li koristiti HTML entitete u izlazu uređivača";
-$_['help_entities_additional']   = "A comma-separated list of additional entities to be used. Entity names or numbers must be used in a form that excludes the \\'&\\' prefix and the \\';\\' ending.";
+$_['help_entities_additional']   = "A comma-separated list of additional entities to be used. Entity names or numbers must be used in a form that excludes the '&' prefix and the ';' ending.";
 $_['help_entities_latin']        = "Treba li pretvoriti neke latinične znakove (latinica br. 1, ISO 8859-1) u HTML entitete";
 $_['help_entities_greek']        = "Treba li neke simbole, matematičke simbole i grčka slova pretvoriti u HTML entitete. Ovo bi moglo biti relevantnije za korisnike koji upisuju tekst na grčkom";
 $_['help_entities_processNumerical'] = "Treba li pretvoriti sve preostale znakove koji nisu uključeni u tablicu ASCII znakova u njihov relativni decimalni numerički prikaz HTML entiteta. Kada se postavi na forsiranje, pretvorit će sve entitete u ovaj format.";

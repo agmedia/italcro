@@ -704,11 +704,13 @@ class ControllerCustomerCustomer extends Controller {
 				$data['qiqo_authorization'] = array(
 					'partner_id' => (int)$qiqo_authorization['partner_id'],
 					'partner_name' => $qiqo_authorization['partner_name'],
+					'partner_oib' => $qiqo_authorization['partner_oib'],
 					'partner_discount' => (float)$qiqo_authorization['partner_discount'],
 					'partner_base_discount' => isset($qiqo_authorization['partner_base_discount']) ? (float)$qiqo_authorization['partner_base_discount'] : 0,
 					'delivery_place_id' => (int)$qiqo_authorization['delivery_place_id'],
 					'delivery_place_code' => $qiqo_authorization['delivery_place_code'],
 					'delivery_place_name' => $qiqo_authorization['delivery_place_name'],
+					'delivery_place_address' => $qiqo_authorization['delivery_place_address'],
 					'delivery_place_city' => $qiqo_authorization['delivery_place_city'],
 					'sales_rep_id' => !empty($qiqo_authorization['sales_rep_id']) ? (int)$qiqo_authorization['sales_rep_id'] : 0,
 					'sales_rep_code' => $qiqo_authorization['sales_rep_code'],
@@ -729,6 +731,12 @@ class ControllerCustomerCustomer extends Controller {
 			$data['qiqo_partner_name'] = $this->request->post['qiqo_partner_name'];
 		} else {
 			$data['qiqo_partner_name'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_name'] : '';
+		}
+
+		if (isset($this->request->post['qiqo_partner_oib'])) {
+			$data['qiqo_partner_oib'] = $this->request->post['qiqo_partner_oib'];
+		} else {
+			$data['qiqo_partner_oib'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_oib'] : '';
 		}
 
 		if (isset($this->request->post['qiqo_partner_discount'])) {
@@ -1116,12 +1124,15 @@ class ControllerCustomerCustomer extends Controller {
 				}
 			}
 
-			if (empty($this->error['warning']) && $qiqo_sales_rep_id) {
+			if (empty($this->error['warning'])) {
 				$reps = $this->model_customer_customer_approval->getQiqoSalesReps();
-				$allowed_rep_ids = array_map('intval', array_column($reps, 'sales_rep_id'));
 
-				if (!in_array($qiqo_sales_rep_id, $allowed_rep_ids, true)) {
-					$this->error['warning'] = 'Odabrani komercijalist nije valjan.';
+				if ($reps) {
+					$allowed_rep_ids = array_map('intval', array_column($reps, 'sales_rep_id'));
+
+					if (!$qiqo_sales_rep_id || !in_array($qiqo_sales_rep_id, $allowed_rep_ids, true)) {
+						$this->error['warning'] = 'Odabrani komercijalist nije valjan.';
+					}
 				}
 			}
 		}
@@ -1264,7 +1275,6 @@ class ControllerCustomerCustomer extends Controller {
 		$partner_id = isset($this->request->post['qiqo_partner_id']) ? (int)$this->request->post['qiqo_partner_id'] : 0;
 		$delivery_place_id = isset($this->request->post['qiqo_delivery_place_id']) ? (int)$this->request->post['qiqo_delivery_place_id'] : 0;
 		$sales_rep_id = isset($this->request->post['qiqo_sales_rep_id']) ? (int)$this->request->post['qiqo_sales_rep_id'] : 0;
-		$partner_discount_raw = isset($this->request->post['qiqo_partner_discount']) ? trim((string)$this->request->post['qiqo_partner_discount']) : '';
 
 		if (!$partner_id || !$delivery_place_id) {
 			return;
@@ -1285,16 +1295,17 @@ class ControllerCustomerCustomer extends Controller {
 			return;
 		}
 
-		if ($sales_rep_id) {
-			$reps = $this->model_customer_customer_approval->getQiqoSalesReps();
+		$reps = $this->model_customer_customer_approval->getQiqoSalesReps();
+
+		if ($reps) {
 			$allowed_rep_ids = array_map('intval', array_column($reps, 'sales_rep_id'));
 
-			if (!in_array($sales_rep_id, $allowed_rep_ids, true)) {
+			if (!$sales_rep_id || !in_array($sales_rep_id, $allowed_rep_ids, true)) {
 				$sales_rep_id = 0;
 			}
 		}
 
-		$partner_discount = $partner_discount_raw === '' ? (float)$partner['base_discount'] : (float)$partner_discount_raw;
+		$partner_discount = (float)$partner['base_discount'];
 
 		$this->model_customer_customer_approval->saveCustomerQiqoAuthorization($customer_id, array(
 			'partner_id' => $partner_id,
@@ -1302,6 +1313,12 @@ class ControllerCustomerCustomer extends Controller {
 			'sales_rep_id' => $sales_rep_id,
 			'partner_discount' => $partner_discount
 		), (int)$this->user->getId());
+
+		$this->model_customer_customer_approval->syncCustomerAddressFromDeliveryPlace(
+			$customer_id,
+			$delivery_place_id,
+			$partner['name']
+		);
 	}
 
 	public function login() {
@@ -1467,6 +1484,7 @@ class ControllerCustomerCustomer extends Controller {
 				$json['partner'] = array(
 					'partner_id' => (int)$partner['partner_id'],
 					'name' => $partner['name'],
+					'oib' => $partner['oib'],
 					'base_discount' => (float)$partner['base_discount']
 				);
 				$json['delivery_places'] = $this->model_customer_customer_approval->getQiqoDeliveryPlacesByPartnerId($partner_id);

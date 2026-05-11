@@ -1644,6 +1644,13 @@ class ModelExtensionModuleQiqo extends Model
                 'writer'  => 'upsertDeliveryPlaces',
             ],
             [
+                'key'     => 'sales_reps',
+                'label'   => 'qKomercijalistiWeb',
+                'since'   => $this->resolveSince('sales_reps', $defaultSince, $forceDefaultSince),
+                'fetcher' => 'getSalesReps',
+                'writer'  => 'upsertSalesReps',
+            ],
+            [
                 'key'     => 'action_prices',
                 'label'   => 'qAkcijskiCjenikWeb',
                 'since'   => $this->resolveSince('action_prices', $defaultSince, $forceDefaultSince),
@@ -1669,6 +1676,28 @@ class ModelExtensionModuleQiqo extends Model
     public function syncPartnerBaseDataFull(string $defaultSince = '-2 years'): array
     {
         return $this->syncPartnerBaseData($defaultSince, true);
+    }
+
+    public function syncSalesReps(string $defaultSince = '-30 days', bool $forceDefaultSince = false): int
+    {
+        @set_time_limit(0);
+        $this->ensurePartnerSyncTables();
+
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $since = $this->resolveSince('sales_reps', $defaultSince, $forceDefaultSince);
+
+        $this->log('PartnerSync', "START qKomercijalistiWeb since={$since}");
+        $rows = $qiqo->getSalesReps($since);
+        $count = $this->upsertSalesReps($rows);
+        $this->setFeedLastSync('sales_reps', date('Y-m-d H:i:s'));
+        $this->log('PartnerSync', "END qKomercijalistiWeb rows=" . count($rows) . " upserted={$count}");
+
+        return $count;
+    }
+
+    public function syncSalesRepsFull(string $defaultSince = '-2 years'): int
+    {
+        return $this->syncSalesReps($defaultSince, true);
     }
 
     public function syncPartnerArticleDiscountsFull(string $since = '-2 years'): int
@@ -1825,6 +1854,68 @@ class ModelExtensionModuleQiqo extends Model
         return $count;
     }
 
+    private function upsertSalesReps(array $rows): int
+    {
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $code = $this->firstQiqoValue($row, ['sifra', 'code', 'id', 'komercijalist', 'oznaka']);
+            $name = $this->firstQiqoValue($row, ['naziv', 'ime', 'name', 'komercijalist_naziv', 'komercijalist']);
+
+            if ($code === '' && $name === '') {
+                continue;
+            }
+
+            if ($code === '') {
+                $code = $name;
+            }
+
+            if ($name === '') {
+                $name = $code;
+            }
+
+            $activeRaw = strtolower($this->firstQiqoValue($row, ['aktivan', 'active', 'status']));
+            $active = in_array($activeRaw, ['0', 'false', 'ne', 'no', 'n'], true) ? 0 : 1;
+
+            $this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_sales_rep`
+                SET `code` = '" . $this->db->escape($code) . "',
+                    `name` = '" . $this->db->escape($name) . "',
+                    `active` = '" . (int)$active . "',
+                    `date_added` = NOW(),
+                    `date_modified` = NOW()
+                ON DUPLICATE KEY UPDATE
+                    `name` = VALUES(`name`),
+                    `active` = VALUES(`active`),
+                    `date_modified` = NOW()");
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function firstQiqoValue(array $row, array $keys): string
+    {
+        foreach ($keys as $key) {
+            if (isset($row[$key]) && trim((string)$row[$key]) !== '') {
+                return trim((string)$row[$key]);
+            }
+        }
+
+        foreach ($row as $rowKey => $value) {
+            foreach ($keys as $key) {
+                $normalizedRowKey = function_exists('utf8_strtolower') ? utf8_strtolower((string)$rowKey) : strtolower((string)$rowKey);
+                $normalizedKey = function_exists('utf8_strtolower') ? utf8_strtolower($key) : strtolower($key);
+
+                if ($normalizedRowKey === $normalizedKey && trim((string)$value) !== '') {
+                    return trim((string)$value);
+                }
+            }
+        }
+
+        return '';
+    }
+
     private function upsertActionPrices(array $rows): int
     {
         $count = 0;
@@ -1898,6 +1989,18 @@ class ModelExtensionModuleQiqo extends Model
             `date_modified` DATETIME NOT NULL,
             PRIMARY KEY (`partner_id`,`article_code`),
             KEY `idx_article` (`article_code`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_sales_rep` (
+            `sales_rep_id` INT(11) NOT NULL AUTO_INCREMENT,
+            `code` VARCHAR(64) NOT NULL,
+            `name` VARCHAR(255) NOT NULL,
+            `active` TINYINT(1) NOT NULL DEFAULT 1,
+            `date_added` DATETIME NOT NULL,
+            `date_modified` DATETIME NOT NULL,
+            PRIMARY KEY (`sales_rep_id`),
+            UNIQUE KEY `uq_code` (`code`),
+            KEY `idx_active` (`active`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "qiqo_action_price` (

@@ -285,9 +285,11 @@ class ModelCustomerCustomerApproval extends Model {
 
 		$query = $this->db->query("SELECT cqa.*, 
 				qp.name AS partner_name,
+				qp.oib AS partner_oib,
 				qp.base_discount AS partner_base_discount,
 				qdp.code AS delivery_place_code,
 				qdp.name AS delivery_place_name,
+				qdp.address AS delivery_place_address,
 				qdp.place AS delivery_place_city,
 				qsr.code AS sales_rep_code,
 				qsr.name AS sales_rep_name,

@@ -71,14 +71,24 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->session->data['success'] = "Onemogućeno {$count} proizvoda koji ne postoje u ERP-u.";
                     break;
 
+                case 'sync_sales_reps':
+                    $count = $this->model_extension_module_qiqo->syncSalesReps();
+                    $this->session->data['success'] = "Sync komercijalista: {$count} slogova.";
+                    break;
+
+                case 'sync_sales_reps_full':
+                    $count = $this->model_extension_module_qiqo->syncSalesRepsFull();
+                    $this->session->data['success'] = "Sync komercijalista FULL: {$count} slogova.";
+                    break;
+
                 case 'sync_partner_base':
                     $stats = $this->model_extension_module_qiqo->syncPartnerBaseData();
-                    $this->session->data['success'] = "Partner base sync: partneri {$stats['partners']}, mjesta isporuke {$stats['delivery_places']}, akcijski cjenik {$stats['action_prices']}.";
+                    $this->session->data['success'] = "Partner base sync: partneri {$stats['partners']}, mjesta isporuke {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcijski cjenik {$stats['action_prices']}.";
                     break;
 
                 case 'sync_partner_base_full':
                     $stats = $this->model_extension_module_qiqo->syncPartnerBaseDataFull();
-                    $this->session->data['success'] = "Partner base FULL sync: partneri {$stats['partners']}, mjesta isporuke {$stats['delivery_places']}, akcijski cjenik {$stats['action_prices']}.";
+                    $this->session->data['success'] = "Partner base FULL sync: partneri {$stats['partners']}, mjesta isporuke {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcijski cjenik {$stats['action_prices']}.";
                     break;
 
                 case 'sync_partner_discounts':
@@ -89,7 +99,7 @@ class ControllerExtensionModuleQiqo extends Controller
                 case 'sync_partner_all':
                     $stats = $this->model_extension_module_qiqo->syncPartnerBaseData();
                     $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
-                    $this->session->data['success'] = "Kompletan partner sync: partneri {$stats['partners']}, mjesta {$stats['delivery_places']}, akcije {$stats['action_prices']}, partner-artikl rabati {$count}.";
+                    $this->session->data['success'] = "Kompletan partner sync: partneri {$stats['partners']}, mjesta {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcije {$stats['action_prices']}, partner-artikl rabati {$count}.";
                     break;
 
                 case 'update_article_partners':

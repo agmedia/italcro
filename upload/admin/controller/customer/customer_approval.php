@@ -227,7 +227,7 @@ class ControllerCustomerCustomerApproval extends Controller {
 				$partner_id = isset($this->request->post['partner_id']) ? (int)$this->request->post['partner_id'] : 0;
 				$delivery_place_id = isset($this->request->post['delivery_place_id']) ? (int)$this->request->post['delivery_place_id'] : 0;
 				$sales_rep_id = isset($this->request->post['sales_rep_id']) ? (int)$this->request->post['sales_rep_id'] : 0;
-				$partner_discount = isset($this->request->post['partner_discount']) ? (float)$this->request->post['partner_discount'] : 0;
+				$partner_discount = 0;
 
 				if (!$partner_id) {
 					$json['error'] = 'Partner je obavezan.';
@@ -264,9 +264,7 @@ class ControllerCustomerCustomerApproval extends Controller {
 				}
 
 				if (empty($json['error'])) {
-					if (!$partner_discount) {
-						$partner_discount = (float)$partner['base_discount'];
-					}
+					$partner_discount = (float)$partner['base_discount'];
 
 					$this->model_customer_customer_approval->saveCustomerQiqoAuthorization(
 						$this->request->get['customer_id'],
@@ -323,6 +321,7 @@ class ControllerCustomerCustomerApproval extends Controller {
 				$json['partner'] = array(
 					'partner_id' => (int)$partner['partner_id'],
 					'name' => $partner['name'],
+					'oib' => $partner['oib'],
 					'base_discount' => (float)$partner['base_discount']
 				);
 				$json['delivery_places'] = $places;

@@ -71,6 +71,14 @@ class Qiqo
     }
 
     /**
+     * 📦 Dohvati komercijaliste (qKomercijalistiWeb)
+     */
+    public function getSalesReps(string $since = '-2 years'): array
+    {
+        return $this->fetch('qKomercijalistiWeb', $since, null);
+    }
+
+    /**
      * 📦 Dohvati dodatne rabate po artiklu i partneru (qPartnerArtikalRabatWeb)
      */
     public function getPartnerArticleDiscounts(string $since = '-2 years'): array

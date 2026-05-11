@@ -139,9 +139,24 @@ var approveCustomerId = 0;
 function resetApprovalModal() {
 	$('#auth-partner-id').val('');
 	$('#auth-partner-name').val('');
+	$('#auth-partner-oib').val('');
 	$('#auth-partner-discount').val('');
 	$('#auth-delivery-place').html('<option value="">-- odaberite --</option>');
 	$('#auth-sales-rep').html('<option value="">-- odaberite --</option>');
+}
+
+function qiqoAuthEscape(value) {
+	return $('<div/>').text(value || '').html();
+}
+
+function qiqoAuthDeliveryLabel(place) {
+	var text = (place.code ? place.code + ' - ' : '') + (place.address || place.name || '');
+
+	if (place.place) {
+		text += ' (' + place.place + ')';
+	}
+
+	return text;
 }
 
 $('#customer-approval').on('click', '.btn-approve', function(e) {
@@ -192,19 +207,20 @@ $(document).on('click', '#button-load-partner', function() {
 			}
 
 			$('#auth-partner-name').val(json.partner.name + ' (#' + json.partner.partner_id + ')');
+			$('#auth-partner-oib').val(json.partner.oib || '');
 			$('#auth-partner-discount').val(json.partner.base_discount);
 
 			var deliveryHtml = '<option value="">-- odaberite --</option>';
 			for (var i = 0; i < json.delivery_places.length; i++) {
 				var p = json.delivery_places[i];
-				deliveryHtml += '<option value="' + p.delivery_place_id + '">' + p.code + ' - ' + p.name + ' (' + p.place + ')</option>';
+				deliveryHtml += '<option value="' + p.delivery_place_id + '">' + qiqoAuthEscape(qiqoAuthDeliveryLabel(p)) + '</option>';
 			}
 			$('#auth-delivery-place').html(deliveryHtml);
 
 			var repHtml = '<option value="">-- odaberite --</option>';
 			for (var j = 0; j < json.sales_reps.length; j++) {
 				var r = json.sales_reps[j];
-				repHtml += '<option value="' + r.sales_rep_id + '">' + r.code + ' - ' + r.name + '</option>';
+				repHtml += '<option value="' + r.sales_rep_id + '">' + qiqoAuthEscape(r.code + ' - ' + r.name) + '</option>';
 			}
 			$('#auth-sales-rep').html(repHtml);
 		},
@@ -361,6 +377,11 @@ $('.date').datetimepicker({
         <div class="form-group">
           <label for="auth-partner-name">Partner</label>
           <input type="text" id="auth-partner-name" class="form-control" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-partner-oib">OIB</label>
+          <input type="text" id="auth-partner-oib" class="form-control" readonly>
         </div>
 
         <div class="form-group">

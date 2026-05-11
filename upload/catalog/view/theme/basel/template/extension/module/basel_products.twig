@@ -142,6 +142,8 @@
 
                                            min="{{ list_min }}"
                                            min-step="{{ list_min }}"
+                                           data-pak="{{ product.pak is defined ? product.pak : 0 }}"
+                                           {% if product.pak is defined and product.pak == 1 %}readonly="readonly"{% endif %}
                                            value="{{ list_min }}">
                                     <span class="input-group-btn">
                           <button type="button" class="btn btn-default btn-number" data-type="plus" data-field="category" onclick="increment($(this).parent().parent())">

@@ -587,6 +587,9 @@ class ControllerProductProduct extends Controller {
 				$data['minimum'] = 1;
 			}
 
+			$data['pak'] = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
+			$data['minimumifc100'] = $this->qiqoMinimumStep($product_info['cent'], $data['pak'], (int)$data['minimum']);
+
 
 
 
@@ -648,7 +651,8 @@ class ControllerProductProduct extends Controller {
 							$r_mpn_count = isset($r['mpn_count']) ? (int)$r['mpn_count'] : 1;
 							$r_is_single_article = empty($r['mpn']) || $r_mpn_count <= 1;
 							$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
-							$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
+							$r_pak = isset($r['pak']) ? (int)$r['pak'] : 0;
+							$r_list_min = $this->qiqoMinimumStep($r['cent'], $r_pak, $r_minimum);
 							$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
 
 						if ($r_sku !== '') {
@@ -700,7 +704,8 @@ class ControllerProductProduct extends Controller {
 						$mpn_count = isset($result['mpn_count']) ? (int)$result['mpn_count'] : 1;
 						$is_single_article = empty($result['mpn']) || $mpn_count <= 1;
 						$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
-						$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
+						$pak = isset($result['pak']) ? (int)$result['pak'] : 0;
+						$list_min = $this->qiqoMinimumStep($result['cent'], $pak, $minimum);
 
 					$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
 					$display_special_unit = 0.0;
@@ -825,6 +830,7 @@ class ControllerProductProduct extends Controller {
 	                    'mpn_count'       => $mpn_count,
 	                    'mpn_artikl'  => $this->artiklLabel($mpn_count),
 	                    'is_single_article' => $is_single_article,
+	                    'pak'  => $pak,
 
                     // NEW
                     'preview_price'     => $preview_price,
@@ -911,7 +917,8 @@ class ControllerProductProduct extends Controller {
                         }
 
                         $p_minimum = ($p_item['minimum'] > 0) ? (int)$p_item['minimum'] : 1;
-                        $p_min_qty = ((string)$p_item['cent'] === 'C-100') ? $p_minimum : 1;
+                        $p_pak = isset($p_item['pak']) ? (int)$p_item['pak'] : 0;
+                        $p_min_qty = $this->qiqoMinimumStep($p_item['cent'], $p_pak, $p_minimum);
                         $p_base_unit = isset($p_item['base_price']) ? (float)$p_item['base_price'] : (float)$p_item['price'];
 
                         if ($p_base_unit <= 0) {

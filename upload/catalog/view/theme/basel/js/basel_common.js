@@ -115,11 +115,14 @@ $(document).ready(function() {
 	window.increment = function(el) {
 		let input = el.find('.input-number');
 		let step = parseInt(input.attr('min-step')) || 1;
-		//let max = parseInt(input.attr('max'));
+		let min = parseInt(input.attr('min')) || step;
 		let value = parseInt(input.val());
 
+		if (isNaN(value) || value < min) {
+			value = min;
+		}
 
-			input.val(value + step);
+		input.val(value + step);
 
 	};
 
@@ -128,6 +131,10 @@ $(document).ready(function() {
 		let step = parseInt(input.attr('min-step')) || 1;
 		let min = parseInt(input.attr('min')) || step;
 		let value = parseInt(input.val());
+
+		if (isNaN(value) || value < min) {
+			value = min;
+		}
 
 		if (value - step >= min) {
 			input.val(value - step);

@@ -208,7 +208,9 @@ class ControllerProductSearch extends Controller {
 				foreach ($results as $r) {
 					$sku_key = trim((string)$r['sku']);
 					$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
-					$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
+					$r_pak = isset($r['pak']) ? (int)$r['pak'] : 0;
+					$r_cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$r['cent']));
+					$r_list_min = ($r_cent_normalized === 'C100' || $r_pak === 1) ? $r_minimum : 1;
 					$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
 
 					if ($sku_key !== '') {
@@ -247,7 +249,9 @@ class ControllerProductSearch extends Controller {
 			foreach ($results as $result) {
 				$sku_key = trim((string)$result['sku']);
 				$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
-				$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
+				$pak = isset($result['pak']) ? (int)$result['pak'] : 0;
+				$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$result['cent']));
+				$list_min = ($cent_normalized === 'C100' || $pak === 1) ? $minimum : 1;
 
 				$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
 				$display_special_unit = 0.0;
@@ -376,6 +380,7 @@ class ControllerProductSearch extends Controller {
 
                     'mpn_count'       => $result['mpn_count'],
                     'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+                    'pak'  => $pak,
                     'cent'  => $result['cent'],
                     'attention'     => $data['attention'],
 					'tax'         => $tax,

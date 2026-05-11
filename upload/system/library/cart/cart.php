@@ -243,7 +243,8 @@ class Cart {
 
 				$minimum_step = 1;
 				$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_query->row['cent']));
-				if ($cent_normalized === 'C100') {
+				$pak_required = isset($product_query->row['pak']) && (int)$product_query->row['pak'] === 1;
+				if ($cent_normalized === 'C100' || $pak_required) {
 					$minimum_step = $product_query->row['minimum'] ? (int)$product_query->row['minimum'] : 1;
 				}
 				if ($minimum_step < 1) {
@@ -263,6 +264,7 @@ class Cart {
 					'minimum'         => $product_query->row['minimum'],
 					'minimumifc100'   => $minimum_step,
 					'cent'            => $product_query->row['cent'],
+					'pak'             => isset($product_query->row['pak']) ? (int)$product_query->row['pak'] : 0,
 					'subtract'        => $product_query->row['subtract'],
 					'stock'           => $stock,
 					'price'           => ($price + $option_price),

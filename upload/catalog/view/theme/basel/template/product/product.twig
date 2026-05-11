@@ -250,6 +250,8 @@
 	                                                                      value="{{ p.minimumifc100 }}"
 	                                                                      min="{{ p.minimumifc100 }}"
 	                                                                      min-step="{{ p.minimumifc100 }}"
+	                                                                      data-pak="{{ p.pak is defined ? p.pak : 0 }}"
+	                                                                      {% if p.pak is defined and p.pak == 1 %}readonly="readonly"{% endif %}
 	                                                                      data-id="{{ p.product_id }}"
 	                                                                      inputmode="decimal"
 	                                                                      maxlength="8"
@@ -658,7 +660,7 @@
                                     <div class="form-group quantity buttons_added buy catalog_hide">
 
                                         <button type="button" class="minus"> <i class="fa fa-minus-circle" aria-hidden="true"></i> </button>
-                                        <input type="text" step="{{ minimumifc100 }}" min="{{ minimumifc100 }}"  id="input-quantity" name="quantity" value="{{ minimumifc100 }}" title="Qty" class="input-text qty text put-qty" size="4" pattern="" inputmode="">
+                                        <input type="text" step="{{ minimumifc100 }}" min="{{ minimumifc100 }}"  id="input-quantity" name="quantity" value="{{ minimumifc100 }}" title="Qty" class="input-text qty text put-qty" size="4" pattern="" inputmode="" data-pak="{{ pak is defined ? pak : 0 }}" {% if pak is defined and pak == 1 %}readonly="readonly"{% endif %}>
                                         <button type="button"  class="plus"> <i class="fa fa-plus-circle" aria-hidden="true"></i> </button>
                                         <input type="hidden" name="product_id" value="{{ product_id }}" />
 

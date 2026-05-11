@@ -1664,8 +1664,15 @@ class ModelExtensionModuleQiqo extends Model
         foreach ($feeds as $feed) {
             $this->log('PartnerSync', "START {$feed['label']} since={$feed['since']}");
             $rows = $qiqo->{$feed['fetcher']}($feed['since']);
+            if ($feed['key'] === 'action_prices' && $forceDefaultSince && $rows) {
+                $this->clearActionPrices();
+            }
             $count = $this->{$feed['writer']}($rows);
-            $this->setFeedLastSync($feed['key'], $now);
+            if ($feed['key'] !== 'action_prices' || $rows || $this->hasCachedActionPrices()) {
+                $this->setFeedLastSync($feed['key'], $now);
+            } else {
+                $this->log('PartnerSync', 'SKIP qAkcijskiCjenikWeb last_sync because no rows were returned and cache is empty.');
+            }
             $this->log('PartnerSync', "END {$feed['label']} rows=" . count($rows) . " upserted={$count}");
             $result[$feed['key']] = $count;
         }
@@ -1676,6 +1683,38 @@ class ModelExtensionModuleQiqo extends Model
     public function syncPartnerBaseDataFull(string $defaultSince = '-2 years'): array
     {
         return $this->syncPartnerBaseData($defaultSince, true);
+    }
+
+    public function syncActionPrices(string $defaultSince = '-30 days', bool $forceDefaultSince = false): int
+    {
+        @set_time_limit(0);
+        $this->ensurePartnerSyncTables();
+
+        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $now = date('Y-m-d H:i:s');
+        $since = $this->resolveSince('action_prices', $defaultSince, $forceDefaultSince);
+
+        $this->log('PartnerSync', "START qAkcijskiCjenikWeb since={$since}");
+        $rows = $qiqo->getActionPriceList($since);
+        if ($forceDefaultSince && $rows) {
+            $this->clearActionPrices();
+        }
+        $count = $this->upsertActionPrices($rows);
+
+        if ($rows || $this->hasCachedActionPrices()) {
+            $this->setFeedLastSync('action_prices', $now);
+        } else {
+            $this->log('PartnerSync', 'SKIP qAkcijskiCjenikWeb last_sync because no rows were returned and cache is empty.');
+        }
+
+        $this->log('PartnerSync', "END qAkcijskiCjenikWeb rows=" . count($rows) . " upserted={$count}");
+
+        return $count;
+    }
+
+    public function syncActionPricesFull(string $defaultSince = '-2 years'): int
+    {
+        return $this->syncActionPrices($defaultSince, true);
     }
 
     public function syncSalesReps(string $defaultSince = '-30 days', bool $forceDefaultSince = false): int
@@ -1916,18 +1955,46 @@ class ModelExtensionModuleQiqo extends Model
         return '';
     }
 
+    private function qiqoDecimal($value): float
+    {
+        $value = trim((string)$value);
+
+        if ($value === '') {
+            return 0.0;
+        }
+
+        $value = str_replace(' ', '', $value);
+
+        if (strpos($value, ',') !== false && strpos($value, '.') !== false) {
+            $value = str_replace('.', '', $value);
+        }
+
+        $value = str_replace(',', '.', $value);
+
+        return (float)$value;
+    }
+
     private function upsertActionPrices(array $rows): int
     {
         $count = 0;
 
         foreach ($rows as $row) {
-            $article = trim((string)($row['artikal'] ?? ''));
-            $indicator = trim((string)($row['indikator'] ?? ''));
-            $quantity = (float)($row['kolicina'] ?? 0);
-            $price = (float)($row['cijena'] ?? 0);
-            $discount = (float)($row['rabat'] ?? 0);
+            $article = $this->firstQiqoValue($row, ['artikal', 'article_code', 'artikl', 'sifra', 'sifra_artikla', 'code']);
+            $indicator = $this->firstQiqoValue($row, ['indikator', 'indicator', 'oznaka', 'tip']);
+            $quantity = $this->qiqoDecimal($this->firstQiqoValue($row, ['kolicina', 'quantity', 'qty', 'kol']));
+            $price = $this->qiqoDecimal($this->firstQiqoValue($row, ['cijena', 'price', 'neto_cijena', 'net_price']));
+            $discount = $this->qiqoDecimal($this->firstQiqoValue($row, ['rabat', 'discount', 'popust']));
 
             if ($article === '' || $indicator === '') {
+                continue;
+            }
+
+            $indicator = strtoupper($indicator);
+
+            if ($indicator === 'X') {
+                $this->db->query("DELETE FROM `" . DB_PREFIX . "qiqo_action_price`
+                    WHERE `article_code` = '" . $this->db->escape($article) . "'");
+                $count++;
                 continue;
             }
 
@@ -2020,6 +2087,18 @@ class ModelExtensionModuleQiqo extends Model
             `date_modified` DATETIME NOT NULL,
             PRIMARY KEY (`feed_key`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    private function hasCachedActionPrices(): bool
+    {
+        $q = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "qiqo_action_price`");
+
+        return !empty($q->row['total']);
+    }
+
+    private function clearActionPrices(): void
+    {
+        $this->db->query("DELETE FROM `" . DB_PREFIX . "qiqo_action_price`");
     }
 
     private function resolveSince(string $feedKey, string $fallback, bool $forceDefaultSince = false): string

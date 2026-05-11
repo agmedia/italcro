@@ -95,6 +95,16 @@ class ControllerExtensionModuleQiqo extends Controller
                     $this->session->data['success'] = "Partner base FULL sync: partneri {$stats['partners']}, mjesta isporuke {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcijski cjenik {$stats['action_prices']}.";
                     break;
 
+                case 'sync_action_prices':
+                    $count = $this->model_extension_module_qiqo->syncActionPrices();
+                    $this->session->data['success'] = "Akcijski cjenik sync: {$count} slogova.";
+                    break;
+
+                case 'sync_action_prices_full':
+                    $count = $this->model_extension_module_qiqo->syncActionPricesFull();
+                    $this->session->data['success'] = "Akcijski cjenik FULL sync: {$count} slogova.";
+                    break;
+
                 case 'sync_partner_discounts':
                     $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
                     $this->session->data['success'] = "Partner-artikl rabati full sync: {$count} slogova.";

@@ -182,11 +182,12 @@ class ControllerProductProduct extends Controller {
 		            $this->ppCacheSet($key, $product_info);
 		        }
 
-				$data['qiqo_discount_percent'] = 0;
-				$data['qiqo_action'] = false;
-			$data['mpn_count'] = ($product_info && isset($product_info['mpn_count'])) ? (int)$product_info['mpn_count'] : 1;
-			if ($product_info) {
-				$main_sku = trim((string)$product_info['sku']);
+					$data['qiqo_discount_percent'] = 0;
+					$data['qiqo_action'] = false;
+				$data['mpn_count'] = ($product_info && isset($product_info['mpn_count'])) ? (int)$product_info['mpn_count'] : 1;
+				$data['is_single_article'] = !$product_info || empty($product_info['mpn']) || $data['mpn_count'] <= 1;
+				if ($product_info) {
+					$main_sku = trim((string)$product_info['sku']);
 				if ($main_sku !== '') {
 					$main_action_map = $this->model_catalog_product->getQiqoActionArticleMap(array($main_sku));
 					$data['qiqo_action'] = !empty($main_action_map[$main_sku]);
@@ -197,9 +198,9 @@ class ControllerProductProduct extends Controller {
 					$data['qiqo_action'] = !empty($main_action_mpn_map[(string)$product_info['mpn']]);
 				}
 
-				if ($this->customer->isLogged() && $main_sku !== '') {
-					$main_minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
-					$main_base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
+					if ($data['is_single_article'] && $this->customer->isLogged() && $main_sku !== '') {
+						$main_minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
+						$main_base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
 
 					if ($main_base_unit > 0) {
 						$main_map = $this->model_catalog_product->getQiqoPricingMap(
@@ -642,19 +643,21 @@ class ControllerProductProduct extends Controller {
 					$related_action_skus = array();
 					$related_action_mpns = array();
 
-					foreach ($results as $r) {
-						$r_sku = trim((string)$r['sku']);
-						$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
-						$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
-						$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
+						foreach ($results as $r) {
+							$r_sku = trim((string)$r['sku']);
+							$r_mpn_count = isset($r['mpn_count']) ? (int)$r['mpn_count'] : 1;
+							$r_is_single_article = empty($r['mpn']) || $r_mpn_count <= 1;
+							$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
+							$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
+							$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
 
 						if ($r_sku !== '') {
 							$related_action_skus[] = $r_sku;
 
-							if ($this->customer->isLogged() && $r_base_unit > 0) {
-								$related_sku_quantities[$r_sku] = $r_list_min;
-								$related_base_unit_prices[$r_sku] = $r_base_unit;
-							}
+								if ($r_is_single_article && $this->customer->isLogged() && $r_base_unit > 0) {
+									$related_sku_quantities[$r_sku] = $r_list_min;
+									$related_base_unit_prices[$r_sku] = $r_base_unit;
+								}
 						}
 
 						if (isset($r['mpn_count']) && (int)$r['mpn_count'] > 1 && !empty($r['mpn'])) {
@@ -692,10 +695,12 @@ class ControllerProductProduct extends Controller {
 					$related_image_height = (int)$this->config->get('theme_' . $this->config->get('config_theme') . '_image_related_height');
 				}
 
-				foreach ($results as $result) {
-					$row_sku_key = trim((string)$result['sku']);
-					$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
-					$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
+					foreach ($results as $result) {
+						$row_sku_key = trim((string)$result['sku']);
+						$mpn_count = isset($result['mpn_count']) ? (int)$result['mpn_count'] : 1;
+						$is_single_article = empty($result['mpn']) || $mpn_count <= 1;
+						$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+						$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
 
 					$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
 					$display_special_unit = 0.0;
@@ -703,10 +708,10 @@ class ControllerProductProduct extends Controller {
 					$qiqo_action = ($row_sku_key !== '' && !empty($related_qiqo_action_article_map[$row_sku_key]))
 						|| (isset($result['mpn_count']) && (int)$result['mpn_count'] > 1 && !empty($result['mpn']) && !empty($related_qiqo_action_mpn_map[(string)$result['mpn']]));
 
-					if ($row_sku_key !== '' && isset($related_qiqo_price_map[$row_sku_key])) {
-						$row_pricing = $related_qiqo_price_map[$row_sku_key];
-						$display_price_unit = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
-							? (float)$row_pricing['old_unit_price']
+						if ($is_single_article && $row_sku_key !== '' && isset($related_qiqo_price_map[$row_sku_key])) {
+							$row_pricing = $related_qiqo_price_map[$row_sku_key];
+							$display_price_unit = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
+								? (float)$row_pricing['old_unit_price']
 							: (float)$row_pricing['base_unit_price'];
 						$display_special_unit = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
 							? (float)$row_pricing['final_unit_price']
@@ -817,8 +822,9 @@ class ControllerProductProduct extends Controller {
 					   //  'attribute_groups'       => $this->model_catalog_product->getProductAttributes($result['product_id']),
 					'price'       => $price,
 					'special'     => $special,
-                    'mpn_count'       => $result['mpn_count'],
-                    'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+	                    'mpn_count'       => $mpn_count,
+	                    'mpn_artikl'  => $this->artiklLabel($mpn_count),
+	                    'is_single_article' => $is_single_article,
 
                     // NEW
                     'preview_price'     => $preview_price,

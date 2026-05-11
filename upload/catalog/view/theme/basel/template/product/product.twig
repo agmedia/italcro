@@ -104,6 +104,7 @@
         {% endif %}
         <div id="content" class="product-main no-min-height {{ class }}">
             {{ content_top }}
+            {% set is_single_article = is_single_article is defined ? is_single_article : (mpn_count is not defined or mpn_count == 1) %}
 
             <div class="table product-info product-page">
 
@@ -115,7 +116,6 @@
                         {% if thumb %}
                             <div class="main-image">
 
-                                {% set is_single_article = mpn_count is not defined or mpn_count == 1 %}
                                 {% set show_sale_badge = is_single_article and price and special and sale_badge %}
 
                                 {% if show_sale_badge %}
@@ -687,8 +687,10 @@
 
 
 
-                            <p class="info is_wishlist"><a onclick="wishlist.add('{{ product_id }}');"><i class="icon-heart"></i> {{ button_wishlist }}</a></p>
-                            <p class="info is_compare"><a onclick="compare.add('{{ product_id }}');"><i class="icon-refresh"></i> {{ button_compare }}</a></p>
+                            {% if is_single_article %}
+                                <p class="info is_wishlist"><a onclick="wishlist.add('{{ product_id }}');"><i class="icon-heart"></i> {{ button_wishlist }}</a></p>
+                                <p class="info is_compare"><a onclick="compare.add('{{ product_id }}');"><i class="icon-refresh"></i> {{ button_compare }}</a></p>
+                            {% endif %}
                             {% if question_status %}
                                 <p class="info is_ask"><a class="to_tabs" onclick="$('a[href=\'#tab-questions\']').trigger('click'); return false;"><i class="icon-question"></i> {{ basel_button_ask }}</a></p>
                             {% endif %}
@@ -722,9 +724,9 @@
                                 {% if sku %}
                                 <p class="info"><b>Šifra:</b> {{ sku }}</p>
                                 {% endif %}
-	                                {% if qiqo_discount_percent is defined and qiqo_discount_percent > 0 %}
-	                                    <p class="info"><b>Rabat:</b> -{{ qiqo_discount_percent|number_format(0, '.', '') }}%</p>
-	                                {% endif %}
+		                                {% if is_single_article and qiqo_discount_percent is defined and qiqo_discount_percent > 0 %}
+		                                    <p class="info price-visibility-target"><b>Rabat:</b> -{{ qiqo_discount_percent|number_format(0, '.', '') }}%</p>
+		                                {% endif %}
 
 	                                {% if model %}
                                     <p class="info"><b>Barcode:</b> {{ model }}</p>

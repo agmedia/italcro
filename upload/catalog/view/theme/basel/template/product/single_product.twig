@@ -1,5 +1,5 @@
 <div class="item single-product">
-    {% set is_single_article = product.mpn_count is not defined or product.mpn_count == 1 %}
+    {% set is_single_article = product.is_single_article is defined ? product.is_single_article : (product.mpn_count is not defined or product.mpn_count == 1) %}
     {% set show_sale_badge = is_single_article and salebadge_status and (
         (product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0)
         or (product.price and product.special)
@@ -49,7 +49,7 @@
     </div><!-- .image ends -->
     <div class="caption">
         <h3 class="product-name" > <a href="{{ product.href }}">{{ product.name }}  </a></h3>
-        {% if product.name_add and product.mpn_count == 1 %}
+        {% if product.name_add and is_single_article %}
             <span class="pl-5">{{ product.name_add }}</span>
         {% endif %}
         {% if product.rating %}
@@ -60,7 +60,7 @@
             </div>
         {% endif %}
         <div class="price-wrapper">
-            {% if product.price and product.mpn_count == 1 %}
+            {% if product.price and is_single_article %}
 
             <div class="row gray">
                 <div class="col-md-12">

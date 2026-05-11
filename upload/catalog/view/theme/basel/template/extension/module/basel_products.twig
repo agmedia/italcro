@@ -30,7 +30,8 @@
 <div class="tab-pane{% if key == 0 %} active in{% endif %} fade" id="tab{{ module }}{{ key }}">
     <div class="grid-holder grid{{ columns }} prod_module{{ module }}{% if carousel %} carousel{% endif %}{% if carousel_a and rows > 1 %} sticky-arrows{% endif %}">
         {% for product in tab.products %}
-            {% set show_sale_badge = product.mpn_count == 1 and salebadge_status and ((product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0) or (product.price and product.special)) %}
+            {% set is_single_article = product.is_single_article is defined ? product.is_single_article : (product.mpn_count is not defined or product.mpn_count == 1) %}
+            {% set show_sale_badge = is_single_article and salebadge_status and ((product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0) or (product.price and product.special)) %}
             <div class="item single-product">
                 <div class="edge">
                 <div class="image" {% if columns == 'list' %}style="width:{{ img_width }}px"{% endif %}>
@@ -70,7 +71,7 @@
                 </div><!-- .image ends -->
                 <div class="caption">
                     <h3 class="product-name" > <a href="{{ product.href }}">{{ product.name }}</a></h3>
-                    {% if product.name_add and product.mpn_count == 1 %}
+                    {% if product.name_add and is_single_article %}
                         <span class="pl-5">{{ product.name_add }}</span>
                     {% endif %}
 
@@ -82,7 +83,7 @@
                         </div>
                     {% endif %}
                     <div class="price-wrapper">
-                        {% if product.price and product.mpn_count == 1 %}
+                        {% if product.price and is_single_article %}
 
                         <div class="row gray">
                             <div class="col-md-12">
@@ -173,7 +174,7 @@
 
                     </div><!-- .price-wrapper -->
                     <div class="plain-links">
-                        {% if product.mpn_count == 1 %}
+                        {% if is_single_article %}
                             <a class="icon is_wishlist link-hover-color" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart"></span> {{ button_wishlist }}</a>
                             <a class="icon is_compare link-hover-color" onclick="compare.add('{{ product.product_id }}');"><span class="icon-refresh"></span> {{ button_compare }}</a>
                         {% endif %}

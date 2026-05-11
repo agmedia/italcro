@@ -184,20 +184,22 @@ class ControllerProductCategory extends Controller {
 				$action_skus = array();
 				$action_mpns = array();
 
-				foreach ($results as $r) {
-					$sku_key = trim((string)$r['sku']);
-					$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
-					$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
-					$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
+					foreach ($results as $r) {
+						$sku_key = trim((string)$r['sku']);
+						$r_mpn_count = isset($r['mpn_count']) ? (int)$r['mpn_count'] : 1;
+						$r_is_single_article = empty($r['mpn']) || $r_mpn_count <= 1;
+						$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
+						$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
+						$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
 
-					if ($sku_key !== '') {
-						$action_skus[] = $sku_key;
+						if ($sku_key !== '') {
+							$action_skus[] = $sku_key;
 
-						if ($this->customer->isLogged() && $r_base_unit > 0) {
-							$sku_quantities[$sku_key] = $r_list_min;
-							$base_unit_prices[$sku_key] = $r_base_unit;
+							if ($r_is_single_article && $this->customer->isLogged() && $r_base_unit > 0) {
+								$sku_quantities[$sku_key] = $r_list_min;
+								$base_unit_prices[$sku_key] = $r_base_unit;
+							}
 						}
-					}
 
 					if (isset($r['mpn_count']) && (int)$r['mpn_count'] > 1 && !empty($r['mpn'])) {
 						$action_mpns[] = (string)$r['mpn'];
@@ -223,22 +225,24 @@ class ControllerProductCategory extends Controller {
 				}
 			}
 
-			foreach ($results as $result) {
-				$sku_key = trim((string)$result['sku']);
-				$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
-				$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
+				foreach ($results as $result) {
+					$sku_key = trim((string)$result['sku']);
+					$mpn_count = isset($result['mpn_count']) ? (int)$result['mpn_count'] : 1;
+					$is_single_article = empty($result['mpn']) || $mpn_count <= 1;
+					$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+					$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
 
-				$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
+					$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
 				$display_special_unit = 0.0;
 				$qiqo_discount_percent = 0.0;
 				$qiqo_action = ($sku_key !== '' && !empty($qiqo_action_article_map[$sku_key]))
 					|| (isset($result['mpn_count']) && (int)$result['mpn_count'] > 1 && !empty($result['mpn']) && !empty($qiqo_action_mpn_map[(string)$result['mpn']]));
 
-				if ($sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
-					$pricing = $qiqo_price_map[$sku_key];
-					$display_price_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
-						? (float)$pricing['old_unit_price']
-						: (float)$pricing['base_unit_price'];
+					if ($is_single_article && $sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
+						$pricing = $qiqo_price_map[$sku_key];
+						$display_price_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+							? (float)$pricing['old_unit_price']
+							: (float)$pricing['base_unit_price'];
 					$display_special_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
 						? (float)$pricing['final_unit_price']
 						: 0.0;
@@ -340,13 +344,14 @@ class ControllerProductCategory extends Controller {
 					'product_id'  => $result['product_id'],
 					'quantity'    => isset($result['quantity']) ? (int)$result['quantity'] : 0,
 					'thumb'       => $image,
-					'name'        => $result['name'],
-                    'name_add'        => $result['name_add'],
-					'price'       => $price,
-                    'mpn_count'       => $result['mpn_count'],
-                    'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
-                    'cent'  => $result['cent'],
-                    'sku'  => $result['sku'],
+						'name'        => $result['name'],
+	                    'name_add'        => $result['name_add'],
+						'price'       => $price,
+	                    'mpn_count'       => $mpn_count,
+	                    'mpn_artikl'  => $this->artiklLabel($mpn_count),
+	                    'is_single_article' => $is_single_article,
+	                    'cent'  => $result['cent'],
+	                    'sku'  => $result['sku'],
 					'special'     => $special,
 
                     // NEW

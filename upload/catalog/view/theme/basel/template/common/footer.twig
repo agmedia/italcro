@@ -133,21 +133,51 @@
 <script src="catalog/view/theme/basel/js/featherlight.js"></script>
 
 <script>
-    $(function() {
-        function findTargetColumns($table) {
-            var indexes = [];
-            var $headers = $table.find('thead th');
+	    $(function() {
+	        var priceVisibilitySelector = [
+	            '.price-wrapper > .price',
+	            '.product-info ul.price',
+	            '.product-info .p-tax',
+	            '.price-visibility-target',
+	            '.price-cell',
+	            '.price1',
+	            '.compare-price',
+	            '.live-price',
+	            '.live-price-new',
+	            '.live-price-tax',
+	            '.price-old',
+	            '.price-new',
+	            '.price-tax',
+	            '.price-stedis',
+	            '.mpn-vpc',
+	            '.mpn-final-price'
+	        ].join(',');
+
+	        function isPriceColumnLabel(text) {
+	            return text === 'cijena'
+	                || text === 'ukupno'
+	                || text === 'rabat'
+	                || text === 'vpc'
+	                || text === 'predracun'
+	                || text === 'predračun'
+	                || text.indexOf('cijena') !== -1
+	                || text.indexOf('ukupno') !== -1;
+	        }
+
+	        function findTargetColumns($table) {
+	            var indexes = [];
+	            var $headers = $table.find('thead th');
 
             if (!$headers.length) {
                 $headers = $table.find('tr').first().find('th');
             }
 
-            $headers.each(function(i) {
-                var txt = $.trim($(this).text()).toLowerCase().replace(/\s+/g, ' ');
-                if (txt === 'cijena' || txt === 'ukupno') {
-                    indexes.push(i);
-                }
-            });
+	            $headers.each(function(i) {
+	                var txt = $.trim($(this).text()).toLowerCase().replace(/\s+/g, ' ');
+	                if (isPriceColumnLabel(txt)) {
+	                    indexes.push(i);
+	                }
+	            });
 
             return indexes;
         }
@@ -166,12 +196,13 @@
                     cols.forEach(function(idx) {
                         $cells.eq(idx).toggle(!hide);
                     });
-                });
-            });
+	                });
+	            });
 
-            $('#togglePrices').html(hide ? '<i class="fa fa-eye-slash"></i> ' : '<i class="fa fa-eye"></i> ');
-            localStorage.setItem('hidePrices', hide ? 'true' : 'false');
-        }
+	            $(priceVisibilitySelector).toggle(!hide);
+	            $('#togglePrices').html(hide ? '<i class="fa fa-eye-slash"></i> ' : '<i class="fa fa-eye"></i> ');
+	            localStorage.setItem('hidePrices', hide ? 'true' : 'false');
+	        }
 
         applyPriceColumnsVisibility(localStorage.getItem('hidePrices') === 'true');
 

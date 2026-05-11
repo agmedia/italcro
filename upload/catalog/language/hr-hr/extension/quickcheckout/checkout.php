@@ -104,7 +104,7 @@ $_['column_total']                   = 'Ukupno';
 
 $_['text_basket']                   = 'Košarica';
 
-$_['button_continue']                   = 'Dovrši kupnju';
+$_['button_continue']                   = 'Pošalji narudžbu';
 
 // Entry
 $_['entry_coupon']        		     = 'Unesite kupon kod:';

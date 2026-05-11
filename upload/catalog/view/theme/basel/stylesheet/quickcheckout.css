@@ -83,13 +83,12 @@
 }
 
 
-#quickcheckoutconfirm #shipping-method, #quickcheckoutconfirm #payment-method,  #quickcheckoutconfirm label.comment{
+#quickcheckoutconfirm #shipping-method, #quickcheckoutconfirm #payment-method{
 	padding-top: 30px;
 border-top: 10px solid #f7f7f7;
 }
 
 #quickcheckoutconfirm label.comment {
- 
   width: 100%;
 }
 

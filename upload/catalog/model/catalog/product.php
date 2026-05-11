@@ -281,6 +281,10 @@ class ModelCatalogProduct extends Model {
     }
 
     public function getProductSpecials($data = array()) {
+        if ($this->hasQiqoActionPriceTable()) {
+            return $this->getQiqoActionProducts($data);
+        }
+
 		$sql = "SELECT DISTINCT ps.product_id, (SELECT AVG(rating) FROM " . DB_PREFIX . "review r1 WHERE r1.product_id = ps.product_id AND r1.status = '1' GROUP BY r1.product_id) AS rating FROM " . DB_PREFIX . "product_special ps LEFT JOIN " . DB_PREFIX . "product p ON (ps.product_id = p.product_id) LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) LEFT JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) WHERE p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND ps.customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((ps.date_start = '0000-00-00' OR ps.date_start < NOW()) AND (ps.date_end = '0000-00-00' OR ps.date_end > NOW())) GROUP BY ps.product_id";
 
 		$sort_data = array(
@@ -294,6 +298,59 @@ class ModelCatalogProduct extends Model {
 		if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
 			if ($data['sort'] == 'pd.name' || $data['sort'] == 'p.model') {
 				$sql .= " ORDER BY LCASE(" . $data['sort'] . ")";
+			} else {
+				$sql .= " ORDER BY " . $data['sort'];
+			}
+		} else {
+			$sql .= " ORDER BY p.sort_order";
+		}
+
+		if (isset($data['order']) && ($data['order'] == 'DESC')) {
+			$sql .= " DESC, LCASE(pd.name) DESC";
+		} else {
+			$sql .= " ASC, LCASE(pd.name) ASC";
+		}
+
+		if (isset($data['start']) || isset($data['limit'])) {
+			if ($data['start'] < 0) {
+				$data['start'] = 0;
+			}
+
+			if ($data['limit'] < 1) {
+				$data['limit'] = 20;
+			}
+
+			$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+		}
+
+		$product_data = array();
+
+		$query = $this->db->query($sql);
+
+		foreach ($query->rows as $result) {
+			$product_data[$result['product_id']] = $this->getProduct($result['product_id']);
+		}
+
+		return $product_data;
+	}
+
+	private function getQiqoActionProducts($data = array()) {
+		$sql = "SELECT p.product_id, (SELECT AVG(rating) FROM " . DB_PREFIX . "review r1 WHERE r1.product_id = p.product_id AND r1.status = '1' GROUP BY r1.product_id) AS rating, MIN(CASE WHEN UPPER(qap.indicator) = 'C' AND qap.price > 0 THEN qap.price WHEN qap.discount > 0 THEN (p.price * (1 - (qap.discount / 100))) ELSE p.price END) AS qiqo_sort_price FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND UPPER(qap.indicator) <> 'X' GROUP BY p.product_id";
+
+		$sort_data = array(
+			'pd.name',
+			'p.model',
+			'ps.price',
+			'p.price',
+			'rating',
+			'p.sort_order'
+		);
+
+		if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+			if ($data['sort'] == 'pd.name' || $data['sort'] == 'p.model') {
+				$sql .= " ORDER BY LCASE(" . $data['sort'] . ")";
+			} elseif ($data['sort'] == 'ps.price' || $data['sort'] == 'p.price') {
+				$sql .= " ORDER BY qiqo_sort_price";
 			} else {
 				$sql .= " ORDER BY " . $data['sort'];
 			}
@@ -666,6 +723,16 @@ class ModelCatalogProduct extends Model {
 	}
 
 	public function getTotalProductSpecials() {
+        if ($this->hasQiqoActionPriceTable()) {
+            $query = $this->db->query("SELECT COUNT(DISTINCT p.product_id) AS total FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND UPPER(qap.indicator) <> 'X'");
+
+            if (isset($query->row['total'])) {
+                return $query->row['total'];
+            }
+
+            return 0;
+        }
+
 		$query = $this->db->query("SELECT COUNT(DISTINCT ps.product_id) AS total FROM " . DB_PREFIX . "product_special ps LEFT JOIN " . DB_PREFIX . "product p ON (ps.product_id = p.product_id) LEFT JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) WHERE p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND ps.customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((ps.date_start = '0000-00-00' OR ps.date_start < NOW()) AND (ps.date_end = '0000-00-00' OR ps.date_end > NOW()))");
 
 		if (isset($query->row['total'])) {

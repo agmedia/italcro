@@ -5482,6 +5482,9 @@ a.button-circle {
 #gallery .main-image .action_badge {
 	top:15px!important;
 }
+#gallery .main-image .action_badge_after_sale {
+	left:80px!important;
+}
 .single-product .image .sale_badge + .action_badge,
 .main-image .sale_badge + .action_badge {
 	left:65px!important;

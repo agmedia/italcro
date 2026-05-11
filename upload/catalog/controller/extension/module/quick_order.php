@@ -123,7 +123,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 $minimumifc100 = 1;
             }
 
-            $base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+            $base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
             $sku = trim((string)$product_info['sku']);
 
             if ($sku !== '' && $base_unit > 0) {
@@ -145,7 +145,9 @@ class ControllerExtensionModuleQuickOrder extends Controller {
             $qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
                 (int)$this->customer->getId(),
                 $sku_quantities,
-                $base_unit_prices
+                $base_unit_prices,
+                false,
+                false
             );
             $qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
         }
@@ -164,7 +166,9 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 if (isset($map_row['final_unit_price'])) {
                     $unit_raw = (float)$map_row['final_unit_price'];
                 }
-                if (isset($map_row['discount_percent'])) {
+                if (isset($map_row['base_discount_percent'])) {
+                    $qiqo_discount_percent = (float)$map_row['base_discount_percent'];
+                } elseif (isset($map_row['discount_percent'])) {
                     $qiqo_discount_percent = (float)$map_row['discount_percent'];
                 }
                 if (isset($map_row['old_unit_price']) && $map_row['old_unit_price'] !== false) {
@@ -359,7 +363,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 $qty = 1.0;
             }
 
-            $base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+            $base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
             if ($base_unit <= 0) {
                 continue;
             }
@@ -374,7 +378,9 @@ class ControllerExtensionModuleQuickOrder extends Controller {
             $qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
                 (int)$this->customer->getId(),
                 $sku_quantities,
-                $base_unit_prices
+                $base_unit_prices,
+                false,
+                false
             );
             $qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
         }
@@ -405,14 +411,26 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                     $qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['discount_percent'];
                 }
 
+                if (isset($qiqo_price_map[$product_sku]['base_discount_percent'])) {
+                    $qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['base_discount_percent'];
+                }
+
                 if (isset($qiqo_extra_map[$product_sku])) {
                     $qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$product_sku];
+                }
+
+                if (isset($qiqo_price_map[$product_sku]['final_unit_price'])) {
+                    $price_raw = (float)$qiqo_price_map[$product_sku]['final_unit_price'];
+                    $price_txt = $this->currency->format(
+                        $this->tax->calculate($price_raw, $product['tax_class_id'], $this->config->get('config_tax')),
+                        $this->session->data['currency']
+                    );
                 }
 
                 if (isset($qiqo_price_map[$product_sku]['old_unit_price']) &&
                     $qiqo_price_map[$product_sku]['old_unit_price'] !== false) {
                     $old_unit_raw = (float)$qiqo_price_map[$product_sku]['old_unit_price'];
-                    $current_unit_raw = (float)$product['price'];
+                    $current_unit_raw = $price_raw;
 
                     if ($old_unit_raw > 0 && $old_unit_raw > $current_unit_raw) {
                         $price_old = $this->currency->format(

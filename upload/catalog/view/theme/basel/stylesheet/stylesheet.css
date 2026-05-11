@@ -5481,7 +5481,11 @@ a.button-circle {
 }
 .single-product .image .sale_badge + .action_badge,
 .main-image .sale_badge + .action_badge {
-	left:65px;
+	left:65px!important;
+}
+.single-product .image .action_badge_after_sale,
+.main-image .action_badge_after_sale {
+	left:65px!important;
 }
 .single-product .image .action_badge + .new_badge,
 .main-image .action_badge + .new_badge {

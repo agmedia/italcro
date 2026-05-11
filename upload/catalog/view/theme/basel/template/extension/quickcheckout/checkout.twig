@@ -41,12 +41,12 @@
 		  </div>
 		  {% endif %}
 		  <div class="quickcheckoutleft">
-			<div id="payment-address">
+			<div id="payment-address"{{ use_default_customer_address ? ' style="display:none;"' }}>
 			  <div class="quickcheckout-heading"><i class="fa fa-user"></i> {{ not logged ? text_checkout_account : text_checkout_payment_address }}</div>
 			  <div class="quickcheckout-content">{{ guest ? guest : payment_address }}</div>
 			</div>
 			{% if shipping_required %}
-			<div id="shipping-address">
+			<div id="shipping-address"{{ use_default_customer_address ? ' style="display:none;"' }}>
 			  <div class="quickcheckout-heading"><i class="fa fa-user"></i> {{ text_checkout_shipping_address }}</div>
 			  <div class="quickcheckout-content">{{ shipping_address ? shipping_address }}</div>
 			</div>
@@ -58,7 +58,7 @@
                       <div class="quickcheckout-content"></div>
                   </div>
               {% endif %}
-              <div id="payment-method"{{ not payment_module ? ' style="display:none;"' }}>
+              <div id="payment-method"{{ logged or not payment_module ? ' style="display:none;"' }}>
                   <div class="quickcheckout-heading"><i class="fa fa-credit-card"></i> {{ text_checkout_payment_method }}</div>
                   <div class="quickcheckout-content"></div>
               </div>

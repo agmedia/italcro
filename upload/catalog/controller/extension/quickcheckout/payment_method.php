@@ -128,6 +128,7 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 			}
 
 			array_multisort($sort_order, SORT_ASC, $method_data);
+			$method_data = $this->onlyBankTransfer($method_data);
 
 			$this->session->data['payment_methods'] = $method_data;
 		}
@@ -161,7 +162,7 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 		} elseif (isset($this->session->data['payment_method']['code'])) {
 			$data['code'] = $this->session->data['payment_method']['code'];
 		} else {
-			$data['code'] = $this->config->get('quickcheckout_payment_default');
+			$data['code'] = 'bank_transfer';
 		}
 		
 		$exists = false;
@@ -382,6 +383,7 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 			}
 
 			array_multisort($sort_order, SORT_ASC, $method_data);
+			$method_data = $this->onlyBankTransfer($method_data);
 
 			$this->session->data['payment_methods'] = $method_data;
 		}
@@ -400,21 +402,29 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 			}
 		}
 		
-		if (!isset($this->request->post['payment_method'])) {
-			$json['error']['warning'] = $this->language->get('error_payment');
-		} elseif (!isset($this->session->data['payment_methods'][$this->request->post['payment_method']])) {
+		$payment_method = isset($this->request->post['payment_method']) ? $this->request->post['payment_method'] : 'bank_transfer';
+
+		if (!isset($this->session->data['payment_methods'][$payment_method])) {
 			$json['error']['warning'] = $this->language->get('error_payment');
 		}
 
 		if (!$json) {
-			$this->session->data['payment_method'] = $this->session->data['payment_methods'][$this->request->post['payment_method']];
+			$this->session->data['payment_method'] = $this->session->data['payment_methods'][$payment_method];
 		  
-			$this->session->data['order_comment'] = strip_tags($this->request->post['comment']);
+			$this->session->data['order_comment'] = isset($this->request->post['comment']) ? strip_tags($this->request->post['comment']) : '';
 			
-			$this->session->data['survey'] = strip_tags($this->request->post['survey']);						
+			$this->session->data['survey'] = isset($this->request->post['survey']) ? strip_tags($this->request->post['survey']) : '';
 		}
 		
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
+	}
+
+	protected function onlyBankTransfer($method_data) {
+		if (isset($method_data['bank_transfer'])) {
+			return array('bank_transfer' => $method_data['bank_transfer']);
+		}
+
+		return array();
 	}
 }

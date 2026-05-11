@@ -183,6 +183,7 @@ class ControllerExtensionQuickCheckoutCheckout extends Equotix {
 		$data['save_data'] = $this->config->get('quickcheckout_save_data');
 		$data['custom_css'] = html_entity_decode($this->config->get('quickcheckout_custom_css'), ENT_QUOTES, 'UTF-8');
 		$data['confirmation_page'] = $this->config->get('quickcheckout_confirmation_page');
+		$data['use_default_customer_address'] = false;
 		
 		if (!$this->customer->isLogged()) {
 			$data['guest'] = $this->load->controller('extension/quickcheckout/guest');
@@ -192,6 +193,8 @@ class ControllerExtensionQuickCheckoutCheckout extends Equotix {
 				$data['login'] = $this->load->controller('extension/quickcheckout/login');
 			}
 		} else {
+			$data['use_default_customer_address'] = $this->setDefaultCustomerCheckoutAddress();
+
 			$data['payment_address'] = $this->load->controller('extension/quickcheckout/payment_address');
 			$data['shipping_address'] = $this->load->controller('extension/quickcheckout/shipping_address');
 		}
@@ -208,6 +211,34 @@ class ControllerExtensionQuickCheckoutCheckout extends Equotix {
 
 		$this->response->setOutput($this->load->view('extension/quickcheckout/checkout', $data));
   	}
+
+	protected function setDefaultCustomerCheckoutAddress() {
+		$this->load->model('account/address');
+
+		$address_id = (int)$this->customer->getAddressId();
+		$address = $address_id ? $this->model_account_address->getAddress($address_id) : false;
+
+		if (!$address) {
+			$addresses = $this->model_account_address->getAddresses();
+
+			if ($addresses) {
+				$address = reset($addresses);
+				$address_id = (int)$address['address_id'];
+			}
+		}
+
+		if ($address) {
+			$this->session->data['payment_address_id'] = $address_id;
+			$this->session->data['payment_address'] = $address;
+
+			if ($this->cart->hasShipping()) {
+				$this->session->data['shipping_address_id'] = $address_id;
+				$this->session->data['shipping_address'] = $address;
+			}
+		}
+
+		return (bool)$address;
+	}
 	
 	public function country() {
 		$json = array();

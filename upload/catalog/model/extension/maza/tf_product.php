@@ -1,5 +1,7 @@
 <?php
 class ModelExtensionMazaTfProduct extends Model {
+    private $qiqo_action_price_table_ready = null;
+
     public function getProducts($data = array()) {
                 // Get sort order list
                 $sort = array();
@@ -346,7 +348,13 @@ class ModelExtensionMazaTfProduct extends Model {
                 }
 
         foreach ($query->rows as $result) {
-            $product_data[$result['product_id']] = $this->model_catalog_product->getProduct($result['product_id']);
+            $product = $this->model_catalog_product->getProduct($result['product_id']);
+
+            if (isset($data['filter_special'])) {
+                $product = $this->applyQiqoActionSpecial($product);
+            }
+
+            $product_data[$result['product_id']] = $product;
         }
                 
         return $product_data;
@@ -547,6 +555,67 @@ class ModelExtensionMazaTfProduct extends Model {
         return $query->row['total'];
     }
         
+        private function hasQiqoActionPriceTable() {
+                if ($this->qiqo_action_price_table_ready !== null) {
+                    return $this->qiqo_action_price_table_ready;
+                }
+
+                $q = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_action_price') . "'");
+                $this->qiqo_action_price_table_ready = (bool)$q->num_rows;
+
+                return $this->qiqo_action_price_table_ready;
+        }
+
+        private function getQiqoActionPriceCaseSql($base_price_sql) {
+                return "CASE WHEN UPPER(qap.indicator) = 'C' AND qap.price > 0 THEN qap.price WHEN qap.discount > 0 THEN (" . $base_price_sql . " * (1 - (qap.discount / 100))) ELSE " . $base_price_sql . " END";
+        }
+
+        private function getQiqoActionSpecialSql($base_price_sql = 'p.price', $include_tax = false) {
+                $price_case = $this->getQiqoActionPriceCaseSql($base_price_sql);
+
+                if ($include_tax) {
+                    $price_case = "(" . $price_case . " + IFNULL(ftax.total,0) + ((IFNULL(ptax.total,0) * " . $price_case . ") / 100))";
+                }
+
+                return "(SELECT MIN(" . $price_case . ") FROM `" . DB_PREFIX . "qiqo_action_price` qap WHERE qap.article_code = p.sku AND UPPER(qap.indicator) <> 'X')";
+        }
+
+        private function getQiqoActionSpecialPercentSql($base_price_sql = 'p.price') {
+                $special_sql = $this->getQiqoActionSpecialSql($base_price_sql, false);
+
+                return "(CASE WHEN " . $base_price_sql . " > 0 THEN 100 - ((" . $special_sql . " * 100) / " . $base_price_sql . ") ELSE 0 END)";
+        }
+
+        private function getQiqoActionSpecialBySku($sku, $base_price) {
+                if (!$sku || !$this->hasQiqoActionPriceTable()) {
+                    return null;
+                }
+
+                $base_price = (float)$base_price;
+                $query = $this->db->query("SELECT MIN(CASE WHEN UPPER(indicator) = 'C' AND price > 0 THEN price WHEN discount > 0 THEN (" . $base_price . " * (1 - (discount / 100))) ELSE " . $base_price . " END) AS special FROM `" . DB_PREFIX . "qiqo_action_price` WHERE article_code = '" . $this->db->escape($sku) . "' AND UPPER(indicator) <> 'X'");
+
+                if (!isset($query->row['special']) || $query->row['special'] === null) {
+                    return null;
+                }
+
+                return (float)$query->row['special'];
+        }
+
+        private function applyQiqoActionSpecial($product) {
+                if (!$product || empty($product['sku'])) {
+                    return $product;
+                }
+
+                $base_price = isset($product['base_price']) ? (float)$product['base_price'] : (float)$product['price'];
+                $special = $this->getQiqoActionSpecialBySku($product['sku'], $base_price);
+
+                if ($special !== null && $special > 0) {
+                    $product['special'] = $special;
+                }
+
+                return $product;
+        }
+
         
         /**
          * Create temporary table for product data
@@ -620,17 +689,29 @@ class ModelExtensionMazaTfProduct extends Model {
                         if($this->config->get('config_tax')){
                             $sql .= ", (p.price + IFNULL(ftax.total,0) + ((IFNULL(ptax.total,0) * p.price) / 100)) price";
                             $sql .= ", (SELECT price + IFNULL(ftax.total,0) + ((IFNULL(ptax.total,0) * price) / 100) FROM " . DB_PREFIX . "product_discount WHERE product_id = p.product_id AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND quantity = '1' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1) AS discount";
-                            $sql .= ", (SELECT price + IFNULL(ftax.total,0) + ((IFNULL(ptax.total,0) * price) / 100) FROM " . DB_PREFIX . "product_special WHERE product_id = p.product_id AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1) AS special";
+                            if(isset($data['filter_special']) && $this->hasQiqoActionPriceTable()){
+                                $sql .= ", " . $this->getQiqoActionSpecialSql('p.price', true) . " AS special";
+                            } else {
+                                $sql .= ", (SELECT price + IFNULL(ftax.total,0) + ((IFNULL(ptax.total,0) * price) / 100) FROM " . DB_PREFIX . "product_special WHERE product_id = p.product_id AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1) AS special";
+                            }
                         } else {
                             $sql .= ", p.price";
                             $sql .= ", (SELECT price FROM " . DB_PREFIX . "product_discount WHERE product_id = p.product_id AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND quantity = '1' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1) AS discount";
-                            $sql .= ", (SELECT price FROM " . DB_PREFIX . "product_special WHERE product_id = p.product_id AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1) AS special";
+                            if(isset($data['filter_special']) && $this->hasQiqoActionPriceTable()){
+                                $sql .= ", " . $this->getQiqoActionSpecialSql('p.price', false) . " AS special";
+                            } else {
+                                $sql .= ", (SELECT price FROM " . DB_PREFIX . "product_special WHERE product_id = p.product_id AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1) AS special";
+                            }
                         }
                     }
                     
                     // Add special discount percentage
                     if(in_array('special_perc', $additional_field) || !empty($data['filter_min_special_perc'])){
-                        $sql .= ", (SELECT 100 - ((price * 100) / p.price) FROM " . DB_PREFIX . "product_special WHERE product_id = p.product_id AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1) AS special_perc";
+                        if(isset($data['filter_special']) && $this->hasQiqoActionPriceTable()){
+                            $sql .= ", " . $this->getQiqoActionSpecialPercentSql('p.price') . " AS special_perc";
+                        } else {
+                            $sql .= ", (SELECT 100 - ((price * 100) / p.price) FROM " . DB_PREFIX . "product_special WHERE product_id = p.product_id AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1) AS special_perc";
+                        }
                     }
                 }
                 

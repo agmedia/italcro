@@ -77,8 +77,15 @@
                         {% if thumb %}
                             <div class="main-image">
 
-                                {% if price and special and sale_badge %}
+                                {% set is_single_article = mpn_count is not defined or mpn_count == 1 %}
+                                {% set show_sale_badge = is_single_article and price and special and sale_badge %}
+
+                                {% if show_sale_badge %}
                                     <span class="badge sale_badge"><i>{{ sale_badge }}</i></span>
+                                {% endif %}
+
+                                {% if qiqo_action is defined and qiqo_action %}
+                                    <span class="badge action_badge{% if show_sale_badge %} action_badge_after_sale{% endif %}"><i>A</i></span>
                                 {% endif %}
 
                                 {% if is_new %}

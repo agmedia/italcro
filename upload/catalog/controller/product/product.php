@@ -177,25 +177,43 @@ class ControllerProductProduct extends Controller {
 	            $product_info = $this->model_catalog_product->getProduct($product_id);
 	            $this->ppCacheSet($key, $product_info);
 	        }
+	        if ($product_info !== false && !array_key_exists('base_price', $product_info)) {
+	            $product_info = $this->model_catalog_product->getProduct($product_id);
+	            $this->ppCacheSet($key, $product_info);
+	        }
 
 			$data['qiqo_discount_percent'] = 0;
 			$data['qiqo_proforma_extra_percent'] = 0;
-			if ($product_info && $this->customer->isLogged()) {
+			$data['qiqo_action'] = false;
+			$data['mpn_count'] = ($product_info && isset($product_info['mpn_count'])) ? (int)$product_info['mpn_count'] : 1;
+			if ($product_info) {
 				$main_sku = trim((string)$product_info['sku']);
 				if ($main_sku !== '') {
+					$main_action_map = $this->model_catalog_product->getQiqoActionArticleMap(array($main_sku));
+					$data['qiqo_action'] = !empty($main_action_map[$main_sku]);
+				}
+
+				if (!$data['qiqo_action'] && !empty($product_info['mpn'])) {
+					$main_action_mpn_map = $this->model_catalog_product->getQiqoActionMpnMap(array((string)$product_info['mpn']));
+					$data['qiqo_action'] = !empty($main_action_mpn_map[(string)$product_info['mpn']]);
+				}
+
+				if ($this->customer->isLogged() && $main_sku !== '') {
 					$main_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array($main_sku));
 					if (isset($main_extra_map[$main_sku])) {
 						$data['qiqo_proforma_extra_percent'] = (float)$main_extra_map[$main_sku];
 					}
 
 					$main_minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
-					$main_base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+					$main_base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
 
 					if ($main_base_unit > 0) {
 						$main_map = $this->model_catalog_product->getQiqoPricingMap(
 							(int)$this->customer->getId(),
 							array($main_sku => $main_minimum),
-							array($main_sku => $main_base_unit)
+							array($main_sku => $main_base_unit),
+							false,
+							false
 						);
 
 						if (isset($main_map[$main_sku])) {
@@ -204,10 +222,10 @@ class ControllerProductProduct extends Controller {
 								$product_info['price'] = (float)$main_pricing['old_unit_price'];
 								$product_info['special'] = (float)$main_pricing['final_unit_price'];
 							} else {
-								$product_info['price'] = (float)$main_pricing['final_unit_price'];
+								$product_info['price'] = isset($main_pricing['base_unit_price']) ? (float)$main_pricing['base_unit_price'] : (float)$main_pricing['final_unit_price'];
 								$product_info['special'] = null;
 							}
-							$data['qiqo_discount_percent'] = (float)$main_pricing['discount_percent'];
+							$data['qiqo_discount_percent'] = isset($main_pricing['base_discount_percent']) ? (float)$main_pricing['base_discount_percent'] : 0.0;
 						}
 					}
 				}
@@ -622,34 +640,50 @@ class ControllerProductProduct extends Controller {
 	            }
 
 				$related_qiqo_price_map = array();
-				if ($this->customer->isLogged() && $results) {
+				$related_qiqo_action_article_map = array();
+				$related_qiqo_action_mpn_map = array();
+				if ($results) {
 					$related_sku_quantities = array();
 					$related_base_unit_prices = array();
+					$related_action_skus = array();
+					$related_action_mpns = array();
 
 					foreach ($results as $r) {
 						$r_sku = trim((string)$r['sku']);
-						if ($r_sku === '') {
-							continue;
-						}
-
 						$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
 						$r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
-						$r_base_unit = ((float)$r['special'] > 0) ? (float)$r['special'] : (float)$r['price'];
+						$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
 
-						if ($r_base_unit <= 0) {
-							continue;
+						if ($r_sku !== '') {
+							$related_action_skus[] = $r_sku;
+
+							if ($this->customer->isLogged() && $r_base_unit > 0) {
+								$related_sku_quantities[$r_sku] = $r_list_min;
+								$related_base_unit_prices[$r_sku] = $r_base_unit;
+							}
 						}
 
-						$related_sku_quantities[$r_sku] = $r_list_min;
-						$related_base_unit_prices[$r_sku] = $r_base_unit;
+						if (isset($r['mpn_count']) && (int)$r['mpn_count'] > 1 && !empty($r['mpn'])) {
+							$related_action_mpns[] = (string)$r['mpn'];
+						}
 					}
 
-					if ($related_sku_quantities) {
+					if ($this->customer->isLogged() && $related_sku_quantities) {
 						$related_qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
 							(int)$this->customer->getId(),
 							$related_sku_quantities,
-							$related_base_unit_prices
+							$related_base_unit_prices,
+							false,
+							false
 						);
+					}
+
+					if ($related_action_skus) {
+						$related_qiqo_action_article_map = $this->model_catalog_product->getQiqoActionArticleMap($related_action_skus);
+					}
+
+					if ($related_action_mpns) {
+						$related_qiqo_action_mpn_map = $this->model_catalog_product->getQiqoActionMpnMap($related_action_mpns);
 					}
 				}
 
@@ -669,19 +703,21 @@ class ControllerProductProduct extends Controller {
 					$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
 					$list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
 
-					$display_price_unit = (float)$result['price'];
-					$display_special_unit = (float)$result['special'];
+					$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
+					$display_special_unit = 0.0;
 					$qiqo_discount_percent = 0.0;
+					$qiqo_action = ($row_sku_key !== '' && !empty($related_qiqo_action_article_map[$row_sku_key]))
+						|| (isset($result['mpn_count']) && (int)$result['mpn_count'] > 1 && !empty($result['mpn']) && !empty($related_qiqo_action_mpn_map[(string)$result['mpn']]));
 
 					if ($row_sku_key !== '' && isset($related_qiqo_price_map[$row_sku_key])) {
 						$row_pricing = $related_qiqo_price_map[$row_sku_key];
 						$display_price_unit = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
 							? (float)$row_pricing['old_unit_price']
-							: (float)$row_pricing['final_unit_price'];
+							: (float)$row_pricing['base_unit_price'];
 						$display_special_unit = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
 							? (float)$row_pricing['final_unit_price']
 							: 0.0;
-						$qiqo_discount_percent = isset($row_pricing['discount_percent']) ? (float)$row_pricing['discount_percent'] : 0.0;
+						$qiqo_discount_percent = isset($row_pricing['base_discount_percent']) ? (float)$row_pricing['base_discount_percent'] : 0.0;
 					}
 
 					if ($result['image']) {
@@ -798,6 +834,7 @@ class ControllerProductProduct extends Controller {
 	                    'sku'  => $result['sku'],
 	                    'list_min'    => $list_min,
 	                    'qiqo_discount_percent' => $qiqo_discount_percent,
+	                    'qiqo_action' => $qiqo_action,
 						'tax'         => $tax,
 					'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
 					'rating'      => $rating,
@@ -859,7 +896,7 @@ class ControllerProductProduct extends Controller {
 
                         $p_minimum = ($p_item['minimum'] > 0) ? (int)$p_item['minimum'] : 1;
                         $p_min_qty = ((string)$p_item['cent'] === 'C-100') ? $p_minimum : 1;
-                        $p_base_unit = ((float)$p_item['special'] > 0) ? (float)$p_item['special'] : (float)$p_item['price'];
+                        $p_base_unit = isset($p_item['base_price']) ? (float)$p_item['base_price'] : (float)$p_item['price'];
 
                         if ($p_base_unit <= 0) {
                             continue;
@@ -874,7 +911,9 @@ class ControllerProductProduct extends Controller {
                         $mpn_qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
                             (int)$this->customer->getId(),
                             $mpn_sku_quantities,
-                            $mpn_base_prices
+                            $mpn_base_prices,
+                            false,
+                            false
                         );
                     }
                 }
@@ -897,8 +936,8 @@ class ControllerProductProduct extends Controller {
                         $data['same_mpn_has_c100'] = true;
                     }
 
-                    $price_raw   = (float)$result['price'];
-                    $special_raw = (float)$result['special'];
+                    $price_raw   = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
+                    $special_raw = 0.0;
                     $row_qiqo_discount_percent = 0.0;
                     $row_qiqo_proforma_extra_percent = 0.0;
 
@@ -911,11 +950,11 @@ class ControllerProductProduct extends Controller {
                         $row_pricing = $mpn_qiqo_price_map[$row_sku];
                         $price_raw = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
                             ? (float)$row_pricing['old_unit_price']
-                            : (float)$row_pricing['final_unit_price'];
+                            : (float)$row_pricing['base_unit_price'];
                         $special_raw = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
                             ? (float)$row_pricing['final_unit_price']
                             : 0.0;
-                        $row_qiqo_discount_percent = isset($row_pricing['discount_percent']) ? (float)$row_pricing['discount_percent'] : 0.0;
+                        $row_qiqo_discount_percent = isset($row_pricing['base_discount_percent']) ? (float)$row_pricing['base_discount_percent'] : 0.0;
                     }
 
                     $unit_new  = ($special_raw > 0) ? $special_raw : $price_raw;
@@ -979,8 +1018,8 @@ class ControllerProductProduct extends Controller {
                     $data['same_mpn_has_c100'] = true;
                 }
 
-                $single_price_raw = (float)$product_info['price'];
-                $single_special_raw = (float)$product_info['special'];
+                $single_price_raw = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
+                $single_special_raw = 0.0;
                 $single_unit_new = ($single_special_raw > 0) ? $single_special_raw : $single_price_raw;
                 $single_new_total = $single_unit_new * $single_multiplier;
                 $single_old_total = ($single_special_raw > 0) ? ($single_price_raw * $single_multiplier) : false;
@@ -991,24 +1030,26 @@ class ControllerProductProduct extends Controller {
                 if ($this->customer->isLogged()) {
                     $single_sku = trim((string)$product_info['sku']);
                     if ($single_sku !== '') {
-                        $single_base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+                        $single_base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
 
                         if ($single_base_unit > 0) {
                             $single_map = $this->model_catalog_product->getQiqoPricingMap(
                                 (int)$this->customer->getId(),
                                 array($single_sku => $single_minimumifc100),
-                                array($single_sku => $single_base_unit)
+                                array($single_sku => $single_base_unit),
+                                false,
+                                false
                             );
 
                             if (isset($single_map[$single_sku])) {
                                 $single_pricing = $single_map[$single_sku];
                                 $single_price_raw = isset($single_pricing['old_unit_price']) && $single_pricing['old_unit_price'] !== false
                                     ? (float)$single_pricing['old_unit_price']
-                                    : (float)$single_pricing['final_unit_price'];
+                                    : (float)$single_pricing['base_unit_price'];
                                 $single_special_raw = isset($single_pricing['old_unit_price']) && $single_pricing['old_unit_price'] !== false
                                     ? (float)$single_pricing['final_unit_price']
                                     : 0.0;
-                                $single_qiqo_discount_percent = isset($single_pricing['discount_percent']) ? (float)$single_pricing['discount_percent'] : 0.0;
+                                $single_qiqo_discount_percent = isset($single_pricing['base_discount_percent']) ? (float)$single_pricing['base_discount_percent'] : 0.0;
 
                                 $single_unit_new = ($single_special_raw > 0) ? $single_special_raw : $single_price_raw;
                                 $single_new_total = $single_unit_new * $single_multiplier;

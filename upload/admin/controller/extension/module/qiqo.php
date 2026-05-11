@@ -253,6 +253,9 @@ class ControllerExtensionModuleQiqo extends Controller
             mkdir($base_dir, 0755, true);
         }
 
+        $document_extensions = $this->model_extension_module_qiqo->getAssetDocumentExtensions();
+        $this->model_extension_module_qiqo->ensureMmosAttachmentFileTypes($document_extensions);
+
         // Ostavili smo samo ZIP upload
         if (empty($this->request->files['zip_file']['name'])) {
             $this->session->data['error'] = 'Nije odabran ZIP.';
@@ -323,7 +326,7 @@ class ControllerExtensionModuleQiqo extends Controller
                 if (in_array($ext, ['jpg','jpeg','png'])) {
                     // SLIKA
                     $this->model_extension_module_qiqo->syncProductImageFromFile($product_id, $sku, $file, $base_dir);
-                } elseif ($ext === 'pdf') {
+                } elseif (in_array($ext, $document_extensions, true)) {
                     // DOKUMENT
                     $this->model_extension_module_qiqo->syncProductDocumentFromFile($product_id, $sku, $file, $base_dir);
                 }
@@ -333,7 +336,7 @@ class ControllerExtensionModuleQiqo extends Controller
         // Po želji obriši privremeni folder
         $this->rrmdir($tmp_dir);
 
-        $this->session->data['success'] = 'Obrađeno proizvoda: ' . $processed_products + 1;
+        $this->session->data['success'] = 'Obrađeno proizvoda: ' . $processed_products;
         $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
     }
 

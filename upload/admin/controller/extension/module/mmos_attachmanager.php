@@ -185,6 +185,12 @@
                     } else {
                         $thumb = $this->model_tool_image->resize('catalog/attached_icon/default.png', 100, 100);
                     }
+                    if (!$thumb) {
+                        $thumb = $this->model_tool_image->resize('catalog/attached_icon/default.png', 100, 100);
+                    }
+                    if (!$thumb) {
+                        $thumb = $this->model_tool_image->resize('no_image.png', 100, 100);
+                    }
                     if (empty($product_attach['login_required'])) {
                         $product_attach['login_required'] = '';
                     }
@@ -242,7 +248,7 @@
 
             $this->model_extension_module_mmos_attachmanager->install();
 
-            $typefile = 'dat,7z,arj,audio,avi,bat,bin,bmp,dll,doc,document,file,gif,hlp,htm,html,image,iso,jar,jpeg,jpg,mov,mp3,mpeg,pdf,png,ppt,psd,rar,rpm,software,swf,tar,tif,tiff,txt,video,wav,wma,wmv,xls,zip';
+            $typefile = 'dat,7z,arj,audio,avi,bat,bin,bmp,dll,doc,document,file,gif,hlp,htm,html,image,iso,jar,jpeg,jpg,mov,mp3,mpeg,pdf,png,ppt,psd,rar,rpm,software,stl,swf,tar,tif,tiff,txt,video,wav,wma,wmv,xls,zip';
 
             $languages = $this->model_localisation_language->getLanguages();
 

@@ -85,6 +85,67 @@ class ModelExtensionModuleQiqo extends Model
         return $ok;
     }
 
+    private function ensureProductAttachHashColumn(): bool
+    {
+        if ($this->tableColumnExists('product_attach_file', 'hash')) {
+            return true;
+        }
+
+        $this->db->query("ALTER TABLE `" . DB_PREFIX . "product_attach_file`
+            ADD COLUMN `hash` CHAR(40) DEFAULT NULL AFTER `filename`");
+
+        unset($this->columnExistsCache['product_attach_file.hash']);
+
+        $ok = $this->tableColumnExists('product_attach_file', 'hash');
+        if ($ok) {
+            $this->log('Assets', 'Dodana kolona oc_product_attach_file.hash.');
+        } else {
+            $this->log('Assets', 'Nije moguce dodati kolonu oc_product_attach_file.hash.');
+        }
+
+        return $ok;
+    }
+
+    public function getAssetDocumentExtensions(): array
+    {
+        return ['pdf', 'stl'];
+    }
+
+    public function ensureMmosAttachmentFileTypes(array $extensions): void
+    {
+        $setting = $this->config->get('mmos_attachmanager');
+
+        if (!is_array($setting) || empty($setting['filetype'])) {
+            return;
+        }
+
+        $types = array_filter(array_map('trim', explode(',', strtolower($setting['filetype']))));
+        $changed = false;
+
+        foreach ($extensions as $extension) {
+            $extension = strtolower(trim($extension));
+
+            if ($extension !== '' && !in_array($extension, $types, true)) {
+                $types[] = $extension;
+                $changed = true;
+            }
+        }
+
+        if (!$changed) {
+            return;
+        }
+
+        $setting['filetype'] = implode(',', $types);
+
+        $this->db->query("UPDATE `" . DB_PREFIX . "setting`
+            SET value = '" . $this->db->escape(json_encode($setting)) . "',
+                serialized = '1'
+            WHERE code = 'mmos_attachmanager'
+              AND `key` = 'mmos_attachmanager'");
+
+        $this->log('Assets', 'MMOS dokumenti: dodane ekstenzije u filetype: ' . implode(', ', $extensions));
+    }
+
     public function importArticles(): int
     {
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
@@ -333,18 +394,26 @@ class ModelExtensionModuleQiqo extends Model
     {
         $this->log('Assets', '=== START ASSETS RESCAN + SYNC (/Portals/0/Database/{sku}/) ===');
 
-        // Root gdje očekujemo SKU foldere
-        $base_dir = DIR_PORTALS . 'Database/';
+        // Root gdje očekujemo SKU foldere i odredište koje MMOS modul može prikazati na artiklu.
+        $source_base_dir = rtrim(DIR_PORTALS, '/\\') . '/Database/';
+        $target_base_dir = rtrim(DIR_IMAGE, '/\\') . '/catalog/products/';
+        $document_extensions = $this->getAssetDocumentExtensions();
+        $this->ensureMmosAttachmentFileTypes($document_extensions);
 
-        if (!is_dir($base_dir)) {
-            $this->log('Assets', "❌ Base dir ne postoji: {$base_dir}");
+        if (!is_dir($source_base_dir)) {
+            $this->log('Assets', "❌ Base dir ne postoji: {$source_base_dir}");
             return 0;
         }
 
-        // Svi SKU folderi: catalog/products/{sku}/
-        $sku_dirs = glob($base_dir . '*', GLOB_ONLYDIR);
+        if (!is_dir($target_base_dir) && !mkdir($target_base_dir, 0755, true)) {
+            $this->log('Assets', "❌ Target dir nije moguce kreirati: {$target_base_dir}");
+            return 0;
+        }
+
+        // Svi SKU folderi: Portals/0/Database/{sku}/
+        $sku_dirs = glob($source_base_dir . '*', GLOB_ONLYDIR);
         if (!$sku_dirs) {
-            $this->log('Assets', "⚠ Nema SKU foldera u {$base_dir}");
+            $this->log('Assets', "⚠ Nema SKU foldera u {$source_base_dir}");
             return 0;
         }
 
@@ -386,14 +455,14 @@ class ModelExtensionModuleQiqo extends Model
 
                 if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
                     $fs_image_count++;
-                } elseif ($ext === 'pdf') {
+                } elseif (in_array($ext, $document_extensions, true)) {
                     $fs_doc_count++;
                 }
             }
 
             // 2) Ako nema ni slike ni dokumenta → obriši folder i zabilježi kao "prazan"
             if ($has_folder && $fs_image_count === 0 && $fs_doc_count === 0) {
-                $this->log('Assets', "SKU {$sku}: folder je prazan (nema jpg/png/pdf) – brišem {$folder_path}");
+                $this->log('Assets', "SKU {$sku}: folder je prazan (nema jpg/png/pdf/stl) – brišem {$folder_path}");
                 //$this->rrmdirAssets($folder_path);
                 $has_folder = 1;
                 $status     = 'empty_folder';
@@ -489,9 +558,9 @@ class ModelExtensionModuleQiqo extends Model
                 $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
                 if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
-                    $this->syncProductImageFromFile($product_id, $sku, $file, $base_dir);
-                } elseif ($ext === 'pdf') {
-                    $this->syncProductDocumentFromFile($product_id, $sku, $file, $base_dir);
+                    $this->syncProductImageFromFile($product_id, $sku, $file, $target_base_dir);
+                } elseif (in_array($ext, $document_extensions, true)) {
+                    $this->syncProductDocumentFromFile($product_id, $sku, $file, $target_base_dir);
                 }
             }
 
@@ -1143,7 +1212,7 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         // 2) DODATNA SLIKA U oc_product_image
-        /*$img_q = $this->db->query("SELECT product_image_id, image_hash
+        $img_q = $this->db->query("SELECT product_image_id, image_hash
         FROM " . DB_PREFIX . "product_image
         WHERE product_id = '" . (int)$product_id . "'
           AND image = '" . $this->db->escape($relative_path) . "'");
@@ -1162,15 +1231,7 @@ class ModelExtensionModuleQiqo extends Model
                 image      = '" . $this->db->escape($relative_path) . "',
                 image_hash = '" . $this->db->escape($hash) . "',
                 sort_order = 0");
-        }*/
-
-        $this->db->query("TRUNCATE TABLE " . DB_PREFIX . "product_image");
-
-        $this->db->query("INSERT INTO " . DB_PREFIX . "product_image 
-            SET product_id = '" . (int)$product_id . "',
-                image      = '" . $this->db->escape($relative_path) . "',
-                image_hash = '" . $this->db->escape($hash) . "',
-                sort_order = 0");
+        }
     }
 
 
@@ -1178,27 +1239,13 @@ class ModelExtensionModuleQiqo extends Model
     public function syncProductDocumentFromFile(int $product_id, string $sku, string $src_file, string $base_dir)
     {
         $filename   = basename($src_file);      // npr. 511541_skl.pdf
-        $name_noext = pathinfo($filename, PATHINFO_FILENAME);
         $ext        = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-        if ($ext !== 'pdf') {
+        if (!in_array($ext, $this->getAssetDocumentExtensions(), true)) {
             return;
         }
 
-        $parts  = explode('_', $name_noext);
-        $suffix = isset($parts[1]) ? strtolower($parts[1]) : '';
-
-        switch ($suffix) {
-            case 'skl':
-                $mask = 'Izjava o sukladnosti';
-                break;
-            case 'man':
-                $mask = 'Upute';
-                break;
-            default:
-                $mask = 'Dokument proizvoda';
-                break;
-        }
+        $mask = $this->getAssetDocumentMask($filename, $ext);
 
         $target_dir = rtrim($base_dir, '/\\') . '/' . $sku . '/';
 
@@ -1208,8 +1255,11 @@ class ModelExtensionModuleQiqo extends Model
 
         $dest = $target_dir . $filename;
 
-        if (!@copy($src_file, $dest)) {
-            if (!file_exists($dest)) {
+        $srcReal  = realpath($src_file);
+        $destReal = realpath($dest);
+
+        if ($srcReal === false || $destReal === false || $srcReal !== $destReal) {
+            if (!@copy($src_file, $dest) && !file_exists($dest)) {
                 $this->log('Assets', "DOC copy FAIL: {$src_file} → {$dest}");
                 return;
             }
@@ -1222,43 +1272,71 @@ class ModelExtensionModuleQiqo extends Model
 
         $hash = sha1_file($dest);
 
-        // relativna putanja za attach modul – source minus DIR_IMAGE
-        $full_src   = str_replace('\\', '/', $src_file);
+        // Relativna putanja za MMOS attach modul mora biti ispod DIR_IMAGE.
+        $full_dest  = str_replace('\\', '/', $dest);
         $image_root = str_replace('\\', '/', rtrim(DIR_IMAGE, '/\\')) . '/';
 
-        if (strpos($full_src, $image_root) === 0) {
-            $relative_path = ltrim(substr($full_src, strlen($image_root)), '/');
+        if (strpos($full_dest, $image_root) === 0) {
+            $relative_path = ltrim(substr($full_dest, strlen($image_root)), '/');
         } else {
-            $full_dest = str_replace('\\', '/', $dest);
-            if (strpos($full_dest, $image_root) === 0) {
-                $relative_path = ltrim(substr($full_dest, strlen($image_root)), '/');
-            } else {
-                $relative_path = $filename;
-            }
+            $relative_path = 'catalog/products/' . trim($sku, '/\\') . '/' . $filename;
         }
 
-        $q = $this->db->query("SELECT product_attach_file_id, hash
+        $has_hash_column = $this->ensureProductAttachHashColumn();
+        $hash_select = $has_hash_column ? ', hash' : '';
+
+        $q = $this->db->query("SELECT product_attach_file_id, mask" . $hash_select . "
         FROM " . DB_PREFIX . "product_attach_file
         WHERE product_id = '" . (int)$product_id . "'
           AND filename = '" . $this->db->escape($relative_path) . "'");
 
         if ($q->num_rows) {
-            if (empty($q->row['hash']) || $q->row['hash'] !== $hash) {
+            $needs_update = ($q->row['mask'] !== $mask);
+
+            if ($has_hash_column && (empty($q->row['hash']) || $q->row['hash'] !== $hash)) {
+                $needs_update = true;
+            }
+
+            if ($needs_update) {
+                $hash_update = $has_hash_column ? "hash = '" . $this->db->escape($hash) . "'," : "";
+
                 $this->db->query("UPDATE " . DB_PREFIX . "product_attach_file
-                SET hash = '" . $this->db->escape($hash) . "',
+                SET " . $hash_update . "
                     mask = '" . $this->db->escape($mask) . "'
                 WHERE product_attach_file_id = '" . (int)$q->row['product_attach_file_id'] . "'");
             }
         } else {
+            $hash_insert = $has_hash_column ? ",
+            hash           = '" . $this->db->escape($hash) . "'" : "";
+
             $this->db->query("INSERT INTO " . DB_PREFIX . "product_attach_file SET
             product_id     = '" . (int)$product_id . "',
             filename       = '" . $this->db->escape($relative_path) . "',
             mask           = '" . $this->db->escape($mask) . "',
             login_required = 0,
             download       = 0,
-            sort_order     = 0,
-            hash           = '" . $this->db->escape($hash) . "'");
+            sort_order     = 0" . $hash_insert);
         }
+    }
+
+    private function getAssetDocumentMask(string $filename, string $ext): string
+    {
+        $name = strtolower(pathinfo($filename, PATHINFO_FILENAME));
+        $tokens = preg_split('/[_\-\s]+/', $name);
+
+        if (in_array('skl', $tokens, true) || strpos($name, 'suklad') !== false || strpos($name, 'izjava') !== false) {
+            return 'Izjava o sukladnosti';
+        }
+
+        if (in_array('man', $tokens, true) || strpos($name, 'manual') !== false || strpos($name, 'uput') !== false) {
+            return 'Upute';
+        }
+
+        if ($ext === 'stl' || in_array('stl', $tokens, true)) {
+            return 'STL model';
+        }
+
+        return 'Dokument proizvoda';
     }
 
 

@@ -82,6 +82,14 @@
                          $thumb = $this->model_tool_image->resize('catalog/attached_icon/default.png', 50, 50);
                      }
 
+                     if (!$thumb) {
+                         $thumb = $this->model_tool_image->resize('catalog/attached_icon/default.png', 50, 50);
+                     }
+
+                     if (!$thumb) {
+                         $thumb = $this->model_tool_image->resize('no_image.png', 50, 50);
+                     }
+
                      if ($result['login_required'] == 1) {
                          $url_get_file = $this->customer->isLogged() ? $http_protocol . 'index.php?route=extension/module/mmos_attachmanager/getfile&product_attach_file_id=' . $result['product_attach_file_id'] : "";
                      } else {

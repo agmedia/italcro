@@ -71,11 +71,21 @@ class Qiqo
     }
 
     /**
-     * 📦 Dohvati komercijaliste (qKomercijalistiWeb)
+     * 📦 Dohvati komercijaliste (qKomercijalistWeb)
      */
     public function getSalesReps(string $since = '-2 years'): array
     {
-        return $this->fetch('qKomercijalistiWeb', $since, null);
+        $method = 'qKomercijalistWeb';
+        $rows = $this->fetch($method, $since, null);
+
+        if ($rows) {
+            Log::store("✅ Sales reps resolved via {$method}", 'qiqo_info');
+            return $rows;
+        }
+
+        Log::store("⚠️ {$method} returned no sales reps.", 'qiqo_empty');
+
+        return [];
     }
 
     /**
@@ -146,6 +156,8 @@ class Qiqo
                 CURLOPT_POST           => true,
                 CURLOPT_POSTFIELDS     => $body,
                 CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_TIMEOUT        => 45,
                 CURLOPT_HTTPHEADER     => [
                     'Content-Type: text/xml; charset=utf-8',
                     "SOAPAction: \"{$soapAction}\"",

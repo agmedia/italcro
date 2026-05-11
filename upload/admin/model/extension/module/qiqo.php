@@ -1645,7 +1645,7 @@ class ModelExtensionModuleQiqo extends Model
             ],
             [
                 'key'     => 'sales_reps',
-                'label'   => 'qKomercijalistiWeb',
+                'label'   => 'qKomercijalistWeb',
                 'since'   => $this->resolveSince('sales_reps', $defaultSince, $forceDefaultSince),
                 'fetcher' => 'getSalesReps',
                 'writer'  => 'upsertSalesReps',
@@ -1686,11 +1686,11 @@ class ModelExtensionModuleQiqo extends Model
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
         $since = $this->resolveSince('sales_reps', $defaultSince, $forceDefaultSince);
 
-        $this->log('PartnerSync', "START qKomercijalistiWeb since={$since}");
+        $this->log('PartnerSync', "START qKomercijalistWeb since={$since}");
         $rows = $qiqo->getSalesReps($since);
         $count = $this->upsertSalesReps($rows);
         $this->setFeedLastSync('sales_reps', date('Y-m-d H:i:s'));
-        $this->log('PartnerSync', "END qKomercijalistiWeb rows=" . count($rows) . " upserted={$count}");
+        $this->log('PartnerSync', "END qKomercijalistWeb rows=" . count($rows) . " upserted={$count}");
 
         return $count;
     }

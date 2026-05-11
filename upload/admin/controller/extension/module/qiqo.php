@@ -73,12 +73,16 @@ class ControllerExtensionModuleQiqo extends Controller
 
                 case 'sync_sales_reps':
                     $count = $this->model_extension_module_qiqo->syncSalesReps();
-                    $this->session->data['success'] = "Sync komercijalista: {$count} slogova.";
+                    $this->session->data[$count ? 'success' : 'error'] = $count
+                        ? "Sync komercijalista: {$count} slogova."
+                        : 'qKomercijalistWeb nije vratio komercijaliste. Provjeri QIQO endpoint/log.';
                     break;
 
                 case 'sync_sales_reps_full':
                     $count = $this->model_extension_module_qiqo->syncSalesRepsFull();
-                    $this->session->data['success'] = "Sync komercijalista FULL: {$count} slogova.";
+                    $this->session->data[$count ? 'success' : 'error'] = $count
+                        ? "Sync komercijalista FULL: {$count} slogova."
+                        : 'qKomercijalistWeb FULL nije vratio komercijaliste. Provjeri QIQO endpoint/log.';
                     break;
 
                 case 'sync_partner_base':

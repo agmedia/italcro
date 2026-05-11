@@ -5470,6 +5470,29 @@ a.button-circle {
 	background:#151414;
 	color:#ffffff;
 }
+.action_badge {
+	background:#ec008c;
+	color:#ffffff;
+	width:34px!important;
+}
+.single-product .image .action_badge,
+.main-image .action_badge {
+	top:10px!important;
+}
+.single-product .image .sale_badge + .action_badge,
+.main-image .sale_badge + .action_badge {
+	left:65px;
+}
+.single-product .image .action_badge + .new_badge,
+.main-image .action_badge + .new_badge {
+	left:50px;
+	top:10px!important;
+}
+.single-product .image .sale_badge + .action_badge + .new_badge,
+.main-image .sale_badge + .action_badge + .new_badge {
+	left:104px;
+	top:10px!important;
+}
 .single-product .image .icons-wrapper {
 	position:absolute;
 	text-align:center;

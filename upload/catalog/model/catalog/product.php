@@ -1,6 +1,7 @@
 <?php
 class ModelCatalogProduct extends Model {
 	private $qiqo_tables_ready = null;
+	private $qiqo_action_price_table_ready = null;
 
 	public function updateViewed($product_id) {
 		$this->db->query("UPDATE " . DB_PREFIX . "product SET viewed = (viewed + 1) WHERE product_id = '" . (int)$product_id . "'");
@@ -89,6 +90,7 @@ class ModelCatalogProduct extends Model {
 				'image'            => $query->row['image'],
 				'manufacturer_id'  => $query->row['manufacturer_id'],
 				'manufacturer'     => $query->row['manufacturer'],
+				'base_price'        => $query->row['price'],
 				'price'            => ($query->row['discount'] ? $query->row['discount'] : $query->row['price']),
 				'special'          => $query->row['special'],
 				'reward'           => $query->row['reward'],
@@ -746,7 +748,7 @@ class ModelCatalogProduct extends Model {
         return $products;
     }
 
-	public function getQiqoPricingMap($customer_id, $sku_quantities = array(), $base_unit_prices = array(), $is_proforma = false) {
+	public function getQiqoPricingMap($customer_id, $sku_quantities = array(), $base_unit_prices = array(), $is_proforma = false, $include_action_discount = true) {
 		$map = array();
 		$customer_id = (int)$customer_id;
 
@@ -822,7 +824,7 @@ class ModelCatalogProduct extends Model {
 
 			$article_discount = isset($article_discounts[$sku]) ? (float)$article_discounts[$sku] : null;
 			$base_discount = ($article_discount !== null) ? $article_discount : $partner_discount;
-			$base_discount = max(0.0, $base_discount);
+			$base_discount = min(100.0, max(0.0, $base_discount));
 
 			$action = $this->resolveQiqoActionForArticle(
 				isset($action_rows_by_article[$sku]) ? $action_rows_by_article[$sku] : array(),
@@ -834,7 +836,15 @@ class ModelCatalogProduct extends Model {
 			$old_unit = false;
 			$effective_discount = 0.0;
 
-			if ($action['net_price'] !== null && $action['net_price'] > 0) {
+			if (!$include_action_discount) {
+				if ($base_discount > 0) {
+					$final_unit = $base_unit * (1 - ($base_discount / 100));
+					if ($final_unit < $base_unit) {
+						$old_unit = $base_unit;
+						$effective_discount = $base_discount;
+					}
+				}
+			} elseif ($action['net_price'] !== null && $action['net_price'] > 0) {
 				$final_unit = (float)$action['net_price'];
 				if ($final_unit < $base_unit) {
 					$old_unit = $base_unit;
@@ -860,8 +870,80 @@ class ModelCatalogProduct extends Model {
 				'discount_percent'      => round((float)$effective_discount, 2),
 				'base_discount_percent' => round((float)$base_discount, 2),
 				'action_discount'       => round((float)$action['discount'], 2),
-				'action_net_price'      => $action['net_price'] !== null ? (float)$action['net_price'] : null
+				'action_net_price'      => $action['net_price'] !== null ? (float)$action['net_price'] : null,
+				'has_action'            => !empty($action_rows_by_article[$sku])
 			);
+		}
+
+		return $map;
+	}
+
+	public function getQiqoActionArticleMap($sku_list = array()) {
+		$map = array();
+
+		if (!$sku_list || !$this->hasQiqoActionPriceTable()) {
+			return $map;
+		}
+
+		$clean = array();
+		foreach ($sku_list as $sku) {
+			$sku = trim((string)$sku);
+			if ($sku !== '') {
+				$clean[] = $sku;
+			}
+		}
+
+		$clean = array_values(array_unique($clean));
+		if (!$clean) {
+			return $map;
+		}
+
+		$in = $this->buildEscapedInList($clean);
+
+		$query = $this->db->query("SELECT DISTINCT article_code
+			FROM `" . DB_PREFIX . "qiqo_action_price`
+			WHERE article_code IN (" . $in . ")");
+
+		foreach ($query->rows as $row) {
+			$map[(string)$row['article_code']] = true;
+		}
+
+		return $map;
+	}
+
+	public function getQiqoActionMpnMap($mpn_list = array()) {
+		$map = array();
+
+		if (!$mpn_list || !$this->hasQiqoActionPriceTable()) {
+			return $map;
+		}
+
+		$clean = array();
+		foreach ($mpn_list as $mpn) {
+			$mpn = trim((string)$mpn);
+			if ($mpn !== '') {
+				$clean[] = $mpn;
+			}
+		}
+
+		$clean = array_values(array_unique($clean));
+		if (!$clean) {
+			return $map;
+		}
+
+		$in = $this->buildEscapedInList($clean);
+
+		$query = $this->db->query("SELECT DISTINCT p.mpn
+			FROM `" . DB_PREFIX . "product` p
+			INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku)
+			INNER JOIN `" . DB_PREFIX . "product_to_store` p2s ON (p.product_id = p2s.product_id)
+			WHERE p.mpn IN (" . $in . ")
+			  AND p.status = '1'
+			  AND p.date_available <= NOW()
+			  AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'");
+
+		foreach ($query->rows as $row) {
+			$map[(string)$row['mpn']] = true;
 		}
 
 		return $map;
@@ -1026,6 +1108,17 @@ class ModelCatalogProduct extends Model {
 
 		$this->qiqo_tables_ready = true;
 		return $this->qiqo_tables_ready;
+	}
+
+	private function hasQiqoActionPriceTable() {
+		if ($this->qiqo_action_price_table_ready !== null) {
+			return $this->qiqo_action_price_table_ready;
+		}
+
+		$q = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_action_price') . "'");
+		$this->qiqo_action_price_table_ready = (bool)$q->num_rows;
+
+		return $this->qiqo_action_price_table_ready;
 	}
 
 

@@ -39,7 +39,7 @@
                             <img class="thumb2" src="{{ product.thumb2 }}" alt="{{ product.name }}" title="{{ product.name }}" />
                         {% endif %}
                     </a>
-                    {% if salebadge_status and ((product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0) or (product.price and product.special)) %}
+                    {% if product.mpn_count == 1 and salebadge_status and ((product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0) or (product.price and product.special)) %}
                         <div class="sale-counter id{{ product.product_id }}"></div>
                         <span class="badge sale_badge">
                             <i>
@@ -50,6 +50,9 @@
                                 {% endif %}
                             </i>
                         </span>
+                    {% endif %}
+                    {% if product.qiqo_action is defined and product.qiqo_action %}
+                        <span class="badge action_badge"><i>A</i></span>
                     {% endif %}
                     {% if product.new_label %}
                         <span class="badge new_badge"><i>{{ basel_text_new }}</i></span>
@@ -169,8 +172,10 @@
 
                     </div><!-- .price-wrapper -->
                     <div class="plain-links">
-                        <a class="icon is_wishlist link-hover-color" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart"></span> {{ button_wishlist }}</a>
-                        <a class="icon is_compare link-hover-color" onclick="compare.add('{{ product.product_id }}');"><span class="icon-refresh"></span> {{ button_compare }}</a>
+                        {% if product.mpn_count == 1 %}
+                            <a class="icon is_wishlist link-hover-color" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart"></span> {{ button_wishlist }}</a>
+                            <a class="icon is_compare link-hover-color" onclick="compare.add('{{ product.product_id }}');"><span class="icon-refresh"></span> {{ button_compare }}</a>
+                        {% endif %}
                         <a class="icon is_quickview link-hover-color" onclick="quickview('{{ product.product_id }}');"><span class="icon-magnifier-add"></span> {{ basel_button_quickview }}</a>
                     </div><!-- .plain-links-->
                 </div><!-- .caption-->

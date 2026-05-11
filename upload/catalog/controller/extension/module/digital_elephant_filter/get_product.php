@@ -130,8 +130,75 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
         $results = $this->model_extension_module_digitalElephantFilter->getProducts($data_filter);
 
         $products = array();
+        $qiqo_price_map = array();
+        $qiqo_action_article_map = array();
+        $qiqo_action_mpn_map = array();
+
+        if ($results) {
+            $sku_quantities = array();
+            $base_unit_prices = array();
+            $action_skus = array();
+            $action_mpns = array();
+
+            foreach ($results as $r) {
+                $sku_key = trim((string)$r['sku']);
+                $r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
+                $r_list_min = ((string)$r['cent'] === 'C-100') ? $r_minimum : 1;
+                $r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
+
+                if ($sku_key !== '') {
+                    $action_skus[] = $sku_key;
+
+                    if ($this->customer->isLogged() && $r_base_unit > 0) {
+                        $sku_quantities[$sku_key] = $r_list_min;
+                        $base_unit_prices[$sku_key] = $r_base_unit;
+                    }
+                }
+
+                if (isset($r['mpn_count']) && (int)$r['mpn_count'] > 1 && !empty($r['mpn'])) {
+                    $action_mpns[] = (string)$r['mpn'];
+                }
+            }
+
+            if ($this->customer->isLogged() && $sku_quantities) {
+                $qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
+                    (int)$this->customer->getId(),
+                    $sku_quantities,
+                    $base_unit_prices,
+                    false,
+                    false
+                );
+            }
+
+            if ($action_skus) {
+                $qiqo_action_article_map = $this->model_catalog_product->getQiqoActionArticleMap($action_skus);
+            }
+
+            if ($action_mpns) {
+                $qiqo_action_mpn_map = $this->model_catalog_product->getQiqoActionMpnMap($action_mpns);
+            }
+        }
 
         foreach ($results as $result) {
+            $sku_key = trim((string)$result['sku']);
+            $minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+            $list_min = ((string)$result['cent'] === 'C-100') ? $minimum : 1;
+            $display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
+            $display_special_unit = 0.0;
+            $qiqo_discount_percent = 0.0;
+            $qiqo_action = ($sku_key !== '' && !empty($qiqo_action_article_map[$sku_key]))
+                || (isset($result['mpn_count']) && (int)$result['mpn_count'] > 1 && !empty($result['mpn']) && !empty($qiqo_action_mpn_map[(string)$result['mpn']]));
+
+            if ($sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
+                $pricing = $qiqo_price_map[$sku_key];
+                $display_price_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+                    ? (float)$pricing['old_unit_price']
+                    : (float)$pricing['base_unit_price'];
+                $display_special_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+                    ? (float)$pricing['final_unit_price']
+                    : 0.0;
+                $qiqo_discount_percent = isset($pricing['base_discount_percent']) ? (float)$pricing['base_discount_percent'] : 0.0;
+            }
 
         	if (VERSION >= '3.0.0.0') {
                 $image_width = $this->config->get('theme_' . $this->config->get('config_theme') . '_image_product_width');
@@ -152,13 +219,13 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 			$images =$images[0]['image'];
 			} else {
 			$images = false;
-			}
+            }
 
             if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
-                $price = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+                $price = $this->currency->format($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
                  if($this->session->data['currency']=='HRK'){
-                        $priceeur = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), 'EUR');
+                        $priceeur = $this->currency->format($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')), 'EUR');
                     }
                     else{
                         $priceeur  ='';
@@ -169,11 +236,11 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                  $priceeur  ='';
             }
 
-            if ((float)$result['special']) {
-                $special = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+            if ($display_special_unit > 0) {
+                $special = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
                   if($this->session->data['currency']=='HRK'){
-                        $specialeur = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')),  'EUR');
+                        $specialeur = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')),  'EUR');
                     }
                     else{
                         $specialeur  ='';
@@ -191,9 +258,9 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 				$image2 = false;
 			}
 			
-			if ( (float)$result['special'] && ($this->config->get('salebadge_status')) ) {
+			if ($display_special_unit > 0 && ($this->config->get('salebadge_status')) ) {
 			if ($this->config->get('salebadge_status') == '2') {
-				$sale_badge = '-' . number_format(((($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')))-($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax'))))/(($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')))/100)), 0, ',', '.') . '%';
+				$sale_badge = '-' . number_format(((($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')))-($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax'))))/(($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')))/100)), 0, ',', '.') . '%';
 			} else {
 				$sale_badge = $this->language->get('basel_text_sale');
 			}		
@@ -207,14 +274,14 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 				$is_new = false;
 			}
 			
-			if ((float)$result['special']) {
+			if ($display_special_unit > 0) {
 				$date_end = $this->model_extension_basel_basel->getSpecialEndDate($result['product_id']);
 			} else {
 				$date_end = false;
 			}
 
             if ($this->config->get('config_tax')) {
-                $tax = $this->currency->format((float)$result['special'] ? $result['special'] : $result['price'], $this->session->data['currency']);
+                $tax = $this->currency->format($display_special_unit > 0 ? $display_special_unit : $display_price_unit, $this->session->data['currency']);
             } else {
                 $tax = false;
             }
@@ -231,12 +298,42 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                 $description = utf8_substr(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8')), 0, $this->config->get($this->config->get('config_theme') . '_product_description_length')) . '..';
             }
 
+            $price_raw = (float)$display_price_unit;
+            $special_raw = (float)$display_special_unit;
+            $preview_price_alt = false;
+
+            if ($special_raw > 0) {
+                $preview_price_raw = $special_raw * $list_min;
+                $preview_price_alt_raw = $price_raw * $list_min;
+
+                $preview_price_alt = $this->currency->format(
+                    $this->tax->calculate(
+                        $preview_price_alt_raw,
+                        $result['tax_class_id'],
+                        $this->config->get('config_tax')
+                    ),
+                    $this->session->data['currency']
+                );
+            } else {
+                $preview_price_raw = $price_raw * $list_min;
+            }
+
+            $preview_price = ($preview_price_raw > 0) ? $this->currency->format(
+                $this->tax->calculate(
+                    $preview_price_raw,
+                    $result['tax_class_id'],
+                    $this->config->get('config_tax')
+                ),
+                $this->session->data['currency']
+            ) : false;
+
             $products[] = array(
                 'product_id'  => $result['product_id'],
                 'thumb'       => $image,
 				'thumb2' 	 => $this->model_tool_image->resize($image2, $image_width, $image_height),
 				'sale_end_date' => $date_end['date_end'] ?? '',
                 'name'        => $result['name'],
+                'name_add'    => $result['name_add'],
 				'quantity'  => $result['quantity'],
                 'description' => $description,
                 'price'       => $price,
@@ -245,14 +342,42 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 				'sale_badge'  => $sale_badge,
 				'new_label'   => $is_new,
                 'special'     => $special,
+                'cent'        => $result['cent'],
+                'sku'         => $result['sku'],
+                'preview_price' => $preview_price,
+                'preview_price_alt' => $preview_price_alt,
+                'mpn_count'   => $result['mpn_count'],
+                'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+                'list_min'    => $list_min,
+                'qiqo_discount_percent' => $qiqo_discount_percent,
+                'qiqo_action' => $qiqo_action,
                 'tax'         => $tax,
-                'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
+                'minimum'     => $minimum,
                 'rating'      => $result['rating'],
                 'href'        => $this->url->link('product/product', 'path=' . $this->request->get['path'] . '&product_id=' . $result['product_id'])
             );
         }
 
         return $products;
+    }
+
+    private function artiklLabel($broj) {
+        $broj = abs($broj) % 100;
+        $jedinica = $broj % 10;
+
+        if ($broj > 10 && $broj < 20) {
+            return "artikala";
+        }
+
+        if ($jedinica == 1) {
+            return "artikl";
+        }
+
+        if ($jedinica >= 2 && $jedinica <= 4) {
+            return "artikla";
+        }
+
+        return "artikala";
     }
 
 

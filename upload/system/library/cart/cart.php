@@ -314,24 +314,13 @@ class Cart {
 			$base_discount = (float)$article_discount;
 		}
 
-		$action = $this->resolveQiqoActionForArticle(
-			$this->getQiqoActionRows($sku),
-			$qty,
-			$this->isQiqoProformaPayment()
-		);
+		$base_discount = max(0.0, min(100.0, (float)$base_discount));
 
-		if ($action['net_price'] !== null && $action['net_price'] > 0) {
-			return (float)$action['net_price'];
-		}
-
-		$total_discount = max(0.0, (float)$base_discount + (float)$action['discount']);
-		$total_discount = min(100.0, $total_discount);
-
-		if ($total_discount <= 0) {
+		if ($base_discount <= 0) {
 			return $base_price;
 		}
 
-		return (float)($base_price * (1 - ($total_discount / 100)));
+		return (float)($base_price * (1 - ($base_discount / 100)));
 	}
 
 	private function getQiqoAuthorization() {

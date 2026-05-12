@@ -147,7 +147,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 $sku_quantities,
                 $base_unit_prices,
                 false,
-                true
+                false
             );
             $qiqo_action_details_map = $this->model_catalog_product->getQiqoActionDetailsMap($sku_list);
         }
@@ -335,7 +335,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 $sku_quantities,
                 $base_unit_prices,
                 false,
-                true
+                false
             );
             $qiqo_action_details_map = $this->model_catalog_product->getQiqoActionDetailsMap(array_keys($sku_quantities));
         }
@@ -402,7 +402,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 $action_discount = (float)$pricing_row['action_discount'];
             }
 
-            if (isset($pricing_row['action_net_price']) && $pricing_row['action_net_price'] !== null && (float)$pricing_row['action_net_price'] > 0) {
+            if (isset($pricing_row['action_net_price']) && $pricing_row['action_net_price'] !== null && (float)$pricing_row['action_net_price'] > 0 && abs($price_unit - (float)$pricing_row['action_net_price']) < 0.00001) {
                 $action_net_price_raw = $this->qiqoDisplayPriceRaw((float)$pricing_row['action_net_price'], $cent);
             }
         }

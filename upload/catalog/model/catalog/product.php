@@ -823,7 +823,7 @@ class ModelCatalogProduct extends Model {
         return $products;
     }
 
-	public function getQiqoPricingMap($customer_id, $sku_quantities = array(), $base_unit_prices = array(), $is_proforma = false, $include_action_discount = true) {
+	public function getQiqoPricingMap($customer_id, $sku_quantities = array(), $base_unit_prices = array(), $is_proforma = false, $include_action_discount = false) {
 		$map = array();
 		$customer_id = (int)$customer_id;
 

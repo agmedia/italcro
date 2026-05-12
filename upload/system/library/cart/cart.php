@@ -316,11 +316,27 @@ class Cart {
 
 		$base_discount = max(0.0, min(100.0, (float)$base_discount));
 
-		if ($base_discount <= 0) {
-			return $base_price;
+		$price = $base_price;
+		if ($base_discount > 0) {
+			$price = $base_price * (1 - ($base_discount / 100));
 		}
 
-		return (float)($base_price * (1 - ($base_discount / 100)));
+		$action = $this->resolveQiqoActionForArticle(
+			$this->getQiqoActionRows($sku),
+			$qty,
+			$this->isQiqoProformaPayment()
+		);
+
+		if ($action['net_price'] !== null && $action['net_price'] > 0 && (float)$action['net_price'] < $price) {
+			return (float)$action['net_price'];
+		}
+
+		$action_discount = max(0.0, min(100.0, (float)$action['discount']));
+		if ($action_discount > $base_discount) {
+			return (float)($base_price * (1 - ($action_discount / 100)));
+		}
+
+		return (float)$price;
 	}
 
 	private function getQiqoAuthorization() {

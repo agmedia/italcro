@@ -910,30 +910,30 @@ class ModelCatalogProduct extends Model {
 			$final_unit = $base_unit;
 			$old_unit = false;
 			$effective_discount = 0.0;
+			$action_applied = false;
+			$action_discount = min(100.0, max(0.0, (float)$action['discount']));
 
-			if (!$include_action_discount) {
-				if ($base_discount > 0) {
-					$final_unit = $base_unit * (1 - ($base_discount / 100));
-					if ($final_unit < $base_unit) {
-						$old_unit = $base_unit;
-						$effective_discount = $base_discount;
-					}
-				}
-			} elseif ($action['net_price'] !== null && $action['net_price'] > 0) {
-				$final_unit = (float)$action['net_price'];
+			if ($base_discount > 0) {
+				$final_unit = $base_unit * (1 - ($base_discount / 100));
 				if ($final_unit < $base_unit) {
 					$old_unit = $base_unit;
-					$effective_discount = (($base_unit - $final_unit) / $base_unit) * 100;
+					$effective_discount = $base_discount;
 				}
-			} else {
-				$total_discount = $base_discount + (float)$action['discount'];
-				$total_discount = min(100.0, max(0.0, $total_discount));
+			}
 
-				if ($total_discount > 0) {
-					$final_unit = $base_unit * (1 - ($total_discount / 100));
-					if ($final_unit < $base_unit) {
+			if ($include_action_discount) {
+				if ($action['net_price'] !== null && $action['net_price'] > 0 && (float)$action['net_price'] < $final_unit) {
+					$final_unit = (float)$action['net_price'];
+					$old_unit = $base_unit;
+					$effective_discount = (($base_unit - $final_unit) / $base_unit) * 100;
+					$action_applied = true;
+				} elseif ($action_discount > $base_discount) {
+					$action_unit = $base_unit * (1 - ($action_discount / 100));
+					if ($action_unit < $final_unit) {
+						$final_unit = $action_unit;
 						$old_unit = $base_unit;
-						$effective_discount = $total_discount;
+						$effective_discount = $action_discount;
+						$action_applied = true;
 					}
 				}
 			}
@@ -944,8 +944,9 @@ class ModelCatalogProduct extends Model {
 				'final_unit_price'      => (float)$final_unit,
 				'discount_percent'      => round((float)$effective_discount, 2),
 				'base_discount_percent' => round((float)$base_discount, 2),
-				'action_discount'       => round((float)$action['discount'], 2),
+				'action_discount'       => round((float)$action_discount, 2),
 				'action_net_price'      => $action['net_price'] !== null ? (float)$action['net_price'] : null,
+				'action_applied'        => $action_applied,
 				'has_action'            => !empty($action_rows_by_article[$sku])
 			);
 		}

@@ -117,9 +117,11 @@ class ControllerExtensionQuickCheckoutCart extends Controller {
 			if ($sku_quantities) {
 				$qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
 					(int)$this->customer->getId(),
-					$sku_quantities,
-					$base_unit_prices
-				);
+						$sku_quantities,
+						$base_unit_prices,
+						false,
+						true
+					);
 				$qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
 			}
 		}

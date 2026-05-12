@@ -12,18 +12,18 @@
     <table class="table table-striped" id="qo-table" style="margin-top:10px;">
       <thead>
       <tr>
+        <th class="qo-action-head"></th>
         <th>Slika</th>
+        <th>{{ text_sku }}</th>
         <th>{{ text_name }}</th>
         <th>Atribut</th>
         <th>Pakiranje</th>
         <th>C-100</th>
-        <th>{{ text_sku }}</th>
+        <th style="width:110px">{{ text_qty }}</th>
+        <th>VPC</th>
         <th>Rabat</th>
-        <th>Predračun</th>
         <th>{{ text_price }}</th>
         <th>Ukupno</th>
-        <th style="width:110px">{{ text_qty }}</th>
-        <th>Uredi</th>
       </tr>
       </thead>
       <tbody></tbody>
@@ -54,29 +54,50 @@
   .quick-order #qo-table.table > tbody > tr > td { vertical-align: middle !important; }
   .quick-order #qo-table.table-striped > tbody > tr:nth-of-type(odd) { background-color: #f7f7f7; }
   .quick-order #qo-table tbody tr.success td { background-color: #e9f7ef !important; }
-  .quick-order #qo-table td:first-child,
-  .quick-order #qo-table th:first-child { width: 80px; text-align: center; }
+  .quick-order #qo-table .qo-action-cell,
+  .quick-order #qo-table .qo-action-head { width: 32px; text-align: center; }
+  .quick-order #qo-table td:nth-child(2),
+  .quick-order #qo-table th:nth-child(2) { width: 80px; text-align: center; }
   .quick-order #qo-table td img { display:inline-block; width:60px; height:60px; object-fit:cover; }
   .quick-order #qo-table .qo-qty { height:34px; line-height:34px; padding:4px 8px; text-align:right;min-width: 50px; }
-  .quick-order #qo-table td:last-child,
-  .quick-order #qo-table th:last-child { text-align:right; }
-  .quick-order #qo-table .qo-actions { white-space:nowrap; }
+  .quick-order #qo-table .qo-price,
+  .quick-order #qo-table .qo-total-cell,
+  .quick-order #qo-table .qo-discount-cell { text-align:right; white-space:nowrap; }
+  .quick-order #qo-table .qo-price-current,
+  .quick-order #qo-table .qo-line-total { font-weight:700; }
+  .quick-order #qo-table .qo-line-total { color:#00a9e0; }
+  .quick-order #qo-table .qo-discount-action,
+  .quick-order #qo-table .qo-price-net { color:#e4008a; }
+  .quick-order .qiqo-action-button {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: #e4008a;
+    color: #fff;
+    font-weight: 700;
+    line-height: 28px;
+    padding: 0;
+  }
   .quick-order-responsive { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
   @media (max-width:575.98px){
     .quick-order #qo-table td img { width:28px; height:28px; }
     .quick-order #qo-table .qo-qty { max-width:72px; }
-    .quick-order #qo-table th:nth-child(3),
-    .quick-order #qo-table td:nth-child(3) { display:none; } /* sakrij SKU na XS */
+    .quick-order #qo-table th:nth-child(5),
+    .quick-order #qo-table td:nth-child(5),
+    .quick-order #qo-table th:nth-child(6),
+    .quick-order #qo-table td:nth-child(6) { display:none; }
   }
-  .quick-order #qo-table th:nth-child(7),
-  .quick-order #qo-table td:nth-child(7),
   .quick-order #qo-table th:nth-child(8),
   .quick-order #qo-table td:nth-child(8),
   .quick-order #qo-table th:nth-child(9),
   .quick-order #qo-table td:nth-child(9),
   .quick-order #qo-table th:nth-child(10),
-  .quick-order #qo-table td:nth-child(10) { text-align:right; }
+  .quick-order #qo-table td:nth-child(10),
+  .quick-order #qo-table th:nth-child(11),
+  .quick-order #qo-table td:nth-child(11),
+  .quick-order #qo-table th:nth-child(12),
+  .quick-order #qo-table td:nth-child(12) { text-align:right; }
 
   /* Total */
   .quick-order-total { margin-top:15px; padding:10px 15px; text-align:right; background:#fff; font-size:1.8rem; color:#000; }

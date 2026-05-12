@@ -111,6 +111,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $items = [];
         $sku_quantities = [];
         $base_unit_prices = [];
+        $sku_list = [];
 
         foreach ($query->rows as $row) {
             $product_info = $this->model_catalog_product->getProduct((int)$row['product_id']);
@@ -118,10 +119,9 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 continue;
             }
 
-            $minimumifc100 = ($row['cent'] === 'C-100') ? 1 : (int)$product_info['minimum'];
-            if ($minimumifc100 < 1) {
-                $minimumifc100 = 1;
-            }
+            $pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
+            $minimum = !empty($product_info['minimum']) ? (float)$product_info['minimum'] : 1.0;
+            $minimumifc100 = $this->qiqoMinimumStep($product_info['cent'], $pak, $minimum);
 
             $base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
             $sku = trim((string)$product_info['sku']);
@@ -129,85 +129,40 @@ class ControllerExtensionModuleQuickOrder extends Controller {
             if ($sku !== '' && $base_unit > 0) {
                 $sku_quantities[$sku] = (float)$minimumifc100;
                 $base_unit_prices[$sku] = $base_unit;
+                $sku_list[] = $sku;
             }
 
             $items[] = [
                 'product_info'  => $product_info,
-                'cent'          => isset($row['cent']) ? $row['cent'] : '',
                 'minimumifc100' => $minimumifc100,
                 'base_unit'     => $base_unit
             ];
         }
 
         $qiqo_price_map = [];
-        $qiqo_extra_map = [];
+        $qiqo_action_details_map = [];
         if ($this->customer->isLogged() && $sku_quantities) {
             $qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
                 (int)$this->customer->getId(),
                 $sku_quantities,
                 $base_unit_prices,
                 false,
-                false
+                true
             );
-            $qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
+            $qiqo_action_details_map = $this->model_catalog_product->getQiqoActionDetailsMap($sku_list);
         }
 
         $results = [];
         foreach ($items as $item) {
             $product_info = $item['product_info'];
             $sku = trim((string)$product_info['sku']);
-            $unit_raw = (float)$item['base_unit'];
-            $price_old = false;
-            $qiqo_discount_percent = 0.0;
-            $qiqo_proforma_extra_percent = 0.0;
-
-            if ($sku !== '' && isset($qiqo_price_map[$sku])) {
-                $map_row = $qiqo_price_map[$sku];
-                if (isset($map_row['final_unit_price'])) {
-                    $unit_raw = (float)$map_row['final_unit_price'];
-                }
-                if (isset($map_row['base_discount_percent'])) {
-                    $qiqo_discount_percent = (float)$map_row['base_discount_percent'];
-                } elseif (isset($map_row['discount_percent'])) {
-                    $qiqo_discount_percent = (float)$map_row['discount_percent'];
-                }
-                if (isset($map_row['old_unit_price']) && $map_row['old_unit_price'] !== false) {
-                    $old_unit_raw = (float)$map_row['old_unit_price'];
-                    if ($old_unit_raw > 0 && $old_unit_raw > $unit_raw) {
-                        $price_old = $this->currency->format(
-                            $this->tax->calculate($old_unit_raw, $product_info['tax_class_id'], (bool)$this->config->get('config_tax')),
-                            $this->session->data['currency']
-                        );
-                    }
-                }
-            }
-
-            if ($sku !== '' && isset($qiqo_extra_map[$sku])) {
-                $qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$sku];
-            }
-
-            $taxed = $this->tax->calculate($unit_raw, $product_info['tax_class_id'], (bool)$this->config->get('config_tax'));
-            $price_display = $show_price ? $this->currency->format($taxed, $this->session->data['currency']) : '';
-            $thumb = $product_info['image'] ? $this->model_tool_image->resize($product_info['image'], 60, 60) : '';
-
-            $results[] = [
-                'product_id' => (int)$product_info['product_id'],
-                'name'       => html_entity_decode($product_info['name'], ENT_QUOTES, 'UTF-8'),
-                'model'      => $product_info['model'],
-                'sku'        => $product_info['sku'],
-                'price'      => $price_display,
-                'price_raw'  => $show_price ? (float)$taxed : 0.0,
-                'price_old'  => $show_price ? $price_old : false,
-                'qiqo_discount_percent' => $qiqo_discount_percent,
-                'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
-                'name_add'       => $product_info['name_add'],
-                'description_add'=> $product_info['description_add'],
-                'stock'          => $product_info['quantity'],
-                'minimum'        => $product_info['minimum'],
-                'minimumifc100'  => $item['minimumifc100'],
-                'cent'           => $item['cent'],
-                'thumb'          => $thumb
-            ];
+            $results[] = $this->buildQuickOrderItem(
+                $product_info,
+                $item['minimumifc100'],
+                $sku !== '' && isset($qiqo_price_map[$sku]) ? $qiqo_price_map[$sku] : array(),
+                $sku !== '' && isset($qiqo_action_details_map[$sku]) ? $qiqo_action_details_map[$sku] : array(),
+                $show_price
+            );
         }
 
         $this->response->setOutput(json_encode($results));
@@ -373,16 +328,16 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         }
 
         $qiqo_price_map = array();
-        $qiqo_extra_map = array();
+        $qiqo_action_details_map = array();
         if ($this->customer->isLogged() && $sku_quantities) {
             $qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
                 (int)$this->customer->getId(),
                 $sku_quantities,
                 $base_unit_prices,
                 false,
-                false
+                true
             );
-            $qiqo_extra_map = $this->model_catalog_product->getQiqoProformaExtraDiscountMap(array_keys($sku_quantities));
+            $qiqo_action_details_map = $this->model_catalog_product->getQiqoActionDetailsMap(array_keys($sku_quantities));
         }
 
         $items = array();
@@ -390,75 +345,203 @@ class ControllerExtensionModuleQuickOrder extends Controller {
             $product_id = (int)$product['product_id'];
             $product_info = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
 
-            $thumb = '';
-            if (!empty($product_info['image'])) {
-                $thumb = $this->model_tool_image->resize($product_info['image'], 60, 60);
-            }
-
-            $price_raw = (float)$product['price'];
-            $price_txt = $this->currency->format(
-                $this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')),
-                $this->session->data['currency']
-            );
-
             $product_sku = !empty($product['sku']) ? (string)$product['sku'] : (!empty($product_info['sku']) ? (string)$product_info['sku'] : '');
-            $qiqo_discount_percent = 0.0;
-            $qiqo_proforma_extra_percent = 0.0;
-            $price_old = false;
 
-            if ($product_sku !== '') {
-                if (isset($qiqo_price_map[$product_sku]['discount_percent'])) {
-                    $qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['discount_percent'];
-                }
-
-                if (isset($qiqo_price_map[$product_sku]['base_discount_percent'])) {
-                    $qiqo_discount_percent = (float)$qiqo_price_map[$product_sku]['base_discount_percent'];
-                }
-
-                if (isset($qiqo_extra_map[$product_sku])) {
-                    $qiqo_proforma_extra_percent = (float)$qiqo_extra_map[$product_sku];
-                }
-
-                if (isset($qiqo_price_map[$product_sku]['final_unit_price'])) {
-                    $price_raw = (float)$qiqo_price_map[$product_sku]['final_unit_price'];
-                    $price_txt = $this->currency->format(
-                        $this->tax->calculate($price_raw, $product['tax_class_id'], $this->config->get('config_tax')),
-                        $this->session->data['currency']
-                    );
-                }
-
-                if (isset($qiqo_price_map[$product_sku]['old_unit_price']) &&
-                    $qiqo_price_map[$product_sku]['old_unit_price'] !== false) {
-                    $old_unit_raw = (float)$qiqo_price_map[$product_sku]['old_unit_price'];
-                    $current_unit_raw = $price_raw;
-
-                    if ($old_unit_raw > 0 && $old_unit_raw > $current_unit_raw) {
-                        $price_old = $this->currency->format(
-                            $this->tax->calculate($old_unit_raw, $product['tax_class_id'], $this->config->get('config_tax')),
-                            $this->session->data['currency']
-                        );
-                    }
-                }
+            if (!$product_info) {
+                continue;
             }
 
-            $items[] = array(
-                'product_id' => (int)$product['product_id'],
-                'name'       => $product['name'],
-                'name_add'   => !empty($product_info['name_add']) ? $product_info['name_add'] : '',
-                'minimum'    => !empty($product_info['minimum']) ? (int)$product_info['minimum'] : 1,
-                'cent'       => !empty($product_info['cent']) ? $product_info['cent'] : '',
-                'sku'        => $product_sku,
-                'price_raw'  => $price_raw,
-                'price'      => $price_txt,
-                'price_old'  => $price_old,
-                'qiqo_discount_percent' => $qiqo_discount_percent,
-                'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
-                'quantity'   => (int)$product['quantity'],
-                'thumb'      => $thumb
+            $items[] = $this->buildQuickOrderItem(
+                $product_info,
+                (int)$product['quantity'],
+                $product_sku !== '' && isset($qiqo_price_map[$product_sku]) ? $qiqo_price_map[$product_sku] : array(),
+                $product_sku !== '' && isset($qiqo_action_details_map[$product_sku]) ? $qiqo_action_details_map[$product_sku] : array(),
+                true
             );
         }
 
         $json = array('items' => $items);
         $this->response->setOutput(json_encode($json));
+    }
+
+    private function buildQuickOrderItem($product_info, $quantity, $pricing_row = array(), $action_rows = array(), $show_price = true) {
+        $quantity = (float)$quantity;
+        if ($quantity <= 0) {
+            $quantity = 1.0;
+        }
+
+        $minimum = !empty($product_info['minimum']) ? (float)$product_info['minimum'] : 1.0;
+        if ($minimum <= 0) {
+            $minimum = 1.0;
+        }
+
+        $pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
+        $cent = !empty($product_info['cent']) ? (string)$product_info['cent'] : '';
+        $minimum_step = $this->qiqoMinimumStep($cent, $pak, $minimum);
+
+        $base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
+        $vpc_unit = (isset($product_info['vpc']) && (float)$product_info['vpc'] > 0) ? (float)$product_info['vpc'] : $base_unit;
+
+        $vpc_display_raw = $this->qiqoDisplayPriceRaw($vpc_unit, $cent);
+        $price_unit = $base_unit;
+        $discount_percent = 0.0;
+        $action_discount = 0.0;
+        $action_net_price_raw = 0.0;
+        $has_action = !empty($action_rows) || (!empty($pricing_row) && !empty($pricing_row['has_action']));
+
+        if (!empty($pricing_row)) {
+            if (isset($pricing_row['final_unit_price'])) {
+                $price_unit = (float)$pricing_row['final_unit_price'];
+            }
+
+            if (isset($pricing_row['discount_percent'])) {
+                $discount_percent = (float)$pricing_row['discount_percent'];
+            }
+
+            if (isset($pricing_row['action_discount'])) {
+                $action_discount = (float)$pricing_row['action_discount'];
+            }
+
+            if (isset($pricing_row['action_net_price']) && $pricing_row['action_net_price'] !== null && (float)$pricing_row['action_net_price'] > 0) {
+                $action_net_price_raw = $this->qiqoDisplayPriceRaw((float)$pricing_row['action_net_price'], $cent);
+            }
+        }
+
+        $price_display_raw = $this->qiqoDisplayPriceRaw($price_unit, $cent);
+
+        if ($action_net_price_raw <= 0 && $discount_percent > 0 && $vpc_display_raw > 0) {
+            $price_display_raw = $vpc_display_raw * (1 - ($discount_percent / 100));
+        }
+
+        $vpc_display_raw = round($vpc_display_raw, 5);
+        $price_display_raw = round($price_display_raw, 5);
+        $line_total_raw = $this->quickOrderLineTotalRaw($price_display_raw, $quantity, $cent);
+
+        $thumb = !empty($product_info['image']) ? $this->model_tool_image->resize($product_info['image'], 60, 60) : '';
+        $action_conditions = $this->formatQiqoActionConditions($action_rows);
+
+        return array(
+            'product_id' => (int)$product_info['product_id'],
+            'name'       => html_entity_decode($product_info['name'], ENT_QUOTES, 'UTF-8'),
+            'model'      => $product_info['model'],
+            'sku'        => $product_info['sku'],
+            'name_add'   => $product_info['name_add'],
+            'description_add' => $product_info['description_add'],
+            'stock'      => $product_info['quantity'],
+            'minimum'    => $minimum,
+            'minimumifc100' => $minimum_step,
+            'pak'        => $pak,
+            'packaging'  => $this->formatQiqoPackaging(isset($product_info['ean']) ? $product_info['ean'] : '', $minimum, $pak),
+            'cent'       => $cent,
+            'quantity'   => (int)$quantity,
+            'vpc_raw'    => $show_price ? $vpc_display_raw : 0.0,
+            'vpc'        => $show_price ? $this->currency->format($vpc_display_raw, $this->session->data['currency']) : '',
+            'price_raw'  => $show_price ? $price_display_raw : 0.0,
+            'price'      => $show_price ? $this->currency->format($price_display_raw, $this->session->data['currency']) : '',
+            'line_total_raw' => $show_price ? $line_total_raw : 0.0,
+            'line_total' => $show_price ? $this->currency->format($line_total_raw, $this->session->data['currency']) : '',
+            'qiqo_discount_percent' => $discount_percent,
+            'qiqo_action' => $has_action,
+            'qiqo_action_discount' => $action_discount,
+            'qiqo_action_net_price_raw' => $action_net_price_raw,
+            'qiqo_action_conditions' => $action_conditions,
+            'thumb'      => $thumb
+        );
+    }
+
+    private function qiqoCentNormalized($cent) {
+        return strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$cent));
+    }
+
+    private function qiqoIsC100($cent) {
+        return $this->qiqoCentNormalized($cent) === 'C100';
+    }
+
+    private function qiqoMinimumStep($cent, $pak, $pakkol) {
+        $step = 1;
+
+        if ($this->qiqoIsC100($cent) || (int)$pak === 1) {
+            $step = (int)$pakkol;
+        }
+
+        return $step > 0 ? $step : 1;
+    }
+
+    private function qiqoDisplayPriceRaw($price, $cent) {
+        $price = (float)$price;
+
+        return $this->qiqoIsC100($cent) ? ($price * 100) : $price;
+    }
+
+    private function quickOrderLineTotalRaw($price_display_raw, $quantity, $cent) {
+        $total = (float)$price_display_raw * (float)$quantity;
+
+        if ($this->qiqoIsC100($cent)) {
+            $total = $total / 100;
+        }
+
+        return round($total, 5);
+    }
+
+    private function formatQiqoNumber($value) {
+        $value = (float)$value;
+
+        if (abs($value - round($value)) < 0.00001) {
+            return number_format($value, 0, ',', '.');
+        }
+
+        return rtrim(rtrim(number_format($value, 2, ',', '.'), '0'), ',');
+    }
+
+    private function formatQiqoPackaging($jm, $pakkol, $pak) {
+        $parts = array();
+        $jm = trim((string)$jm);
+
+        if ($jm !== '') {
+            $parts[] = $jm;
+        }
+
+        if ((float)$pakkol > 0) {
+            $parts[] = $this->formatQiqoNumber($pakkol);
+        }
+
+        $label = trim(implode(' ', $parts));
+
+        if ((int)$pak === 1) {
+            $label .= '*';
+        }
+
+        return $label !== '' ? $label : '-';
+    }
+
+    private function formatQiqoActionConditions($rows) {
+        $conditions = array();
+
+        foreach ($rows as $row) {
+            $indicator = isset($row['indicator']) ? strtoupper(trim((string)$row['indicator'])) : '';
+            $quantity = isset($row['quantity']) ? (float)$row['quantity'] : 0.0;
+            $price = isset($row['price']) ? (float)$row['price'] : 0.0;
+            $discount = isset($row['discount']) ? (float)$row['discount'] : 0.0;
+
+            $parts = array();
+            if ($indicator !== '') {
+                $parts[] = $indicator;
+            }
+            if ($quantity > 0) {
+                $parts[] = 'kol. ' . $this->formatQiqoNumber($quantity);
+            }
+            if ($price > 0) {
+                $parts[] = 'neto ' . $this->currency->format($price, $this->session->data['currency']);
+            }
+            if ($discount > 0) {
+                $parts[] = '-' . $this->formatQiqoNumber($discount) . '%';
+            }
+
+            if ($parts) {
+                $conditions[] = implode(' / ', $parts);
+            }
+        }
+
+        return $conditions;
     }
 }

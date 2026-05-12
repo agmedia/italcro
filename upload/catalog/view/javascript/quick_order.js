@@ -3,7 +3,7 @@
     var $list  = $('#qo-suggestions');
     var $table = $('#qo-table tbody');
     var timer  = null;
-    var LS_KEY = 'qo_items';
+    var LS_KEY = 'qo_items_v2';
     var ADD_LOCK = {}; // spriječi dupli fastAdd
 
     /* ===================== localStorage ===================== */
@@ -39,7 +39,7 @@
         if(!res || !res.items){ baselSetCounters(0, '0'); return; }
         var count=res.items.length,total=0;
         res.items.forEach(function(it){
-          total += (it.price_raw||0) * (it.quantity||0);
+          total += lineTotalRaw(it.price_raw || 0, it.quantity || 0, it.cent || '');
         });
         $.post('index.php?route=extension/module/quick_order/format', { amount: total }, function(fmt){
           baselSetCounters(count, (fmt && fmt.formatted) ? fmt.formatted : total.toFixed(2));
@@ -69,49 +69,77 @@
       return normCent(obj && obj.cent) === 'C100';
     }
     function getMinStep(item){
-      if (isC100(item)) {
+      var configured = parseInt(item && item.minimumifc100 || 0, 10);
+      if (!isNaN(configured) && configured > 0) {
+        return configured;
+      }
+
+      if (isC100(item) || parseInt(item && item.pak || 0, 10) === 1) {
         var pack = parseInt(item && item.minimum || 0, 10);
         if (isNaN(pack) || pack < 1) pack = 1;
         return pack;
       }
       return 1;
     }
-// prikaz cijene u tablici: ako je C-100 -> cijena*100, inače normalno
-    function displayPrice(item){
-      if(isC100(item) && getMinStep(item) > 1){
-        // item.price_raw je broj (po komadu)
-        return ((item.price_raw || 0) * 100).toFixed(2) + '€';
+    function round5(value){
+      value = parseFloat(value || 0);
+      if(isNaN(value)) value = 0;
+      return Math.round(value * 100000) / 100000;
+    }
+    function lineTotalRaw(priceRaw, qty, cent){
+      var total = round5(priceRaw) * (parseFloat(qty || 0) || 0);
+      if(normCent(cent) === 'C100'){
+        total = total / 100;
       }
-      return item.price || '';
+      return round5(total);
     }
     function displayPriceHtml(item){
-      var current = displayPrice(item);
-      var old = item && item.price_old ? String(item.price_old) : '';
-      if(old){
-        return '<span class="price-new" style="color:#d9534f;font-weight:700;">' + current + '</span><br><span class="price-old" style="text-decoration:line-through;color:#777;">' + old + '</span>';
+      var current = item && item.price ? String(item.price) : '';
+      var cls = 'qo-price-current';
+      if(parseFloat(item && item.qiqo_action_net_price_raw || 0) > 0){
+        cls += ' qo-price-net';
       }
-      return current;
+      return '<span class="' + cls + '">' + esc(current) + '</span>';
     }
-    function displayPercent(value, prefix){
+    function displayVpcHtml(item){
+      return '<span class="qo-vpc-current">' + esc(item && item.vpc ? String(item.vpc) : '') + '</span>';
+    }
+    function displayPercent(value, prefix, item){
+      if(parseFloat(item && item.qiqo_action_net_price_raw || 0) > 0){
+        return '-';
+      }
       var n = parseFloat(value || 0);
       if(isNaN(n) || n <= 0){
         return '-';
       }
       return (prefix || '') + Math.round(n) + '%';
     }
+    function discountClass(item){
+      if(item && item.qiqo_action && parseFloat(item.qiqo_action_discount || 0) > 0){
+        return ' qo-discount-action';
+      }
+      return '';
+    }
+    function actionButtonHtml(item){
+      if(!item || !item.qiqo_action){
+        return '';
+      }
+      var title = 'Uvjeti akcijskog cjenika';
+      if(item.qiqo_action_conditions && item.qiqo_action_conditions.length){
+        title += ': ' + item.qiqo_action_conditions.join(' | ');
+      }
+      return '<button type="button" class="qiqo-action-button" title="' + esc(title) + '" aria-label="' + esc(title) + '">A</button>';
+    }
 
     /* ===================== Table rendering ===================== */
     function rowHtml(item, added){
-      var pack = item.minimum && item.minimum > 0 ? item.minimum : 1;
+      var pack = item.packaging || (item.minimum && item.minimum > 0 ? item.minimum : 1);
       var minStep = getMinStep(item);
       var qty = item.quantity || minStep;
       if (qty < minStep) qty = minStep;
 
-      var subtotal = (item.price_raw || 0) * qty;
+      var subtotal = lineTotalRaw(item.price_raw || 0, qty, item.cent || '');
       var subtotalCell = '<span class="qo-subtotal" data-sub="'+subtotal+'">...</span>';
-      var actions = added
-          ? '<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>'
-          : '<button class="btn btn-primary qo-add" title="Dodaj"><span class="global-cart"></span></button>';
 
       var qtyHtml =
           '<div class="input-group addtocart qo-qty-group" style="max-width:180px; margin-left:auto;">' +
@@ -135,19 +163,19 @@
           '</div>';
 
       return '\
-        <tr data-id="'+item.product_id+'" data-price="'+(item.price_raw || 0)+'" '+(added?'data-added="1"':'')+'>\
-          <td>'+(item.thumb ? '<img src="'+item.thumb+'" style="width:60px;height:60px;object-fit:cover">' : '')+'</td>\n\
-          <td>'+(item.name || '')+'</td>\n\
-          <td>'+(item.name_add || '')+'</td>\n\
-              <td>'+pack+'</td>\n\
-              <td>'+(item.cent || '')+'</td>\n\
-          <td>'+(item.sku || '')+'</td>\n\
-          <td>'+displayPercent(item.qiqo_discount_percent, '-')+'</td>\n\
-          <td>'+displayPercent(item.qiqo_proforma_extra_percent, '+')+'</td>\n\
-         <td>'+(displayPriceHtml(item))+'</td>\n\
-          <td>'+subtotalCell+'</td>\n\
+        <tr data-id="'+esc(item.product_id)+'" data-price="'+(item.price_raw || 0)+'" data-vpc="'+(item.vpc_raw || 0)+'" data-cent="'+esc(item.cent || '')+'" data-pak="'+(item.pak || 0)+'" data-action-net="'+(item.qiqo_action_net_price_raw || 0)+'" '+(added?'data-added="1"':'')+'>\
+          <td class="qo-action-cell">'+actionButtonHtml(item)+'</td>\n\
+          <td>'+(item.thumb ? '<img src="'+esc(item.thumb)+'" style="width:60px;height:60px;object-fit:cover">' : '')+'</td>\n\
+          <td>'+esc(item.sku || '')+'</td>\n\
+          <td>'+esc(item.name || '')+'</td>\n\
+          <td>'+esc(item.name_add || '')+'</td>\n\
+          <td>'+esc(pack || '-')+'</td>\n\
+          <td>'+esc(item.cent || '-')+'</td>\n\
           <td>'+qtyHtml+'</td>\n\
-          <td class="qo-actions">'+actions+'</td>\n\
+          <td class="qo-price">'+displayVpcHtml(item)+'</td>\n\
+          <td class="qo-discount-cell'+discountClass(item)+'">'+displayPercent(item.qiqo_discount_percent, '-', item)+'</td>\n\
+          <td class="qo-price">'+displayPriceHtml(item)+'</td>\n\
+          <td class="qo-total-cell">'+subtotalCell+'</td>\n\
         </tr>';
     }
 
@@ -162,10 +190,10 @@
         qty = step;
         $input.val(step);
       }
-      var subtotal = price * qty;
+      var subtotal = lineTotalRaw(price, qty, $tr.attr('data-cent') || '');
       var $cell = $tr.find('.qo-subtotal');
       $cell.attr('data-sub', subtotal);
-      formatCurrency(subtotal, function(txt){ $cell.text(txt); });
+      formatCurrency(subtotal, function(txt){ $cell.text(txt).addClass('qo-line-total'); });
     }
     function recomputeTotal(){
       var total = 0;
@@ -173,6 +201,20 @@
         total += parseFloat($(this).attr('data-sub') || '0');
       });
       formatCurrency(total, function(txt){ $('#qo-total').text(txt); });
+    }
+    function refreshRowFromCartState(pid){
+      return $.get('index.php?route=extension/module/quick_order/cartState&_=' + Date.now(), function(res){
+        if(!res || !res.items) return;
+        res.items.forEach(function(it){
+          if(String(it.product_id) === String(pid)){
+            var $tr = ensureRow(Object.assign({}, it, { added: true }), true);
+            var data = getRowData($tr);
+            data.added = true;
+            upsertLS(Object.assign({}, it, data, { added: true }));
+          }
+        });
+        recomputeTotal();
+      }, 'json');
     }
 
     function ensureRow(item, added){
@@ -186,35 +228,55 @@
         if (item.price_raw != null) {
           $existing.attr('data-price', item.price_raw);
         }
-        if(added){
-          $existing.attr('data-added','1').addClass('success')
-              .find('.qo-actions').html('<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
-        }
-        if (item.minimum) {
-          $existing.find('td').eq(3).text(item.minimum);
+        if (item.vpc_raw != null) {
+          $existing.attr('data-vpc', item.vpc_raw);
         }
         if (item.cent != null) {
-          $existing.find('td').eq(4).text(item.cent);
+          $existing.attr('data-cent', item.cent);
+        }
+        if (item.pak != null) {
+          $existing.attr('data-pak', item.pak);
+        }
+        if (item.qiqo_action_net_price_raw != null) {
+          $existing.attr('data-action-net', item.qiqo_action_net_price_raw);
+        }
+        if(added){
+          $existing.attr('data-added','1').addClass('success');
+        }
+        var $td = $existing.find('td');
+        if (item.qiqo_action != null) {
+          $td.eq(0).html(actionButtonHtml(item));
         }
         if (item.sku) {
-          $existing.find('td').eq(5).text(item.sku);
+          $td.eq(2).text(item.sku);
         }
-        if (item.qiqo_discount_percent != null) {
-          $existing.find('td').eq(6).text(displayPercent(item.qiqo_discount_percent, '-'));
+        if (item.name != null) {
+          $td.eq(3).text(item.name);
         }
-        if (item.qiqo_proforma_extra_percent != null) {
-          $existing.find('td').eq(7).text(displayPercent(item.qiqo_proforma_extra_percent, '+'));
+        if (item.name_add != null) {
+          $td.eq(4).text(item.name_add);
+        }
+        if (item.packaging != null || item.minimum) {
+          $td.eq(5).text(item.packaging || item.minimum);
+        }
+        if (item.cent != null) {
+          $td.eq(6).text(item.cent || '-');
         }
 
-        // osvježi prikaz cijene (C-100 -> price_raw*100)
-        if(item.price_raw != null || item.price != null || item.price_old != null){
-          $existing.find('td').eq(8).html(displayPriceHtml({
-            cent: item.cent != null ? item.cent : $existing.find('td').eq(4).text(),
-            price_raw: item.price_raw != null ? item.price_raw : parseFloat($existing.attr('data-price') || '0'),
-            price: item.price != null ? item.price : $existing.find('td').eq(8).text(),
-            price_old: item.price_old != null ? item.price_old : '',
-            minimumifc100: min,
-            minimum: item.minimum != null ? item.minimum : parseInt($existing.find('td').eq(3).text() || '1', 10)
+        if(item.vpc_raw != null || item.vpc != null){
+          $td.eq(8).html(displayVpcHtml({
+            vpc: item.vpc != null ? item.vpc : $td.eq(8).text()
+          }));
+        }
+        if (item.qiqo_discount_percent != null || item.qiqo_action_net_price_raw != null) {
+          $td.eq(9)
+              .toggleClass('qo-discount-action', discountClass(item) !== '')
+              .text(displayPercent(item.qiqo_discount_percent, '-', item));
+        }
+        if(item.price_raw != null || item.price != null){
+          $td.eq(10).html(displayPriceHtml({
+            price: item.price != null ? item.price : $td.eq(10).text(),
+            qiqo_action_net_price_raw: item.qiqo_action_net_price_raw != null ? item.qiqo_action_net_price_raw : parseFloat($existing.attr('data-action-net') || '0')
           }));
         }
         recomputeRow($existing);
@@ -237,30 +299,34 @@
       if (isNaN(qty) || qty < minStep) qty = minStep;
 
       var pRaw = parseFloat($tr.attr('data-price') || '0');
+      var vpcRaw = parseFloat($tr.attr('data-vpc') || '0');
       var tds  = $tr.find('td');
 
-      var minimumText = tds.eq(3).text().trim();
+      var minimumText = tds.eq(5).text().trim().replace(/[^\d.,-]/g, '').replace(',', '.');
       var minimumVal = parseInt(minimumText || minStep, 10);
       if (isNaN(minimumVal) || minimumVal < 1) minimumVal = minStep;
 
       return {
         product_id: pid,
-        name: tds.eq(1).text().trim(),
-        name_add: tds.eq(2).text().trim(),      // Atribut (name_add)
-        // td(3) = Pakiranje (minimum)
-        cent: tds.eq(4).text().trim(),
-        sku:  tds.eq(5).text().trim(),
-        qiqo_discount_percent: parseFloat(String(tds.eq(6).text() || '').replace(/[^\d.-]/g, '')) || 0,
-        qiqo_proforma_extra_percent: parseFloat(String(tds.eq(7).text() || '').replace(/[^\d.-]/g, '')) || 0,
-        price: tds.eq(8).find('.price-new').text().trim() || tds.eq(8).text().trim(),
-        price_old: tds.eq(8).find('.price-old').text().trim() || '',
-        // Cijena
+        name: tds.eq(3).text().trim(),
+        name_add: tds.eq(4).text().trim(),
+        packaging: tds.eq(5).text().trim(),
+        cent: $tr.attr('data-cent') || tds.eq(6).text().trim(),
+        sku:  tds.eq(2).text().trim(),
+        qiqo_discount_percent: Math.abs(parseFloat(String(tds.eq(9).text() || '').replace(/[^\d.-]/g, ''))) || 0,
+        qiqo_action: !!tds.eq(0).find('.qiqo-action-button').length,
+        qiqo_action_net_price_raw: parseFloat($tr.attr('data-action-net') || '0') || 0,
+        vpc: tds.eq(8).text().trim(),
+        vpc_raw: isNaN(vpcRaw) ? 0 : vpcRaw,
+        price: tds.eq(10).text().trim(),
         price_raw: isNaN(pRaw) ? 0 : pRaw,
         quantity: qty,
         minimum: minimumVal,
         minimumifc100: minStep,
+        pak: parseInt($tr.attr('data-pak') || '0', 10) || 0,
+        line_total_raw: lineTotalRaw(isNaN(pRaw) ? 0 : pRaw, qty, $tr.attr('data-cent') || ''),
         thumb: (function(){
-          var img = $tr.find('td:first img');
+          var img = tds.eq(1).find('img');
           return img.length ? img.attr('src') : '';
         })()
       };
@@ -272,9 +338,9 @@
 
     function suggestionHtml(it){
       var pack = it.minimum && it.minimum > 0 ? it.minimum : 1;
+      var packaging = it.packaging || pack;
       var minStep = getMinStep(it);
       var qtyVal = it.quantity && it.quantity >= minStep ? it.quantity : minStep;
-      // minStep je isključivo po pravilima getMinStep (C-100 -> minimum, ostalo -> 1)
 
       var img = it.thumb
           ? `<img src="${esc(it.thumb)}" alt="${esc(it.name)}" class="qo-thumb">`
@@ -288,12 +354,18 @@
      data-name_add="${esc(it.name_add||'')}"
      data-minimum="${minStep}"
      data-pack="${pack}"
+     data-packaging="${esc(packaging)}"
+     data-pak="${Number(it.pak||0)}"
      data-sku="${esc(it.sku||'')}"
      data-price="${esc(it.price||'')}"
-     data-price-old="${esc(it.price_old||'')}"
      data-priceraw="${Number(it.price_raw||0)}"
+     data-vpc="${esc(it.vpc||'')}"
+     data-vpcraw="${Number(it.vpc_raw||0)}"
      data-discount="${Number(it.qiqo_discount_percent||0)}"
-     data-proforma="${Number(it.qiqo_proforma_extra_percent||0)}"
+     data-action="${it.qiqo_action ? 1 : 0}"
+     data-action-discount="${Number(it.qiqo_action_discount||0)}"
+     data-action-net="${Number(it.qiqo_action_net_price_raw||0)}"
+     data-action-conditions="${esc((it.qiqo_action_conditions||[]).join(' | '))}"
      data-thumb="${esc(it.thumb||'')}"
      data-cent="${esc(it.cent||'')}">
       <div class="qo-suggest-inner">
@@ -305,9 +377,10 @@
           </div>
           <div class="meta">
             ${(it.sku ? `<span>Šifra: ${esc(it.sku)}</span>` : '')}
-            ${(it.qiqo_discount_percent ? `<span>Rabat: -${Math.round(Number(it.qiqo_discount_percent))}%</span>` : '')}
-            ${(it.price ? `<span class="price">${esc(it.price)}</span>` : '')}
-            ${(it.price_old ? `<span class="price-old" style="text-decoration:line-through;color:#777;">${esc(it.price_old)}</span>` : '')}
+            ${(packaging ? `<span>Pakiranje: ${esc(packaging)}</span>` : '')}
+            ${(it.vpc ? `<span>VPC: ${esc(it.vpc)}</span>` : '')}
+            ${(displayPercent(it.qiqo_discount_percent, '-', it) !== '-' ? `<span>Rabat: ${esc(displayPercent(it.qiqo_discount_percent, '-', it))}</span>` : '')}
+            ${(it.price ? `<span class="price">Cijena: ${esc(it.price)}</span>` : '')}
           </div>
         </div>
 
@@ -366,14 +439,20 @@
         name_add: $s.attr('data-name_add') || '',
         sku: $s.attr('data-sku') || '',
         price: $s.attr('data-price') || '',
-        price_old: $s.attr('data-price-old') || '',
         qiqo_discount_percent: parseFloat($s.attr('data-discount') || '0') || 0,
-        qiqo_proforma_extra_percent: parseFloat($s.attr('data-proforma') || '0') || 0,
+        qiqo_action: String($s.attr('data-action') || '0') === '1',
+        qiqo_action_discount: parseFloat($s.attr('data-action-discount') || '0') || 0,
+        qiqo_action_net_price_raw: parseFloat($s.attr('data-action-net') || '0') || 0,
+        qiqo_action_conditions: ($s.attr('data-action-conditions') || '').split(' | ').filter(Boolean),
+        vpc: $s.attr('data-vpc') || '',
+        vpc_raw: parseFloat($s.attr('data-vpcraw') || '0') || 0,
         price_raw: parseFloat($s.attr('data-priceraw') || '0') || 0,
         thumb: $s.attr('data-thumb') || '',
         quantity: q,
         minimum: pack,
         minimumifc100: min,
+        pak: parseInt($s.attr('data-pak') || '0', 10) || 0,
+        packaging: $s.attr('data-packaging') || '',
         cent: $s.attr('data-cent') || ''
       };
     }
@@ -483,8 +562,10 @@
           var data = getRowData($rowExisting);
           data.added = true;
           upsertLS(data);
-          baselHeaderRefreshDebounced();
-          toast('ok', 'Količina ažurirana');
+          refreshRowFromCartState(item.product_id).always(function(){
+            baselHeaderRefreshDebounced();
+            toast('ok', 'Količina ažurirana');
+          });
         }, 'json').fail(function(){
           toast('err', 'Greška pri ažuriranju količine');
         }).always(function(){
@@ -511,8 +592,10 @@
           upsertLS(data);
 
           recomputeTotal();
-          baselHeaderRefreshDebounced();
-          toast('ok', 'Dodano u košaricu');
+          refreshRowFromCartState(item.product_id).always(function(){
+            baselHeaderRefreshDebounced();
+            toast('ok', 'Dodano u košaricu');
+          });
         } else {
           toast('err', (res && res.message) || 'Greška pri dodavanju');
         }
@@ -718,30 +801,7 @@
       openQtyMode($(this), true);
     });
 
-    /* ===================== Tablica: add/qty/remove/clear ===================== */
-    $(document).on('click', '.qo-add', function(){
-      var $tr = $(this).closest('tr');
-      var data = getRowData($tr);
-      var pid = data.product_id;
-      var qty = data.quantity;
-      var min = data.minimumifc100 && data.minimumifc100 > 0 ? data.minimumifc100 : (data.minimum && data.minimum > 0 ? data.minimum : 1);
-      if(qty < min) qty = min;
-
-      $.post('index.php?route=extension/module/quick_order/fastAdd', { product_id: pid, quantity: qty }, function(res){
-        if(res && res.success){
-          $tr.attr('data-added','1').addClass('success')
-              .find('.qo-actions').html('<a class=" qo-remove product-remove" title="Ukloni"><i class="fa fa-times"></i></a> <span class="label label-success" style="margin-left:6px;">✓ Dodano</span>');
-          toast('ok', 'Dodano u košaricu');
-          data.added = true;
-          data.quantity = qty;
-          upsertLS(data);
-          baselHeaderRefreshDebounced();
-        } else {
-          toast('err', (res && res.message) || 'Greška pri dodavanju');
-        }
-      }, 'json').fail(function(){ toast('err', 'Greška pri dodavanju'); });
-    });
-
+    /* ===================== Tablica: qty/remove/clear ===================== */
     $(document).on('change input', '.qo-qty', function(){
       var $tr = $(this).closest('tr');
       var pid = $tr.data('id');
@@ -763,7 +823,9 @@
 
       if($tr.attr('data-added')){
         $.post('index.php?route=extension/module/quick_order/updateQty', { product_id: pid, quantity: qty }, function(){
-          baselHeaderRefreshDebounced();
+          refreshRowFromCartState(pid).always(function(){
+            baselHeaderRefreshDebounced();
+          });
         });
       }
     });

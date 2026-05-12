@@ -119,8 +119,8 @@ class ControllerProductSpecial extends Controller {
 					(int)$this->customer->getId(),
 					$sku_quantities,
 					$base_unit_prices,
-					false,
-					false
+						false,
+						true
 				);
 			}
 
@@ -158,7 +158,7 @@ class ControllerProductSpecial extends Controller {
 					$display_price_unit = (float)$pricing['base_unit_price'];
 				}
 
-				$qiqo_discount_percent = isset($pricing['base_discount_percent']) ? (float)$pricing['base_discount_percent'] : 0.0;
+				$qiqo_discount_percent = isset($pricing['discount_percent']) ? (float)$pricing['discount_percent'] : 0.0;
 			}
 
 			if ($result['image']) {

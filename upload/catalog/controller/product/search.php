@@ -232,8 +232,8 @@ class ControllerProductSearch extends Controller {
 						(int)$this->customer->getId(),
 						$sku_quantities,
 						$base_unit_prices,
-						false,
-						false
+							false,
+							true
 					);
 				}
 
@@ -267,7 +267,7 @@ class ControllerProductSearch extends Controller {
 					$display_special_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
 						? (float)$pricing['final_unit_price']
 						: 0.0;
-					$qiqo_discount_percent = isset($pricing['base_discount_percent']) ? (float)$pricing['base_discount_percent'] : 0.0;
+						$qiqo_discount_percent = isset($pricing['discount_percent']) ? (float)$pricing['discount_percent'] : 0.0;
 				}
 
 				if ($result['image']) {

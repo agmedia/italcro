@@ -207,8 +207,8 @@ class ControllerProductProduct extends Controller {
 							(int)$this->customer->getId(),
 							array($main_sku => $main_minimum),
 							array($main_sku => $main_base_unit),
-							false,
-							false
+								false,
+								true
 						);
 
 						if (isset($main_map[$main_sku])) {
@@ -220,7 +220,7 @@ class ControllerProductProduct extends Controller {
 								$product_info['price'] = isset($main_pricing['base_unit_price']) ? (float)$main_pricing['base_unit_price'] : (float)$main_pricing['final_unit_price'];
 								$product_info['special'] = null;
 							}
-							$data['qiqo_discount_percent'] = isset($main_pricing['base_discount_percent']) ? (float)$main_pricing['base_discount_percent'] : 0.0;
+							$data['qiqo_discount_percent'] = isset($main_pricing['discount_percent']) ? (float)$main_pricing['discount_percent'] : 0.0;
 						}
 					}
 				}
@@ -674,8 +674,8 @@ class ControllerProductProduct extends Controller {
 							(int)$this->customer->getId(),
 							$related_sku_quantities,
 							$related_base_unit_prices,
-							false,
-							false
+								false,
+								true
 						);
 					}
 
@@ -721,7 +721,7 @@ class ControllerProductProduct extends Controller {
 						$display_special_unit = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
 							? (float)$row_pricing['final_unit_price']
 							: 0.0;
-						$qiqo_discount_percent = isset($row_pricing['base_discount_percent']) ? (float)$row_pricing['base_discount_percent'] : 0.0;
+						$qiqo_discount_percent = isset($row_pricing['discount_percent']) ? (float)$row_pricing['discount_percent'] : 0.0;
 					}
 
 					if ($result['image']) {
@@ -934,8 +934,8 @@ class ControllerProductProduct extends Controller {
                             (int)$this->customer->getId(),
                             $mpn_sku_quantities,
                             $mpn_base_prices,
-                            false,
-                            false
+	                            false,
+	                            true
                         );
                     }
                 }
@@ -961,7 +961,7 @@ class ControllerProductProduct extends Controller {
 	                        $row_pricing = $mpn_qiqo_price_map[$row_sku];
 	                        $vpc_unit_raw = isset($row_pricing['base_unit_price']) ? (float)$row_pricing['base_unit_price'] : $vpc_unit_raw;
 	                        $price_unit_raw = isset($row_pricing['final_unit_price']) ? (float)$row_pricing['final_unit_price'] : $vpc_unit_raw;
-	                        $row_qiqo_discount_percent = isset($row_pricing['base_discount_percent']) ? (float)$row_pricing['base_discount_percent'] : 0.0;
+	                        $row_qiqo_discount_percent = isset($row_pricing['discount_percent']) ? (float)$row_pricing['discount_percent'] : 0.0;
 	                    }
 
 		                    $vpc_display_raw = (isset($result['vpc']) && (float)$result['vpc'] > 0)
@@ -1038,14 +1038,14 @@ class ControllerProductProduct extends Controller {
 	                                array($single_sku => $single_minimum_step),
 	                                array($single_sku => $single_base_unit),
 	                                false,
-	                                false
+	                                true
 	                            );
 
 	                            if (isset($single_map[$single_sku])) {
 	                                $single_pricing = $single_map[$single_sku];
 	                                $single_vpc_unit_raw = isset($single_pricing['base_unit_price']) ? (float)$single_pricing['base_unit_price'] : $single_vpc_unit_raw;
 	                                $single_price_unit_raw = isset($single_pricing['final_unit_price']) ? (float)$single_pricing['final_unit_price'] : $single_vpc_unit_raw;
-	                                $single_qiqo_discount_percent = isset($single_pricing['base_discount_percent']) ? (float)$single_pricing['base_discount_percent'] : 0.0;
+	                                $single_qiqo_discount_percent = isset($single_pricing['discount_percent']) ? (float)$single_pricing['discount_percent'] : 0.0;
 	                            }
 	                        }
 	                    }

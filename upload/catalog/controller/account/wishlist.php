@@ -106,8 +106,8 @@ class ControllerAccountWishList extends Controller {
 					(int)$this->customer->getId(),
 					$sku_quantities,
 					$base_prices,
-					false,
-					false
+						false,
+						true
 				);
 			}
 		}
@@ -130,7 +130,7 @@ class ControllerAccountWishList extends Controller {
 				$row_pricing = $qiqo_price_map[$sku];
 				$vpc_unit_raw = isset($row_pricing['base_unit_price']) ? (float)$row_pricing['base_unit_price'] : $vpc_unit_raw;
 				$price_unit_raw = isset($row_pricing['final_unit_price']) ? (float)$row_pricing['final_unit_price'] : $vpc_unit_raw;
-				$discount_percent = isset($row_pricing['base_discount_percent']) ? (float)$row_pricing['base_discount_percent'] : 0.0;
+				$discount_percent = isset($row_pricing['discount_percent']) ? (float)$row_pricing['discount_percent'] : 0.0;
 			}
 
 			$vpc_display_raw = (isset($product_info['vpc']) && (float)$product_info['vpc'] > 0)

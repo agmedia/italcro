@@ -87,14 +87,45 @@
       return value.toFixed(4).replace(/\.?0+$/, '').replace('.', ',');
     }
     function allowsDecimalQty(item){
-      return item && (item.decimal_quantity === true || String(item.decimal_quantity || '0') === '1');
+      if (!item) return false;
+      if (item.decimal_quantity === true || String(item.decimal_quantity || '0') === '1') {
+        return true;
+      }
+      var step = parseQty(item.minimumifc100 || item.minimum || item.min || 0);
+      return step > 0 && Math.abs(step - Math.round(step)) > 0.00001;
     }
-    function normalizeQty(value, item){
+    function allowsDecimalStep(flag, step){
+      step = parseQty(step || 0);
+      return String(flag || '0') === '1' || (step > 0 && Math.abs(step - Math.round(step)) > 0.00001);
+    }
+    function normalizeQtyInfo(value, item, stepOverride){
+      var original = roundQty(value);
       var qty = roundQty(value);
+      var step = parseQty(stepOverride || (item && (item.minimumifc100 || item.minimum || item.min)) || 1);
+      if (isNaN(step) || step <= 0) step = 1;
+
+      if (isNaN(qty) || qty <= 0 || qty < step) {
+        qty = step;
+      }
+
+      qty = Math.ceil((qty / step) - 0.0000001) * step;
+
       if (!allowsDecimalQty(item)) {
         qty = Math.ceil(qty - 0.0000001);
       }
-      return qty;
+
+      qty = roundQty(qty);
+
+      return {
+        qty: qty,
+        adjusted: isNaN(original) || Math.abs(qty - original) > 0.00001
+      };
+    }
+    function normalizeQty(value, item, stepOverride){
+      return normalizeQtyInfo(value, item, stepOverride).qty;
+    }
+    function notifyRoundedQty(qty, allowDecimal){
+      toast('ok', 'Količina je zaokružena na ' + formatQty(qty, allowDecimal) + ' prema dozvoljenom koraku pakiranja.');
     }
 
     function normCent(v){
@@ -191,8 +222,7 @@
       var pack = item.packaging || (item.minimum && item.minimum > 0 ? item.minimum : 1);
       var minStep = getMinStep(item);
       var decimalQty = allowsDecimalQty(item);
-      var pakRequired = parseInt(item && item.pak || 0, 10) === 1;
-      var qty = normalizeQty(item.quantity || minStep, item);
+      var qty = normalizeQty(item.quantity || minStep, item, minStep);
       if (qty < minStep) qty = minStep;
 
       var subtotal = lineTotalRaw(item.price_raw || 0, qty, item.cent || '');
@@ -212,7 +242,6 @@
           '         data-minstep="'+minStep+'"' +
           '         data-decimal="'+(decimalQty ? 1 : 0)+'"' +
           '         inputmode="'+(decimalQty ? 'decimal' : 'numeric')+'"' +
-          (pakRequired ? '         readonly' : '') +
           '         style="text-align:right;">' +
           '  <span class="input-group-btn">' +
           '    <button type="button" class="btn btn-default btn-number qo-qty-plus" data-type="plus">' +
@@ -244,10 +273,10 @@
       var $input = $tr.find('.qo-qty');
       var step = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
       if (isNaN(step) || step <= 0) step = 1;
-      var decimalQty = String($tr.attr('data-decimal') || $input.attr('data-decimal') || '0') === '1';
-      var itemRule = { decimal_quantity: decimalQty };
+      var decimalQty = allowsDecimalStep($tr.attr('data-decimal') || $input.attr('data-decimal'), step);
+      var itemRule = { decimal_quantity: decimalQty, minimumifc100: step };
 
-      var qty = normalizeQty($input.val() || step, itemRule);
+      var qty = normalizeQty($input.val() || step, itemRule, step);
       if(isNaN(qty) || qty < step){
         qty = step;
         $input.val(formatQty(step, decimalQty));
@@ -285,7 +314,7 @@
         var min = getMinStep(item);
         var decimalQty = allowsDecimalQty(item);
         if(item.quantity){
-          item.quantity = normalizeQty(item.quantity, item);
+          item.quantity = normalizeQty(item.quantity, item, min);
           if (item.quantity < min) item.quantity = min;
           $existing.find('.qo-qty')
               .val(formatQty(item.quantity, decimalQty))
@@ -293,7 +322,7 @@
               .attr('min', min)
               .attr('data-decimal', decimalQty ? 1 : 0)
               .attr('inputmode', decimalQty ? 'decimal' : 'numeric')
-              .prop('readonly', parseInt(item && item.pak || 0, 10) === 1);
+              .prop('readonly', false);
         }
         if (item.price_raw != null) {
           $existing.attr('data-price', item.price_raw);
@@ -367,9 +396,9 @@
       var $input = $tr.find('.qo-qty');
       var minStep = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
       if (isNaN(minStep) || minStep <= 0) minStep = 1;
-      var decimalQty = String($tr.attr('data-decimal') || $input.attr('data-decimal') || '0') === '1';
+      var decimalQty = allowsDecimalStep($tr.attr('data-decimal') || $input.attr('data-decimal'), minStep);
 
-      var qty  = normalizeQty($input.val() || minStep, { decimal_quantity: decimalQty });
+      var qty  = normalizeQty($input.val() || minStep, { decimal_quantity: decimalQty, minimumifc100: minStep }, minStep);
       if (isNaN(qty) || qty < minStep) qty = minStep;
 
       var pRaw = parseFloat($tr.attr('data-price') || '0');
@@ -416,8 +445,7 @@
       var packaging = it.packaging || pack;
       var minStep = getMinStep(it);
       var decimalQty = allowsDecimalQty(it);
-      var pakRequired = parseInt(it && it.pak || 0, 10) === 1;
-      var qtyVal = normalizeQty(it.quantity && it.quantity >= minStep ? it.quantity : minStep, it);
+      var qtyVal = normalizeQty(it.quantity && it.quantity >= minStep ? it.quantity : minStep, it, minStep);
 
       var img = it.thumb
           ? `<img src="${esc(it.thumb)}" alt="${esc(it.name)}" class="qo-thumb">`
@@ -479,8 +507,7 @@
                  value="${formatQty(qtyVal, decimalQty)}"
                  tabindex="0"
                  aria-label="Količina"
-                 inputmode="${decimalQty ? 'decimal' : 'numeric'}"
-                 ${pakRequired ? 'readonly' : ''}>
+                 inputmode="${decimalQty ? 'decimal' : 'numeric'}">
 
           <button type="button"
                   class="btn btn-default btn-number qo-suggest-btn qo-suggest-plus"
@@ -506,13 +533,18 @@
       var pid = $s.attr('data-pid');
       if(!pid) return null;
       var $qty = $s.find('.qo-suggest-qty');
-      var decimalQty = String($s.attr('data-decimal') || $qty.attr('data-decimal') || '0') === '1';
       var min = parseQty($s.attr('data-minimum') || $qty.attr('data-minstep') || $qty.attr('min') || '1');
       if(isNaN(min) || min <= 0) min = 1;
+      var decimalQty = allowsDecimalStep($s.attr('data-decimal') || $qty.attr('data-decimal'), min);
       var pack = parseQty($s.attr('data-pack') || '0');
       if(isNaN(pack) || pack <= 0) pack = min;
-      var q = normalizeQty($qty.val() || min, { decimal_quantity: decimalQty });
+      var qtyInfo = normalizeQtyInfo($qty.val() || min, { decimal_quantity: decimalQty, minimumifc100: min }, min);
+      var q = qtyInfo.qty;
       if(isNaN(q) || q < min) q = min;
+      if(qtyInfo.adjusted){
+        $qty.val(formatQty(q, decimalQty));
+        notifyRoundedQty(q, decimalQty);
+      }
 
       return {
         product_id: pid,
@@ -556,9 +588,9 @@
       var $qty = $s.find('.qo-suggest-qty');
       var step = parseQty($qty.attr('data-minstep') || $qty.attr('min') || '1');
       if(isNaN(step) || step <= 0) step = 1;
-      var decimalQty = String($s.attr('data-decimal') || $qty.attr('data-decimal') || '0') === '1';
+      var decimalQty = allowsDecimalStep($s.attr('data-decimal') || $qty.attr('data-decimal'), step);
 
-      var v = normalizeQty($qty.val() || step, { decimal_quantity: decimalQty });
+      var v = normalizeQty($qty.val() || step, { decimal_quantity: decimalQty, minimumifc100: step }, step);
       if(isNaN(v) || v < step) v = step;
 
       v += delta * step;
@@ -570,9 +602,9 @@
     function changeQtyByStep($input, direction){
       var step = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
       if (isNaN(step) || step <= 0) step = 1;
-      var decimalQty = String($input.attr('data-decimal') || $input.closest('tr').attr('data-decimal') || '0') === '1';
+      var decimalQty = allowsDecimalStep($input.attr('data-decimal') || $input.closest('tr').attr('data-decimal'), step);
 
-      var v = normalizeQty($input.val() || step, { decimal_quantity: decimalQty });
+      var v = normalizeQty($input.val() || step, { decimal_quantity: decimalQty, minimumifc100: step }, step);
       if (isNaN(v) || v < step) v = step;
 
       if (direction === 'up') {
@@ -623,7 +655,7 @@
         return $.Deferred().resolve().promise();
       }
       var min = getMinStep(item);
-      qty = normalizeQty(qty || item.quantity || min, item);
+      qty = normalizeQty(qty || item.quantity || min, item, min);
       if(isNaN(qty) || qty < min) qty = min;
 
       // ako red već postoji i već je dodan, povećaj količinu (updateQty)
@@ -633,13 +665,13 @@
         var $input = $rowExisting.find('.qo-qty');
         var step = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
         if(isNaN(step) || step <= 0) step = 1;
-        var decimalQty = String($rowExisting.attr('data-decimal') || $input.attr('data-decimal') || '0') === '1';
+        var decimalQty = allowsDecimalStep($rowExisting.attr('data-decimal') || $input.attr('data-decimal'), step);
 
-        var current = normalizeQty($input.val() || step, { decimal_quantity: decimalQty });
+        var current = normalizeQty($input.val() || step, { decimal_quantity: decimalQty, minimumifc100: step }, step);
         if (isNaN(current) || current < step) current = step;
         var newQty = current + qty;
         if(newQty < step) newQty = step;
-        newQty = normalizeQty(newQty, { decimal_quantity: decimalQty });
+        newQty = normalizeQty(newQty, { decimal_quantity: decimalQty, minimumifc100: step }, step);
 
         if (!window.confirm('Pozor - artikl već postoji u narudžbi s količinom ' + formatQty(current, decimalQty) + '. Želite li nadodati novo unesenu količinu?')) {
           return $.Deferred().resolve().promise();
@@ -661,7 +693,7 @@
           upsertLS(data);
           refreshRowFromCartState(item.product_id).always(function(){
             baselHeaderRefreshDebounced();
-            toast('ok', 'Količina ažurirana');
+            toast('ok', (res && res.notice) ? res.notice : 'Količina ažurirana');
           });
         }, 'json').fail(function(){
           toast('err', 'Greška pri ažuriranju količine');
@@ -691,7 +723,7 @@
           recomputeTotal();
           refreshRowFromCartState(item.product_id).always(function(){
             baselHeaderRefreshDebounced();
-            toast('ok', 'Dodano u košaricu');
+            toast('ok', (res && res.notice) ? res.notice : 'Dodano u košaricu');
           });
         } else {
           toast('err', (res && res.message) || 'Greška pri dodavanju');
@@ -906,11 +938,15 @@
       var $input = $(this);
       var step = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
       if(isNaN(step) || step <= 0) step = 1;
-      var decimalQty = String($tr.attr('data-decimal') || $input.attr('data-decimal') || '0') === '1';
+      var decimalQty = allowsDecimalStep($tr.attr('data-decimal') || $input.attr('data-decimal'), step);
 
-      var qty = normalizeQty($input.val() || step, { decimal_quantity: decimalQty });
+      var qtyInfo = normalizeQtyInfo($input.val() || step, { decimal_quantity: decimalQty, minimumifc100: step }, step);
+      var qty = qtyInfo.qty;
       if(qty < step) qty = step;
       $input.val(formatQty(qty, decimalQty));
+      if(qtyInfo.adjusted){
+        notifyRoundedQty(qty, decimalQty);
+      }
 
       recomputeRow($tr);
       recomputeTotal();
@@ -920,11 +956,14 @@
       upsertLS(data);
 
       if($tr.attr('data-added')){
-        $.post('index.php?route=extension/module/quick_order/updateQty', { product_id: pid, quantity: qty }, function(){
+        $.post('index.php?route=extension/module/quick_order/updateQty', { product_id: pid, quantity: qty }, function(res){
+          if(res && res.notice){
+            toast('ok', res.notice);
+          }
           refreshRowFromCartState(pid).always(function(){
             baselHeaderRefreshDebounced();
           });
-        });
+        }, 'json');
       }
     });
 

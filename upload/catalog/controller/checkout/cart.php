@@ -471,9 +471,12 @@ class ControllerCheckoutCart extends Controller {
 				$quantity = $minimum_step;
 			}
 
+			$requested_quantity = (float)$quantity;
 			$quantity = $this->normalizeQiqoProductQuantity($quantity, $product_info);
-
-		
+			$quantity_notice = '';
+			if (abs($quantity - $requested_quantity) > 0.00001) {
+				$quantity_notice = 'Količina je zaokružena na ' . $this->formatQiqoQuantity($quantity, $this->qiqoAllowsDecimalQuantity($product_info)) . ' prema dozvoljenom koraku pakiranja.';
+			}
 
 			if (isset($this->request->post['option'])) {
 				$option = array_filter($this->request->post['option']);
@@ -513,6 +516,9 @@ class ControllerCheckoutCart extends Controller {
 				$this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id);
 
 				$json['success'] = sprintf($this->language->get('text_success'), $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']), $product_info['name'], $this->url->link('checkout/cart'));
+				if ($quantity_notice !== '') {
+					$json['notice'] = $quantity_notice;
+				}
 
 				// Unset all shipping and payment methods
 				unset($this->session->data['shipping_method']);
@@ -581,7 +587,14 @@ class ControllerCheckoutCart extends Controller {
 
 		// Update
 		if (!empty($this->request->post['quantity'])) {
+			$quantities = $this->request->post['quantity'];
+
+			if (!is_array($quantities)) {
+				$quantities = isset($this->request->post['key']) ? array($this->request->post['key'] => $quantities) : array();
+			}
+
 			$cart_products = array();
+			$quantity_notices = array();
 			$this->load->model('catalog/product');
 			foreach ($this->cart->getProducts() as $cart_product) {
 				if (!empty($cart_product['cart_id'])) {
@@ -589,20 +602,24 @@ class ControllerCheckoutCart extends Controller {
 				}
 			}
 
-			foreach ($this->request->post['quantity'] as $key => $value) {
+			foreach ($quantities as $key => $value) {
 				$quantity = $this->parseQiqoQuantity($value);
+				$requested_quantity = (float)$quantity;
 
 				if (isset($cart_products[(int)$key])) {
 					$product_info = $this->model_catalog_product->getProduct((int)$cart_products[(int)$key]['product_id']);
 					if ($product_info) {
 						$quantity = $this->normalizeQiqoProductQuantity($quantity, $product_info);
+						if (abs($quantity - $requested_quantity) > 0.00001) {
+							$quantity_notices[] = 'Količina za ' . $cart_products[(int)$key]['name'] . ' je zaokružena na ' . $this->formatQiqoQuantity($quantity, $this->qiqoAllowsDecimalQuantity($product_info)) . '.';
+						}
 					}
 				}
 
 				$this->cart->update($key, $quantity);
 			}
 
-			$this->session->data['success'] = $this->language->get('text_remove');
+			$this->session->data['success'] = $this->language->get('text_remove') . ($quantity_notices ? '<br>' . implode('<br>', $quantity_notices) : '');
 
 			unset($this->session->data['shipping_method']);
 			unset($this->session->data['shipping_methods']);
@@ -718,6 +735,15 @@ class ControllerCheckoutCart extends Controller {
 	}
 
 	private function qiqoPackQuantity($product) {
+		$jm = isset($product['jm']) && trim((string)$product['jm']) !== '' ? $product['jm'] : (isset($product['ean']) ? $product['ean'] : '');
+		$attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
+		if (strtoupper(trim((string)$jm)) === 'MET' && preg_match('/(^|[^0-9])([0-9]+(?:\\.[0-9]+)?)\\s*m([^a-z0-9]|$)/i', $attribute, $match)) {
+			$meter_length = (float)$match[2];
+			if ($meter_length > 0 && abs($meter_length - round($meter_length)) > 0.00001) {
+				return $meter_length;
+			}
+		}
+
 		$pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
 		if ($pakkol <= 0) {
 			$pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
@@ -739,13 +765,12 @@ class ControllerCheckoutCart extends Controller {
 		$pakkol = $this->qiqoPackQuantity($product);
 		$attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
 
-		return $jm === 'MET'
-			&& abs($pakkol - 3.0) < 0.00001
-			&& preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute);
+		return abs($pakkol - round($pakkol)) > 0.00001
+			|| ($jm === 'MET' && preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute));
 	}
 
 	private function qiqoMinimumStep($cent, $pak, $pakkol) {
-		$step = ($this->qiqoIsC100($cent) || (int)$pak === 1) ? (float)$pakkol : 1.0;
+		$step = ($this->qiqoIsC100($cent) || (int)$pak === 1 || abs((float)$pakkol - round((float)$pakkol)) > 0.00001) ? (float)$pakkol : 1.0;
 
 		return $step > 0 ? $step : 1.0;
 	}

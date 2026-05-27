@@ -632,6 +632,15 @@ class ControllerProductSearch extends Controller {
     }
 
     private function qiqoPackQuantity($product) {
+        $jm = isset($product['jm']) && trim((string)$product['jm']) !== '' ? $product['jm'] : (isset($product['ean']) ? $product['ean'] : '');
+        $attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
+        if (strtoupper(trim((string)$jm)) === 'MET' && preg_match('/(^|[^0-9])([0-9]+(?:\\.[0-9]+)?)\\s*m([^a-z0-9]|$)/i', $attribute, $match)) {
+            $meter_length = (float)$match[2];
+            if ($meter_length > 0 && abs($meter_length - round($meter_length)) > 0.00001) {
+                return $meter_length;
+            }
+        }
+
         $pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
         if ($pakkol <= 0) {
             $pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
@@ -642,7 +651,7 @@ class ControllerProductSearch extends Controller {
 
     private function qiqoMinimumStep($cent, $pak, $pakkol) {
         $cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$cent));
-        $step = ($cent_normalized === 'C100' || (int)$pak === 1) ? (float)$pakkol : 1.0;
+        $step = ($cent_normalized === 'C100' || (int)$pak === 1 || abs((float)$pakkol - round((float)$pakkol)) > 0.00001) ? (float)$pakkol : 1.0;
 
         return $step > 0 ? $step : 1.0;
     }
@@ -660,8 +669,7 @@ class ControllerProductSearch extends Controller {
         $pakkol = $this->qiqoPackQuantity($product);
         $attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
 
-        return $jm === 'MET'
-            && abs($pakkol - 3.0) < 0.00001
-            && preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute);
+        return abs($pakkol - round($pakkol)) > 0.00001
+            || ($jm === 'MET' && preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute));
     }
 }

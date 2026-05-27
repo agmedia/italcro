@@ -155,7 +155,6 @@
                            min-step="{{ product.minimumifc100 }}"
                            data-pak="{{ product.pak is defined ? product.pak : 0 }}"
                            data-decimal-quantity="{{ product.decimal_quantity is defined and product.decimal_quantity ? 1 : 0 }}"
-                           {% if product.pak is defined and product.pak == 1 %}readonly="readonly"{% endif %}
                            data-id="{{ product.product_id }}"
                            inputmode="{{ product.decimal_quantity is defined and product.decimal_quantity ? 'decimal' : 'numeric' }}"
                            maxlength="8"
@@ -171,7 +170,7 @@
                     <span class="input-group-btn">
                       <button type="button"
                               class="btn btn-neutral"
-                              onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ product.product_id }}', quantityInput.val().replace(/\./g, '').replace(',', '.'));">
+                              onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ product.product_id }}', window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : quantityInput.val());">
                         <span class="global-cart"></span>
                       </button>
                     </span>

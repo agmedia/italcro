@@ -38,7 +38,7 @@
         {% endif %}
 
         <a class="img-overlay" href="{{ product.href }}"></a>
-        <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="var q=$(this).closest('.single-product').find('.input-number').first().val(); cart.add('{{ product.product_id }}', q ? q.replace(/\./g, '').replace(',', '.') : '{{ product.minimum }}');">{{ button_cart }}</a></div>
+        <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="var quantityInput=$(this).closest('.single-product').find('.input-number').first(); cart.add('{{ product.product_id }}', quantityInput.length && window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : '{{ product.minimum }}');">{{ button_cart }}</a></div>
         {% if is_single_article %}
             <div class="icons-wrapper">
                 <a class="icon is_wishlist" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart"></span></a>
@@ -124,7 +124,6 @@
                                    min-step="{{ list_min }}"
                                    data-pak="{{ product.pak is defined ? product.pak : 0 }}"
                                    data-decimal-quantity="{{ product.decimal_quantity is defined and product.decimal_quantity ? 1 : 0 }}"
-                                   {% if product.pak is defined and product.pak == 1 %}readonly="readonly"{% endif %}
                                    inputmode="{{ product.decimal_quantity is defined and product.decimal_quantity ? 'decimal' : 'numeric' }}"
                                    maxlength="8"
                                    value="{{ list_min }}">
@@ -136,7 +135,7 @@
 
                                     <span class="input-group-btn">
                                 <button type="button" class="btn btn-neutral"
-                                        onclick="var q=$(this).parent().parent().find('.input-number').val(); cart.add('{{ product.product_id }}', q.replace(/\./g, '').replace(',', '.'));">
+                                        onclick="var quantityInput=$(this).parent().parent().find('.input-number'); cart.add('{{ product.product_id }}', window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : quantityInput.val());">
                                     <span class="global-cart"></span> <span class="hidden-xs hidden-sm hidden-md"></span>
                                 </button>
                                </span>

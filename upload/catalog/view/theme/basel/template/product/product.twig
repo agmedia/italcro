@@ -253,7 +253,6 @@
 	                                                                      min-step="{{ p.minimumifc100 }}"
 	                                                                      data-pak="{{ p.pak is defined ? p.pak : 0 }}"
 	                                                                      data-decimal-quantity="{{ p.decimal_quantity is defined and p.decimal_quantity ? 1 : 0 }}"
-	                                                                      {% if p.pak is defined and p.pak == 1 %}readonly="readonly"{% endif %}
 	                                                                      data-id="{{ p.product_id }}"
 	                                                                      inputmode="{{ p.decimal_quantity is defined and p.decimal_quantity ? 'decimal' : 'numeric' }}"
 	                                                                      maxlength="8"
@@ -272,7 +271,7 @@
 	                                                                <button type="button"
 	                                                                        class="btn btn-neutral"
 
-	                                                                        onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ p.product_id }}', quantityInput.val().replace(/\./g, '').replace(',', '.'));">
+	                                                                        onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ p.product_id }}', window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : quantityInput.val());">
                                                                     <span class="global-cart"></span>
                                                                 </button>
                                                             </span>
@@ -662,7 +661,7 @@
                                     <div class="form-group quantity buttons_added buy catalog_hide">
 
                                         <button type="button" class="minus"> <i class="fa fa-minus-circle" aria-hidden="true"></i> </button>
-                                        <input type="text" step="{{ minimumifc100 }}" min="{{ minimumifc100 }}" min-step="{{ minimumifc100 }}" id="input-quantity" name="quantity" value="{{ minimumifc100 }}" title="Qty" class="input-text qty text put-qty" size="8" pattern="" inputmode="{{ decimal_quantity is defined and decimal_quantity ? 'decimal' : 'numeric' }}" data-pak="{{ pak is defined ? pak : 0 }}" data-decimal-quantity="{{ decimal_quantity is defined and decimal_quantity ? 1 : 0 }}" {% if pak is defined and pak == 1 %}readonly="readonly"{% endif %}>
+                                        <input type="text" step="{{ minimumifc100 }}" min="{{ minimumifc100 }}" min-step="{{ minimumifc100 }}" id="input-quantity" name="quantity" value="{{ minimumifc100 }}" title="Qty" class="input-text qty text put-qty" size="8" pattern="" inputmode="{{ decimal_quantity is defined and decimal_quantity ? 'decimal' : 'numeric' }}" data-pak="{{ pak is defined ? pak : 0 }}" data-decimal-quantity="{{ decimal_quantity is defined and decimal_quantity ? 1 : 0 }}">
                                         <button type="button"  class="plus"> <i class="fa fa-plus-circle" aria-hidden="true"></i> </button>
                                         <input type="hidden" name="product_id" value="{{ product_id }}" />
 
@@ -1095,16 +1094,26 @@
         wcqib_refresh_quantity_increments()
     }), jQuery(document).on("click", ".plus, .minus", function() {
         var a = jQuery(this).closest(".quantity").find(".qty"),
+            isPlus = jQuery(this).is(".plus"),
             b = parseFloat(a.val()),
             c = parseFloat(a.attr("max")),
             d = parseFloat(a.attr("min")),
             e = a.attr("step");
-        b && "" !== b && "NaN" !== b || (b = 0), "" !== c && "NaN" !== c || (c = ""), "" !== d && "NaN" !== d || (d = 0), "any" !== e && "" !== e && void 0 !== e && "NaN" !== parseFloat(e) || (e = 1), jQuery(this).is(".plus") ? c && b >= c ? a.val(c) : a.val((b + parseFloat(e)).toFixed(e.getDecimals())) : d && b <= d ? a.val(d) : b > 0 && a.val((b - parseFloat(e)).toFixed(e.getDecimals())), a.trigger("change")
+        if (window.UpdateQuantity) {
+            window.UpdateQuantity(a, isPlus);
+            a.trigger("change");
+            return;
+        }
+        b && "" !== b && "NaN" !== b || (b = 0), "" !== c && "NaN" !== c || (c = ""), "" !== d && "NaN" !== d || (d = 0), "any" !== e && "" !== e && void 0 !== e && "NaN" !== parseFloat(e) || (e = 1), isPlus ? c && b >= c ? a.val(c) : a.val((b + parseFloat(e)).toFixed(e.getDecimals())) : d && b <= d ? a.val(d) : b > 0 && a.val((b - parseFloat(e)).toFixed(e.getDecimals())), a.trigger("change")
     });
 </script>
 
 <script><!--
     $('#button-cart').on('click', function() {
+        var $quantityInput = $('#product input[name="quantity"]').first();
+        if (window.qiqoPrepareQuantityInput && $quantityInput.length) {
+            qiqoPrepareQuantityInput($quantityInput, true);
+        }
         $.ajax({
             url: 'index.php?route=extension/basel/basel_features/add_to_cart',
             type: 'post',
@@ -1154,7 +1163,7 @@
                     html += '<a class="popup-note-close" onclick="$(this).parent().parent().remove()">&times;</a>';
                     html += '<div class="table">';
                     html += '<div class="table-cell v-top img"><img src="' + json.image + '" /></div>';
-                    html += '<div class="table-cell v-top">' + json.success + '</div>';
+                    html += '<div class="table-cell v-top">' + json.success + (json.notice ? '<br><small>' + json.notice + '</small>' : '') + '</div>';
                     html += '</div>';
                     html += '</div>';
                     html += '</div>';

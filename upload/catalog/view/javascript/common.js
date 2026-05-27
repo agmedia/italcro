@@ -138,10 +138,15 @@ $(document).ready(function() {
 // Cart add remove functions
 var cart = {
 	'add': function(product_id, quantity) {
+		quantity = (typeof(quantity) != 'undefined' ? quantity : 1);
+
 		$.ajax({
 			url: 'index.php?route=checkout/cart/add',
 			type: 'post',
-			data: 'product_id=' + product_id + '&quantity=' + (typeof(quantity) != 'undefined' ? quantity : 1),
+			data: {
+				product_id: product_id,
+				quantity: quantity
+			},
 			dataType: 'json',
 			beforeSend: function() {
 				$('#cart > button').button('loading');
@@ -157,7 +162,8 @@ var cart = {
 				}
 
 				if (json['success']) {
-					$('#content').parent().before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					var successMessage = json['success'] + (json['notice'] ? '<br><small>' + json['notice'] + '</small>' : '');
+					$('#content').parent().before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + successMessage + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
 
 					// Need to set timeout otherwise it wont update the total
 					setTimeout(function () {
@@ -178,7 +184,10 @@ var cart = {
 		$.ajax({
 			url: 'index.php?route=checkout/cart/edit',
 			type: 'post',
-			data: 'key=' + key + '&quantity=' + (typeof(quantity) != 'undefined' ? quantity : 1),
+			data: {
+				key: key,
+				quantity: (typeof(quantity) != 'undefined' ? quantity : 1)
+			},
 			dataType: 'json',
 			beforeSend: function() {
 				$('#cart > button').button('loading');

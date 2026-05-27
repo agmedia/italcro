@@ -268,6 +268,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
             }
         }
 
+        $requested_qty = (float)$qty;
         $pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
         $step = $this->qiqoMinimumStep($product_info['cent'], $pak, $this->qiqoPackQuantity($product_info));
         if ($qty < $step) {
@@ -282,7 +283,12 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
         $this->cart->add($product_id, $qty);
         $this->load->language('checkout/cart');
-        return ['success'=>true,'message'=>$this->language->get('text_success')];
+        $response = ['success'=>true,'message'=>$this->language->get('text_success'), 'quantity' => $qty];
+        if (abs($qty - $requested_qty) > 0.00001) {
+            $response['notice'] = 'Količina je zaokružena na ' . $this->formatQiqoQuantity($qty, $this->qiqoAllowsDecimalQuantity($product_info)) . ' prema dozvoljenom koraku pakiranja.';
+        }
+
+        return $response;
     }
 
     /* ========= HELPERS ========= */
@@ -482,6 +488,15 @@ class ControllerExtensionModuleQuickOrder extends Controller {
     }
 
     private function qiqoPackQuantity($product) {
+        $jm = isset($product['jm']) && trim((string)$product['jm']) !== '' ? $product['jm'] : (isset($product['ean']) ? $product['ean'] : '');
+        $attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
+        if (strtoupper(trim((string)$jm)) === 'MET' && preg_match('/(^|[^0-9])([0-9]+(?:\\.[0-9]+)?)\\s*m([^a-z0-9]|$)/i', $attribute, $match)) {
+            $meter_length = (float)$match[2];
+            if ($meter_length > 0 && abs($meter_length - round($meter_length)) > 0.00001) {
+                return $meter_length;
+            }
+        }
+
         $pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
         if ($pakkol <= 0) {
             $pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
@@ -503,15 +518,14 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $pakkol = $this->qiqoPackQuantity($product);
         $attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
 
-        return $jm === 'MET'
-            && abs($pakkol - 3.0) < 0.00001
-            && preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute);
+        return abs($pakkol - round($pakkol)) > 0.00001
+            || ($jm === 'MET' && preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute));
     }
 
     private function qiqoMinimumStep($cent, $pak, $pakkol) {
         $step = 1.0;
 
-        if ($this->qiqoIsC100($cent) || (int)$pak === 1) {
+        if ($this->qiqoIsC100($cent) || (int)$pak === 1 || abs((float)$pakkol - round((float)$pakkol)) > 0.00001) {
             $step = (float)$pakkol;
         }
 
@@ -542,6 +556,16 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         }
 
         return rtrim(rtrim(number_format($value, 2, ',', '.'), '0'), ',');
+    }
+
+    private function formatQiqoQuantity($value, $allow_decimal) {
+        $value = round((float)$value, 4);
+
+        if (!$allow_decimal || abs($value - round($value)) < 0.00001) {
+            return (string)(int)ceil($value - 0.0000001);
+        }
+
+        return rtrim(rtrim(number_format($value, 4, ',', '.'), '0'), ',');
     }
 
     private function formatQiqoPackaging($jm, $pakkol, $pak) {

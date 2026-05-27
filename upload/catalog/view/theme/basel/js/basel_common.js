@@ -114,10 +114,20 @@ $(document).ready(function() {
 
 	window.increment = function(el) {
 		let input = el.find('.input-number');
+		if (window.UpdateQuantity) {
+			window.UpdateQuantity(input, true);
+			return;
+		}
 		let decimal = String(input.attr('data-decimal-quantity') || input.attr('data-decimal') || '0') === '1';
 		let parseQty = function(v) {
 			v = String(v == null ? '' : v).replace(/\s|\u00a0/g, '');
-			if (v.indexOf(',') !== -1) {
+			if (v.indexOf(',') !== -1 && v.indexOf('.') !== -1) {
+				if (v.lastIndexOf(',') > v.lastIndexOf('.')) {
+					v = v.replace(/\./g, '').replace(',', '.');
+				} else {
+					v = v.replace(/,/g, '');
+				}
+			} else if (v.indexOf(',') !== -1) {
 				v = v.replace(/\./g, '').replace(',', '.');
 			}
 			v = parseFloat(v);
@@ -144,10 +154,20 @@ $(document).ready(function() {
 
 	window.descrement = function(el) {
 		let input = el.find('.input-number');
+		if (window.UpdateQuantity) {
+			window.UpdateQuantity(input, false);
+			return;
+		}
 		let decimal = String(input.attr('data-decimal-quantity') || input.attr('data-decimal') || '0') === '1';
 		let parseQty = function(v) {
 			v = String(v == null ? '' : v).replace(/\s|\u00a0/g, '');
-			if (v.indexOf(',') !== -1) {
+			if (v.indexOf(',') !== -1 && v.indexOf('.') !== -1) {
+				if (v.lastIndexOf(',') > v.lastIndexOf('.')) {
+					v = v.replace(/\./g, '').replace(',', '.');
+				} else {
+					v = v.replace(/,/g, '');
+				}
+			} else if (v.indexOf(',') !== -1) {
 				v = v.replace(/\./g, '').replace(',', '.');
 			}
 			v = parseFloat(v);

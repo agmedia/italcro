@@ -281,16 +281,24 @@ class Cart {
 					$recurring = false;
 				}
 
-				$minimum_step = 1.0;
-				$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_query->row['cent']));
-				$pak_required = isset($product_query->row['pak']) && (int)$product_query->row['pak'] === 1;
-				if ($cent_normalized === 'C100' || $pak_required) {
+					$minimum_step = 1.0;
+					$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_query->row['cent']));
+					$pak_required = isset($product_query->row['pak']) && (int)$product_query->row['pak'] === 1;
+					$jm = isset($product_query->row['jm']) && trim((string)$product_query->row['jm']) !== '' ? $product_query->row['jm'] : $product_query->row['ean'];
 					$pack_quantity = isset($product_query->row['pakkol']) ? (float)$product_query->row['pakkol'] : 0.0;
+					$attribute = isset($product_query->row['name_add']) ? str_replace(',', '.', trim((string)$product_query->row['name_add'])) : '';
+					if (strtoupper(trim((string)$jm)) === 'MET' && preg_match('/(^|[^0-9])([0-9]+(?:\\.[0-9]+)?)\\s*m([^a-z0-9]|$)/i', $attribute, $match)) {
+						$meter_length = (float)$match[2];
+						if ($meter_length > 0 && abs($meter_length - round($meter_length)) > 0.00001) {
+							$pack_quantity = $meter_length;
+						}
+					}
 					if ($pack_quantity <= 0) {
 						$pack_quantity = $product_query->row['minimum'] ? (float)$product_query->row['minimum'] : 1.0;
 					}
-					$minimum_step = $pack_quantity;
-				}
+					if ($cent_normalized === 'C100' || $pak_required || abs($pack_quantity - round($pack_quantity)) > 0.00001) {
+						$minimum_step = $pack_quantity;
+					}
 				if ($minimum_step <= 0) {
 					$minimum_step = 1.0;
 				}
@@ -302,8 +310,8 @@ class Cart {
 					'name_add'        => isset($product_query->row['name_add']) ? $product_query->row['name_add'] : '',
 					'model'           => $product_query->row['model'],
 					'sku'             => $product_query->row['sku'],
-					'jm'              => isset($product_query->row['jm']) && trim((string)$product_query->row['jm']) !== '' ? $product_query->row['jm'] : $product_query->row['ean'],
-					'pakkol'          => isset($product_query->row['pakkol']) ? (float)$product_query->row['pakkol'] : (float)$product_query->row['minimum'],
+						'jm'              => $jm,
+						'pakkol'          => $pack_quantity,
 					'vpc'             => isset($product_query->row['vpc']) ? (float)$product_query->row['vpc'] : 0.0,
 					'shipping'        => $product_query->row['shipping'],
 					'image'           => $product_query->row['image'],

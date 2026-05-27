@@ -19,7 +19,7 @@
         <th>Atribut</th>
         <th>Pakiranje</th>
         <th>C-100</th>
-        <th style="width:110px">{{ text_qty }}</th>
+        <th class="qo-qty-head">{{ text_qty }}</th>
         <th>VPC</th>
         <th>Rabat</th>
         <th>{{ text_price }}</th>
@@ -60,7 +60,9 @@
   .quick-order #qo-table td:nth-child(2),
   .quick-order #qo-table th:nth-child(2) { width: 80px; text-align: center; }
   .quick-order #qo-table td img { display:inline-block; width:60px; height:60px; object-fit:cover; }
-  .quick-order #qo-table .qo-qty { height:34px; line-height:34px; padding:4px 8px; text-align:right;min-width: 50px; }
+  .quick-order #qo-table .qo-qty-head { width:160px; min-width:160px; }
+  .quick-order #qo-table .qo-qty-group { width:160px; max-width:160px !important; margin-left:auto; }
+  .quick-order #qo-table .qo-qty { height:34px; line-height:34px; padding:4px 10px; text-align:right; width:100%; min-width:80px; }
   .quick-order #qo-table .qo-price,
   .quick-order #qo-table .qo-total-cell,
   .quick-order #qo-table .qo-discount-cell { text-align:right; white-space:nowrap; }
@@ -94,7 +96,9 @@
 
   @media (max-width:575.98px){
     .quick-order #qo-table td img { width:28px; height:28px; }
-    .quick-order #qo-table .qo-qty { max-width:72px; }
+    .quick-order #qo-table .qo-qty-head { width:140px; min-width:140px; }
+    .quick-order #qo-table .qo-qty-group { width:140px; max-width:140px !important; }
+    .quick-order #qo-table .qo-qty { min-width:70px; max-width:none; }
     .quick-order #qo-table th:nth-child(5),
     .quick-order #qo-table td:nth-child(5),
     .quick-order #qo-table th:nth-child(6),
@@ -166,13 +170,13 @@
     align-items: center;
     gap: 0;
     margin-left: auto;
-    flex: 0 0 190px;          /* rezervira širinu desno za qty + gumbe */
+    flex: 0 0 210px;          /* rezervira širinu desno za qty + gumbe */
     justify-content: flex-end;
   }
 
   .quick-order .qo-suggest-qty {
-    width: 70px;
-    min-width: 70px;
+    width: 90px;
+    min-width: 90px;
     text-align: right;
     height: 32px;
     padding: 3px 6px;

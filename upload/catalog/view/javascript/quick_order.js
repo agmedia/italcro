@@ -229,7 +229,7 @@
       var subtotalCell = '<span class="qo-subtotal" data-sub="'+subtotal+'">...</span>';
 
       var qtyHtml =
-          '<div class="input-group addtocart qo-qty-group" style="max-width:180px; margin-left:auto;">' +
+          '<div class="input-group addtocart qo-qty-group" style="width:160px; max-width:160px; margin-left:auto;">' +
           '  <span class="input-group-btn">' +
           '    <button type="button" class="btn btn-default btn-number qo-qty-minus" data-type="minus">' +
           '      <span class="glyphicon glyphicon-minus"></span>' +

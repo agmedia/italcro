@@ -61,9 +61,9 @@ class ControllerExtensionQuickCheckoutCheckout extends Equotix {
 				}
 			}		
 			
-			$effective_minimum = isset($product['minimumifc100']) ? (int)$product['minimumifc100'] : 1;
-			if ($effective_minimum < 1) {
-				$effective_minimum = 1;
+			$effective_minimum = isset($product['minimumifc100']) ? (float)$product['minimumifc100'] : 1.0;
+			if ($effective_minimum <= 0) {
+				$effective_minimum = 1.0;
 			}
 
 			if ($effective_minimum > $product_total) {

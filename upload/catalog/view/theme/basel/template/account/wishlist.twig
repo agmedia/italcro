@@ -22,6 +22,17 @@
     .mpn-variants .mpn-packaging {
         white-space: nowrap;
     }
+    .wishlist-variants .wishlist-thumb-cell {
+        width: 76px;
+        min-width: 76px;
+        text-align: center;
+    }
+    .wishlist-variants .wishlist-thumb {
+        display: inline-block;
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+    }
     .mpn-variants .mpn-vpc,
     .mpn-variants .mpn-final-price {
         font-weight: 700;
@@ -66,12 +77,13 @@
       <h1 id="page-title">{{ heading_title }}</h1>
       
       {% if products %}
-        {% set wishlist_colspan = show_prices ? (wishlist_has_c100 ? 12 : 11) : 5 %}
+        {% set wishlist_colspan = show_prices ? (wishlist_has_c100 ? 13 : 12) : 6 %}
         <div class="mpn-variants wishlist-variants table-responsive">
           <table class="table table-bordered table-striped">
             <thead>
               <tr>
                 <th class="qiqo-action-cell"></th>
+                <th class="wishlist-thumb-cell">Slika</th>
                 <th>Šifra</th>
                 <th>Barcode</th>
                 <th>Atribut</th>
@@ -100,6 +112,11 @@
                             data-target="#wishlistQiqoActionModal{{ product.product_id }}"
                             title="Uvjeti akcijskog cjenika"
                             aria-label="Uvjeti akcijskog cjenika za artikl {{ product.code }}">A</button>
+                  {% endif %}
+                </td>
+                <td class="wishlist-thumb-cell">
+                  {% if product.thumb %}
+                    <a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" class="wishlist-thumb"></a>
                   {% endif %}
                 </td>
                 <td>{{ product.code }}</td>
@@ -137,9 +154,10 @@
                            min="{{ product.minimumifc100 }}"
                            min-step="{{ product.minimumifc100 }}"
                            data-pak="{{ product.pak is defined ? product.pak : 0 }}"
+                           data-decimal-quantity="{{ product.decimal_quantity is defined and product.decimal_quantity ? 1 : 0 }}"
                            {% if product.pak is defined and product.pak == 1 %}readonly="readonly"{% endif %}
                            data-id="{{ product.product_id }}"
-                           inputmode="decimal"
+                           inputmode="{{ product.decimal_quantity is defined and product.decimal_quantity ? 'decimal' : 'numeric' }}"
                            maxlength="8"
                            aria-label="Količina">
                     <span class="input-group-btn">

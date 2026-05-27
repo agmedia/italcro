@@ -208,7 +208,9 @@ class ControllerProductManufacturer extends Controller {
                     $data['attention'] = '';
                 }
 
-                $minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+                $minimum = $this->qiqoPackQuantity($result);
+                $pak = isset($result['pak']) ? (int)$result['pak'] : 0;
+                $list_min = $this->qiqoMinimumStep($result['cent'], $pak, $minimum);
 
                 $price_raw   = (float)$result['price'];
                 $special_raw = (float)$result['special'];
@@ -218,8 +220,8 @@ class ControllerProductManufacturer extends Controller {
 
 // NOVO: ako ima special (>0) onda je novo = special, staro = price
                 if ($special_raw > 0) {
-                    $preview_price_raw = $special_raw * $minimum;
-                    $preview_price_alt_raw = $price_raw * $minimum;
+                    $preview_price_raw = $special_raw * $list_min;
+                    $preview_price_alt_raw = $price_raw * $list_min;
 
                     $preview_price_alt = $this->currency->format(
                         $this->tax->calculate(
@@ -231,7 +233,7 @@ class ControllerProductManufacturer extends Controller {
                     );
                 } else {
                     // nema akcije: novo = regular
-                    $preview_price_raw = $price_raw * $minimum;
+                    $preview_price_raw = $price_raw * $list_min;
                 }
 
 // NOVA (glavna) preview cijena
@@ -260,10 +262,13 @@ class ControllerProductManufacturer extends Controller {
                     'attention'     => $data['attention'],
                     'mpn_count'       => $result['mpn_count'],
                     'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+                    'pak'  => $pak,
                     'cent'  => $result['cent'],
                     'sku'  => $result['sku'],
 					'tax'         => $tax,
-					'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
+					'minimum'     => $minimum,
+					'list_min'    => $list_min,
+					'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($result),
 					'rating'      => $result['rating'],
 					'href'        => $this->url->link('product/product', 'manufacturer_id=' . $result['manufacturer_id'] . '&product_id=' . $result['product_id'] . $url)
 				);
@@ -475,5 +480,39 @@ class ControllerProductManufacturer extends Controller {
         }
 
         return "artikala";
+    }
+
+    private function qiqoPackQuantity($product) {
+        $pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
+        if ($pakkol <= 0) {
+            $pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
+        }
+
+        return $pakkol > 0 ? $pakkol : 1.0;
+    }
+
+    private function qiqoMinimumStep($cent, $pak, $pakkol) {
+        $cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$cent));
+        $step = ($cent_normalized === 'C100' || (int)$pak === 1) ? (float)$pakkol : 1.0;
+
+        return $step > 0 ? $step : 1.0;
+    }
+
+    private function qiqoJm($product) {
+        if (isset($product['jm']) && trim((string)$product['jm']) !== '') {
+            return $product['jm'];
+        }
+
+        return isset($product['ean']) ? $product['ean'] : '';
+    }
+
+    private function qiqoAllowsDecimalQuantity($product) {
+        $jm = strtoupper(trim((string)$this->qiqoJm($product)));
+        $pakkol = $this->qiqoPackQuantity($product);
+        $attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
+
+        return $jm === 'MET'
+            && abs($pakkol - 3.0) < 0.00001
+            && preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute);
     }
 }

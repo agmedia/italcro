@@ -114,30 +114,62 @@ $(document).ready(function() {
 
 	window.increment = function(el) {
 		let input = el.find('.input-number');
-		let step = parseInt(input.attr('min-step')) || 1;
-		let min = parseInt(input.attr('min')) || step;
-		let value = parseInt(input.val());
+		let decimal = String(input.attr('data-decimal-quantity') || input.attr('data-decimal') || '0') === '1';
+		let parseQty = function(v) {
+			v = String(v == null ? '' : v).replace(/\s|\u00a0/g, '');
+			if (v.indexOf(',') !== -1) {
+				v = v.replace(/\./g, '').replace(',', '.');
+			}
+			v = parseFloat(v);
+			return isNaN(v) ? 0 : v;
+		};
+		let formatQty = function(v) {
+			v = Math.round(parseQty(v) * 10000) / 10000;
+			if (!decimal) {
+				return String(Math.ceil(v - 0.0000001));
+			}
+			return Math.abs(v - Math.round(v)) < 0.00001 ? String(Math.round(v)) : v.toFixed(4).replace(/\.?0+$/, '').replace('.', ',');
+		};
+		let step = parseQty(input.attr('min-step')) || 1;
+		let min = parseQty(input.attr('min')) || step;
+		let value = parseQty(input.val());
 
 		if (isNaN(value) || value < min) {
 			value = min;
 		}
 
-		input.val(value + step);
+		input.val(formatQty(value + step));
 
 	};
 
 	window.descrement = function(el) {
 		let input = el.find('.input-number');
-		let step = parseInt(input.attr('min-step')) || 1;
-		let min = parseInt(input.attr('min')) || step;
-		let value = parseInt(input.val());
+		let decimal = String(input.attr('data-decimal-quantity') || input.attr('data-decimal') || '0') === '1';
+		let parseQty = function(v) {
+			v = String(v == null ? '' : v).replace(/\s|\u00a0/g, '');
+			if (v.indexOf(',') !== -1) {
+				v = v.replace(/\./g, '').replace(',', '.');
+			}
+			v = parseFloat(v);
+			return isNaN(v) ? 0 : v;
+		};
+		let formatQty = function(v) {
+			v = Math.round(parseQty(v) * 10000) / 10000;
+			if (!decimal) {
+				return String(Math.ceil(v - 0.0000001));
+			}
+			return Math.abs(v - Math.round(v)) < 0.00001 ? String(Math.round(v)) : v.toFixed(4).replace(/\.?0+$/, '').replace('.', ',');
+		};
+		let step = parseQty(input.attr('min-step')) || 1;
+		let min = parseQty(input.attr('min')) || step;
+		let value = parseQty(input.val());
 
 		if (isNaN(value) || value < min) {
 			value = min;
 		}
 
 		if (value - step >= min) {
-			input.val(value - step);
+			input.val(formatQty(value - step));
 		}
 	};
 

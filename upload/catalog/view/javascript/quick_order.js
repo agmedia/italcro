@@ -61,6 +61,41 @@
         cb(res && res.formatted ? res.formatted : amount);
       }, 'json');
     }
+    function parseQty(value){
+      if (typeof value === 'number') {
+        return isNaN(value) ? 0 : value;
+      }
+      value = String(value == null ? '' : value).replace(/\s|\u00a0/g, '');
+      if (value.indexOf(',') !== -1) {
+        value = value.replace(/\./g, '').replace(',', '.');
+      }
+      var parsed = parseFloat(value);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    function roundQty(value){
+      value = parseQty(value);
+      return Math.round(value * 10000) / 10000;
+    }
+    function formatQty(value, allowDecimal){
+      value = roundQty(value);
+      if (!allowDecimal) {
+        return String(Math.ceil(value - 0.0000001));
+      }
+      if (Math.abs(value - Math.round(value)) < 0.00001) {
+        return String(Math.round(value));
+      }
+      return value.toFixed(4).replace(/\.?0+$/, '').replace('.', ',');
+    }
+    function allowsDecimalQty(item){
+      return item && (item.decimal_quantity === true || String(item.decimal_quantity || '0') === '1');
+    }
+    function normalizeQty(value, item){
+      var qty = roundQty(value);
+      if (!allowsDecimalQty(item)) {
+        qty = Math.ceil(qty - 0.0000001);
+      }
+      return qty;
+    }
 
     function normCent(v){
       return String(v || '').toUpperCase().replace(/\s+/g,'').replace(/-/g,'');
@@ -69,14 +104,14 @@
       return normCent(obj && obj.cent) === 'C100';
     }
     function getMinStep(item){
-      var configured = parseInt(item && item.minimumifc100 || 0, 10);
+      var configured = parseQty(item && item.minimumifc100 || 0);
       if (!isNaN(configured) && configured > 0) {
         return configured;
       }
 
       if (isC100(item) || parseInt(item && item.pak || 0, 10) === 1) {
-        var pack = parseInt(item && item.minimum || 0, 10);
-        if (isNaN(pack) || pack < 1) pack = 1;
+        var pack = parseQty(item && item.minimum || 0);
+        if (isNaN(pack) || pack <= 0) pack = 1;
         return pack;
       }
       return 1;
@@ -128,14 +163,36 @@
       if(item.qiqo_action_conditions && item.qiqo_action_conditions.length){
         title += ': ' + item.qiqo_action_conditions.join(' | ');
       }
-      return '<button type="button" class="qiqo-action-button" title="' + esc(title) + '" aria-label="' + esc(title) + '">A</button>';
+      return '<button type="button" class="qiqo-action-button" data-conditions="' + esc((item.qiqo_action_conditions || []).join(' | ')) + '" title="' + esc(title) + '" aria-label="' + esc(title) + '">A</button>';
+    }
+
+    function showActionConditions($button){
+      var conditions = String($button.attr('data-conditions') || '').trim();
+      var title = 'Uvjeti akcijskog cjenika';
+      var body = conditions ? conditions.replace(/\s*\|\s*/g, '<br>') : 'Artikl je u akcijskom cjeniku.';
+      var $modal = $('#qo-action-modal');
+
+      if (!$modal.length) {
+        $modal = $('<div class="modal fade" id="qo-action-modal" tabindex="-1" role="dialog" aria-hidden="true">' +
+          '<div class="modal-dialog" role="document"><div class="modal-content">' +
+          '<div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Zatvori"><span aria-hidden="true">&times;</span></button><h4 class="modal-title"></h4></div>' +
+          '<div class="modal-body"></div>' +
+          '</div></div></div>');
+        $('body').append($modal);
+      }
+
+      $modal.find('.modal-title').text(title);
+      $modal.find('.modal-body').html(body);
+      $modal.modal('show');
     }
 
     /* ===================== Table rendering ===================== */
     function rowHtml(item, added){
       var pack = item.packaging || (item.minimum && item.minimum > 0 ? item.minimum : 1);
       var minStep = getMinStep(item);
-      var qty = item.quantity || minStep;
+      var decimalQty = allowsDecimalQty(item);
+      var pakRequired = parseInt(item && item.pak || 0, 10) === 1;
+      var qty = normalizeQty(item.quantity || minStep, item);
       if (qty < minStep) qty = minStep;
 
       var subtotal = lineTotalRaw(item.price_raw || 0, qty, item.cent || '');
@@ -150,10 +207,12 @@
           '  </span>' +
           '  <input type="text"' +
           '         class="form-control input-number qo-qty"' +
-          '         value="'+qty+'"' +
+          '         value="'+formatQty(qty, decimalQty)+'"' +
           '         min="'+minStep+'"' +
           '         data-minstep="'+minStep+'"' +
-          '         readonly' +
+          '         data-decimal="'+(decimalQty ? 1 : 0)+'"' +
+          '         inputmode="'+(decimalQty ? 'decimal' : 'numeric')+'"' +
+          (pakRequired ? '         readonly' : '') +
           '         style="text-align:right;">' +
           '  <span class="input-group-btn">' +
           '    <button type="button" class="btn btn-default btn-number qo-qty-plus" data-type="plus">' +
@@ -163,7 +222,7 @@
           '</div>';
 
       return '\
-        <tr data-id="'+esc(item.product_id)+'" data-price="'+(item.price_raw || 0)+'" data-vpc="'+(item.vpc_raw || 0)+'" data-cent="'+esc(item.cent || '')+'" data-pak="'+(item.pak || 0)+'" data-action-net="'+(item.qiqo_action_net_price_raw || 0)+'" '+(added?'data-added="1"':'')+'>\
+        <tr data-id="'+esc(item.product_id)+'" data-price="'+(item.price_raw || 0)+'" data-vpc="'+(item.vpc_raw || 0)+'" data-cent="'+esc(item.cent || '')+'" data-pak="'+(item.pak || 0)+'" data-decimal="'+(decimalQty ? 1 : 0)+'" data-action-net="'+(item.qiqo_action_net_price_raw || 0)+'" '+(added?'data-added="1"':'')+'>\
           <td class="qo-action-cell">'+actionButtonHtml(item)+'</td>\n\
           <td>'+(item.thumb ? '<img src="'+esc(item.thumb)+'" style="width:60px;height:60px;object-fit:cover">' : '')+'</td>\n\
           <td>'+esc(item.sku || '')+'</td>\n\
@@ -176,19 +235,22 @@
           <td class="qo-discount-cell'+discountClass(item)+'">'+displayPercent(item.qiqo_discount_percent, '-', item)+'</td>\n\
           <td class="qo-price">'+displayPriceHtml(item)+'</td>\n\
           <td class="qo-total-cell">'+subtotalCell+'</td>\n\
+          <td class="qo-remove-cell"><button type="button" class="qo-remove" aria-label="Ukloni">&times;</button></td>\n\
         </tr>';
     }
 
     function recomputeRow($tr){
       var price = parseFloat($tr.attr('data-price') || '0');
       var $input = $tr.find('.qo-qty');
-      var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
-      if (isNaN(step) || step < 1) step = 1;
+      var step = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
+      if (isNaN(step) || step <= 0) step = 1;
+      var decimalQty = String($tr.attr('data-decimal') || $input.attr('data-decimal') || '0') === '1';
+      var itemRule = { decimal_quantity: decimalQty };
 
-      var qty = parseInt($input.val() || step, 10);
+      var qty = normalizeQty($input.val() || step, itemRule);
       if(isNaN(qty) || qty < step){
         qty = step;
-        $input.val(step);
+        $input.val(formatQty(step, decimalQty));
       }
       var subtotal = lineTotalRaw(price, qty, $tr.attr('data-cent') || '');
       var $cell = $tr.find('.qo-subtotal');
@@ -221,9 +283,17 @@
       var $existing = $table.find('tr[data-id="'+item.product_id+'"]');
       if($existing.length){
         var min = getMinStep(item);
+        var decimalQty = allowsDecimalQty(item);
         if(item.quantity){
+          item.quantity = normalizeQty(item.quantity, item);
           if (item.quantity < min) item.quantity = min;
-          $existing.find('.qo-qty').val(item.quantity).attr('data-minstep', min).attr('min', min);
+          $existing.find('.qo-qty')
+              .val(formatQty(item.quantity, decimalQty))
+              .attr('data-minstep', min)
+              .attr('min', min)
+              .attr('data-decimal', decimalQty ? 1 : 0)
+              .attr('inputmode', decimalQty ? 'decimal' : 'numeric')
+              .prop('readonly', parseInt(item && item.pak || 0, 10) === 1);
         }
         if (item.price_raw != null) {
           $existing.attr('data-price', item.price_raw);
@@ -236,6 +306,9 @@
         }
         if (item.pak != null) {
           $existing.attr('data-pak', item.pak);
+        }
+        if (item.decimal_quantity != null) {
+          $existing.attr('data-decimal', decimalQty ? 1 : 0);
         }
         if (item.qiqo_action_net_price_raw != null) {
           $existing.attr('data-action-net', item.qiqo_action_net_price_raw);
@@ -283,7 +356,7 @@
         return $existing;
       } else {
         var $row = $(rowHtml(item, added));
-        $table.append($row);
+        $table.prepend($row);
         recomputeRow($row);
         return $row;
       }
@@ -292,10 +365,11 @@
     function getRowData($tr){
       var pid  = String($tr.data('id'));
       var $input = $tr.find('.qo-qty');
-      var minStep = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
-      if (isNaN(minStep) || minStep < 1) minStep = 1;
+      var minStep = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
+      if (isNaN(minStep) || minStep <= 0) minStep = 1;
+      var decimalQty = String($tr.attr('data-decimal') || $input.attr('data-decimal') || '0') === '1';
 
-      var qty  = parseInt($input.val() || minStep, 10);
+      var qty  = normalizeQty($input.val() || minStep, { decimal_quantity: decimalQty });
       if (isNaN(qty) || qty < minStep) qty = minStep;
 
       var pRaw = parseFloat($tr.attr('data-price') || '0');
@@ -303,8 +377,8 @@
       var tds  = $tr.find('td');
 
       var minimumText = tds.eq(5).text().trim().replace(/[^\d.,-]/g, '').replace(',', '.');
-      var minimumVal = parseInt(minimumText || minStep, 10);
-      if (isNaN(minimumVal) || minimumVal < 1) minimumVal = minStep;
+      var minimumVal = parseQty(minimumText || minStep);
+      if (isNaN(minimumVal) || minimumVal <= 0) minimumVal = minStep;
 
       return {
         product_id: pid,
@@ -323,6 +397,7 @@
         quantity: qty,
         minimum: minimumVal,
         minimumifc100: minStep,
+        decimal_quantity: decimalQty,
         pak: parseInt($tr.attr('data-pak') || '0', 10) || 0,
         line_total_raw: lineTotalRaw(isNaN(pRaw) ? 0 : pRaw, qty, $tr.attr('data-cent') || ''),
         thumb: (function(){
@@ -340,7 +415,9 @@
       var pack = it.minimum && it.minimum > 0 ? it.minimum : 1;
       var packaging = it.packaging || pack;
       var minStep = getMinStep(it);
-      var qtyVal = it.quantity && it.quantity >= minStep ? it.quantity : minStep;
+      var decimalQty = allowsDecimalQty(it);
+      var pakRequired = parseInt(it && it.pak || 0, 10) === 1;
+      var qtyVal = normalizeQty(it.quantity && it.quantity >= minStep ? it.quantity : minStep, it);
 
       var img = it.thumb
           ? `<img src="${esc(it.thumb)}" alt="${esc(it.name)}" class="qo-thumb">`
@@ -356,6 +433,7 @@
      data-pack="${pack}"
      data-packaging="${esc(packaging)}"
      data-pak="${Number(it.pak||0)}"
+     data-decimal="${decimalQty ? 1 : 0}"
      data-sku="${esc(it.sku||'')}"
      data-price="${esc(it.price||'')}"
      data-priceraw="${Number(it.price_raw||0)}"
@@ -397,10 +475,12 @@
                  class="qo-suggest-qty input-number"
                  min="${minStep}"
                  data-minstep="${minStep}"
-                 value="${qtyVal}"
+                 data-decimal="${decimalQty ? 1 : 0}"
+                 value="${formatQty(qtyVal, decimalQty)}"
                  tabindex="0"
                  aria-label="Količina"
-                 readonly>
+                 inputmode="${decimalQty ? 'decimal' : 'numeric'}"
+                 ${pakRequired ? 'readonly' : ''}>
 
           <button type="button"
                   class="btn btn-default btn-number qo-suggest-btn qo-suggest-plus"
@@ -426,11 +506,12 @@
       var pid = $s.attr('data-pid');
       if(!pid) return null;
       var $qty = $s.find('.qo-suggest-qty');
-      var min = parseInt($s.attr('data-minimum') || $qty.attr('data-minstep') || $qty.attr('min') || '1', 10);
-      if(isNaN(min) || min < 1) min = 1;
-      var pack = parseInt($s.attr('data-pack') || '0', 10);
-      if(isNaN(pack) || pack < 1) pack = min;
-      var q = parseInt($qty.val() || min, 10);
+      var decimalQty = String($s.attr('data-decimal') || $qty.attr('data-decimal') || '0') === '1';
+      var min = parseQty($s.attr('data-minimum') || $qty.attr('data-minstep') || $qty.attr('min') || '1');
+      if(isNaN(min) || min <= 0) min = 1;
+      var pack = parseQty($s.attr('data-pack') || '0');
+      if(isNaN(pack) || pack <= 0) pack = min;
+      var q = normalizeQty($qty.val() || min, { decimal_quantity: decimalQty });
       if(isNaN(q) || q < min) q = min;
 
       return {
@@ -451,6 +532,7 @@
         quantity: q,
         minimum: pack,
         minimumifc100: min,
+        decimal_quantity: decimalQty,
         pak: parseInt($s.attr('data-pak') || '0', 10) || 0,
         packaging: $s.attr('data-packaging') || '',
         cent: $s.attr('data-cent') || ''
@@ -472,23 +554,25 @@
       if(!$s || !$s.length) return;
       openQtyMode($s, true);
       var $qty = $s.find('.qo-suggest-qty');
-      var step = parseInt($qty.attr('data-minstep') || $qty.attr('min') || '1', 10);
-      if(isNaN(step) || step < 1) step = 1;
+      var step = parseQty($qty.attr('data-minstep') || $qty.attr('min') || '1');
+      if(isNaN(step) || step <= 0) step = 1;
+      var decimalQty = String($s.attr('data-decimal') || $qty.attr('data-decimal') || '0') === '1';
 
-      var v = parseInt($qty.val() || step, 10);
+      var v = normalizeQty($qty.val() || step, { decimal_quantity: decimalQty });
       if(isNaN(v) || v < step) v = step;
 
       v += delta * step;
       if(v < step) v = step;
-      $qty.val(v);
+      $qty.val(formatQty(v, decimalQty));
     }
 
     /* ===================== Tablica qty plus/minus ===================== */
     function changeQtyByStep($input, direction){
-      var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
-      if (isNaN(step) || step < 1) step = 1;
+      var step = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
+      if (isNaN(step) || step <= 0) step = 1;
+      var decimalQty = String($input.attr('data-decimal') || $input.closest('tr').attr('data-decimal') || '0') === '1';
 
-      var v = parseInt($input.val() || step, 10);
+      var v = normalizeQty($input.val() || step, { decimal_quantity: decimalQty });
       if (isNaN(v) || v < step) v = step;
 
       if (direction === 'up') {
@@ -498,7 +582,7 @@
         if (v < step) v = step;
       }
 
-      $input.val(v).trigger('input');
+      $input.val(formatQty(v, decimalQty)).trigger('change');
     }
 
     $(document).on('click', '.qo-qty-plus', function(){
@@ -509,6 +593,12 @@
     $(document).on('click', '.qo-qty-minus', function(){
       var $input = $(this).closest('.qo-qty-group').find('.qo-qty');
       changeQtyByStep($input, 'down');
+    });
+
+    $(document).on('click', '.quick-order .qiqo-action-button', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      showActionConditions($(this));
     });
 
     /* ===== Plus/minus u AUTOSUGGESTU ===== */
@@ -533,7 +623,7 @@
         return $.Deferred().resolve().promise();
       }
       var min = getMinStep(item);
-      qty = parseInt(qty || item.quantity || min, 10);
+      qty = normalizeQty(qty || item.quantity || min, item);
       if(isNaN(qty) || qty < min) qty = min;
 
       // ako red već postoji i već je dodan, povećaj količinu (updateQty)
@@ -541,13 +631,19 @@
       var alreadyAdded = $rowExisting.length && $rowExisting.is('[data-added]');
       if (alreadyAdded) {
         var $input = $rowExisting.find('.qo-qty');
-        var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
-        if(isNaN(step) || step < 1) step = 1;
+        var step = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
+        if(isNaN(step) || step <= 0) step = 1;
+        var decimalQty = String($rowExisting.attr('data-decimal') || $input.attr('data-decimal') || '0') === '1';
 
-        var current = parseInt($input.val() || step, 10);
+        var current = normalizeQty($input.val() || step, { decimal_quantity: decimalQty });
         if (isNaN(current) || current < step) current = step;
         var newQty = current + qty;
         if(newQty < step) newQty = step;
+        newQty = normalizeQty(newQty, { decimal_quantity: decimalQty });
+
+        if (!window.confirm('Pozor - artikl već postoji u narudžbi s količinom ' + formatQty(current, decimalQty) + '. Želite li nadodati novo unesenu količinu?')) {
+          return $.Deferred().resolve().promise();
+        }
 
         var lockKey = String(item.product_id) + '::update';
         if (ADD_LOCK[lockKey]){ return $.Deferred().resolve().promise(); }
@@ -556,11 +652,12 @@
         return $.post('index.php?route=extension/module/quick_order/updateQty', {
           product_id: item.product_id, quantity: newQty
         }, function(res){
-          $input.val(newQty);
+          $input.val(formatQty(newQty, decimalQty));
           recomputeRow($rowExisting);
           recomputeTotal();
           var data = getRowData($rowExisting);
           data.added = true;
+          data.quantity = newQty;
           upsertLS(data);
           refreshRowFromCartState(item.product_id).always(function(){
             baselHeaderRefreshDebounced();
@@ -629,8 +726,8 @@
             if(!items || !items.length){ $list.hide(); return items || []; }
             items.forEach(function(it){
               if(it && it.minimumifc100 != null){
-                var ms = parseInt(it.minimumifc100 || 1, 10);
-                if(isNaN(ms) || ms < 1) ms = 1;
+                var ms = parseQty(it.minimumifc100 || 1);
+                if(isNaN(ms) || ms <= 0) ms = 1;
                 it.minimumifc100 = ms;
               }
             });
@@ -802,17 +899,18 @@
     });
 
     /* ===================== Tablica: qty/remove/clear ===================== */
-    $(document).on('change input', '.qo-qty', function(){
+    $(document).on('change', '.qo-qty', function(){
       var $tr = $(this).closest('tr');
       var pid = $tr.data('id');
 
       var $input = $(this);
-      var step = parseInt($input.attr('data-minstep') || $input.attr('min') || '1', 10);
-      if(isNaN(step) || step < 1) step = 1;
+      var step = parseQty($input.attr('data-minstep') || $input.attr('min') || '1');
+      if(isNaN(step) || step <= 0) step = 1;
+      var decimalQty = String($tr.attr('data-decimal') || $input.attr('data-decimal') || '0') === '1';
 
-      var qty = parseInt($input.val() || step, 10);
+      var qty = normalizeQty($input.val() || step, { decimal_quantity: decimalQty });
       if(qty < step) qty = step;
-      $input.val(qty);
+      $input.val(formatQty(qty, decimalQty));
 
       recomputeRow($tr);
       recomputeTotal();

@@ -1,7 +1,7 @@
 <div class="quick-order box" data-text-add="{{ text_add }}">
 
   <div id="qo-toast" class="alert" style="display:none;"></div>
-  <h3>Pretraga artikala</h3>
+  <h3>{{ quick_order_search_title|default('Pretraga artikala') }}</h3>
 
   <div class="quick-order-search">
     <input id="qo-search" class="form-control qo-input" type="text" placeholder="{{ text_search }}" autocomplete="off" />
@@ -24,6 +24,7 @@
         <th>Rabat</th>
         <th>{{ text_price }}</th>
         <th>Ukupno</th>
+        <th></th>
       </tr>
       </thead>
       <tbody></tbody>
@@ -42,7 +43,7 @@
   <div id="qo-actions" style="margin-top:10px; text-align:right;">
     <div class="btn-group">
       <button class="btn btn-danger" style="margin-right:10px" id="qo-clear-all">{{ text_clear_all }}</button>
-      <a href="index.php?route=checkout/checkout" class="btn btn-success" id="qo-checkout">{{ text_checkout }}</a>
+      <a href="{{ quick_order_checkout|default('index.php?route=checkout/checkout') }}" class="btn btn-success" id="qo-checkout">{{ text_checkout }}</a>
     </div>
   </div>
 
@@ -68,6 +69,17 @@
   .quick-order #qo-table .qo-line-total { color:#00a9e0; }
   .quick-order #qo-table .qo-discount-action,
   .quick-order #qo-table .qo-price-net { color:#e4008a; }
+  .quick-order #qo-table .qo-remove-cell { width:34px; text-align:center; }
+  .quick-order #qo-table .qo-remove {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 20px;
+    line-height: 26px;
+    padding: 0;
+  }
   .quick-order .qiqo-action-button {
     width: 28px;
     height: 28px;

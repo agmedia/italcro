@@ -94,10 +94,9 @@ class ControllerProductSpecial extends Controller {
 				$sku_key = trim((string)$r['sku']);
 				$r_mpn_count = isset($r['mpn_count']) ? (int)$r['mpn_count'] : 1;
 				$r_is_single_article = empty($r['mpn']) || $r_mpn_count <= 1;
-				$r_minimum = $r['minimum'] > 0 ? (int)$r['minimum'] : 1;
+				$r_minimum = $this->qiqoPackQuantity($r);
 				$r_pak = isset($r['pak']) ? (int)$r['pak'] : 0;
-				$r_cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$r['cent']));
-				$r_list_min = ($r_cent_normalized === 'C100' || $r_pak === 1) ? $r_minimum : 1;
+				$r_list_min = $this->qiqoMinimumStep($r['cent'], $r_pak, $r_minimum);
 				$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
 
 				if ($sku_key !== '') {
@@ -137,10 +136,9 @@ class ControllerProductSpecial extends Controller {
 			$sku_key = trim((string)$result['sku']);
 			$mpn_count = isset($result['mpn_count']) ? (int)$result['mpn_count'] : 1;
 			$is_single_article = empty($result['mpn']) || $mpn_count <= 1;
-			$minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+			$minimum = $this->qiqoPackQuantity($result);
 			$pak = isset($result['pak']) ? (int)$result['pak'] : 0;
-			$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$result['cent']));
-			$list_min = ($cent_normalized === 'C100' || $pak === 1) ? $minimum : 1;
+			$list_min = $this->qiqoMinimumStep($result['cent'], $pak, $minimum);
 
 			$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
 			$display_special_unit = (!is_null($result['special']) && (float)$result['special'] > 0) ? (float)$result['special'] : 0.0;
@@ -212,7 +210,7 @@ class ControllerProductSpecial extends Controller {
 				$rating = false;
 			}
 
-            $minimum = $result['minimum'] > 0 ? (int)$result['minimum'] : 1;
+            $minimum = $this->qiqoPackQuantity($result);
 
             $price_raw   = (float)$display_price_unit;
             $special_raw = (float)$display_special_unit;
@@ -269,8 +267,9 @@ class ControllerProductSpecial extends Controller {
                 'pak'  => $pak,
                 'cent'  => $result['cent'],
 				'tax'         => $tax,
-				'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
+				'minimum'     => $minimum,
 				'list_min'    => $list_min,
+				'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($result),
 				'qiqo_discount_percent' => $qiqo_discount_percent,
 				'qiqo_action' => $qiqo_action,
 				'rating'      => $result['rating'],
@@ -438,4 +437,38 @@ class ControllerProductSpecial extends Controller {
 
         return "artikala";
     }
+
+	private function qiqoPackQuantity($product) {
+		$pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
+		if ($pakkol <= 0) {
+			$pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
+		}
+
+		return $pakkol > 0 ? $pakkol : 1.0;
+	}
+
+	private function qiqoMinimumStep($cent, $pak, $pakkol) {
+		$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$cent));
+		$step = ($cent_normalized === 'C100' || (int)$pak === 1) ? (float)$pakkol : 1.0;
+
+		return $step > 0 ? $step : 1.0;
+	}
+
+	private function qiqoJm($product) {
+		if (isset($product['jm']) && trim((string)$product['jm']) !== '') {
+			return $product['jm'];
+		}
+
+		return isset($product['ean']) ? $product['ean'] : '';
+	}
+
+	private function qiqoAllowsDecimalQuantity($product) {
+		$jm = strtoupper(trim((string)$this->qiqoJm($product)));
+		$pakkol = $this->qiqoPackQuantity($product);
+		$attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
+
+		return $jm === 'MET'
+			&& abs($pakkol - 3.0) < 0.00001
+			&& preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute);
+	}
 }

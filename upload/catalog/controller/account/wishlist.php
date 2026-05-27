@@ -88,7 +88,7 @@ class ControllerAccountWishList extends Controller {
 					continue;
 				}
 
-				$minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
+				$minimum = $this->qiqoPackQuantity($product_info);
 				$pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
 				$minimum_step = $this->qiqoMinimumStep($product_info['cent'], $pak, $minimum);
 				$base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
@@ -113,7 +113,7 @@ class ControllerAccountWishList extends Controller {
 		}
 
 		foreach ($wishlist_products as $product_info) {
-			$minimum = ($product_info['minimum'] > 0) ? (int)$product_info['minimum'] : 1;
+			$minimum = $this->qiqoPackQuantity($product_info);
 			$pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
 			$minimum_step = $this->qiqoMinimumStep($product_info['cent'], $pak, $minimum);
 			$sku = trim((string)$product_info['sku']);
@@ -145,12 +145,17 @@ class ControllerAccountWishList extends Controller {
 			$action_conditions = ($sku !== '' && isset($qiqo_action_details_map[$sku]))
 				? $this->formatQiqoActionConditions($qiqo_action_details_map[$sku])
 				: array();
+			$thumb = !empty($product_info['image'])
+				? $this->model_tool_image->resize($product_info['image'], 60, 60)
+				: $this->model_tool_image->resize('placeholder.png', 60, 60);
 
 			$data['products'][] = array(
 				'product_id' => $product_info['product_id'],
+				'thumb'      => $thumb,
 				'code'       => $product_info['sku'],
 				'barcode'    => $product_info['model'],
 				'ean'        => $product_info['ean'],
+				'jm'         => $this->qiqoJm($product_info),
 				'cent'       => $product_info['cent'],
 				'pak'        => $pak,
 				'name'       => $product_info['name'],
@@ -158,8 +163,9 @@ class ControllerAccountWishList extends Controller {
 				'description_add' => isset($product_info['description_add']) ? $product_info['description_add'] : '',
 				'stock'      => $product_info['quantity'],
 				'minimum'    => $minimum,
-				'packaging'  => $this->formatQiqoPackaging($product_info['ean'], $minimum, $pak),
+				'packaging'  => $this->formatQiqoPackaging($this->qiqoJm($product_info), $minimum, $pak),
 				'minimumifc100' => $minimum_step,
+				'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($product_info),
 				'qiqo_discount_percent' => $discount_percent,
 				'qiqo_action' => !empty($action_conditions),
 				'qiqo_action_conditions' => $action_conditions,
@@ -235,14 +241,41 @@ class ControllerAccountWishList extends Controller {
 		return $this->qiqoCentNormalized($cent) === 'C100';
 	}
 
-	private function qiqoMinimumStep($cent, $pak, $pakkol) {
-		$step = 1;
-
-		if ($this->qiqoIsC100($cent) || (int)$pak === 1) {
-			$step = (int)$pakkol;
+	private function qiqoPackQuantity($product) {
+		$pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
+		if ($pakkol <= 0) {
+			$pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
 		}
 
-		return $step > 0 ? $step : 1;
+		return $pakkol > 0 ? $pakkol : 1.0;
+	}
+
+	private function qiqoJm($product) {
+		if (isset($product['jm']) && trim((string)$product['jm']) !== '') {
+			return $product['jm'];
+		}
+
+		return isset($product['ean']) ? $product['ean'] : '';
+	}
+
+	private function qiqoAllowsDecimalQuantity($product) {
+		$jm = strtoupper(trim((string)$this->qiqoJm($product)));
+		$pakkol = $this->qiqoPackQuantity($product);
+		$attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
+
+		return $jm === 'MET'
+			&& abs($pakkol - 3.0) < 0.00001
+			&& preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute);
+	}
+
+	private function qiqoMinimumStep($cent, $pak, $pakkol) {
+		$step = 1.0;
+
+		if ($this->qiqoIsC100($cent) || (int)$pak === 1) {
+			$step = (float)$pakkol;
+		}
+
+		return $step > 0 ? $step : 1.0;
 	}
 
 	private function qiqoDisplayPriceRaw($price, $cent) {

@@ -67,6 +67,15 @@ class ModelCatalogProduct extends Model {
 
 
 		if ($query->num_rows) {
+			$jm = isset($query->row['jm']) && trim((string)$query->row['jm']) !== '' ? $query->row['jm'] : $query->row['ean'];
+			$pakkol = isset($query->row['pakkol']) ? (float)$query->row['pakkol'] : 0.0;
+			if ($pakkol <= 0) {
+				$pakkol = isset($query->row['minimum']) ? (float)$query->row['minimum'] : 1.0;
+			}
+			if ($pakkol <= 0) {
+				$pakkol = 1.0;
+			}
+
 			return array(
 				'product_id'       => $query->row['product_id'],
 				'name'             => $query->row['name'],
@@ -81,10 +90,12 @@ class ModelCatalogProduct extends Model {
 				'sku'              => $query->row['sku'],
 				'upc'              => $query->row['upc'],
 					'ean'              => $query->row['ean'],
+					'jm'               => $jm,
 					'jan'              => $query->row['jan'],
 					'isbn'             => $query->row['isbn'],
 					'mpn'              => $query->row['mpn'],
 					'pak'              => isset($query->row['pak']) ? (int)$query->row['pak'] : 0,
+					'pakkol'           => $pakkol,
 	                'mpn_count'        => (int)$query->row['mpn_count'], // <-- OVO NOVO
 				'location'         => $query->row['location'],
                 'cent'         => $query->row['cent'],

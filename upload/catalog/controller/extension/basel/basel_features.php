@@ -70,29 +70,15 @@ public function add_to_cart() {
 		$product_info = $this->model_catalog_product->getProduct($product_id);
 
 		if ($product_info) {
-			$minimum_step = 1;
-			$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_info['cent']));
-			$pak_required = isset($product_info['pak']) && (int)$product_info['pak'] === 1;
-			if ($cent_normalized === 'C100' || $pak_required) {
-				$minimum_step = $product_info['minimum'] ? (int)$product_info['minimum'] : 1;
-			}
-			if ($minimum_step < 1) {
-				$minimum_step = 1;
-			}
+			$minimum_step = $this->qiqoMinimumStep($product_info['cent'], isset($product_info['pak']) ? (int)$product_info['pak'] : 0, $this->qiqoPackQuantity($product_info));
 
 			if (isset($this->request->post['quantity'])) {
-				$quantity = (int)$this->request->post['quantity'];
+				$quantity = $this->parseQiqoQuantity($this->request->post['quantity']);
 			} else {
 				$quantity = $minimum_step;
 			}
 
-			if ($quantity < $minimum_step) {
-				$quantity = $minimum_step;
-			}
-
-			if ($minimum_step > 1) {
-				$quantity = (int)(ceil($quantity / $minimum_step) * $minimum_step);
-			}
+			$quantity = $this->normalizeQiqoProductQuantity($quantity, $product_info);
 
 			if (isset($this->request->post['option'])) {
 				$option = array_filter($this->request->post['option']);
@@ -633,6 +619,80 @@ $data['popup_content_block'] = html_entity_decode(str_replace('{signup}',$this->
 		
 		$this->response->setOutput($this->load->view('common/widgets/popup', $data));
 
+}
+
+private function parseQiqoQuantity($value) {
+	if (is_string($value)) {
+		$value = trim($value);
+		$value = str_replace(array(' ', "\xc2\xa0"), '', $value);
+		if (strpos($value, ',') !== false) {
+			$value = str_replace('.', '', $value);
+			$value = str_replace(',', '.', $value);
+		}
+	}
+
+	return (float)$value;
+}
+
+private function qiqoCentNormalized($cent) {
+	return strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$cent));
+}
+
+private function qiqoIsC100($cent) {
+	return $this->qiqoCentNormalized($cent) === 'C100';
+}
+
+private function qiqoPackQuantity($product) {
+	$pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
+	if ($pakkol <= 0) {
+		$pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
+	}
+
+	return $pakkol > 0 ? $pakkol : 1.0;
+}
+
+private function qiqoJm($product) {
+	if (isset($product['jm']) && trim((string)$product['jm']) !== '') {
+		return $product['jm'];
+	}
+
+	return isset($product['ean']) ? $product['ean'] : '';
+}
+
+private function qiqoAllowsDecimalQuantity($product) {
+	$jm = strtoupper(trim((string)$this->qiqoJm($product)));
+	$pakkol = $this->qiqoPackQuantity($product);
+	$attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
+
+	return $jm === 'MET'
+		&& abs($pakkol - 3.0) < 0.00001
+		&& preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute);
+}
+
+private function qiqoMinimumStep($cent, $pak, $pakkol) {
+	$step = ($this->qiqoIsC100($cent) || (int)$pak === 1) ? (float)$pakkol : 1.0;
+
+	return $step > 0 ? $step : 1.0;
+}
+
+private function normalizeQiqoProductQuantity($quantity, $product_info) {
+	$quantity = (float)$quantity;
+	$pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
+	$step = $this->qiqoMinimumStep($product_info['cent'], $pak, $this->qiqoPackQuantity($product_info));
+
+	if ($quantity < $step) {
+		$quantity = $step;
+	}
+
+	if (!$this->qiqoAllowsDecimalQuantity($product_info)) {
+		$quantity = ceil($quantity - 0.0000001);
+	}
+
+	if (($this->qiqoIsC100($product_info['cent']) || $pak === 1) && $step > 0) {
+		$quantity = ceil(($quantity / $step) - 0.0000001) * $step;
+	}
+
+	return $quantity > 0 ? $quantity : 1.0;
 }
 
 }

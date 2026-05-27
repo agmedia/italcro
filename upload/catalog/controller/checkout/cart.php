@@ -1,6 +1,9 @@
 <?php
 class ControllerCheckoutCart extends Controller {
 	public function index() {
+		$this->renderQuickOrderCart();
+		return;
+
 		$this->load->language('checkout/cart');
 
 		$this->document->setTitle($this->language->get('heading_title'));
@@ -120,9 +123,9 @@ class ControllerCheckoutCart extends Controller {
 					}
 				}
 
-				$effective_minimum = isset($product['minimumifc100']) ? (int)$product['minimumifc100'] : 1;
-				if ($effective_minimum < 1) {
-					$effective_minimum = 1;
+				$effective_minimum = isset($product['minimumifc100']) ? (float)$product['minimumifc100'] : 1.0;
+				if ($effective_minimum <= 0) {
+					$effective_minimum = 1.0;
 				}
 
 				if ($effective_minimum > $product_total) {
@@ -192,6 +195,11 @@ class ControllerCheckoutCart extends Controller {
 				$product_id = (int)$product['product_id'];
 				$product_info = isset($product_info_map[$product_id]) ? $product_info_map[$product_id] : array();
 				$product_sku = !empty($product['sku']) ? (string)$product['sku'] : (!empty($product_info['sku']) ? (string)$product_info['sku'] : '');
+				$pak = isset($product_info['pak']) ? (int)$product_info['pak'] : (isset($product['pak']) ? (int)$product['pak'] : 0);
+				$pakkol = $this->qiqoPackQuantity($product_info ? $product_info : $product);
+				$minimum_step = $this->qiqoMinimumStep(isset($product_info['cent']) ? $product_info['cent'] : $product['cent'], $pak, $pakkol);
+				$decimal_quantity = $this->qiqoAllowsDecimalQuantity($product_info ? $product_info : $product);
+				$vpc_raw = isset($product_info['vpc']) && (float)$product_info['vpc'] > 0 ? (float)$product_info['vpc'] : (float)$product['price'];
 
 				$qiqo_discount_percent = 0.0;
 				$qiqo_proforma_extra_percent = 0.0;
@@ -224,14 +232,22 @@ class ControllerCheckoutCart extends Controller {
 					'thumb'     => $image,
 					'name'      => $product['name'],
 					'sku'       => $product_sku,
+					'name_add'  => isset($product_info['name_add']) ? $product_info['name_add'] : (isset($product['name_add']) ? $product['name_add'] : ''),
+					'packaging' => $this->formatQiqoPackaging($this->qiqoJm($product_info ? $product_info : $product), $pakkol, $pak),
+					'cent'      => isset($product_info['cent']) ? $product_info['cent'] : $product['cent'],
+					'pak'       => $pak,
+					'minimumifc100' => $minimum_step,
+					'decimal_quantity' => $decimal_quantity,
 					'model'     => $product['model'],
 					'option'    => $option_data,
 					'recurring' => $recurring,
-					'quantity'  => $product['quantity'],
+					'quantity'  => $this->formatQiqoQuantity($product['quantity'], $decimal_quantity),
+					'stock_available' => isset($product_info['quantity']) ? $product_info['quantity'] : '',
 					'stock'     => $product['stock'] ? true : !(!$this->config->get('config_stock_checkout') || $this->config->get('config_stock_warning')),
 					'reward'    => ($product['reward'] ? sprintf($this->language->get('text_points'), $product['reward']) : ''),
 					'qiqo_discount_percent' => $qiqo_discount_percent,
 					'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
+					'vpc'       => $this->currency->format($this->qiqoDisplayPriceRaw($vpc_raw, isset($product_info['cent']) ? $product_info['cent'] : $product['cent']), $this->session->data['currency']),
 					'price_old' => $price_old,
 					'price'     => $price,
 					'total'     => $total,
@@ -361,6 +377,76 @@ class ControllerCheckoutCart extends Controller {
 		}
 	}
 
+	private function renderQuickOrderCart() {
+		$this->load->language('checkout/cart');
+
+		$heading_title = $this->language->get('heading_title');
+		$this->document->setTitle($heading_title);
+
+		if (!$this->customer->isLogged()) {
+			$this->session->data['redirect'] = $this->url->link('checkout/cart', '', true);
+			$this->response->redirect($this->url->link('account/login', '', true));
+			return;
+		}
+
+		$data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'href' => $this->url->link('common/home'),
+			'text' => $this->language->get('text_home')
+		);
+
+		$data['breadcrumbs'][] = array(
+			'href' => $this->url->link('checkout/cart'),
+			'text' => $heading_title
+		);
+
+		$data['heading_title'] = $heading_title;
+		$data['attention'] = '';
+		$data['success'] = isset($this->session->data['success']) ? $this->session->data['success'] : '';
+		$data['error_warning'] = '';
+
+		if (!$this->cart->hasStock() && (!$this->config->get('config_stock_checkout') || $this->config->get('config_stock_warning'))) {
+			$data['error_warning'] = $this->language->get('error_stock');
+		} elseif (isset($this->session->data['error'])) {
+			$data['error_warning'] = $this->session->data['error'];
+		}
+
+		unset($this->session->data['success'], $this->session->data['error']);
+
+		$this->load->language('extension/module/quick_order');
+
+		$script_file = DIR_APPLICATION . '../catalog/view/javascript/quick_order.js';
+		$script_ver = is_file($script_file) ? filemtime($script_file) : time();
+		$this->document->addScript('catalog/view/javascript/quick_order.js?v=' . $script_ver);
+
+		$quick_order_data = array();
+		$quick_order_data['heading_title'] = $heading_title;
+		$quick_order_data['quick_order_search_title'] = 'Pretraga artikala';
+		$quick_order_data['text_search']   = $this->language->get('text_search');
+		$quick_order_data['text_sku']      = $this->language->get('text_sku');
+		$quick_order_data['text_qty']      = $this->language->get('text_qty');
+		$quick_order_data['text_add']      = $this->language->get('text_add');
+		$quick_order_data['text_price']    = $this->language->get('text_price');
+		$quick_order_data['text_name']     = $this->language->get('text_name');
+		$quick_order_data['text_total']    = 'Ukupno';
+		$quick_order_data['text_checkout'] = 'Pošalji narudžbu';
+		$quick_order_data['text_add_all']  = 'Dodaj sve u košaricu';
+		$quick_order_data['text_clear_all']= 'Obriši sve';
+		$quick_order_data['quick_order_checkout'] = $this->url->link('checkout/checkout', '', true);
+
+		$data['quick_order'] = $this->load->view('extension/module/quick_order', $quick_order_data);
+
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['column_right'] = $this->load->controller('common/column_right');
+		$data['content_top'] = $this->load->controller('common/content_top');
+		$data['content_bottom'] = $this->load->controller('common/content_bottom');
+		$data['footer'] = $this->load->controller('common/footer');
+		$data['header'] = $this->load->controller('common/header');
+
+		$this->response->setOutput($this->load->view('checkout/cart', $data));
+	}
+
 	public function add() {
 		$this->load->language('checkout/cart');
 
@@ -377,29 +463,15 @@ class ControllerCheckoutCart extends Controller {
 		$product_info = $this->model_catalog_product->getProduct($product_id);
 
 		if ($product_info) {
-			$minimum_step = 1;
-			$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_info['cent']));
-			$pak_required = isset($product_info['pak']) && (int)$product_info['pak'] === 1;
-			if ($cent_normalized === 'C100' || $pak_required) {
-				$minimum_step = $product_info['minimum'] ? (int)$product_info['minimum'] : 1;
-			}
-			if ($minimum_step < 1) {
-				$minimum_step = 1;
-			}
+			$minimum_step = $this->qiqoMinimumStep($product_info['cent'], isset($product_info['pak']) ? (int)$product_info['pak'] : 0, $this->qiqoPackQuantity($product_info));
 
 			if (isset($this->request->post['quantity'])) {
-				$quantity = (int)$this->request->post['quantity'];
+				$quantity = $this->parseQiqoQuantity($this->request->post['quantity']);
 			} else {
 				$quantity = $minimum_step;
 			}
 
-			if ($quantity < $minimum_step) {
-				$quantity = $minimum_step;
-			}
-
-			if ($minimum_step > 1) {
-				$quantity = (int)(ceil($quantity / $minimum_step) * $minimum_step);
-			}
+			$quantity = $this->normalizeQiqoProductQuantity($quantity, $product_info);
 
 		
 
@@ -509,8 +581,25 @@ class ControllerCheckoutCart extends Controller {
 
 		// Update
 		if (!empty($this->request->post['quantity'])) {
+			$cart_products = array();
+			$this->load->model('catalog/product');
+			foreach ($this->cart->getProducts() as $cart_product) {
+				if (!empty($cart_product['cart_id'])) {
+					$cart_products[(int)$cart_product['cart_id']] = $cart_product;
+				}
+			}
+
 			foreach ($this->request->post['quantity'] as $key => $value) {
-				$this->cart->update($key, $value);
+				$quantity = $this->parseQiqoQuantity($value);
+
+				if (isset($cart_products[(int)$key])) {
+					$product_info = $this->model_catalog_product->getProduct((int)$cart_products[(int)$key]['product_id']);
+					if ($product_info) {
+						$quantity = $this->normalizeQiqoProductQuantity($quantity, $product_info);
+					}
+				}
+
+				$this->cart->update($key, $quantity);
 			}
 
 			$this->session->data['success'] = $this->language->get('text_remove');
@@ -596,5 +685,125 @@ class ControllerCheckoutCart extends Controller {
 
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
+	}
+
+	private function parseQiqoQuantity($value) {
+		if (is_string($value)) {
+			$value = trim($value);
+			$value = str_replace(array(' ', "\xc2\xa0"), '', $value);
+			if (strpos($value, ',') !== false) {
+				$value = str_replace('.', '', $value);
+				$value = str_replace(',', '.', $value);
+			}
+		}
+
+		return (float)$value;
+	}
+
+	private function formatQiqoQuantity($value, $allow_decimal) {
+		$value = round((float)$value, 4);
+		if (!$allow_decimal || abs($value - round($value)) < 0.00001) {
+			return (string)(int)ceil($value - 0.0000001);
+		}
+
+		return rtrim(rtrim(number_format($value, 4, ',', '.'), '0'), ',');
+	}
+
+	private function qiqoCentNormalized($cent) {
+		return strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$cent));
+	}
+
+	private function qiqoIsC100($cent) {
+		return $this->qiqoCentNormalized($cent) === 'C100';
+	}
+
+	private function qiqoPackQuantity($product) {
+		$pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
+		if ($pakkol <= 0) {
+			$pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
+		}
+
+		return $pakkol > 0 ? $pakkol : 1.0;
+	}
+
+	private function qiqoJm($product) {
+		if (isset($product['jm']) && trim((string)$product['jm']) !== '') {
+			return $product['jm'];
+		}
+
+		return isset($product['ean']) ? $product['ean'] : '';
+	}
+
+	private function qiqoAllowsDecimalQuantity($product) {
+		$jm = strtoupper(trim((string)$this->qiqoJm($product)));
+		$pakkol = $this->qiqoPackQuantity($product);
+		$attribute = isset($product['name_add']) ? str_replace(',', '.', trim((string)$product['name_add'])) : '';
+
+		return $jm === 'MET'
+			&& abs($pakkol - 3.0) < 0.00001
+			&& preg_match('/(^|[^0-9])\\d+\\.\\d+\\s*m([^a-z0-9]|$)/i', $attribute);
+	}
+
+	private function qiqoMinimumStep($cent, $pak, $pakkol) {
+		$step = ($this->qiqoIsC100($cent) || (int)$pak === 1) ? (float)$pakkol : 1.0;
+
+		return $step > 0 ? $step : 1.0;
+	}
+
+	private function normalizeQiqoProductQuantity($quantity, $product_info) {
+		$quantity = (float)$quantity;
+		$pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
+		$step = $this->qiqoMinimumStep($product_info['cent'], $pak, $this->qiqoPackQuantity($product_info));
+
+		if ($quantity < $step) {
+			$quantity = $step;
+		}
+
+		if (!$this->qiqoAllowsDecimalQuantity($product_info)) {
+			$quantity = ceil($quantity - 0.0000001);
+		}
+
+		if (($this->qiqoIsC100($product_info['cent']) || $pak === 1) && $step > 0) {
+			$quantity = ceil(($quantity / $step) - 0.0000001) * $step;
+		}
+
+		return $quantity > 0 ? $quantity : 1.0;
+	}
+
+	private function qiqoDisplayPriceRaw($price, $cent) {
+		$price = (float)$price;
+
+		return $this->qiqoIsC100($cent) ? ($price * 100) : $price;
+	}
+
+	private function formatQiqoNumber($value) {
+		$value = (float)$value;
+
+		if (abs($value - round($value)) < 0.00001) {
+			return number_format($value, 0, ',', '.');
+		}
+
+		return rtrim(rtrim(number_format($value, 2, ',', '.'), '0'), ',');
+	}
+
+	private function formatQiqoPackaging($jm, $pakkol, $pak) {
+		$parts = array();
+		$jm = trim((string)$jm);
+
+		if ($jm !== '') {
+			$parts[] = $jm;
+		}
+
+		if ((float)$pakkol > 0) {
+			$parts[] = $this->formatQiqoNumber($pakkol);
+		}
+
+		$label = trim(implode(' ', $parts));
+
+		if ((int)$pak === 1) {
+			$label .= '*';
+		}
+
+		return $label !== '' ? $label : '-';
 	}
 }

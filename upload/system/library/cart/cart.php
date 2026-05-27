@@ -6,6 +6,7 @@ class Cart {
 	private $qiqo_authorization = null;
 	private $qiqo_article_discount_cache = array();
 	private $qiqo_action_rows_cache = array();
+	private static $qiqo_cart_quantity_column_checked = false;
 
 	public function __construct($registry) {
 		$this->config = $registry->get('config');
@@ -14,6 +15,7 @@ class Cart {
 		$this->db = $registry->get('db');
 		$this->tax = $registry->get('tax');
 		$this->weight = $registry->get('weight');
+		$this->ensureQiqoCartQuantityColumn();
 
 		// Remove all the expired carts with no customer ID
 		$this->db->query("DELETE FROM " . DB_PREFIX . "cart WHERE (api_id > '0' OR customer_id = '0') AND date_added < DATE_SUB(NOW(), INTERVAL 1 HOUR)");
@@ -32,6 +34,44 @@ class Cart {
 				$this->add($cart['product_id'], $cart['quantity'], json_decode($cart['option']), $cart['recurring_id']);
 			}
 		}
+	}
+
+	private function ensureQiqoCartQuantityColumn() {
+		if (self::$qiqo_cart_quantity_column_checked) {
+			return;
+		}
+
+		self::$qiqo_cart_quantity_column_checked = true;
+
+		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "cart` LIKE 'quantity'");
+		if (!$query->num_rows) {
+			return;
+		}
+
+		$type = strtolower((string)$query->row['Type']);
+		if (strpos($type, 'decimal') !== false || strpos($type, 'double') !== false || strpos($type, 'float') !== false) {
+			return;
+		}
+
+		$this->db->query("ALTER TABLE `" . DB_PREFIX . "cart` MODIFY `quantity` DECIMAL(15,4) NOT NULL DEFAULT 0");
+	}
+
+	private function normalizeQiqoQuantity($quantity) {
+		if (is_string($quantity)) {
+			$quantity = trim($quantity);
+			$quantity = str_replace(array(' ', "\xc2\xa0"), '', $quantity);
+			if (strpos($quantity, ',') !== false) {
+				$quantity = str_replace('.', '', $quantity);
+				$quantity = str_replace(',', '.', $quantity);
+			}
+		}
+
+		$value = (float)$quantity;
+		if ($value < 0) {
+			$value = 0;
+		}
+
+		return number_format($value, 4, '.', '');
 	}
 
 	public function getProducts() {
@@ -241,21 +281,30 @@ class Cart {
 					$recurring = false;
 				}
 
-				$minimum_step = 1;
+				$minimum_step = 1.0;
 				$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$product_query->row['cent']));
 				$pak_required = isset($product_query->row['pak']) && (int)$product_query->row['pak'] === 1;
 				if ($cent_normalized === 'C100' || $pak_required) {
-					$minimum_step = $product_query->row['minimum'] ? (int)$product_query->row['minimum'] : 1;
+					$pack_quantity = isset($product_query->row['pakkol']) ? (float)$product_query->row['pakkol'] : 0.0;
+					if ($pack_quantity <= 0) {
+						$pack_quantity = $product_query->row['minimum'] ? (float)$product_query->row['minimum'] : 1.0;
+					}
+					$minimum_step = $pack_quantity;
 				}
-				if ($minimum_step < 1) {
-					$minimum_step = 1;
+				if ($minimum_step <= 0) {
+					$minimum_step = 1.0;
 				}
 
 				$product_data[] = array(
 					'cart_id'         => $cart['cart_id'],
 					'product_id'      => $product_query->row['product_id'],
 					'name'            => $product_query->row['name'],
+					'name_add'        => isset($product_query->row['name_add']) ? $product_query->row['name_add'] : '',
 					'model'           => $product_query->row['model'],
+					'sku'             => $product_query->row['sku'],
+					'jm'              => isset($product_query->row['jm']) && trim((string)$product_query->row['jm']) !== '' ? $product_query->row['jm'] : $product_query->row['ean'],
+					'pakkol'          => isset($product_query->row['pakkol']) ? (float)$product_query->row['pakkol'] : (float)$product_query->row['minimum'],
+					'vpc'             => isset($product_query->row['vpc']) ? (float)$product_query->row['vpc'] : 0.0,
 					'shipping'        => $product_query->row['shipping'],
 					'image'           => $product_query->row['image'],
 					'option'          => $option_data,
@@ -541,17 +590,19 @@ class Cart {
 	}
 
 	public function add($product_id, $quantity = 1, $option = array(), $recurring_id = 0) {
+		$quantity_sql = $this->normalizeQiqoQuantity($quantity);
 		$query = $this->db->query("SELECT COUNT(*) AS total FROM " . DB_PREFIX . "cart WHERE api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "' AND customer_id = '" . (int)$this->customer->getId() . "' AND session_id = '" . $this->db->escape($this->session->getId()) . "' AND product_id = '" . (int)$product_id . "' AND recurring_id = '" . (int)$recurring_id . "' AND `option` = '" . $this->db->escape(json_encode($option)) . "'");
 
 		if (!$query->row['total']) {
-			$this->db->query("INSERT INTO " . DB_PREFIX . "cart SET api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "', customer_id = '" . (int)$this->customer->getId() . "', session_id = '" . $this->db->escape($this->session->getId()) . "', product_id = '" . (int)$product_id . "', recurring_id = '" . (int)$recurring_id . "', `option` = '" . $this->db->escape(json_encode($option)) . "', quantity = '" . (int)$quantity . "', date_added = NOW()");
+			$this->db->query("INSERT INTO " . DB_PREFIX . "cart SET api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "', customer_id = '" . (int)$this->customer->getId() . "', session_id = '" . $this->db->escape($this->session->getId()) . "', product_id = '" . (int)$product_id . "', recurring_id = '" . (int)$recurring_id . "', `option` = '" . $this->db->escape(json_encode($option)) . "', quantity = '" . $quantity_sql . "', date_added = NOW()");
 		} else {
-			$this->db->query("UPDATE " . DB_PREFIX . "cart SET quantity = (quantity + " . (int)$quantity . ") WHERE api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "' AND customer_id = '" . (int)$this->customer->getId() . "' AND session_id = '" . $this->db->escape($this->session->getId()) . "' AND product_id = '" . (int)$product_id . "' AND recurring_id = '" . (int)$recurring_id . "' AND `option` = '" . $this->db->escape(json_encode($option)) . "'");
+			$this->db->query("UPDATE " . DB_PREFIX . "cart SET quantity = (quantity + " . $quantity_sql . ") WHERE api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "' AND customer_id = '" . (int)$this->customer->getId() . "' AND session_id = '" . $this->db->escape($this->session->getId()) . "' AND product_id = '" . (int)$product_id . "' AND recurring_id = '" . (int)$recurring_id . "' AND `option` = '" . $this->db->escape(json_encode($option)) . "'");
 		}
 	}
 
 	public function update($cart_id, $quantity) {
-		$this->db->query("UPDATE " . DB_PREFIX . "cart SET quantity = '" . (int)$quantity . "' WHERE cart_id = '" . (int)$cart_id . "' AND api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "' AND customer_id = '" . (int)$this->customer->getId() . "' AND session_id = '" . $this->db->escape($this->session->getId()) . "'");
+		$quantity_sql = $this->normalizeQiqoQuantity($quantity);
+		$this->db->query("UPDATE " . DB_PREFIX . "cart SET quantity = '" . $quantity_sql . "' WHERE cart_id = '" . (int)$cart_id . "' AND api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "' AND customer_id = '" . (int)$this->customer->getId() . "' AND session_id = '" . $this->db->escape($this->session->getId()) . "'");
 	}
 
 	public function remove($cart_id) {

@@ -20,4 +20,14 @@
       <?php echo $content_bottom; ?></div>
     <?php echo $column_right; ?></div>
 </div>
+<?php if (!empty($clear_quick_order)) { ?>
+<script>
+(function() {
+  try {
+    localStorage.removeItem('qo_items_v2');
+    localStorage.removeItem('qo_items_v1');
+  } catch (e) {}
+})();
+</script>
+<?php } ?>
 <?php echo $footer; ?>

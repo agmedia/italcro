@@ -739,7 +739,17 @@
 
     $.get('index.php?route=extension/module/quick_order/cartState&_=' + Date.now(), function(res){
       if(res && res.items){
-        var map = {}; loadLS().forEach(function(x){ map[String(x.product_id)] = x; });
+        var storedItems = loadLS();
+        var hasAddedItems = storedItems.some(function(x){ return x && x.added; });
+        if(!res.items.length && hasAddedItems){
+          clearLS();
+          $table.empty();
+          recomputeTotal();
+          baselHeaderRefreshDebounced();
+          return;
+        }
+
+        var map = {}; storedItems.forEach(function(x){ map[String(x.product_id)] = x; });
         res.items.forEach(function(it){
           var merged = Object.assign({}, map[String(it.product_id)] || {}, it, { added: true });
           ensureRow(merged, true);

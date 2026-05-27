@@ -27,4 +27,14 @@ padding:50px ;">{{ text_message }}
       {{ content_bottom }}</div>
     {{ column_right }}</div>
 </div>
+{% if clear_quick_order is defined and clear_quick_order %}
+<script>
+(function() {
+  try {
+    localStorage.removeItem('qo_items_v2');
+    localStorage.removeItem('qo_items_v1');
+  } catch (e) {}
+})();
+</script>
+{% endif %}
 {{ footer }}

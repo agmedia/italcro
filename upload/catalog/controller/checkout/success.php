@@ -2,12 +2,14 @@
 class ControllerCheckoutSuccess extends Controller {
 	public function index() {
 		$this->load->language('checkout/success');
+		$data['clear_quick_order'] = false;
 
 		if (isset($this->session->data['order_id'])) {
 
 			  $order_id = $this->session->data['order_id'];
 
 			$this->cart->clear();
+			$data['clear_quick_order'] = true;
 
 			unset($this->session->data['shipping_method']);
 			unset($this->session->data['shipping_methods']);

@@ -106,16 +106,6 @@ class ControllerMailOrder extends Controller {
 		$data['telephone'] = $order_info['telephone'];
 		$data['ip'] = $order_info['ip'];
 
-		  if ($order_info['payment_code'] == 'bank_transfer') {
-
-           
-
-              $data['scanimage'] = HTTP_SERVER.'image/tmp/'.$order_info['order_id'].'.png';
-
-
-
-          }
-
         //$data['collect_date'] = date($language->get('date_format_short'), strtotime($order_info['collect_date']));
 
 		$order_status_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_status WHERE order_status_id = '" . (int)$order_status_id . "' AND language_id = '" . (int)$order_info['language_id'] . "'");

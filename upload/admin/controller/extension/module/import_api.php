@@ -57,7 +57,7 @@ class ControllerExtensionModuleImportApi extends Controller {
 
 		$data['cancel'] = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=module', true);
 		
-		$data['oc_fields'] = ['unique', 'model', 'name', 'description', 'price', 'special', 'quantity', 'image', 'brand', 'category', 'category_parent', 'attribute_name', 'attribute_value', 'option', 'option_value', 'option_price', 'option_weight', 'option_quantity', 'images', 'sku', 'mpn', 'ean', 'upc', 'jan', 'isbn', 'location', 'weight', 'minimum'];
+		$data['oc_fields'] = ['unique', 'model', 'name', 'description', 'price', 'special', 'quantity', 'image', 'brand', 'category', 'category_parent', 'attribute_name', 'attribute_value', 'option', 'option_value', 'option_price', 'option_weight', 'option_quantity', 'images', 'sku', 'mpn', 'ean', 'upc', 'jan', 'isbn', 'location', 'weight', 'minimum', 'jm', 'pak', 'pakkol', 'vpc'];
 		
 		$data['import_api_fields'] = $this->config->get('import_api_fields') ?  html_entity_decode($this->config->get('import_api_fields'), ENT_QUOTES, 'UTF-8') : '';
 

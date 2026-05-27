@@ -382,7 +382,7 @@ class ModelExtensionModuleQiqo extends Model
             $pakSql     = $hasPakColumn ? "pak = '{$pak}', " : "";
             $jmSql      = $hasJmColumn ? "jm = '" . $this->db->escape($jm) . "', " : "";
             $pakkolSql  = $hasPakkolColumn ? "pakkol = '" . (float)$pakkol . "', " : "";
-            $minimum    = $pakkol > 0 ? (int)ceil($pakkol) : 1;
+            $minimum    = $pak === 1 ? (int)ceil($pakkol > 0 ? $pakkol : 1) : 1;
 
             $this->db->query("UPDATE " . DB_PREFIX . "product
                               SET quantity = '{$quantity}',

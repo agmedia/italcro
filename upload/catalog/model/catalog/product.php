@@ -4,6 +4,8 @@ class ModelCatalogProduct extends Model {
 	private $qiqo_action_price_table_ready = null;
 	private $product_pak_column_ready = null;
 	private $product_vpc_column_ready = null;
+	private $product_jm_column_ready = null;
+	private $product_pakkol_column_ready = null;
 
 	public function updateViewed($product_id) {
 		$this->db->query("UPDATE " . DB_PREFIX . "product SET viewed = (viewed + 1) WHERE product_id = '" . (int)$product_id . "'");
@@ -75,6 +77,9 @@ class ModelCatalogProduct extends Model {
 			if ($pakkol <= 0) {
 				$pakkol = 1.0;
 			}
+			$pak = array_key_exists('pak', $query->row)
+				? (int)$query->row['pak']
+				: (((float)$query->row['minimum'] > 1 && strtoupper(trim((string)$jm)) !== 'MET') ? 1 : 0);
 
 			return array(
 				'product_id'       => $query->row['product_id'],
@@ -94,7 +99,7 @@ class ModelCatalogProduct extends Model {
 					'jan'              => $query->row['jan'],
 					'isbn'             => $query->row['isbn'],
 					'mpn'              => $query->row['mpn'],
-					'pak'              => isset($query->row['pak']) ? (int)$query->row['pak'] : 0,
+					'pak'              => $pak,
 					'pakkol'           => $pakkol,
 	                'mpn_count'        => (int)$query->row['mpn_count'], // <-- OVO NOVO
 				'location'         => $query->row['location'],
@@ -771,8 +776,12 @@ class ModelCatalogProduct extends Model {
 	        $store_id = (int)$this->config->get('config_store_id');
 	        $lang_id  = (int)$this->config->get('config_language_id');
 	        $customer_group_id = (int)$this->config->get('config_customer_group_id');
-	        $pak_select = $this->hasProductPakColumn() ? "p.pak," : "0 AS pak,";
+	        $has_jm_column = $this->hasProductJmColumn();
+	        $unit_expr = $has_jm_column ? "COALESCE(NULLIF(p.jm, ''), p.ean)" : "p.ean";
+	        $pak_select = $this->hasProductPakColumn() ? "p.pak," : "CASE WHEN p.minimum > 1 AND UPPER(TRIM(" . $unit_expr . ")) <> 'MET' THEN 1 ELSE 0 END AS pak,";
 	        $vpc_select = $this->hasProductVpcColumn() ? "p.vpc," : "0 AS vpc,";
+	        $jm_select = $has_jm_column ? "p.jm," : "'' AS jm,";
+	        $pakkol_select = $this->hasProductPakkolColumn() ? "p.pakkol," : "0 AS pakkol,";
 
         // Special (akcijska) cijena po productu (ako postoji i u datumu)
         $sql = "
@@ -781,8 +790,10 @@ class ModelCatalogProduct extends Model {
             p.model,
             p.sku,
 	            p.ean,
+	            " . $jm_select . "
 	            p.mpn,
 	            " . $pak_select . "
+	            " . $pakkol_select . "
 	            p.cent,
             p.quantity,
             p.minimum,
@@ -1276,6 +1287,28 @@ class ModelCatalogProduct extends Model {
 		$this->product_vpc_column_ready = (bool)$q->num_rows;
 
 		return $this->product_vpc_column_ready;
+	}
+
+	private function hasProductJmColumn() {
+		if ($this->product_jm_column_ready !== null) {
+			return $this->product_jm_column_ready;
+		}
+
+		$q = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE 'jm'");
+		$this->product_jm_column_ready = (bool)$q->num_rows;
+
+		return $this->product_jm_column_ready;
+	}
+
+	private function hasProductPakkolColumn() {
+		if ($this->product_pakkol_column_ready !== null) {
+			return $this->product_pakkol_column_ready;
+		}
+
+		$q = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE 'pakkol'");
+		$this->product_pakkol_column_ready = (bool)$q->num_rows;
+
+		return $this->product_pakkol_column_ready;
 	}
 
 

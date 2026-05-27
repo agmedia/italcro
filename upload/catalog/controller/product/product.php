@@ -873,14 +873,14 @@ class ControllerProductProduct extends Controller {
 
             $mpn_products = array();
             if ($mpn !== '') {
-                $mpn_key = "pp.$store_id.$lang_id.mpn." . md5($mpn) . ".include.v$ppver";
+                $mpn_key = "pp.$store_id.$lang_id.mpn." . md5($mpn) . ".include.pack.v$ppver";
                 $mpn_products = $this->ppCacheGet($mpn_key);
 	                if ($mpn_products === false) {
 	                   // $mpn_products = $this->model_catalog_product->getProductsByMPN($mpn, $product_id);
 
 	                    $mpn_products = $this->model_catalog_product->getProductsByMPN($mpn);
 	                    $this->ppCacheSet($mpn_key, $mpn_products);
-	                } elseif ($mpn_products && (!array_key_exists('pak', reset($mpn_products)) || !array_key_exists('vpc', reset($mpn_products)))) {
+	                } elseif ($mpn_products && (!array_key_exists('pak', reset($mpn_products)) || !array_key_exists('vpc', reset($mpn_products)) || !array_key_exists('pakkol', reset($mpn_products)) || !array_key_exists('jm', reset($mpn_products)))) {
 	                    $mpn_products = $this->model_catalog_product->getProductsByMPN($mpn);
 	                    $this->ppCacheSet($mpn_key, $mpn_products);
 	                }

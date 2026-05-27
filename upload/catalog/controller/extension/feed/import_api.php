@@ -222,7 +222,7 @@ class ControllerExtensionFeedImportApi extends Controller {
 			//'keyword' => '',
 		);
 		
-		$product_data_fields = ['model', 'sku', 'upc', 'ean', 'jan', 'isbn', 'mpn', 'location', 'points', 'minimum'];
+		$product_data_fields = ['model', 'sku', 'upc', 'ean', 'jan', 'isbn', 'mpn', 'location', 'points', 'minimum', 'jm', 'pak', 'pakkol', 'vpc'];
 		
 		foreach($product_data_fields as $field){
 			if(isset($product[$field]) && is_array($product[$field])){
@@ -230,6 +230,22 @@ class ControllerExtensionFeedImportApi extends Controller {
 			}
 			
 			$oc_product[$field] = isset($product[$field]) ? $this->request->clean($product[$field]) : '';
+		}
+
+		if ($oc_product['jm'] === '' && $oc_product['ean'] !== '') {
+			$oc_product['jm'] = $oc_product['ean'];
+		}
+
+		if ((float)$oc_product['pakkol'] <= 0 && (float)$oc_product['minimum'] > 0) {
+			$oc_product['pakkol'] = $oc_product['minimum'];
+		}
+
+		if ((int)$oc_product['pak'] === 1 && (float)$oc_product['pakkol'] > 0) {
+			$oc_product['minimum'] = (int)ceil((float)$oc_product['pakkol']);
+		}
+
+		if ((float)$oc_product['vpc'] <= 0 && (float)$oc_product['price'] > 0) {
+			$oc_product['vpc'] = $oc_product['price'];
 		}
 		
 		return $oc_product;

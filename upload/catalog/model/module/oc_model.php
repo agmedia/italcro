@@ -1,7 +1,11 @@
 <?php
 class ModelModuleOcModel extends Model {
+	private $product_packaging_columns_ready = false;
+
 	public function addProduct($data) {
-		$this->db->query("INSERT INTO " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_added = NOW()");
+		$packaging_sql = $this->getProductPackagingSql($data);
+
+		$this->db->query("INSERT INTO " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', " . $packaging_sql . "points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_added = NOW()");
 
 		$product_id = $this->db->getLastId();
 
@@ -393,7 +397,9 @@ class ModelModuleOcModel extends Model {
 
 	
 	public function editProduct($product_id, $data) {
-		$this->db->query("UPDATE " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_modified = NOW() WHERE product_id = '" . (int)$product_id . "'");
+		$packaging_sql = $this->getProductPackagingSql($data);
+
+		$this->db->query("UPDATE " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', " . $packaging_sql . "points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_modified = NOW() WHERE product_id = '" . (int)$product_id . "'");
 
 		if (isset($data['image'])) {
 			$this->db->query("UPDATE " . DB_PREFIX . "product SET image = '" . $this->db->escape($data['image']) . "' WHERE product_id = '" . (int)$product_id . "'");
@@ -556,5 +562,61 @@ class ModelModuleOcModel extends Model {
 				}
 			}
 		}
+	}
+
+	private function getProductPackagingSql($data) {
+		$this->ensureProductPackagingColumns();
+
+		$jm = isset($data['jm']) && trim((string)$data['jm']) !== '' ? $data['jm'] : (isset($data['ean']) ? $data['ean'] : '');
+		$pak = isset($data['pak']) ? (int)$data['pak'] : 0;
+		$pakkol = isset($data['pakkol']) ? (float)$data['pakkol'] : (isset($data['minimum']) ? (float)$data['minimum'] : 0);
+		$vpc = isset($data['vpc']) ? (float)$data['vpc'] : (isset($data['price']) ? (float)$data['price'] : 0);
+
+		$sql = '';
+
+		if ($this->productColumnExists('jm')) {
+			$sql .= "jm = '" . $this->db->escape($jm) . "', ";
+		}
+
+		if ($this->productColumnExists('pak')) {
+			$sql .= "pak = '" . $pak . "', ";
+		}
+
+		if ($this->productColumnExists('pakkol')) {
+			$sql .= "pakkol = '" . $pakkol . "', ";
+		}
+
+		if ($this->productColumnExists('vpc')) {
+			$sql .= "vpc = '" . $vpc . "', ";
+		}
+
+		return $sql;
+	}
+
+	private function ensureProductPackagingColumns() {
+		if ($this->product_packaging_columns_ready) {
+			return;
+		}
+
+		$columns = array(
+			'jm' => "ADD COLUMN `jm` VARCHAR(32) NOT NULL DEFAULT '' AFTER `ean`",
+			'pakkol' => "ADD COLUMN `pakkol` DECIMAL(15,4) NOT NULL DEFAULT 0 AFTER `jm`",
+			'pak' => "ADD COLUMN `pak` TINYINT(1) NOT NULL DEFAULT 0 AFTER `pakkol`",
+			'vpc' => "ADD COLUMN `vpc` DECIMAL(15,4) NOT NULL DEFAULT 0 AFTER `price`"
+		);
+
+		foreach ($columns as $column => $definition) {
+			if (!$this->productColumnExists($column)) {
+				$this->db->query("ALTER TABLE `" . DB_PREFIX . "product` " . $definition);
+			}
+		}
+
+		$this->product_packaging_columns_ready = true;
+	}
+
+	private function productColumnExists($column) {
+		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE '" . $this->db->escape($column) . "'");
+
+		return (bool)$query->num_rows;
 	}
 }

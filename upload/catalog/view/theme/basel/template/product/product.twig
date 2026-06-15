@@ -87,12 +87,32 @@
         min-width: 92px;
         text-align: center;
     }
-    .mpn-variants .mpn-addtocart {
-        width: 190px;
-        min-width: 190px;
-        margin-right: 12px;
-    }
-</style>
+	    .mpn-variants .mpn-addtocart {
+	        width: 190px;
+	        min-width: 190px;
+	        margin-right: 12px;
+	    }
+	    .italcro-share-buttons {
+	        display: flex;
+	        flex-wrap: wrap;
+	        gap: 8px;
+	        align-items: center;
+	    }
+	    .italcro-share-button {
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
+	        width: 32px;
+	        height: 32px;
+	        background: #eeeeee;
+	        cursor: pointer;
+	    }
+	    .italcro-share-button img {
+	        width: 16px;
+	        height: 16px;
+	        display: block;
+	    }
+	</style>
 
 <ul class="breadcrumb">
     {% for breadcrumb in breadcrumbs %}
@@ -352,16 +372,22 @@
 	                                <hr>
 	                                <script type='text/javascript' src='https://platform-api.sharethis.com/js/sharethis.js#property=61a636a5d0a9e10012e4df2d&product=inline-share-buttons' async='async'></script>
 	                                <!-- ShareThis BEGIN -->
-	                                <div class="sharethis-share-buttons"
-	                                     data-type="inline-share-buttons"
-	                                     data-url="{{ share }}"
-	                                     data-title="{{ heading_title }}"
-	                                     data-labels="none">
-	                                    <span data-network="facebook"></span>
-	                                    <span data-network="email"></span>
-	                                    <span data-network="sharethis"></span>
-	                                    <span data-network="whatsapp"></span>
-	                                    <span data-network="viber"></span>
+	                                <div class="italcro-share-buttons">
+	                                    <span class="st-custom-button italcro-share-button" data-network="facebook" data-url="{{ share }}" data-title="{{ heading_title }}" title="Facebook">
+	                                        <img src="https://platform-cdn.sharethis.com/img/facebook.svg" alt="Facebook">
+	                                    </span>
+	                                    <span class="st-custom-button italcro-share-button" data-network="email" data-url="{{ share }}" data-title="{{ heading_title }}" data-email-subject="{{ heading_title }}" title="Email">
+	                                        <img src="https://platform-cdn.sharethis.com/img/email.svg" alt="Email">
+	                                    </span>
+	                                    <span class="st-custom-button italcro-share-button" data-network="sharethis" data-url="{{ share }}" data-title="{{ heading_title }}" title="Share">
+	                                        <img src="https://platform-cdn.sharethis.com/img/sharethis.svg" alt="Share">
+	                                    </span>
+	                                    <span class="st-custom-button italcro-share-button" data-network="whatsapp" data-url="{{ share }}" data-title="{{ heading_title }}" title="WhatsApp">
+	                                        <img src="https://platform-cdn.sharethis.com/img/whatsapp.svg" alt="WhatsApp">
+	                                    </span>
+	                                    <span class="st-custom-button italcro-share-button" data-network="viber" data-url="{{ share }}" data-title="{{ heading_title }}" title="Viber">
+	                                        <img src="https://platform-cdn.sharethis.com/img/viber.svg" alt="Viber">
+	                                    </span>
 	                                </div>
 	                                <!-- ShareThis END -->
 

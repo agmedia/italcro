@@ -1,8 +1,12 @@
 (function($){
   $(function(){
+    if (window.qiqoQuickOrderInitialized) return;
+    window.qiqoQuickOrderInitialized = true;
+
     var $list  = $('#qo-suggestions');
     var $table = $('#qo-table tbody');
     var timer  = null;
+    var toastTimer = null;
     var LS_KEY = 'qo_items_v2';
     var ADD_LOCK = {}; // spriječi dupli fastAdd
 
@@ -49,12 +53,31 @@
     function baselHeaderRefreshDebounced(){ setTimeout(function(){ baselRefreshMiniCart(); recomputeFromStateAndApply(); }, 150); }
 
     /* ===================== UI helpers ===================== */
-    function toast(type, msg){
+    function toast(type, msg, options){
+      options = options || {};
       var $t = $('#qo-toast');
-      $t.removeClass('alert-danger alert-success')
-          .addClass(type === 'ok' ? 'alert-success' : 'alert-danger')
-          .text(msg).fadeIn(150);
-      setTimeout(function(){ $t.fadeOut(300); }, 2500);
+      var alertClass = type === 'ok' ? 'alert-success' : (type === 'warn' ? 'alert-warning' : 'alert-danger');
+      var delay = options.delay == null ? (type === 'ok' ? 5000 : 9000) : options.delay;
+
+      clearTimeout(toastTimer);
+
+      var $close = $('<button type="button" class="close" aria-label="Zatvori">&times;</button>');
+      $close.on('click', function(){
+        clearTimeout(toastTimer);
+        $t.stop(true, true).fadeOut(150);
+      });
+
+      $t.stop(true, true)
+          .removeClass('alert-danger alert-success alert-warning alert-dismissible')
+          .addClass(alertClass + ' alert-dismissible')
+          .empty()
+          .append($close)
+          .append($('<span class="qo-toast-text"></span>').text(msg || ''))
+          .fadeIn(150);
+
+      if (delay > 0) {
+        toastTimer = setTimeout(function(){ $t.fadeOut(300); }, delay);
+      }
     }
     function formatCurrency(amount, cb){
       $.post('index.php?route=extension/module/quick_order/format', { amount: amount }, function(res){
@@ -124,8 +147,36 @@
     function normalizeQty(value, item, stepOverride){
       return normalizeQtyInfo(value, item, stepOverride).qty;
     }
-    function notifyRoundedQty(qty, allowDecimal){
-      toast('ok', 'Količina je zaokružena na ' + formatQty(qty, allowDecimal) + ' prema dozvoljenom koraku pakiranja.');
+    function adjustedQtyMessage(qty, allowDecimal, originalQty, minStep){
+      var formattedQty = formatQty(qty, allowDecimal);
+      var original = parseQty(originalQty);
+      var step = parseQty(minStep);
+
+      if (!isNaN(step) && step > 0 && (isNaN(original) || original <= 0 || original < step)) {
+        return 'Minimalna količina za ovaj artikl je ' + formatQty(step, allowDecimal) + '. Količina je postavljena na ' + formattedQty + '.';
+      }
+
+      return 'Količina je zaokružena na ' + formattedQty + ' prema dozvoljenom koraku pakiranja.';
+    }
+    function notifyRoundedQty(qty, allowDecimal, originalQty, minStep){
+      toast('warn', adjustedQtyMessage(qty, allowDecimal, originalQty, minStep), { delay: 9000 });
+    }
+    function hasQtyNotice(res, item){
+      return !!((res && res.notice) || (item && item.quantity_adjusted));
+    }
+    function cartResultMessage(res, fallback, item){
+      var notice = (res && res.notice) ? res.notice : '';
+      if (!notice && item && item.quantity_adjusted) {
+        notice = adjustedQtyMessage(item.quantity, allowsDecimalQty(item), item.quantity_original, item.minimumifc100 || getMinStep(item));
+      }
+
+      return notice ? (fallback + ' ' + notice) : fallback;
+    }
+    function cartResultType(res, item){
+      return hasQtyNotice(res, item) ? 'warn' : 'ok';
+    }
+    function cartResultDelay(res, item){
+      return hasQtyNotice(res, item) ? 9000 : 5000;
     }
 
     function normCent(v){
@@ -538,12 +589,12 @@
       var decimalQty = allowsDecimalStep($s.attr('data-decimal') || $qty.attr('data-decimal'), min);
       var pack = parseQty($s.attr('data-pack') || '0');
       if(isNaN(pack) || pack <= 0) pack = min;
-      var qtyInfo = normalizeQtyInfo($qty.val() || min, { decimal_quantity: decimalQty, minimumifc100: min }, min);
+      var rawQty = $qty.val() || min;
+      var qtyInfo = normalizeQtyInfo(rawQty, { decimal_quantity: decimalQty, minimumifc100: min }, min);
       var q = qtyInfo.qty;
       if(isNaN(q) || q < min) q = min;
       if(qtyInfo.adjusted){
         $qty.val(formatQty(q, decimalQty));
-        notifyRoundedQty(q, decimalQty);
       }
 
       return {
@@ -562,6 +613,8 @@
         price_raw: parseFloat($s.attr('data-priceraw') || '0') || 0,
         thumb: $s.attr('data-thumb') || '',
         quantity: q,
+        quantity_original: rawQty,
+        quantity_adjusted: qtyInfo.adjusted,
         minimum: pack,
         minimumifc100: min,
         decimal_quantity: decimalQty,
@@ -693,7 +746,7 @@
           upsertLS(data);
           refreshRowFromCartState(item.product_id).always(function(){
             baselHeaderRefreshDebounced();
-            toast('ok', (res && res.notice) ? res.notice : 'Količina ažurirana');
+            toast(cartResultType(res, item), cartResultMessage(res, 'Količina ažurirana.', item), { delay: cartResultDelay(res, item) });
           });
         }, 'json').fail(function(){
           toast('err', 'Greška pri ažuriranju količine');
@@ -723,7 +776,7 @@
           recomputeTotal();
           refreshRowFromCartState(item.product_id).always(function(){
             baselHeaderRefreshDebounced();
-            toast('ok', (res && res.notice) ? res.notice : 'Dodano u košaricu');
+            toast(cartResultType(res, item), cartResultMessage(res, 'Dodano u košaricu.', item), { delay: cartResultDelay(res, item) });
           });
         } else {
           toast('err', (res && res.message) || 'Greška pri dodavanju');
@@ -950,12 +1003,13 @@
       if(isNaN(step) || step <= 0) step = 1;
       var decimalQty = allowsDecimalStep($tr.attr('data-decimal') || $input.attr('data-decimal'), step);
 
-      var qtyInfo = normalizeQtyInfo($input.val() || step, { decimal_quantity: decimalQty, minimumifc100: step }, step);
+      var rawQty = $input.val();
+      var qtyInfo = normalizeQtyInfo(rawQty || step, { decimal_quantity: decimalQty, minimumifc100: step }, step);
       var qty = qtyInfo.qty;
       if(qty < step) qty = step;
       $input.val(formatQty(qty, decimalQty));
       if(qtyInfo.adjusted){
-        notifyRoundedQty(qty, decimalQty);
+        notifyRoundedQty(qty, decimalQty, rawQty, step);
       }
 
       recomputeRow($tr);
@@ -967,8 +1021,8 @@
 
       if($tr.attr('data-added')){
         $.post('index.php?route=extension/module/quick_order/updateQty', { product_id: pid, quantity: qty }, function(res){
-          if(res && res.notice){
-            toast('ok', res.notice);
+          if(res && res.notice && !qtyInfo.adjusted){
+            toast('warn', res.notice, { delay: 9000 });
           }
           refreshRowFromCartState(pid).always(function(){
             baselHeaderRefreshDebounced();

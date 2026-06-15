@@ -1,4 +1,6 @@
 (function(window, $) {
+	var qiqoToastTimer = null;
+
 	function qiqoParseQty(value) {
 		value = String(value == null ? '' : value).replace(/\s|\u00a0/g, '');
 
@@ -99,12 +101,24 @@
 		var message = 'Količina je zaokružena na ' + displayValue + ' prema dozvoljenom koraku pakiranja.';
 
 		if ($('#qo-toast').length) {
-			$('#qo-toast')
-				.removeClass('alert-danger alert-success')
-				.addClass('alert-success')
-				.text(message)
+			var $toast = $('#qo-toast');
+			var $close = $('<button type="button" class="close" aria-label="Zatvori">&times;</button>');
+
+			clearTimeout(qiqoToastTimer);
+			$close.on('click', function() {
+				clearTimeout(qiqoToastTimer);
+				$toast.stop(true, true).fadeOut(150);
+			});
+
+			$toast
+				.stop(true, true)
+				.removeClass('alert-danger alert-success alert-warning alert-dismissible')
+				.addClass('alert-warning alert-dismissible')
+				.empty()
+				.append($close)
+				.append($('<span class="qo-toast-text"></span>').text(message))
 				.fadeIn(150);
-			setTimeout(function() { $('#qo-toast').fadeOut(300); }, 2500);
+			qiqoToastTimer = setTimeout(function() { $toast.fadeOut(300); }, 9000);
 			return;
 		}
 

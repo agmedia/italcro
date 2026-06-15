@@ -271,10 +271,12 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $requested_qty = (float)$qty;
         $pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
         $step = $this->qiqoMinimumStep($product_info['cent'], $pak, $this->qiqoPackQuantity($product_info));
+        $allow_decimal = $this->qiqoAllowsDecimalQuantity($product_info);
+        $requested_below_minimum = $requested_qty < $step;
         if ($qty < $step) {
             $qty = $step;
         }
-        if (!$this->qiqoAllowsDecimalQuantity($product_info)) {
+        if (!$allow_decimal) {
             $qty = ceil($qty - 0.0000001);
         }
         if (($this->qiqoIsC100($product_info['cent']) || $pak === 1) && $step > 0) {
@@ -285,7 +287,11 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $this->load->language('checkout/cart');
         $response = ['success'=>true,'message'=>$this->language->get('text_success'), 'quantity' => $qty];
         if (abs($qty - $requested_qty) > 0.00001) {
-            $response['notice'] = 'Količina je zaokružena na ' . $this->formatQiqoQuantity($qty, $this->qiqoAllowsDecimalQuantity($product_info)) . ' prema dozvoljenom koraku pakiranja.';
+            if ($requested_below_minimum) {
+                $response['notice'] = 'Minimalna količina za ovaj artikl je ' . $this->formatQiqoQuantity($step, $allow_decimal) . '. Količina je postavljena na ' . $this->formatQiqoQuantity($qty, $allow_decimal) . '.';
+            } else {
+                $response['notice'] = 'Količina je zaokružena na ' . $this->formatQiqoQuantity($qty, $allow_decimal) . ' prema dozvoljenom koraku pakiranja.';
+            }
         }
 
         return $response;

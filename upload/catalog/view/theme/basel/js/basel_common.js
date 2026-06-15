@@ -401,11 +401,18 @@ var cart = {
 		$.ajax({
 			url: 'index.php?route=extension/basel/basel_features/add_to_cart',
 			type: 'post',
-			data: 'product_id=' + product_id + '&quantity=' + (typeof(quantity) != 'undefined' ? quantity : 1) + '&confirm_duplicate=' + (confirm_duplicate ? 1 : 0),
+			data: {
+				product_id: product_id,
+				quantity: (typeof(quantity) != 'undefined' ? quantity : 1),
+				confirm_duplicate: confirm_duplicate ? 1 : 0
+			},
 			dataType: 'json',
 			
 			beforeSend: function(json) {
 			$('body').append('<span class="basel-spinner ajax-call"></span>');
+			},
+			complete: function() {
+				$('.basel-spinner.ajax-call').remove();
 			},
 			
 			success: function(json) {
@@ -417,6 +424,13 @@ var cart = {
 						cart.add(product_id, quantity, source, true);
 					}
 
+					return;
+				}
+
+				if (json['error']) {
+					var errorMessage = (json['error']['warning'] || json['error']) + '';
+					$('#content').parent().before('<div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> ' + errorMessage + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$('html, body').animate({ scrollTop: 0 }, 'slow');
 					return;
 				}
 

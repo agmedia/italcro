@@ -582,6 +582,8 @@ class ControllerCheckoutCart extends Controller {
 			} else {
 				$json['redirect'] = str_replace('&amp;', '&', $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']));
 			}
+		} else {
+			$json['error']['warning'] = 'Artikl nije moguće dodati u košaricu.';
 		}
 
 		$this->response->addHeader('Content-Type: application/json');

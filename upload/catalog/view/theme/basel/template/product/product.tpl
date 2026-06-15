@@ -722,6 +722,9 @@ function qiqoBaselProductAddToCart(confirm_duplicate) {
 		beforeSend: function(json) {
 			$('body').append('<span class="basel-spinner ajax-call"></span>');
 		},
+		complete: function() {
+			$('.basel-spinner.ajax-call').remove();
+		},
 
 		success: function(json) {
 			$('.alert, .text-danger').remove();
@@ -738,6 +741,10 @@ function qiqoBaselProductAddToCart(confirm_duplicate) {
 
 			if (json['error']) {
 				$('.basel-spinner.ajax-call').remove();
+				if (json['error']['warning']) {
+					$('#content').parent().before('<div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> ' + json['error']['warning'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+				}
+
 				if (json['error']['option']) {
 					for (i in json['error']['option']) {
 						var element = $('#input-option' + i.replace('_', '-'));

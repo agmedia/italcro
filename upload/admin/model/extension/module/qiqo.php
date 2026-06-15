@@ -2128,8 +2128,23 @@ class ModelExtensionModuleQiqo extends Model
         $count = 0;
 
         foreach ($rows as $row) {
-            $code = $this->firstQiqoValue($row, ['sifra', 'code', 'id', 'komercijalist', 'oznaka']);
-            $name = $this->firstQiqoValue($row, ['naziv', 'ime', 'name', 'komercijalist_naziv', 'komercijalist']);
+            $code = $this->firstQiqoValue($row, [
+                'sifra',
+                'šifra',
+                'code',
+                'id',
+                'komercijalist',
+                'oznaka',
+                'sifra_komercijalist',
+                'sifra_komercijalista',
+                'šifra_komercijalist',
+                'šifra_komercijalista',
+                'sifrakomercijalist',
+                'sifrakomercijalista',
+                'komercijalist_id',
+                'komercijalistid'
+            ]);
+            $name = $this->resolveQiqoSalesRepName($row, $code);
 
             if ($code === '' && $name === '') {
                 continue;
@@ -2163,6 +2178,95 @@ class ModelExtensionModuleQiqo extends Model
         return $count;
     }
 
+    private function resolveQiqoSalesRepName(array $row, string $code): string
+    {
+        $name = $this->firstQiqoValue($row, [
+            'naziv',
+            'name',
+            'ime_prezime',
+            'imeprezime',
+            'ime_i_prezime',
+            'imeiprezime',
+            'naziv_komercijalista',
+            'nazivkomercijalista',
+            'naziv_komercijalist',
+            'nazivkomercijalist',
+            'naziv_komercijaliste',
+            'nazivkomercijaliste',
+            'komercijalist_naziv',
+            'komercijalistnaziv',
+            'komercijalist_name',
+            'komercijalistname',
+            'ime_komercijalista',
+            'imekomercijalista',
+            'ime_komercijalist',
+            'imekomercijalist',
+            'komercijalist_ime',
+            'komercijalistime',
+            'naziv_radnika',
+            'nazivradnika',
+            'radnik_naziv',
+            'radniknaziv',
+            'osoba',
+            'zaposlenik',
+            'employee',
+            'sales_rep_name',
+            'salesrepname',
+            'salesman_name',
+            'salesmanname',
+            'opis',
+            'description'
+        ]);
+
+        if ($name !== '' && $name !== $code) {
+            return $name;
+        }
+
+        $firstName = $this->firstQiqoValue($row, [
+            'ime',
+            'first_name',
+            'firstname',
+            'ime_radnika',
+            'imeradnika'
+        ]);
+        $lastName = $this->firstQiqoValue($row, [
+            'prezime',
+            'last_name',
+            'lastname',
+            'prezime_radnika',
+            'prezimeradnika'
+        ]);
+        $fullName = trim($firstName . ' ' . $lastName);
+
+        if ($fullName !== '' && $fullName !== $code) {
+            return $fullName;
+        }
+
+        $genericName = $this->firstDifferentQiqoValue($row, [
+            'komercijalist',
+            'sales_rep',
+            'salesrep',
+            'salesman'
+        ], $code);
+
+        if ($genericName !== '') {
+            return $genericName;
+        }
+
+        return $name;
+    }
+
+    private function firstDifferentQiqoValue(array $row, array $keys, string $differentFrom): string
+    {
+        $value = $this->firstQiqoValue($row, $keys);
+
+        if ($value !== '' && $value !== $differentFrom) {
+            return $value;
+        }
+
+        return '';
+    }
+
     private function firstQiqoValue(array $row, array $keys): string
     {
         foreach ($keys as $key) {
@@ -2172,9 +2276,10 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         foreach ($row as $rowKey => $value) {
+            $normalizedRowKey = $this->normalizeQiqoKey((string)$rowKey);
+
             foreach ($keys as $key) {
-                $normalizedRowKey = function_exists('utf8_strtolower') ? utf8_strtolower((string)$rowKey) : strtolower((string)$rowKey);
-                $normalizedKey = function_exists('utf8_strtolower') ? utf8_strtolower($key) : strtolower($key);
+                $normalizedKey = $this->normalizeQiqoKey($key);
 
                 if ($normalizedRowKey === $normalizedKey && trim((string)$value) !== '') {
                     return trim((string)$value);
@@ -2183,6 +2288,20 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         return '';
+    }
+
+    private function normalizeQiqoKey(string $key): string
+    {
+        $key = function_exists('utf8_strtolower') ? utf8_strtolower($key) : strtolower($key);
+        $key = strtr($key, [
+            'č' => 'c',
+            'ć' => 'c',
+            'đ' => 'd',
+            'š' => 's',
+            'ž' => 'z'
+        ]);
+
+        return preg_replace('/[^a-z0-9]+/', '', $key);
     }
 
     private function qiqoDecimal($value): float

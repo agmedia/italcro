@@ -71,6 +71,11 @@
     .mpn-variants .mpn-packaging {
         white-space: nowrap;
     }
+    .mpn-variants .mpn-attribute {
+        width: 140px;
+        min-width: 140px;
+        white-space: nowrap;
+    }
     .mpn-variants .mpn-vpc,
     .mpn-variants .mpn-final-price {
         font-weight: 700;
@@ -185,7 +190,7 @@
 	                                        <th class="qiqo-action-cell"></th>
 	                                        <th>Šifra</th>
 	                                        <th>Barcode</th>
-	                                        <th>Atribut</th>
+	                                        <th class="mpn-attribute">Atribut</th>
 	                                        <th>Pakiranje</th>
 	                                        {% if price %}
 	                                        <th class="text-right">Zaliha</th>
@@ -217,7 +222,7 @@
 	                                            <td>{{ p.code }}</td>
 	                                            <td>{{ p.barcode }}</td>
 
-	                                            <td>{{ p.name_add }}</td>
+	                                            <td class="mpn-attribute">{{ p.name_add }}</td>
 	                                            <td class="mpn-packaging">{{ p.packaging is defined ? p.packaging : (p.ean ~ ' ' ~ p.minimum) }}</td>
 	                                            {% if price %}
 	                                                        <td class="text-right">{{ p.stock }}</td>

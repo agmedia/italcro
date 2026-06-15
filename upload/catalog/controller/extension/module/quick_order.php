@@ -402,9 +402,10 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $minimum_step = $this->qiqoMinimumStep($cent, $pak, $minimum);
 
         $base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
-        $vpc_unit = (isset($product_info['vpc']) && (float)$product_info['vpc'] > 0) ? (float)$product_info['vpc'] : $base_unit;
-
-        $vpc_display_raw = $this->qiqoDisplayPriceRaw($vpc_unit, $cent);
+        // product.vpc already holds the ERP display VPC; C-100 product.price is stored per unit.
+        $vpc_display_raw = (isset($product_info['vpc']) && (float)$product_info['vpc'] > 0)
+            ? (float)$product_info['vpc']
+            : $this->qiqoDisplayPriceRaw($base_unit, $cent);
         $price_unit = $base_unit;
         $discount_percent = 0.0;
         $action_discount = 0.0;

@@ -199,7 +199,9 @@ class ControllerCheckoutCart extends Controller {
 				$pakkol = $this->qiqoPackQuantity($product_info ? $product_info : $product);
 				$minimum_step = $this->qiqoMinimumStep(isset($product_info['cent']) ? $product_info['cent'] : $product['cent'], $pak, $pakkol);
 				$decimal_quantity = $this->qiqoAllowsDecimalQuantity($product_info ? $product_info : $product);
-				$vpc_raw = isset($product_info['vpc']) && (float)$product_info['vpc'] > 0 ? (float)$product_info['vpc'] : (float)$product['price'];
+				$has_vpc_display = isset($product_info['vpc']) && (float)$product_info['vpc'] > 0;
+				$vpc_raw = $has_vpc_display ? (float)$product_info['vpc'] : (float)$product['price'];
+				$vpc_display_raw = $has_vpc_display ? $vpc_raw : $this->qiqoDisplayPriceRaw($vpc_raw, isset($product_info['cent']) ? $product_info['cent'] : $product['cent']);
 
 				$qiqo_discount_percent = 0.0;
 				$qiqo_proforma_extra_percent = 0.0;
@@ -247,7 +249,7 @@ class ControllerCheckoutCart extends Controller {
 					'reward'    => ($product['reward'] ? sprintf($this->language->get('text_points'), $product['reward']) : ''),
 					'qiqo_discount_percent' => $qiqo_discount_percent,
 					'qiqo_proforma_extra_percent' => $qiqo_proforma_extra_percent,
-					'vpc'       => $this->currency->format($this->qiqoDisplayPriceRaw($vpc_raw, isset($product_info['cent']) ? $product_info['cent'] : $product['cent']), $this->session->data['currency']),
+					'vpc'       => $this->currency->format($vpc_display_raw, $this->session->data['currency']),
 					'price_old' => $price_old,
 					'price'     => $price,
 					'total'     => $total,

@@ -4,5 +4,5 @@
 $_['text_items']     = '%s artikal(a) - %s';
 $_['text_empty']     = 'Vaša košarica je prazna!!';
 $_['text_cart']      = 'Košarica';
-$_['text_checkout']  = 'Naplata';
+$_['text_checkout']  = 'Završi kupnju';
 $_['text_recurring'] = 'Profil ponavljajuće naplate';

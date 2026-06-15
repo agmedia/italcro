@@ -432,7 +432,7 @@ class ControllerCheckoutCart extends Controller {
 		$quick_order_data['text_price']    = $this->language->get('text_price');
 		$quick_order_data['text_name']     = $this->language->get('text_name');
 		$quick_order_data['text_total']    = 'Ukupno';
-		$quick_order_data['text_checkout'] = 'Pošalji narudžbu';
+		$quick_order_data['text_checkout'] = 'Završi kupnju';
 		$quick_order_data['text_add_all']  = 'Dodaj sve u košaricu';
 		$quick_order_data['text_clear_all']= 'Obriši sve';
 		$quick_order_data['quick_order_checkout'] = $this->url->link('checkout/checkout', '', true);

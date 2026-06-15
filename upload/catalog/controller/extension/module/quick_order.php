@@ -432,7 +432,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
         $price_display_raw = $this->qiqoDisplayPriceRaw($price_unit, $cent);
 
-        if ($action_net_price_raw <= 0 && $discount_percent > 0 && $vpc_display_raw > 0) {
+        if (empty($pricing_row['action_applied']) && $action_net_price_raw <= 0 && $discount_percent > 0 && $vpc_display_raw > 0) {
             $price_display_raw = $vpc_display_raw * (1 - ($discount_percent / 100));
         }
 

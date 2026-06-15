@@ -961,6 +961,7 @@ class ControllerProductProduct extends Controller {
 	                    $vpc_unit_raw = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
 	                    $price_unit_raw = $vpc_unit_raw;
 	                    $row_qiqo_discount_percent = 0.0;
+	                    $row_pricing = array();
 
 	                    $row_sku = trim((string)$result['sku']);
 
@@ -975,7 +976,7 @@ class ControllerProductProduct extends Controller {
 		                        ? (float)$result['vpc']
 		                        : $this->qiqoDisplayPriceRaw($vpc_unit_raw, $result['cent']);
 		                    $price_display_raw = $this->qiqoDisplayPriceRaw($price_unit_raw, $result['cent']);
-		                    if ($row_qiqo_discount_percent > 0 && $vpc_display_raw > 0) {
+		                    if ($row_qiqo_discount_percent > 0 && $vpc_display_raw > 0 && (empty($row_pricing) || empty($row_pricing['action_applied']))) {
 		                        $price_display_raw = $vpc_display_raw * (1 - ($row_qiqo_discount_percent / 100));
 		                    }
 	                    $action_conditions = ($row_sku !== '' && isset($mpn_action_details_map[$row_sku]))
@@ -1029,6 +1030,7 @@ class ControllerProductProduct extends Controller {
 	                $single_price_unit_raw = $single_vpc_unit_raw;
 
 	                $single_qiqo_discount_percent = 0.0;
+	                $single_pricing = array();
 	                $single_sku = trim((string)$product_info['sku']);
 	                $single_action_details_map = ($single_sku !== '')
 	                    ? $this->model_catalog_product->getQiqoActionDetailsMap(array($single_sku))
@@ -1064,7 +1066,7 @@ class ControllerProductProduct extends Controller {
 		                    ? (float)$product_info['vpc']
 		                    : $this->qiqoDisplayPriceRaw($single_vpc_unit_raw, $product_info['cent']);
 		                $single_price_display_raw = $this->qiqoDisplayPriceRaw($single_price_unit_raw, $product_info['cent']);
-		                if ($single_qiqo_discount_percent > 0 && $single_vpc_display_raw > 0) {
+		                if ($single_qiqo_discount_percent > 0 && $single_vpc_display_raw > 0 && (empty($single_pricing) || empty($single_pricing['action_applied']))) {
 		                    $single_price_display_raw = $single_vpc_display_raw * (1 - ($single_qiqo_discount_percent / 100));
 		                }
 

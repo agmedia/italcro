@@ -125,6 +125,7 @@ class ControllerAccountWishList extends Controller {
 			$vpc_unit_raw = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
 			$price_unit_raw = $vpc_unit_raw;
 			$discount_percent = 0.0;
+			$row_pricing = array();
 
 			if ($sku !== '' && isset($qiqo_price_map[$sku])) {
 				$row_pricing = $qiqo_price_map[$sku];
@@ -138,7 +139,7 @@ class ControllerAccountWishList extends Controller {
 				: $this->qiqoDisplayPriceRaw($vpc_unit_raw, $product_info['cent']);
 			$price_display_raw = $this->qiqoDisplayPriceRaw($price_unit_raw, $product_info['cent']);
 
-			if ($discount_percent > 0 && $vpc_display_raw > 0) {
+			if ($discount_percent > 0 && $vpc_display_raw > 0 && (empty($row_pricing) || empty($row_pricing['action_applied']))) {
 				$price_display_raw = $vpc_display_raw * (1 - ($discount_percent / 100));
 			}
 

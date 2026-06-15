@@ -348,14 +348,24 @@
                                 <p class="info"><b>{{ text_manufacturer }}</b> <a class="hover_uline" href="{{ manufacturers }}">{{ manufacturer }}</a></p>
                             {% endif %}
 
-                            <div class="info-holder">
-                                <hr>
-                                <script type='text/javascript' src='https://platform-api.sharethis.com/js/sharethis.js#property=61a636a5d0a9e10012e4df2d&product=sop' async='async'></script>
-                                <!-- ShareThis BEGIN -->
-                                <div class="sharethis-inline-share-buttons"></div>
-                                <!-- ShareThis END -->
+	                            <div class="info-holder">
+	                                <hr>
+	                                <script type='text/javascript' src='https://platform-api.sharethis.com/js/sharethis.js#property=61a636a5d0a9e10012e4df2d&product=sop' async='async'></script>
+	                                <!-- ShareThis BEGIN -->
+	                                <div class="sharethis-share-buttons"
+	                                     data-type="inline-share-buttons"
+	                                     data-url="{{ share }}"
+	                                     data-title="{{ heading_title }}"
+	                                     data-labels="none">
+	                                    <span data-network="facebook"></span>
+	                                    <span data-network="email"></span>
+	                                    <span data-network="sharethis"></span>
+	                                    <span data-network="whatsapp"></span>
+	                                    <span data-network="viber"></span>
+	                                </div>
+	                                <!-- ShareThis END -->
 
-                            </div>
+	                            </div>
 
 
                         {% else %}

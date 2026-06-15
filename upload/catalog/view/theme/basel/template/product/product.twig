@@ -50,48 +50,108 @@
 
 <style>
     .mpn-variants .qiqo-action-cell {
-        width: 32px;
-        min-width: 32px;
+        width: 26px;
+        min-width: 26px;
         text-align: center;
     }
     .mpn-variants .qiqo-action-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 26px;
-        height: 26px;
+        width: 22px;
+        height: 22px;
         border: 0;
         background: #ec008c;
         color: #fff;
-        font-size: 17px;
+        font-size: 13px;
         font-weight: 700;
         line-height: 1;
         padding: 0;
     }
-    .mpn-variants .mpn-packaging {
+    .mpn-variants {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    .mpn-variants table {
+        width: 100%;
+        font-size: 13px;
+    }
+    .mpn-variants .table > thead > tr > th,
+    .mpn-variants .table > tbody > tr > td {
+        padding-left: 5px;
+        padding-right: 5px;
+        vertical-align: middle;
+    }
+    .mpn-variants .table > thead > tr > th {
         white-space: nowrap;
     }
+    .mpn-variants .mpn-code {
+        width: 58px;
+        min-width: 58px;
+    }
+    .mpn-variants .mpn-barcode {
+        width: 105px;
+        min-width: 105px;
+    }
+    .mpn-variants .mpn-packaging {
+        width: 76px;
+        min-width: 76px;
+        white-space: nowrap !important;
+    }
     .mpn-variants .mpn-attribute {
-        width: 190px;
-        min-width: 190px;
+        width: 76px;
+        min-width: 76px;
         white-space: nowrap !important;
         word-break: keep-all;
     }
+    .mpn-variants .mpn-stock {
+        width: 48px;
+        min-width: 48px;
+    }
+    .mpn-variants .mpn-c100 {
+        width: 50px;
+        min-width: 50px;
+    }
     .mpn-variants .mpn-vpc,
     .mpn-variants .mpn-final-price {
+        width: 58px;
+        min-width: 58px;
         font-weight: 700;
-        white-space: nowrap;
+        white-space: nowrap !important;
+    }
+    .mpn-variants .mpn-discount {
+        width: 48px;
+        min-width: 48px;
+        white-space: nowrap !important;
     }
     .mpn-variants .mpn-qty-input {
-        width: 92px;
-        min-width: 92px;
+        width: 58px;
+        min-width: 58px;
         text-align: center;
+        padding-left: 4px;
+        padding-right: 4px;
     }
-	    .mpn-variants .mpn-addtocart {
-	        width: 190px;
-	        min-width: 190px;
-	        margin-right: 12px;
-	    }
+    .mpn-variants .mpn-addtocart {
+        width: 160px;
+        min-width: 160px;
+        margin-left: auto;
+    }
+    .mpn-variants .mpn-addtocart .btn {
+        width: 34px;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .mpn-variants .mpn-links-cell {
+        width: 42px;
+        min-width: 42px;
+    }
+    .mpn-variants .mpn-links {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        padding-right: 0;
+        white-space: nowrap;
+    }
 	    .italcro-share-buttons {
 	        display: flex;
 	        flex-wrap: wrap;
@@ -210,20 +270,20 @@
 	                                    <thead>
 	                                    <tr>
 	                                        <th class="qiqo-action-cell"></th>
-	                                        <th>Šifra</th>
-	                                        <th>Barcode</th>
+	                                        <th class="mpn-code">Šifra</th>
+	                                        <th class="mpn-barcode">Barcode</th>
 	                                        <th class="mpn-attribute">Atribut</th>
-	                                        <th>Pakiranje</th>
+	                                        <th class="mpn-packaging">Pakiranje</th>
 	                                        {% if price %}
-	                                        <th class="text-right">Zaliha</th>
+	                                        <th class="text-right mpn-stock">Zaliha</th>
 	                                            {% if same_mpn_has_c100 %}
-	                                            <th class="text-right">C-100</th>
+	                                            <th class="text-right mpn-c100">C-100</th>
 	                                            {% endif %}
-	                                        <th class="text-right price">VPC</th>
-	                                        <th class="text-right">Rabat</th>
-	                                        <th class="text-right price">Cijena</th>
-	                                        <th class="text-right price">Dodaj</th>
-	                                            <th></th>
+	                                        <th class="text-right price mpn-vpc">VPC</th>
+	                                        <th class="text-right mpn-discount">Rabat</th>
+	                                        <th class="text-right price mpn-final-price">Cijena</th>
+	                                        <th class="text-right price mpn-addtocart-heading">Dodaj</th>
+	                                            <th class="mpn-links-cell"></th>
 	                                        {% endif %}
                                     </tr>
                                     </thead>
@@ -241,18 +301,18 @@
 	                                                            aria-label="Uvjeti akcijskog cjenika za artikl {{ p.code }}">A</button>
 	                                                {% endif %}
 	                                            </td>
-	                                            <td>{{ p.code }}</td>
-	                                            <td>{{ p.barcode }}</td>
+	                                            <td class="mpn-code">{{ p.code }}</td>
+	                                            <td class="mpn-barcode">{{ p.barcode }}</td>
 
 	                                            <td class="mpn-attribute">{{ p.name_add }}</td>
 	                                            <td class="mpn-packaging">{{ p.packaging is defined ? p.packaging : (p.ean ~ ' ' ~ p.minimum) }}</td>
 	                                            {% if price %}
-	                                                        <td class="text-right">{{ p.stock }}</td>
+	                                                        <td class="text-right mpn-stock">{{ p.stock }}</td>
 	                                                {% if same_mpn_has_c100 %}
-	                                                <td class="text-right">{{ p.cent }}</td>
+	                                                <td class="text-right mpn-c100">{{ p.cent }}</td>
 	                                                {% endif %}
 	                                                        <td class="text-right price mpn-vpc">{{ p.vpc is defined ? p.vpc : p.price }}</td>
-	                                                        <td class="text-right">
+	                                                        <td class="text-right mpn-discount">
 	                                                            {% if p.qiqo_discount_percent is defined and p.qiqo_discount_percent > 0 %}
 	                                                                -{{ p.qiqo_discount_percent|number_format(0, '.', '') }}%
 	                                                            {% else %}
@@ -262,7 +322,7 @@
 	                                                <td class="text-right price mpn-final-price">{{ p.final_price is defined ? p.final_price : p.price }}</td>
 
 	                                                                                    <td class="text-right price">
-	                                                           <div class="input-group addtocart mpn-addtocart" style="margin-left:auto;">
+	                                                           <div class="input-group addtocart mpn-addtocart">
 
                                                                 <span class="input-group-btn">
 	                                                                    <button type="button"
@@ -307,8 +367,8 @@
                                                             </div>
                                                         </td>
 
-                                                <td>
-                                                    <div style="padding:0 5px 0 0"><span class="info is_wishlist"><a onclick="wishlist.add('{{ p.product_id }}');"><i class="icon-heart"></i> </a></span>
+                                                <td class="mpn-links-cell">
+                                                    <div class="mpn-links"><span class="info is_wishlist"><a onclick="wishlist.add('{{ p.product_id }}');"><i class="icon-heart"></i> </a></span>
                                                     <span class="info is_compare"><a onclick="compare.add('{{ p.product_id }}');"><i class="icon-refresh"></i> </a></span>
                                                     </div>
                                                 </td>

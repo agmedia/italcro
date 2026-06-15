@@ -149,15 +149,26 @@ function qiqoAuthEscape(value) {
 	return $('<div/>').text(value || '').html();
 }
 
-function qiqoAuthDeliveryLabel(place) {
-	var text = (place.code ? place.code + ' - ' : '') + (place.address || place.name || '');
+	function qiqoAuthDeliveryLabel(place) {
+		var text = (place.code ? place.code + ' - ' : '') + (place.address || place.name || '');
 
-	if (place.place) {
-		text += ' (' + place.place + ')';
+		if (place.place) {
+			text += ' (' + place.place + ')';
 	}
 
-	return text;
-}
+		return text;
+	}
+
+	function qiqoAuthSalesRepLabel(rep) {
+		var code = rep.code || '';
+		var name = rep.name || '';
+
+		if (name && name !== code) {
+			return code ? code + ' - ' + name : name;
+		}
+
+		return code;
+	}
 
 $('#customer-approval').on('click', '.btn-approve', function(e) {
 	e.preventDefault();
@@ -220,7 +231,7 @@ $(document).on('click', '#button-load-partner', function() {
 			var repHtml = '<option value="">-- odaberite --</option>';
 			for (var j = 0; j < json.sales_reps.length; j++) {
 				var r = json.sales_reps[j];
-				repHtml += '<option value="' + r.sales_rep_id + '">' + qiqoAuthEscape(r.code + ' - ' + r.name) + '</option>';
+					repHtml += '<option value="' + r.sales_rep_id + '">' + qiqoAuthEscape(qiqoAuthSalesRepLabel(r)) + '</option>';
 			}
 			$('#auth-sales-rep').html(repHtml);
 		},

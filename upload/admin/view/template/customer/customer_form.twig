@@ -281,9 +281,9 @@
                               <option value="">-- odaberite --</option>
                               {% for rep in qiqo_sales_reps %}
                               {% if rep.sales_rep_id == qiqo_sales_rep_id %}
-                              <option value="{{ rep.sales_rep_id }}" selected="selected">{{ rep.code }} - {{ rep.name }}</option>
+                              <option value="{{ rep.sales_rep_id }}" selected="selected">{{ rep.code }}{% if rep.name and rep.name != rep.code %} - {{ rep.name }}{% endif %}</option>
                               {% else %}
-                              <option value="{{ rep.sales_rep_id }}">{{ rep.code }} - {{ rep.name }}</option>
+                              <option value="{{ rep.sales_rep_id }}">{{ rep.code }}{% if rep.name and rep.name != rep.code %} - {{ rep.name }}{% endif %}</option>
                               {% endif %}
                               {% endfor %}
                             </select>
@@ -1267,6 +1267,17 @@
     return text;
   }
 
+  function qiqoSalesRepLabel(rep) {
+    var code = rep.code || '';
+    var name = rep.name || '';
+
+    if (name && name !== code) {
+      return code ? code + ' - ' + name : name;
+    }
+
+    return code;
+  }
+
   function qiqoNormalizeLabel(value) {
     return String(value || '').toLowerCase()
       .replace(/[čć]/g, 'c')
@@ -1334,7 +1345,7 @@
         var repHtml = '<option value="">-- odaberite --</option>';
         for (var j = 0; j < json.sales_reps.length; j++) {
           var r = json.sales_reps[j];
-          repHtml += '<option value="' + r.sales_rep_id + '">' + qiqoEscape(r.code + ' - ' + r.name) + '</option>';
+          repHtml += '<option value="' + r.sales_rep_id + '">' + qiqoEscape(qiqoSalesRepLabel(r)) + '</option>';
         }
         $('#input-qiqo-sales-rep').html(repHtml);
       },

@@ -2127,6 +2127,8 @@ class ModelExtensionModuleQiqo extends Model
     {
         $count = 0;
 
+        $this->logQiqoSalesRepRows($rows);
+
         foreach ($rows as $row) {
             $code = $this->firstQiqoValue($row, [
                 'sifra',
@@ -2176,6 +2178,20 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         return $count;
+    }
+
+    private function logQiqoSalesRepRows(array $rows): void
+    {
+        if (!$rows) {
+            $this->log('SalesRepsDebug', 'qKomercijalistWeb returned 0 rows.');
+            return;
+        }
+
+        $firstRow = reset($rows);
+        $columns = is_array($firstRow) ? implode(', ', array_keys($firstRow)) : '(first row is not an array)';
+        $sampleRows = array_slice($rows, 0, 3);
+
+        $this->log('SalesRepsDebug', 'columns=' . $columns . ' sample=' . json_encode($sampleRows, JSON_UNESCAPED_UNICODE));
     }
 
     private function resolveQiqoSalesRepName(array $row, string $code): string

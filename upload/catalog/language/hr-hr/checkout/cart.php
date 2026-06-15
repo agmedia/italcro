@@ -43,6 +43,7 @@ $_['text_alert']                     = 'Besplatna dostava za naručenu količinu
 $_['text_notify']					 = 'Iznos narudžbe je <strong>%s</strong>.<br /> Za vas je dostava besplatna.';
 
 $_['text_nastavi']					= 'NASTAVI KUPNJU';
+$_['text_confirm_duplicate']		= 'Pozor - artikl već postoji u narudžbi s količinom %s. Želite li nadodati novo unesenu količinu?';
 
 // Column
 $_['column_image']                  = 'Slika';

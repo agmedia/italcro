@@ -50,3 +50,4 @@ $_['text_payment_until_canceled_description'] = "%s minden %d %s(a) napján, am�
 $_['text_alert'] = "Ingyenes szállítás legalább <strong>%s</strong> értékű megrendelés esetén <strong></ strong>.<br /> Csak <strong>%s-t</strong> kell rendelned <strong></ strong>többet, és a csomagod ingyen megérkezik!</strong></strong>";
 $_['text_notify'] = "A rendelés összege <strong>%s</strong> .<br /> A szállítás ingyenes az Ön számára.";
 $_['text_nastavi'] = "FOLYTATNI A VÁSÁRLÁST";
+$_['text_confirm_duplicate'] = "Figyelem - ez a cikk már szerepel a rendelésben %s mennyiséggel. Hozzá szeretné adni az újonnan megadott mennyiséget?";

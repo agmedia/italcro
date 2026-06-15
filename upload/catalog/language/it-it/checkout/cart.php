@@ -50,3 +50,4 @@ $_['text_payment_until_canceled_description'] = "%s ogni %d %s(a) fino all&#39;a
 $_['text_alert'] = "Spedizione gratuita per ordini di almeno <strong>%s</ strong> .<br /> Devi solo ordinare <strong>%s</ strong> di più e il tuo pacco arriverà gratis!</strong></strong>";
 $_['text_notify'] = "L&#39;importo dell&#39;ordine è <strong>%s</strong> .<br /> La spedizione è gratuita per te.";
 $_['text_nastavi'] = "CONTINUA A FARE ACQUISTI";
+$_['text_confirm_duplicate'] = "Attenzione - questo articolo è già presente nell'ordine con quantità %s. Vuoi aggiungere la nuova quantità inserita?";

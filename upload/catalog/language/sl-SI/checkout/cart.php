@@ -60,3 +60,4 @@ $_['text_payment_until_canceled_description'] = "%s vsakih %d %s(a) do preklica"
 $_['text_alert'] = "Brezplačna dostava za naročila v vrednosti najmanj <strong>%s</ strong> .<br /> Samo naročiti morate <strong>%s</ strong> več in vaš paket bo prispel brezplačno!</strong></strong>";
 $_['text_notify'] = "Znesek naročila je <strong>%s</strong> .<br /> Dostava je za vas brezplačna.";
 $_['text_nastavi'] = "NADALJUJ Z NAKUPOVANJEM";
+$_['text_confirm_duplicate'] = "Pozor - artikel je že v naročilu s količino %s. Ali želite dodati novo vneseno količino?";

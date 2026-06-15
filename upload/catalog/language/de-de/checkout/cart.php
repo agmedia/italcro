@@ -63,6 +63,7 @@ $_['text_payment_until_canceled_description'] = "%s alle %d %s(a) bis zum Abbruc
 $_['text_alert'] = "Kostenloser Versand für Bestellungen von mindestens <strong>%s</ strong> .<br /> Sie müssen nur <strong>%s</strong> bestellen <strong></ strong>mehr und Ihr Paket kommt kostenlos an!</strong></strong>";
 $_['text_notify'] = "Der Bestellbetrag beträgt <strong>%s</strong> .<br /> Der Versand ist für Sie kostenlos.";
 $_['text_nastavi'] = "WEITER EINKAUFEN";
+$_['text_confirm_duplicate'] = "Achtung - dieser Artikel ist bereits mit der Menge %s in der Bestellung. Möchten Sie die neu eingegebene Menge hinzufügen?";
 
 $_['error_sorry_we_have'] = "Warnung! Wir haben nur %s Artikel auf Lager.";
 $_['text_length'] = "für %s Zahlungen";

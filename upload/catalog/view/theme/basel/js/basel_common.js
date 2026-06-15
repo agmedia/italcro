@@ -397,11 +397,11 @@ var unsubscribe = function(module) {
 
 // Cart add remove functions
 var cart = {
-	'add': function(product_id, quantity, source) {
+	'add': function(product_id, quantity, source, confirm_duplicate) {
 		$.ajax({
 			url: 'index.php?route=extension/basel/basel_features/add_to_cart',
 			type: 'post',
-			data: 'product_id=' + product_id + '&quantity=' + (typeof(quantity) != 'undefined' ? quantity : 1),
+			data: 'product_id=' + product_id + '&quantity=' + (typeof(quantity) != 'undefined' ? quantity : 1) + '&confirm_duplicate=' + (confirm_duplicate ? 1 : 0),
 			dataType: 'json',
 			
 			beforeSend: function(json) {
@@ -410,6 +410,15 @@ var cart = {
 			
 			success: function(json) {
 			$('[data-toggle=\'tooltip\']').tooltip('hide');
+
+				if (json['confirm_duplicate']) {
+					$('.basel-spinner.ajax-call').remove();
+					if (confirm(json['confirm_duplicate']['message'] || json['confirm_duplicate'])) {
+						cart.add(product_id, quantity, source, true);
+					}
+
+					return;
+				}
 
 				if (json['redirect']) {
 					location = json['redirect'];

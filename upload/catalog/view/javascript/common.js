@@ -137,7 +137,7 @@ $(document).ready(function() {
 
 // Cart add remove functions
 var cart = {
-	'add': function(product_id, quantity) {
+	'add': function(product_id, quantity, confirm_duplicate) {
 		quantity = (typeof(quantity) != 'undefined' ? quantity : 1);
 
 		$.ajax({
@@ -145,7 +145,8 @@ var cart = {
 			type: 'post',
 			data: {
 				product_id: product_id,
-				quantity: quantity
+				quantity: quantity,
+				confirm_duplicate: confirm_duplicate ? 1 : 0
 			},
 			dataType: 'json',
 			beforeSend: function() {
@@ -156,6 +157,14 @@ var cart = {
 			},
 			success: function(json) {
 				$('.alert-dismissible, .text-danger').remove();
+
+				if (json['confirm_duplicate']) {
+					if (confirm(json['confirm_duplicate']['message'] || json['confirm_duplicate'])) {
+						cart.add(product_id, quantity, true);
+					}
+
+					return;
+				}
 
 				if (json['redirect']) {
 					location = json['redirect'];

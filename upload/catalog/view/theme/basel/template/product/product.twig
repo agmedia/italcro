@@ -131,9 +131,12 @@
         padding-left: 4px;
         padding-right: 4px;
     }
-    .mpn-variants .mpn-addtocart {
+    .mpn-variants .mpn-addtocart,
+    .mpn-variants .mpn-addtocart-heading {
         width: 160px;
         min-width: 160px;
+    }
+    .mpn-variants .mpn-addtocart {
         margin-left: auto;
     }
     .mpn-variants .mpn-addtocart .btn {
@@ -1215,15 +1218,19 @@
 </script>
 
 <script><!--
-    $('#button-cart').on('click', function() {
+    function qiqoBaselProductAddToCart(confirm_duplicate) {
         var $quantityInput = $('#product input[name="quantity"]').first();
         if (window.qiqoPrepareQuantityInput && $quantityInput.length) {
             qiqoPrepareQuantityInput($quantityInput, true);
         }
+        var data = $('#product input[type=\'text\'], #product input[type=\'hidden\'], #product input[type=\'number\'], #product input[type=\'radio\']:checked, #product input[type=\'checkbox\']:checked, #product select, #product textarea').serialize();
+        if (confirm_duplicate) {
+            data += '&confirm_duplicate=1';
+        }
         $.ajax({
             url: 'index.php?route=extension/basel/basel_features/add_to_cart',
             type: 'post',
-            data: $('#product input[type=\'text\'], #product input[type=\'hidden\'], #product input[type=\'number\'], #product input[type=\'radio\']:checked, #product input[type=\'checkbox\']:checked, #product select, #product textarea'),
+            data: data,
             dataType: 'json',
             beforeSend: function(json) {
                 $('body').append('<span class="basel-spinner ajax-call"></span>');
@@ -1232,6 +1239,15 @@
             success: function(json) {
                 $('.alert, .text-danger').remove();
                 $('.table-cell').removeClass('has-error');
+
+                if (json.confirm_duplicate) {
+                    $('.basel-spinner.ajax-call').remove();
+                    if (confirm(json.confirm_duplicate.message || json.confirm_duplicate)) {
+                        qiqoBaselProductAddToCart(true);
+                    }
+
+                    return;
+                }
 
                 if (json.error) {
                     $('.basel-spinner.ajax-call').remove();
@@ -1288,8 +1304,12 @@
                 alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
             }
         });
+    }
+
+    $('#button-cart').on('click', function() {
+        qiqoBaselProductAddToCart(false);
     });
-    //--></script>
+//--></script>
 
 
 

@@ -708,11 +708,16 @@ $('select[name=\'recurring_id\'], input[name="quantity"]').change(function(){
 //--></script>
 
 <script><!--
-$('#button-cart').on('click', function() {
+function qiqoBaselProductAddToCart(confirm_duplicate) {
+	var data = $('#product input[type=\'text\'], #product input[type=\'number\'], #product input[type=\'hidden\'], #product input[type=\'radio\']:checked, #product input[type=\'checkbox\']:checked, #product select, #product textarea').serialize();
+	if (confirm_duplicate) {
+		data += '&confirm_duplicate=1';
+	}
+
 	$.ajax({
 		url: 'index.php?route=extension/basel/basel_features/add_to_cart',
 		type: 'post',
-		data: $('#product input[type=\'text\'], #product input[type=\'number\'], #product input[type=\'hidden\'], #product input[type=\'radio\']:checked, #product input[type=\'checkbox\']:checked, #product select, #product textarea'),
+		data: data,
 		dataType: 'json',
 		beforeSend: function(json) {
 			$('body').append('<span class="basel-spinner ajax-call"></span>');
@@ -721,6 +726,15 @@ $('#button-cart').on('click', function() {
 		success: function(json) {
 			$('.alert, .text-danger').remove();
 			$('.table-cell').removeClass('has-error');
+
+			if (json['confirm_duplicate']) {
+				$('.basel-spinner.ajax-call').remove();
+				if (confirm(json['confirm_duplicate']['message'] || json['confirm_duplicate'])) {
+					qiqoBaselProductAddToCart(true);
+				}
+
+				return;
+			}
 
 			if (json['error']) {
 				$('.basel-spinner.ajax-call').remove();
@@ -777,6 +791,10 @@ $('#button-cart').on('click', function() {
             alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
         }
 	});
+}
+
+$('#button-cart').on('click', function() {
+	qiqoBaselProductAddToCart(false);
 });
 //--></script>
 <script><!--

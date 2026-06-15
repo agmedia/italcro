@@ -51,3 +51,4 @@ $_['text_payment_until_canceled_description'] = "%s every %d %s(a) until cancell
 $_['text_alert'] = "Free shipping for orders of at least <strong>%s</ strong> .<br /> You just need to order <strong>%s</ strong> more and your package arrives for free!</strong></strong>";
 $_['text_notify'] = "The order amount is <strong>%s</strong> .<br /> Shipping is free for you.";
 $_['text_nastavi'] = "CONTINUE SHOPPING";
+$_['text_confirm_duplicate'] = "Attention - this item is already in the order with quantity %s. Do you want to add the newly entered quantity?";

@@ -57,7 +57,9 @@
               </span>
               {% endif %}
               
+              {% if product.is_single_article is not defined or product.is_single_article %}
               <input type="button" value="{{ button_cart }}" class="btn btn-primary btn-sm catalog_hide" onclick="cart.add('{{ product.product_id }}', '{{ product.minimum }}');" />
+              {% endif %}
               
               </td>
             {% endfor %}

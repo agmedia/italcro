@@ -93,12 +93,14 @@ class ControllerCheckoutCart extends Controller {
 						$qty = 1.0;
 					}
 
-					$base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+						$base_unit = isset($product_info['base_price'])
+							? (float)$product_info['base_price']
+							: (float)$product_info['price'];
 					if ($base_unit <= 0) {
 						continue;
 					}
 
-					$sku_quantities[$sku] = $qty;
+						$sku_quantities[$sku] = isset($sku_quantities[$sku]) ? $sku_quantities[$sku] + $qty : $qty;
 					$base_unit_prices[$sku] = $base_unit;
 				}
 
@@ -161,10 +163,11 @@ class ControllerCheckoutCart extends Controller {
 
 				// Display prices
 				if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
-					$unit_price = $this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax'));
+					$display_unit_raw = $this->qiqoDisplayPriceRaw($product['price'], isset($product['cent']) ? $product['cent'] : '');
+					$unit_price = $this->tax->calculate($display_unit_raw, $product['tax_class_id'], $this->config->get('config_tax'));
 					
 					$price = $this->currency->format($unit_price, $this->session->data['currency']);
-					$total = $this->currency->format($unit_price * $product['quantity'], $this->session->data['currency']);
+					$total = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity'], $this->session->data['currency']);
 				} else {
 					$price = false;
 					$total = false;
@@ -223,7 +226,7 @@ class ControllerCheckoutCart extends Controller {
 						$current_unit_raw = (float)$product['price'];
 
 						if ($old_unit_raw > 0 && $old_unit_raw > $current_unit_raw) {
-							$old_unit_price = $this->tax->calculate($old_unit_raw, $product['tax_class_id'], $this->config->get('config_tax'));
+							$old_unit_price = $this->tax->calculate($this->qiqoDisplayPriceRaw($old_unit_raw, isset($product_info['cent']) ? $product_info['cent'] : $product['cent']), $product['tax_class_id'], $this->config->get('config_tax'));
 							$price_old = $this->currency->format($old_unit_price, $this->session->data['currency']);
 						}
 					}
@@ -520,7 +523,15 @@ class ControllerCheckoutCart extends Controller {
 				if ($existing_quantity > 0 && empty($this->request->post['confirm_duplicate'])) {
 					$json['confirm_duplicate'] = $this->getConfirmDuplicatePayload($existing_quantity, $product_info);
 				} else {
-					$this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id);
+					$allow_grouped_variant = !empty($this->request->post['qiqo_grouped_variant']);
+					$added = $this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id, $allow_grouped_variant);
+
+					if (!$added) {
+						$json['error']['warning'] = 'Odaberite točan artikl iz tablice varijanti prije dodavanja u košaricu.';
+						$this->response->addHeader('Content-Type: application/json');
+						$this->response->setOutput(json_encode($json));
+						return;
+					}
 
 					$json['success'] = sprintf($this->language->get('text_success'), $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']), $product_info['name'], $this->url->link('checkout/cart'));
 					if ($quantity_notice !== '') {

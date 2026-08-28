@@ -1,5 +1,8 @@
 <?php
 class ControllerExtensionModuleImportApi extends Controller {
+	const MAX_FEED_BYTES = 33554432;
+	const FEED_TIMEOUT = 60;
+
 	private $error = array();
 	private $fields = array();
 
@@ -231,23 +234,56 @@ class ControllerExtensionModuleImportApi extends Controller {
 	}
 	
 	public function fields(){
-		
-		$link = html_entity_decode($this->request->post['import_api_link'], ENT_QUOTES, "UTF-8");
+		$this->load->language('extension/module/import_api');
+		$json = array();
 
-		$external_string = @file_get_contents($link);
-		
+		if (!isset($this->request->server['REQUEST_METHOD']) || $this->request->server['REQUEST_METHOD'] !== 'POST') {
+			$this->sendAdminJson(array('error' => 'Method Not Allowed'), 405, array('Allow: POST'));
+
+			return;
+		}
+
+		if (!$this->user->hasPermission('modify', 'extension/module/import_api')) {
+			$this->sendAdminJson(array('error' => $this->language->get('error_permission')), 403);
+
+			return;
+		}
+
+		$link = isset($this->request->post['import_api_link'])
+			? html_entity_decode((string)$this->request->post['import_api_link'], ENT_QUOTES, 'UTF-8')
+			: '';
+
+		if (!$this->isAllowedImportSourceUrl($link)) {
+			$this->sendAdminJson(array('error' => 'Import API izvor mora biti valjani HTTP ili HTTPS URL.'), 422);
+
+			return;
+		}
+
+		try {
+			$external_string = $this->fetchRemoteResource(
+				$link,
+				self::MAX_FEED_BYTES,
+				self::FEED_TIMEOUT,
+				'application/xml, text/xml;q=0.9, */*;q=0.1'
+			);
+		} catch (RuntimeException $e) {
+			$external_string = false;
+		}
+
 		if($external_string === false){
 			$json['error'] = 'External file not found. Check link in browser';
 		} else {
 			
 			$json['error'] = '';
-			//$ob = @simplexml_load_string($external_string);
-			$ob = simplexml_load_string($external_string, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_PARSEHUGE);
+			$previous_errors = libxml_use_internal_errors(true);
+			$ob = simplexml_load_string($external_string, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NONET);
+			libxml_clear_errors();
+			libxml_use_internal_errors($previous_errors);
 
-			$json_string = @json_encode($ob);
-			$php_array = @json_decode($json_string, true);
+			$json_string = $ob === false ? false : json_encode($ob);
+			$php_array = $json_string === false ? null : json_decode($json_string, true);
 			
-			if($php_array === null){
+			if(!is_array($php_array)){
 				$json['error'] = 'File is not in xml format';
 			} else {				
 				$this->search_keys($php_array, 'FEED');
@@ -257,8 +293,235 @@ class ControllerExtensionModuleImportApi extends Controller {
 			}			
 		}
 		
-		$this->response->addHeader('Content-Type: application/json');
-		$this->response->setOutput(json_encode($json));
+		$this->sendAdminJson($json);
+	}
+
+	public function test() {
+		$this->proxyCatalogImportAction('test');
+	}
+
+	public function import() {
+		$this->proxyCatalogImportAction('import');
+	}
+
+	private function proxyCatalogImportAction($action) {
+		$this->load->language('extension/module/import_api');
+
+		if (!isset($this->request->server['REQUEST_METHOD']) || $this->request->server['REQUEST_METHOD'] !== 'POST') {
+			$this->sendAdminJson(array('error' => 'Method Not Allowed'), 405, array('Allow: POST'));
+
+			return;
+		}
+
+		if (!$this->user->hasPermission('modify', 'extension/module/import_api')) {
+			$this->sendAdminJson(array('error' => $this->language->get('error_permission')), 403);
+
+			return;
+		}
+
+		if (!in_array($action, array('test', 'import'), true)) {
+			$this->sendAdminJson(array('error' => 'Invalid Import API action'), 400);
+
+			return;
+		}
+
+		$post_data = $this->request->post;
+
+		if ($action === 'test') {
+			$view = isset($post_data['view']) ? (string)$post_data['view'] : '';
+			if (!in_array($view, array('view-raw', 'view-split', 'view-grouping', 'view-modified'), true)) {
+				$this->sendAdminJson(array('error' => 'Nepoznat Import API testni prikaz.'), 422);
+
+				return;
+			}
+		}
+
+		if (isset($post_data['start'])) {
+			$post_data['start'] = max(0, (int)$post_data['start']);
+		}
+		if (isset($post_data['limit'])) {
+			$post_data['limit'] = max(0, (int)$post_data['limit']);
+		}
+
+		$master_secret = (string)$this->config->get('config_encryption');
+
+		if (strlen($master_secret) < 32) {
+			$this->log->write('Import API signing is unavailable because config_encryption is missing.');
+			$this->sendAdminJson(array('error' => 'Import API potpis nije konfiguriran.'), 503);
+
+			return;
+		}
+
+		$body = http_build_query($post_data, '', '&', PHP_QUERY_RFC3986);
+		$timestamp = (string)time();
+
+		try {
+			$nonce = bin2hex(random_bytes(24));
+		} catch (Throwable $e) {
+			$this->log->write('Import API could not generate a request nonce.');
+			$this->sendAdminJson(array('error' => 'Import API potpis trenutno nije dostupan.'), 503);
+
+			return;
+		}
+
+		$canonical = "v1\n" . $action . "\n" . $timestamp . "\n" . $nonce . "\n" . hash('sha256', $body);
+		$signing_key = hash_hmac('sha256', 'italcro-import-api-v1', $master_secret, true);
+		$signature = hash_hmac('sha256', $canonical, $signing_key);
+		$url = rtrim(HTTP_CATALOG, '/') . '/index.php?route=extension/feed/import_api/' . $action;
+		$ch = curl_init($url);
+
+		if ($ch === false) {
+			$this->sendAdminJson(array('error' => 'Interni Import API zahtjev nije moguće pokrenuti.'), 502);
+
+			return;
+		}
+
+		curl_setopt_array($ch, array(
+			CURLOPT_POST => true,
+			CURLOPT_POSTFIELDS => $body,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_FOLLOWLOCATION => false,
+			CURLOPT_CONNECTTIMEOUT => 10,
+			CURLOPT_TIMEOUT => $action === 'import' ? 120 : 90,
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_SSL_VERIFYHOST => 2,
+			CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+			CURLOPT_HTTPHEADER => array(
+				'Content-Type: application/x-www-form-urlencoded',
+				'Accept: application/json',
+				'X-Import-Api-Timestamp: ' . $timestamp,
+				'X-Import-Api-Nonce: ' . $nonce,
+				'X-Import-Api-Signature: ' . $signature,
+				'Cache-Control: no-store'
+			),
+			CURLOPT_USERAGENT => 'Italcro admin Import API proxy'
+		));
+
+		$response_body = curl_exec($ch);
+		$status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$curl_error = curl_error($ch);
+		curl_close($ch);
+
+		if ($response_body === false) {
+			$this->log->write('Import API internal request failed: ' . $curl_error);
+			$this->sendAdminJson(array('error' => 'Interni Import API zahtjev nije uspio.'), 502);
+
+			return;
+		}
+
+		$decoded = json_decode($response_body, true);
+		if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+			$this->log->write('Import API returned a non-JSON response with HTTP status ' . $status . '.');
+			$this->sendAdminJson(array('error' => 'Import API je vratio neispravan odgovor.'), 502);
+
+			return;
+		}
+
+		$this->sendAdminJson($decoded, $status);
+	}
+
+	private function isAllowedImportSourceUrl($url) {
+		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+			return false;
+		}
+
+		$parts = parse_url($url);
+		$scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : '';
+
+		return !empty($parts['host'])
+			&& !isset($parts['user'])
+			&& !isset($parts['pass'])
+			&& in_array($scheme, array('http', 'https'), true);
+	}
+
+	private function fetchRemoteResource($url, $max_bytes, $timeout, $accept) {
+		if (!$this->isAllowedImportSourceUrl($url) || !function_exists('curl_init')) {
+			throw new RuntimeException('Udaljeni Import API URL nije dostupan.');
+		}
+
+		$data = '';
+		$too_large = false;
+		$ch = curl_init($url);
+		if ($ch === false) {
+			throw new RuntimeException('Udaljeni Import API sadržaj nije dostupan.');
+		}
+
+		$curl_options = array(
+			CURLOPT_FOLLOWLOCATION => defined('CURLOPT_DISALLOW_USERNAME_IN_URL'),
+			CURLOPT_MAXREDIRS => 3,
+			CURLOPT_CONNECTTIMEOUT => 10,
+			CURLOPT_TIMEOUT => max(1, (int)$timeout),
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_SSL_VERIFYHOST => 2,
+			CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+			CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+			CURLOPT_ENCODING => '',
+			CURLOPT_HTTPHEADER => array('Accept: ' . $accept),
+			CURLOPT_USERAGENT => 'Italcro admin Import API fetcher'
+		);
+		if (defined('CURLOPT_DISALLOW_USERNAME_IN_URL')) {
+			$curl_options[constant('CURLOPT_DISALLOW_USERNAME_IN_URL')] = true;
+		}
+		curl_setopt_array($ch, $curl_options);
+		curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $chunk) use (&$data, &$too_large, $max_bytes) {
+			$chunk_length = strlen($chunk);
+			if (strlen($data) + $chunk_length > $max_bytes) {
+				$too_large = true;
+
+				return 0;
+			}
+
+			$data .= $chunk;
+
+			return $chunk_length;
+		});
+
+		$result = curl_exec($ch);
+		$status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if ($too_large) {
+			throw new RuntimeException('Udaljeni Import API sadržaj prelazi dopuštenu veličinu.');
+		}
+
+		if ($result === false || $status < 200 || $status >= 300) {
+			throw new RuntimeException('Udaljeni Import API sadržaj nije dostupan.');
+		}
+
+		return $data;
+	}
+
+	private function sendAdminJson($data, $status = 200, $headers = array()) {
+		$status_text = array(
+			200 => 'OK',
+			400 => 'Bad Request',
+			401 => 'Unauthorized',
+			403 => 'Forbidden',
+			404 => 'Not Found',
+			405 => 'Method Not Allowed',
+			409 => 'Conflict',
+			422 => 'Unprocessable Entity',
+			500 => 'Internal Server Error',
+			502 => 'Bad Gateway',
+			503 => 'Service Unavailable'
+		);
+		if (!isset($status_text[$status])) {
+			$status = 502;
+		}
+
+		$protocol = !empty($this->request->server['SERVER_PROTOCOL']) ? $this->request->server['SERVER_PROTOCOL'] : 'HTTP/1.1';
+		$text = $status_text[$status];
+
+		$this->response->addHeader($protocol . ' ' . (int)$status . ' ' . $text);
+		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
+		$this->response->addHeader('Cache-Control: no-store');
+
+		foreach ($headers as $header) {
+			$this->response->addHeader($header);
+		}
+
+		$output = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		$this->response->setOutput($output === false ? '{"error":"JSON encoding failed"}' : $output);
 	}
 	
 	function search_keys($array, $parent){

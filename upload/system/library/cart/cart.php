@@ -1,12 +1,15 @@
 <?php
 namespace Cart;
+require_once(DIR_SYSTEM . 'library/qiqo/pricing_resolver.php');
+
 class Cart {
 	private $data = array();
-	private $qiqo_tables_ready = null;
+	private $qiqo_base_tables_ready = null;
+	private $qiqo_partner_article_table_ready = null;
+	private $qiqo_action_table_ready = null;
 	private $qiqo_authorization = null;
 	private $qiqo_article_discount_cache = array();
 	private $qiqo_action_rows_cache = array();
-	private static $qiqo_cart_quantity_column_checked = false;
 
 	public function __construct($registry) {
 		$this->config = $registry->get('config');
@@ -15,7 +18,6 @@ class Cart {
 		$this->db = $registry->get('db');
 		$this->tax = $registry->get('tax');
 		$this->weight = $registry->get('weight');
-		$this->ensureQiqoCartQuantityColumn();
 
 		// Remove all the expired carts with no customer ID
 		$this->db->query("DELETE FROM " . DB_PREFIX . "cart WHERE (api_id > '0' OR customer_id = '0') AND date_added < DATE_SUB(NOW(), INTERVAL 1 HOUR)");
@@ -31,29 +33,9 @@ class Cart {
 				$this->db->query("DELETE FROM " . DB_PREFIX . "cart WHERE cart_id = '" . (int)$cart['cart_id'] . "'");
 
 				// The advantage of using $this->add is that it will check if the products already exist and increaser the quantity if necessary.
-				$this->add($cart['product_id'], $cart['quantity'], json_decode($cart['option']), $cart['recurring_id']);
+					$this->add($cart['product_id'], $cart['quantity'], json_decode($cart['option']), $cart['recurring_id'], true);
 			}
 		}
-	}
-
-	private function ensureQiqoCartQuantityColumn() {
-		if (self::$qiqo_cart_quantity_column_checked) {
-			return;
-		}
-
-		self::$qiqo_cart_quantity_column_checked = true;
-
-		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "cart` LIKE 'quantity'");
-		if (!$query->num_rows) {
-			return;
-		}
-
-		$type = strtolower((string)$query->row['Type']);
-		if (strpos($type, 'decimal') !== false || strpos($type, 'double') !== false || strpos($type, 'float') !== false) {
-			return;
-		}
-
-		$this->db->query("ALTER TABLE `" . DB_PREFIX . "cart` MODIFY `quantity` DECIMAL(15,4) NOT NULL DEFAULT 0");
 	}
 
 	private function normalizeQiqoQuantity($quantity) {
@@ -231,7 +213,14 @@ class Cart {
 					$price = $product_special_query->row['price'];
 				}
 
-				$price = $this->applyQiqoCartPrice((string)$product_query->row['sku'], (float)$price, (float)$cart['quantity']);
+				$legacy_price = (float)$price;
+					$price = $this->applyQiqoCartPrice(
+						(string)$product_query->row['sku'],
+						(float)$product_query->row['price'],
+						(float)$discount_quantity,
+						isset($product_query->row['cent']) ? (string)$product_query->row['cent'] : '',
+						$legacy_price
+					);
 
 				// Reward Points
 				$product_reward_query = $this->db->query("SELECT points FROM " . DB_PREFIX . "product_reward WHERE product_id = '" . (int)$cart['product_id'] . "' AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "'");
@@ -299,11 +288,15 @@ class Cart {
 					if ($cent_normalized === 'C100' || $pak_required || abs($pack_quantity - round($pack_quantity)) > 0.00001) {
 						$minimum_step = $pack_quantity;
 					}
-				if ($minimum_step <= 0) {
-					$minimum_step = 1.0;
-				}
+					if ($minimum_step <= 0) {
+						$minimum_step = 1.0;
+					}
 
-				$product_data[] = array(
+					$unit_price_scale = \QiqoPricingResolver::isC100($product_query->row['cent']) ? 7 : 5;
+					$resolved_unit_price = round((float)$price + (float)$option_price, $unit_price_scale);
+					$resolved_line_total = round($resolved_unit_price * (float)$cart['quantity'], 5);
+
+					$product_data[] = array(
 					'cart_id'         => $cart['cart_id'],
 					'product_id'      => $product_query->row['product_id'],
 					'name'            => $product_query->row['name'],
@@ -324,8 +317,9 @@ class Cart {
 					'pak'             => isset($product_query->row['pak']) ? (int)$product_query->row['pak'] : 0,
 					'subtract'        => $product_query->row['subtract'],
 					'stock'           => $stock,
-					'price'           => ($price + $option_price),
-					'total'           => ($price + $option_price) * $cart['quantity'],
+						'ocm_special'     => abs((float)$price - (float)$product_query->row['price']) > 0.0000001,
+						'price'           => $resolved_unit_price,
+						'total'           => $resolved_line_total,
 					'reward'          => $reward * $cart['quantity'],
 					'points'          => ($product_query->row['points'] ? ($product_query->row['points'] + $option_points) * $cart['quantity'] : 0),
 					'tax_class_id'    => $product_query->row['tax_class_id'],
@@ -345,55 +339,49 @@ class Cart {
 		return $product_data;
 	}
 
-	private function applyQiqoCartPrice($sku, $base_price, $qty) {
+	private function applyQiqoCartPrice($sku, $base_price, $qty, $cent = '', $fallback_price = null) {
 		$sku = trim((string)$sku);
 		$base_price = (float)$base_price;
 		$qty = (float)$qty;
+		$fallback_price = $fallback_price !== null ? (float)$fallback_price : $base_price;
 
 		if (!$this->customer->getId() || $sku === '' || $base_price <= 0 || $qty <= 0) {
-			return $base_price;
+			return $fallback_price;
 		}
 
-		if (!$this->hasQiqoPricingTables()) {
-			return $base_price;
+		if (!$this->hasQiqoBasePricingTables()) {
+			return $fallback_price;
 		}
 
 		$auth = $this->getQiqoAuthorization();
 		if (!$auth || empty($auth['partner_id'])) {
-			return $base_price;
+			return $fallback_price;
 		}
 
 		$partner_id = (int)$auth['partner_id'];
 		$base_discount = isset($auth['partner_discount']) ? (float)$auth['partner_discount'] : 0.0;
 
-		$article_discount = $this->getQiqoArticleDiscount($partner_id, $sku);
+		$article_discount = $this->hasQiqoPartnerArticleDiscountTable()
+			? $this->getQiqoArticleDiscount($partner_id, $sku)
+			: null;
+		$base_source = 'partner';
 		if ($article_discount !== null) {
 			$base_discount = (float)$article_discount;
+			$base_source = 'article';
 		}
 
-		$base_discount = max(0.0, min(100.0, (float)$base_discount));
-
-		$price = $base_price;
-		if ($base_discount > 0) {
-			$price = $base_price * (1 - ($base_discount / 100));
-		}
-
-		$action = $this->resolveQiqoActionForArticle(
-			$this->getQiqoActionRows($sku),
+		$pricing = \QiqoPricingResolver::resolve(
+			$base_price,
+			$base_discount,
+			$base_source,
+			$this->hasQiqoActionPriceTable() ? $this->getQiqoActionRows($sku) : array(),
 			$qty,
-			$this->isQiqoProformaPayment()
+			true,
+			$this->isQiqoProformaPayment(),
+			$cent
 		);
 
-		if ($action['net_price'] !== null && $action['net_price'] > 0 && (float)$action['net_price'] < $price) {
-			return (float)$action['net_price'];
-		}
-
-		$action_discount = max(0.0, min(100.0, (float)$action['discount']));
-		if ($action_discount > $base_discount) {
-			return (float)($base_price * (1 - ($action_discount / 100)));
-		}
-
-		return (float)$price;
+		return (float)$pricing['final_unit_price'];
 	}
 
 	private function getQiqoAuthorization() {
@@ -408,21 +396,25 @@ class Cart {
 		}
 
 		$query = $this->db->query("SELECT cqa.partner_id,
-				cqa.partner_discount,
-				qp.base_discount
+					cqa.partner_discount,
+					qp.base_discount,
+					qp.active AS partner_active
 			FROM `" . DB_PREFIX . "customer_qiqo_authorization` cqa
 			LEFT JOIN `" . DB_PREFIX . "qiqo_partner` qp ON (qp.partner_id = cqa.partner_id)
 			WHERE cqa.customer_id = '" . $customer_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows) {
+		if (!$query->num_rows || empty($query->row['partner_active'])) {
 			$this->qiqo_authorization = array();
 			return $this->qiqo_authorization;
 		}
 
-		$partner_discount = isset($query->row['partner_discount']) && $query->row['partner_discount'] !== null
-			? (float)$query->row['partner_discount']
-			: (isset($query->row['base_discount']) ? (float)$query->row['base_discount'] : 0.0);
+			// The authorization selects the ERP partner. Always price from the
+			// partner's current qPartnerWeb rebate; the copied approval value is only
+			// a fallback for legacy/incomplete cache rows.
+			$partner_discount = isset($query->row['base_discount']) && $query->row['base_discount'] !== null
+				? (float)$query->row['base_discount']
+				: (isset($query->row['partner_discount']) ? (float)$query->row['partner_discount'] : 0.0);
 
 		$this->qiqo_authorization = array(
 			'partner_id' => (int)$query->row['partner_id'],
@@ -479,69 +471,6 @@ class Cart {
 		return $this->qiqo_action_rows_cache[$sku];
 	}
 
-	private function resolveQiqoActionForArticle($rows, $qty, $is_proforma) {
-		$result = array(
-			'net_price' => null,
-			'discount'  => 0.0
-		);
-
-		if (!$rows) {
-			return $result;
-		}
-
-		$qty = (float)$qty;
-		$c_discount = 0.0;
-		$p_always_discount = 0.0;
-		$p_tier_qty = -1;
-		$p_tier_discount = 0.0;
-		$x_discount = 0.0;
-		$net_price = null;
-
-		foreach ($rows as $row) {
-			$indicator = isset($row['indicator']) ? (string)$row['indicator'] : '';
-			$quantity = isset($row['quantity']) ? (float)$row['quantity'] : 0.0;
-			$price = isset($row['price']) ? (float)$row['price'] : 0.0;
-			$discount = isset($row['discount']) ? (float)$row['discount'] : 0.0;
-
-			if ($indicator === 'C' && $price > 0) {
-				if ($net_price === null || $price < $net_price) {
-					$net_price = $price;
-				}
-			}
-
-			if ($indicator === 'C' && $price <= 0 && $discount > $c_discount) {
-				$c_discount = $discount;
-			}
-
-			if ($indicator === 'P') {
-				if ($quantity <= 0 && $discount > $p_always_discount) {
-					$p_always_discount = $discount;
-				} elseif ($quantity > 0 && $qty >= $quantity) {
-					if ($quantity > $p_tier_qty || ($quantity == $p_tier_qty && $discount > $p_tier_discount)) {
-						$p_tier_qty = $quantity;
-						$p_tier_discount = $discount;
-					}
-				}
-			}
-
-			if ($is_proforma && $indicator === 'X' && $discount > $x_discount) {
-				$x_discount = $discount;
-			}
-		}
-
-		if ($net_price !== null && $net_price > 0) {
-			$result['net_price'] = $net_price;
-			$result['discount'] = 0.0;
-			return $result;
-		}
-
-		$action_discount = max($c_discount, $p_always_discount, $p_tier_discount);
-		$action_discount += $x_discount;
-
-		$result['discount'] = max(0.0, $action_discount);
-		return $result;
-	}
-
 	private function isQiqoProformaPayment() {
 		$code = '';
 
@@ -573,31 +502,73 @@ class Cart {
 		return false;
 	}
 
-	private function hasQiqoPricingTables() {
-		if ($this->qiqo_tables_ready !== null) {
-			return $this->qiqo_tables_ready;
+	private function hasQiqoBasePricingTables() {
+		if ($this->qiqo_base_tables_ready !== null) {
+			return $this->qiqo_base_tables_ready;
 		}
 
 		$required = array(
 			DB_PREFIX . 'customer_qiqo_authorization',
-			DB_PREFIX . 'qiqo_partner',
-			DB_PREFIX . 'qiqo_partner_article_discount',
-			DB_PREFIX . 'qiqo_action_price'
+			DB_PREFIX . 'qiqo_partner'
 		);
 
 		foreach ($required as $table) {
 			$q = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
 			if (!$q->num_rows) {
-				$this->qiqo_tables_ready = false;
-				return $this->qiqo_tables_ready;
+				$this->qiqo_base_tables_ready = false;
+				return $this->qiqo_base_tables_ready;
 			}
 		}
 
-		$this->qiqo_tables_ready = true;
-		return $this->qiqo_tables_ready;
+		$this->qiqo_base_tables_ready = true;
+		return $this->qiqo_base_tables_ready;
 	}
 
-	public function add($product_id, $quantity = 1, $option = array(), $recurring_id = 0) {
+	private function hasQiqoPartnerArticleDiscountTable() {
+		if ($this->qiqo_partner_article_table_ready !== null) {
+			return $this->qiqo_partner_article_table_ready;
+		}
+
+		$q = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_partner_article_discount') . "'");
+		$this->qiqo_partner_article_table_ready = (bool)$q->num_rows;
+		return $this->qiqo_partner_article_table_ready;
+	}
+
+	private function hasQiqoActionPriceTable() {
+		if ($this->qiqo_action_table_ready !== null) {
+			return $this->qiqo_action_table_ready;
+		}
+
+		$q = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_action_price') . "'");
+		$this->qiqo_action_table_ready = (bool)$q->num_rows;
+		return $this->qiqo_action_table_ready;
+	}
+
+	private function isQiqoGroupedProduct($product_id) {
+		$product_query = $this->db->query("SELECT `mpn` FROM " . DB_PREFIX . "product WHERE `product_id` = '" . (int)$product_id . "' LIMIT 1");
+
+		if (!$product_query->num_rows) {
+			return false;
+		}
+
+		$mpn = trim((string)$product_query->row['mpn']);
+		if ($mpn === '') {
+			return false;
+		}
+
+		$count_query = $this->db->query("SELECT COUNT(*) AS total FROM " . DB_PREFIX . "product WHERE `mpn` = '" . $this->db->escape($mpn) . "' AND `status` = '1' AND `date_available` <= NOW()");
+
+		return isset($count_query->row['total']) && (int)$count_query->row['total'] > 1;
+	}
+
+	public function add($product_id, $quantity = 1, $option = array(), $recurring_id = 0, $allow_grouped_variant = false) {
+		// A grouped catalog card represents several real SKUs. Generic/stale
+		// add-to-cart calls must not silently choose its representative SKU.
+		// Surfaces where the buyer explicitly selected an exact variant opt in.
+		if (!$allow_grouped_variant && $this->isQiqoGroupedProduct($product_id)) {
+			return false;
+		}
+
 		$quantity_sql = $this->normalizeQiqoQuantity($quantity);
 		$query = $this->db->query("SELECT COUNT(*) AS total FROM " . DB_PREFIX . "cart WHERE api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "' AND customer_id = '" . (int)$this->customer->getId() . "' AND session_id = '" . $this->db->escape($this->session->getId()) . "' AND product_id = '" . (int)$product_id . "' AND recurring_id = '" . (int)$recurring_id . "' AND `option` = '" . $this->db->escape(json_encode($option)) . "'");
 
@@ -606,6 +577,8 @@ class Cart {
 		} else {
 			$this->db->query("UPDATE " . DB_PREFIX . "cart SET quantity = (quantity + " . $quantity_sql . ") WHERE api_id = '" . (isset($this->session->data['api_id']) ? (int)$this->session->data['api_id'] : 0) . "' AND customer_id = '" . (int)$this->customer->getId() . "' AND session_id = '" . $this->db->escape($this->session->getId()) . "' AND product_id = '" . (int)$product_id . "' AND recurring_id = '" . (int)$recurring_id . "' AND `option` = '" . $this->db->escape(json_encode($option)) . "'");
 		}
+
+		return true;
 	}
 
 	public function update($cart_id, $quantity) {
@@ -652,7 +625,7 @@ class Cart {
 			$total += $product['total'];
 		}
 
-		return $total;
+		return round($total, 5);
 	}
 
 	public function getTaxes() {
@@ -679,10 +652,13 @@ class Cart {
 		$total = 0;
 
 		foreach ($this->getProducts() as $product) {
-			$total += $this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity'];
+			$total += round(
+				$this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity'],
+				5
+			);
 		}
 
-		return $total;
+		return round($total, 5);
 	}
 
 	public function countProducts() {

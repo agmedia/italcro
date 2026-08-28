@@ -100,13 +100,16 @@ class ModelCustomerCustomerApproval extends Model {
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_approval` WHERE customer_id = '" . (int)$customer_id . "' AND `type` = 'affiliate'");
 	}
 
-	public function getQiqoPartnerById($partner_id) {
-		$this->ensureQiqoAuthorizationTables();
+	public function getQiqoPartnerById($partner_id, $ensure_tables = true, $lock_row = false) {
+		if ($ensure_tables) {
+			$this->ensureQiqoAuthorizationTables();
+		}
 
 		$query = $this->db->query("SELECT *
 			FROM `" . DB_PREFIX . "qiqo_partner`
 			WHERE partner_id = '" . (int)$partner_id . "'
-			LIMIT 1");
+			  AND active = '1'
+			LIMIT 1" . ($lock_row ? " FOR UPDATE" : ""));
 
 		return $query->row;
 	}
@@ -117,6 +120,8 @@ class ModelCustomerCustomerApproval extends Model {
 		$query = $this->db->query("SELECT *
 			FROM `" . DB_PREFIX . "qiqo_delivery_place`
 			WHERE partner_id = '" . (int)$partner_id . "'
+			  AND (TRIM(address) <> '' OR TRIM(name) <> '')
+			  AND TRIM(place) <> ''
 			ORDER BY name ASC");
 
 		return $query->rows;
@@ -133,35 +138,349 @@ class ModelCustomerCustomerApproval extends Model {
 		return $query->rows;
 	}
 
-	public function saveCustomerQiqoAuthorization($customer_id, $data, $approved_by_user_id) {
+	public function getQiqoDeliveryPlaceById($delivery_place_id, $ensure_tables = true, $lock_row = false) {
+		if ($ensure_tables) {
+			$this->ensureQiqoAuthorizationTables();
+		}
+
+		$query = $this->db->query("SELECT *
+			FROM `" . DB_PREFIX . "qiqo_delivery_place`
+			WHERE delivery_place_id = '" . (int)$delivery_place_id . "'
+			LIMIT 1" . ($lock_row ? " FOR UPDATE" : ""));
+
+		return $query->row;
+	}
+
+	public function getQiqoSalesRepById($sales_rep_id, $ensure_tables = true, $lock_row = false) {
+		if ($ensure_tables) {
+			$this->ensureQiqoAuthorizationTables();
+		}
+
+		$query = $this->db->query("SELECT *
+			FROM `" . DB_PREFIX . "qiqo_sales_rep`
+			WHERE sales_rep_id = '" . (int)$sales_rep_id . "'
+			  AND active = '1'
+			LIMIT 1" . ($lock_row ? " FOR UPDATE" : ""));
+
+		return $query->row;
+	}
+
+	public function validateQiqoAuthorizationSelection($partner_id, $delivery_place_id, $sales_rep_id, $ensure_tables = true, $lock_rows = false) {
+		if ($ensure_tables) {
+			$this->ensureQiqoAuthorizationTables();
+		}
+
+		$partner_id = (int)$partner_id;
+		$delivery_place_id = (int)$delivery_place_id;
+		$sales_rep_id = (int)$sales_rep_id;
+
+		$result = array(
+			'valid' => false,
+			'error' => '',
+			'partner' => array(),
+			'delivery_place' => array(),
+			'sales_rep' => array()
+		);
+
+		if (!$partner_id) {
+			$result['error'] = 'Partner je obavezan.';
+
+			return $result;
+		}
+
+		if (!$delivery_place_id) {
+			$result['error'] = 'Mjesto isporuke je obavezno.';
+
+			return $result;
+		}
+
+		if (!$sales_rep_id) {
+			$result['error'] = 'Aktivni komercijalist iz qKomercijalistWeb je obavezan.';
+
+			return $result;
+		}
+
+		$partner = $this->getQiqoPartnerById($partner_id, false, $lock_rows);
+
+		if (!$partner) {
+			$result['error'] = 'Partner ne postoji ili nije aktivan u lokalnom QIQO cacheu. Pokrenite partner sync.';
+
+			return $result;
+		}
+
+		$delivery_place = $this->getQiqoDeliveryPlaceById($delivery_place_id, false, $lock_rows);
+
+		if (!$delivery_place || (int)$delivery_place['partner_id'] !== $partner_id) {
+			$result['error'] = 'Odabrano mjesto isporuke ne pripada aktivnom partneru.';
+
+			return $result;
+		}
+
+		$delivery_address = !empty($delivery_place['address']) ? $delivery_place['address'] : $delivery_place['name'];
+
+		if (trim((string)$delivery_address) === '' || trim((string)$delivery_place['place']) === '') {
+			$result['error'] = 'Odabrano mjesto isporuke nema potpunu adresu i mjesto u QIQO cacheu.';
+
+			return $result;
+		}
+
+		$sales_rep = $this->getQiqoSalesRepById($sales_rep_id, false, $lock_rows);
+
+		if (!$sales_rep) {
+			$result['error'] = 'Odabrani komercijalist ne postoji ili nije aktivan u qKomercijalistWeb cacheu. Pokrenite sync komercijalista.';
+
+			return $result;
+		}
+
+		$result['valid'] = true;
+		$result['partner'] = $partner;
+		$result['delivery_place'] = $delivery_place;
+		$result['sales_rep'] = $sales_rep;
+
+		return $result;
+	}
+
+	public function applyCustomerQiqoAuthorization($customer_id, $data, $approved_by_user_id) {
 		$this->ensureQiqoAuthorizationTables();
+		$customer_id = (int)$customer_id;
+		$lock_name = 'qiqo_auth_' . sha1(DB_DATABASE . ':' . DB_PREFIX . $customer_id);
+
+		if (!$this->acquireQiqoAuthorizationLock($lock_name)) {
+			return array(
+				'success' => false,
+				'changed' => false,
+				'error' => 'Autorizaciju kupca trenutačno mijenja drugi proces. Pokušajte ponovno.'
+			);
+		}
+
+		$transaction_started = false;
+
+		try {
+			$this->db->query("START TRANSACTION");
+			$transaction_started = true;
+			$result = $this->applyCustomerQiqoAuthorizationLocked($customer_id, $data, $approved_by_user_id);
+
+			if ($result['success']) {
+				$this->db->query("COMMIT");
+			} else {
+				$this->db->query("ROLLBACK");
+			}
+
+			$transaction_started = false;
+
+			return $result;
+		} catch (\Exception $e) {
+			if ($transaction_started) {
+				$this->db->query("ROLLBACK");
+			}
+
+			throw $e;
+		} finally {
+			$this->releaseQiqoAuthorizationLock($lock_name);
+		}
+	}
+
+	public function approvePendingCustomerWithQiqoAuthorization($customer_id, $data, $approved_by_user_id) {
+		$this->ensureQiqoAuthorizationTables();
+		$customer_id = (int)$customer_id;
+		$lock_name = 'qiqo_auth_' . sha1(DB_DATABASE . ':' . DB_PREFIX . $customer_id);
+
+		if (!$this->acquireQiqoAuthorizationLock($lock_name)) {
+			return array(
+				'success' => false,
+				'changed' => false,
+				'error' => 'Autorizaciju kupca trenutačno mijenja drugi proces. Pokušajte ponovno.'
+			);
+		}
+
+		$transaction_started = false;
+
+		try {
+			$this->db->query("START TRANSACTION");
+			$transaction_started = true;
+
+			if (!$customer_id || !$this->hasPendingCustomerApproval($customer_id, true)) {
+				$this->db->query("ROLLBACK");
+				$transaction_started = false;
+
+				return array(
+					'success' => false,
+					'changed' => false,
+					'error' => 'Za kupca ne postoji aktivan zahtjev za odobrenje.'
+				);
+			}
+
+			$result = $this->applyCustomerQiqoAuthorizationLocked($customer_id, $data, $approved_by_user_id);
+
+			if ($result['success']) {
+				$this->approveCustomer($customer_id);
+				$this->db->query("COMMIT");
+			} else {
+				$this->db->query("ROLLBACK");
+			}
+
+			$transaction_started = false;
+
+			return $result;
+		} catch (\Exception $e) {
+			if ($transaction_started) {
+				$this->db->query("ROLLBACK");
+			}
+
+			throw $e;
+		} finally {
+			$this->releaseQiqoAuthorizationLock($lock_name);
+		}
+	}
+
+	private function applyCustomerQiqoAuthorizationLocked($customer_id, $data, $approved_by_user_id) {
+		$customer_query = $this->db->query("SELECT customer_id
+			FROM `" . DB_PREFIX . "customer`
+			WHERE customer_id = '" . (int)$customer_id . "'
+			LIMIT 1 FOR UPDATE");
+
+		if (!$customer_query->num_rows) {
+			return array(
+				'success' => false,
+				'changed' => false,
+				'error' => 'Kupac ne postoji.'
+			);
+		}
+
+		$selection = $this->validateQiqoAuthorizationSelection(
+			isset($data['partner_id']) ? $data['partner_id'] : 0,
+			isset($data['delivery_place_id']) ? $data['delivery_place_id'] : 0,
+			isset($data['sales_rep_id']) ? $data['sales_rep_id'] : 0,
+			false,
+			true
+		);
+
+		if (!$selection['valid']) {
+			return array(
+				'success' => false,
+				'changed' => false,
+				'error' => $selection['error']
+			);
+		}
+
+		$authorization_data = array(
+			'partner_id' => (int)$selection['partner']['partner_id'],
+			'delivery_place_id' => (int)$selection['delivery_place']['delivery_place_id'],
+			'sales_rep_id' => (int)$selection['sales_rep']['sales_rep_id'],
+			'partner_discount' => (float)$selection['partner']['base_discount']
+		);
+		$current = $this->getCustomerQiqoAuthorization($customer_id, false, true);
+
+		if (!$this->isQiqoAuthorizationChanged($current, $authorization_data)) {
+			return array(
+				'success' => true,
+				'changed' => false,
+				'error' => ''
+			);
+		}
+
+		$requires_address_sync = !$current
+			|| (int)$current['partner_id'] !== $authorization_data['partner_id']
+			|| (int)$current['delivery_place_id'] !== $authorization_data['delivery_place_id'];
+
+		if ($requires_address_sync && !$this->syncCustomerAddressFromDeliveryPlace(
+			$customer_id,
+			$authorization_data['delivery_place_id'],
+			$selection['partner']['name'],
+			false
+		)) {
+			return array(
+				'success' => false,
+				'changed' => false,
+				'error' => 'Mjesto isporuke nije moguće spremiti na adresu kupca.'
+			);
+		}
+
+		$authorization_changed = $this->saveCustomerQiqoAuthorization($customer_id, $authorization_data, $approved_by_user_id, false);
+
+		return array(
+			'success' => true,
+			'changed' => (bool)$authorization_changed,
+			'error' => ''
+		);
+	}
+
+	public function saveCustomerQiqoAuthorization($customer_id, $data, $approved_by_user_id, $ensure_tables = true) {
+		if ($ensure_tables) {
+			$this->ensureQiqoAuthorizationTables();
+		}
 
 		$partner_id = (int)$data['partner_id'];
 		$delivery_place_id = (int)$data['delivery_place_id'];
 		$sales_rep_id = isset($data['sales_rep_id']) && $data['sales_rep_id'] !== '' ? (int)$data['sales_rep_id'] : 0;
 		$partner_discount = (float)$data['partner_discount'];
+		$sales_rep_sql = $sales_rep_id ? "'" . $sales_rep_id . "'" : 'NULL';
+		$changed_sql = "partner_id <> VALUES(partner_id)
+			OR delivery_place_id <> VALUES(delivery_place_id)
+			OR NOT (sales_rep_id <=> VALUES(sales_rep_id))
+			OR partner_discount <> VALUES(partner_discount)";
 
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "customer_qiqo_authorization`
 			SET customer_id = '" . (int)$customer_id . "',
 				partner_id = '" . $partner_id . "',
 				delivery_place_id = '" . $delivery_place_id . "',
-				sales_rep_id = " . ($sales_rep_id ? "'" . $sales_rep_id . "'" : "NULL") . ",
+				sales_rep_id = " . $sales_rep_sql . ",
 				partner_discount = '" . $partner_discount . "',
 				approved_by_user_id = '" . (int)$approved_by_user_id . "',
 				approved_at = NOW(),
 				date_modified = NOW()
 			ON DUPLICATE KEY UPDATE
+				approved_by_user_id = IF(" . $changed_sql . ", VALUES(approved_by_user_id), approved_by_user_id),
+				approved_at = IF(" . $changed_sql . ", NOW(), approved_at),
+				date_modified = IF(" . $changed_sql . ", NOW(), date_modified),
 				partner_id = VALUES(partner_id),
 				delivery_place_id = VALUES(delivery_place_id),
 				sales_rep_id = VALUES(sales_rep_id),
-				partner_discount = VALUES(partner_discount),
-				approved_by_user_id = VALUES(approved_by_user_id),
-				approved_at = NOW(),
-				date_modified = NOW()");
+				partner_discount = VALUES(partner_discount)");
+
+		return (bool)$this->db->countAffected();
 	}
 
-	public function syncCustomerAddressFromDeliveryPlace($customer_id, $delivery_place_id, $partner_name = '') {
+	public function deleteCustomerQiqoAuthorization($customer_id) {
 		$this->ensureQiqoAuthorizationTables();
+		$customer_id = (int)$customer_id;
+		$lock_name = 'qiqo_auth_' . sha1(DB_DATABASE . ':' . DB_PREFIX . $customer_id);
+
+		if (!$this->acquireQiqoAuthorizationLock($lock_name)) {
+			return null;
+		}
+
+		try {
+			$this->db->query("START TRANSACTION");
+			$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_qiqo_authorization`
+				WHERE customer_id = '" . $customer_id . "'");
+			$changed = (bool)$this->db->countAffected();
+			$this->db->query("COMMIT");
+
+			return $changed;
+		} catch (\Exception $e) {
+			$this->db->query("ROLLBACK");
+
+			throw $e;
+		} finally {
+			$this->releaseQiqoAuthorizationLock($lock_name);
+		}
+	}
+
+	public function hasPendingCustomerApproval($customer_id, $lock_row = false) {
+		$query = $this->db->query("SELECT customer_approval_id
+			FROM `" . DB_PREFIX . "customer_approval`
+			WHERE customer_id = '" . (int)$customer_id . "'
+			  AND `type` = 'customer'
+			LIMIT 1" . ($lock_row ? " FOR UPDATE" : ""));
+
+		return (bool)$query->num_rows;
+	}
+
+	public function syncCustomerAddressFromDeliveryPlace($customer_id, $delivery_place_id, $partner_name = '', $ensure_tables = true) {
+		if ($ensure_tables) {
+			$this->ensureQiqoAuthorizationTables();
+		}
 
 		$customer_query = $this->db->query("SELECT firstname, lastname, address_id
 			FROM `" . DB_PREFIX . "customer`
@@ -191,6 +510,11 @@ class ModelCustomerCustomerApproval extends Model {
 
 		$address_1 = !empty($place['address']) ? trim((string)$place['address']) : trim((string)$place['name']);
 		$parsed_city = $this->parseCityAndPostcode((string)$place['place']);
+		$postcode_update_sql = '';
+
+		if ($parsed_city['postcode'] !== '') {
+			$postcode_update_sql = ", postcode = '" . $this->db->escape($parsed_city['postcode']) . "'";
+		}
 
 		$country_id = $this->getCroatiaCountryId();
 		$zone_id = (int)$this->config->get('config_zone_id');
@@ -206,19 +530,6 @@ class ModelCustomerCustomerApproval extends Model {
 				LIMIT 1");
 
 			if ($default_address_query->num_rows) {
-				$this->db->query("UPDATE `" . DB_PREFIX . "address`
-					SET firstname = '" . $this->db->escape($customer['firstname']) . "',
-						lastname = '" . $this->db->escape($customer['lastname']) . "',
-						company = '" . $this->db->escape($company) . "',
-						address_1 = '" . $this->db->escape($address_1) . "',
-						address_2 = '',
-						city = '" . $this->db->escape($parsed_city['city']) . "',
-						postcode = '" . $this->db->escape($parsed_city['postcode']) . "',
-						country_id = '" . (int)$country_id . "',
-						zone_id = '" . (int)$zone_id . "',
-						custom_field = '[]'
-					WHERE address_id = '" . $default_address_id . "'
-					  AND customer_id = '" . (int)$customer_id . "'");
 				$address_id = $default_address_id;
 			}
 		}
@@ -257,16 +568,8 @@ class ModelCustomerCustomerApproval extends Model {
 			$address_id = (int)$this->db->getLastId();
 		} else {
 			$this->db->query("UPDATE `" . DB_PREFIX . "address`
-				SET firstname = '" . $this->db->escape($customer['firstname']) . "',
-					lastname = '" . $this->db->escape($customer['lastname']) . "',
-					company = '" . $this->db->escape($company) . "',
-					address_1 = '" . $this->db->escape($address_1) . "',
-					address_2 = '',
-					city = '" . $this->db->escape($parsed_city['city']) . "',
-					postcode = '" . $this->db->escape($parsed_city['postcode']) . "',
-					country_id = '" . (int)$country_id . "',
-					zone_id = '" . (int)$zone_id . "',
-					custom_field = '[]'
+				SET address_1 = '" . $this->db->escape($address_1) . "',
+					city = '" . $this->db->escape($parsed_city['city']) . "'" . $postcode_update_sql . "
 				WHERE address_id = '" . (int)$address_id . "'
 				  AND customer_id = '" . (int)$customer_id . "'");
 		}
@@ -280,8 +583,10 @@ class ModelCustomerCustomerApproval extends Model {
 		return (bool)$address_id;
 	}
 
-	public function getCustomerQiqoAuthorization($customer_id) {
-		$this->ensureQiqoAuthorizationTables();
+	public function getCustomerQiqoAuthorization($customer_id, $ensure_tables = true, $lock_row = false) {
+		if ($ensure_tables) {
+			$this->ensureQiqoAuthorizationTables();
+		}
 
 		$query = $this->db->query("SELECT cqa.*, 
 				qp.name AS partner_name,
@@ -300,9 +605,30 @@ class ModelCustomerCustomerApproval extends Model {
 			LEFT JOIN `" . DB_PREFIX . "qiqo_sales_rep` qsr ON (cqa.sales_rep_id = qsr.sales_rep_id)
 			LEFT JOIN `" . DB_PREFIX . "user` u ON (cqa.approved_by_user_id = u.user_id)
 			WHERE cqa.customer_id = '" . (int)$customer_id . "'
-			LIMIT 1");
+			LIMIT 1" . ($lock_row ? " FOR UPDATE" : ""));
 
 		return $query->row;
+	}
+
+	private function isQiqoAuthorizationChanged($current, $data) {
+		if (!$current) {
+			return true;
+		}
+
+		return (int)$current['partner_id'] !== (int)$data['partner_id']
+			|| (int)$current['delivery_place_id'] !== (int)$data['delivery_place_id']
+			|| (int)$current['sales_rep_id'] !== (int)$data['sales_rep_id']
+			|| abs((float)$current['partner_discount'] - (float)$data['partner_discount']) >= 0.00005;
+	}
+
+	private function acquireQiqoAuthorizationLock($lock_name) {
+		$query = $this->db->query("SELECT GET_LOCK('" . $this->db->escape($lock_name) . "', 5) AS lock_acquired");
+
+		return isset($query->row['lock_acquired']) && (int)$query->row['lock_acquired'] === 1;
+	}
+
+	private function releaseQiqoAuthorizationLock($lock_name) {
+		$this->db->query("SELECT RELEASE_LOCK('" . $this->db->escape($lock_name) . "')");
 	}
 
 	private function ensureQiqoAuthorizationTables() {

@@ -38,7 +38,9 @@
         {% endif %}
 
         <a class="img-overlay" href="{{ product.href }}"></a>
-        <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="var quantityInput=$(this).closest('.single-product').find('.input-number').first(); cart.add('{{ product.product_id }}', quantityInput.length && window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : '{{ product.minimum }}');">{{ button_cart }}</a></div>
+        {% if is_single_article %}
+            <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="var quantityInput=$(this).closest('.single-product').find('.input-number').first(); cart.add('{{ product.product_id }}', quantityInput.length && window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : '{{ product.minimum }}');">{{ button_cart }}</a></div>
+        {% endif %}
         {% if is_single_article %}
             <div class="icons-wrapper">
                 <a class="icon is_wishlist" onclick="wishlist.add('{{ product.product_id }}');"><span class="icon-heart"></span></a>

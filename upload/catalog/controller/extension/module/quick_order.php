@@ -283,7 +283,7 @@ class ControllerExtensionModuleQuickOrder extends Controller {
             $qty = ceil(($qty / $step) - 0.0000001) * $step;
         }
 
-        $this->cart->add($product_id, $qty);
+		$this->cart->add($product_id, $qty, array(), 0, true);
         $this->load->language('checkout/cart');
         $response = ['success'=>true,'message'=>$this->language->get('text_success'), 'quantity' => $qty];
         if (abs($qty - $requested_qty) > 0.00001) {
@@ -348,8 +348,12 @@ class ControllerExtensionModuleQuickOrder extends Controller {
                 continue;
             }
 
-            $sku_quantities[$sku] = $qty;
-            $base_unit_prices[$sku] = $base_unit;
+            if (!isset($sku_quantities[$sku])) {
+                $sku_quantities[$sku] = 0.0;
+                $base_unit_prices[$sku] = $base_unit;
+            }
+
+            $sku_quantities[$sku] += $qty;
         }
 
         $qiqo_price_map = array();

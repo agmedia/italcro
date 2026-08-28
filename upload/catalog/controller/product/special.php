@@ -10,7 +10,11 @@ class ControllerProductSpecial extends Controller {
 		if (isset($this->request->get['sort'])) {
 			$sort = $this->request->get['sort'];
 		} else {
-			$sort = 'p.price';
+			$sort = 'p.sort_order';
+		}
+
+		if (in_array($sort, ['p.price', 'ps.price'], true)) {
+			$sort = 'p.sort_order';
 		}
 
 		if (isset($this->request->get['order'])) {
@@ -119,7 +123,7 @@ class ControllerProductSpecial extends Controller {
 					$sku_quantities,
 					$base_unit_prices,
 						false,
-						true
+						false
 				);
 			}
 
@@ -140,21 +144,24 @@ class ControllerProductSpecial extends Controller {
 			$pak = isset($result['pak']) ? (int)$result['pak'] : 0;
 			$list_min = $this->qiqoMinimumStep($result['cent'], $pak, $minimum);
 
-			$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
-			$display_special_unit = (!is_null($result['special']) && (float)$result['special'] > 0) ? (float)$result['special'] : 0.0;
+				$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
+					$display_special_unit = 0.0;
+					$has_display_special = false;
 			$qiqo_discount_percent = 0.0;
 			$qiqo_action = ($sku_key !== '' && !empty($qiqo_action_article_map[$sku_key]))
 				|| (isset($result['mpn_count']) && (int)$result['mpn_count'] > 1 && !empty($result['mpn']) && !empty($qiqo_action_mpn_map[(string)$result['mpn']]));
 
-			if ($is_single_article && $sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
-				$pricing = $qiqo_price_map[$sku_key];
+				if ($is_single_article && $sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
+					$pricing = $qiqo_price_map[$sku_key];
+					$has_display_special = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false;
 
 				if (isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false) {
 					$display_price_unit = (float)$pricing['old_unit_price'];
 					$display_special_unit = (float)$pricing['final_unit_price'];
-				} else {
-					$display_price_unit = (float)$pricing['base_unit_price'];
-				}
+					} else {
+						$display_price_unit = (float)$pricing['base_unit_price'];
+						$display_special_unit = 0.0;
+					}
 
 				$qiqo_discount_percent = isset($pricing['discount_percent']) ? (float)$pricing['discount_percent'] : 0.0;
 			}
@@ -181,7 +188,7 @@ class ControllerProductSpecial extends Controller {
 				 $priceeur  ='';
 			}
 
-			if ($display_special_unit > 0) {
+				if ($has_display_special) {
 				$special = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 				 if($this->session->data['currency']=='HRK'){
@@ -217,11 +224,12 @@ class ControllerProductSpecial extends Controller {
 
 // default: nema "stare" cijene
             $preview_price_alt = false;
+			$preview_price_basis = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$result['cent'])) === 'C100' ? 100.0 : $list_min;
 
-// NOVO: ako ima special (>0) onda je novo = special, staro = price
-            if ($special_raw > 0) {
-                $preview_price_raw = $special_raw * $list_min;
-                $preview_price_alt_raw = $price_raw * $list_min;
+			// A 100% rebate is a valid zero-price special, so use the explicit flag.
+			if ($has_display_special) {
+                $preview_price_raw = $special_raw * $preview_price_basis;
+                $preview_price_alt_raw = $price_raw * $preview_price_basis;
 
                 $preview_price_alt = $this->currency->format(
                     $this->tax->calculate(
@@ -233,11 +241,11 @@ class ControllerProductSpecial extends Controller {
                 );
             } else {
                 // nema akcije: novo = regular
-                $preview_price_raw = $price_raw * $list_min;
+                $preview_price_raw = $price_raw * $preview_price_basis;
             }
 
 // NOVA (glavna) preview cijena
-            $preview_price = ($preview_price_raw > 0) ? $this->currency->format(
+			$preview_price = ($has_display_special || $preview_price_raw > 0) ? $this->currency->format(
                 $this->tax->calculate(
                     $preview_price_raw,
                     $result['tax_class_id'],
@@ -301,18 +309,6 @@ class ControllerProductSpecial extends Controller {
 			'text'  => $this->language->get('text_name_desc'),
 			'value' => 'pd.name-DESC',
 			'href'  => $this->url->link('product/special', 'sort=pd.name&order=DESC' . $url)
-		);
-
-		$data['sorts'][] = array(
-			'text'  => $this->language->get('text_price_asc'),
-			'value' => 'ps.price-ASC',
-			'href'  => $this->url->link('product/special', 'sort=ps.price&order=ASC' . $url)
-		);
-
-		$data['sorts'][] = array(
-			'text'  => $this->language->get('text_price_desc'),
-			'value' => 'ps.price-DESC',
-			'href'  => $this->url->link('product/special', 'sort=ps.price&order=DESC' . $url)
 		);
 
 		if ($this->config->get('config_review_status')) {

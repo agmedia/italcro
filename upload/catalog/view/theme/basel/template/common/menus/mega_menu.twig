@@ -5,6 +5,7 @@
 {% set target 		= '' %}
 {% set submenu_bg_img = '' %}
 {% set caret 		= '' %}
+{% set disabled_leaf = (not row.link) and (not row.submenu) %}
 
 {% if row.icon_font %}
 {% set icon_font = '<i class="icon '~row.icon_font~'"></i>' %}
@@ -44,8 +45,8 @@ background-position:{{ row.position }};
 
 <!-- Top level items -->
 <li class="{{ class }}">
-<a {% if row.link %} href="{{ row.link }}" {% endif %} class="{{ class_link }} {{ target }}">
-{{ icon_font }}<span class="top">{{ row.name[lang_id] }}</span>{{ row.description }}{{ caret }}
+<a {% if row.link %}href="{{ row.link }}"{% elseif disabled_leaf %}aria-disabled="true" tabindex="-1" title="Sadržaj u pripremi" onclick="return false;"{% endif %} class="{{ class_link }} {{ target }}{% if disabled_leaf %} menu-link-disabled{% endif %}">
+{{ icon_font }}<span class="top">{{ row.name[lang_id] }}</span>{% if disabled_leaf %}<span class="sr-only"> (sadržaj u pripremi)</span>{% endif %}{{ row.description }}{{ caret }}
 </a>
 {% if row.submenu is iterable and row.submenu %}
 <!-- Sub Menu items -->
@@ -113,11 +114,15 @@ background-position:{{ row.position }};
 <span class="badge new_badge"><i>{{ basel_text_new }}</i></span>
 {% endif %}
 <a class="img-overlay" href="{{ submenu.product.link }}"></a>
+{% if submenu.product.is_single_article is not defined or submenu.product.is_single_article %}
 <div class="btn-center"><a class="btn btn-light-outline btn-thin btn-tiny" onclick="cart.add('{{ submenu.product.id }}', '{{ submenu.product.minimum }}');">{{ button_cart }}</a></div>
+{% endif %}
 <div class="icons-wrapper">
+{% if submenu.product.is_single_article is not defined or submenu.product.is_single_article %}
 <a class="icon is-cart" data-toggle="tooltip" data-placement="left" data-title="{{ button_cart }}" onclick="cart.add('{{ submenu.product.id }}', '{{ submenu.product.minimum }}');"><span class="global-cart"></span></a>
 <a class="icon is_wishlist" data-toggle="tooltip" data-placement="left" data-title="{{ button_wishlist }}" onclick="wishlist.add('{{ submenu.product.id }}');"><span class="icon-heart"></span></a>
 <a class="icon is_compare" onclick="compare.add('{{ submenu.product.id }}');" data-toggle="tooltip" data-placement="left" data-title="{{ button_compare }}"><span class="icon-refresh"></span></a>
+{% endif %}
 <a class="icon is_quickview hidden-xs" onclick="quickview('{{ submenu.product.id }}');" data-toggle="tooltip" data-placement="left" data-title="{{ basel_button_quickview }}"><span class="icon-magnifier-add"></span></a>
 </div>
 </div>
@@ -142,7 +147,11 @@ background-position:{{ row.position }};
 {% endif %}
 </div>
 {% endif %}
+{% if submenu.product.is_single_article is not defined or submenu.product.is_single_article %}
 <a class="btn btn-outline btn-tiny catalog_hide" onclick="cart.add('{{ submenu.product.id }}', '{{ submenu.product.minimum }}');"><span class="global-cart"></span>{{ button_cart }}</a>
+{% else %}
+<a class="btn btn-outline btn-tiny" href="{{ submenu.product.link }}">Pregled artikala</a>
+{% endif %}
 </div>
 </div>
 {% if submenu.product.sale_end_date and countdown_status %}

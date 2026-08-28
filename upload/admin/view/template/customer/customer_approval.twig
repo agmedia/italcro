@@ -138,6 +138,10 @@ var approveCustomerId = 0;
 
 function resetApprovalModal() {
 	$('#auth-partner-id').val('');
+	clearApprovalPartnerDetails();
+}
+
+function clearApprovalPartnerDetails() {
 	$('#auth-partner-name').val('');
 	$('#auth-partner-oib').val('');
 	$('#auth-partner-discount').val('');
@@ -204,9 +208,12 @@ $('#customer-approval').on('click', '.btn-approve', function(e) {
 $(document).on('click', '#button-load-partner', function() {
 	var partnerId = $('#auth-partner-id').val();
 	if (!partnerId) {
+		clearApprovalPartnerDetails();
 		alert('Upišite šifru partnera.');
 		return;
 	}
+
+	clearApprovalPartnerDetails();
 
 	$.ajax({
 		url: 'index.php?route=customer/customer_approval/partnerInfo&user_token={{ user_token }}&partner_id=' + encodeURIComponent(partnerId),
@@ -217,7 +224,7 @@ $(document).on('click', '#button-load-partner', function() {
 				return;
 			}
 
-			$('#auth-partner-name').val(json.partner.name + ' (#' + json.partner.partner_id + ')');
+			$('#auth-partner-name').val(json.partner.name || '');
 			$('#auth-partner-oib').val(json.partner.oib || '');
 			$('#auth-partner-discount').val(json.partner.base_discount);
 
@@ -245,10 +252,9 @@ $(document).on('click', '#button-confirm-approve', function() {
 	var partnerId = $('#auth-partner-id').val();
 	var deliveryPlaceId = $('#auth-delivery-place').val();
 	var salesRepId = $('#auth-sales-rep').val();
-	var partnerDiscount = $('#auth-partner-discount').val();
 
-	if (!partnerId || !deliveryPlaceId) {
-		alert('Partner i mjesto isporuke su obavezni.');
+	if (!partnerId || !deliveryPlaceId || !salesRepId) {
+		alert('Partner, mjesto isporuke i aktivni komercijalist su obavezni.');
 		return;
 	}
 
@@ -259,8 +265,7 @@ $(document).on('click', '#button-confirm-approve', function() {
 		data: {
 			partner_id: partnerId,
 			delivery_place_id: deliveryPlaceId,
-			sales_rep_id: salesRepId,
-			partner_discount: partnerDiscount
+			sales_rep_id: salesRepId
 		},
 		success: function(json) {
 			$('.alert-dismissible').remove();
@@ -391,12 +396,12 @@ $('.date').datetimepicker({
         </div>
 
         <div class="form-group">
-          <label for="auth-partner-oib">OIB</label>
+          <label for="auth-partner-oib">QIQO OIB</label>
           <input type="text" id="auth-partner-oib" class="form-control" readonly>
         </div>
 
         <div class="form-group">
-          <label for="auth-partner-discount">Rabat (%)</label>
+          <label for="auth-partner-discount">Rabat partnera (%)</label>
           <input type="text" id="auth-partner-discount" class="form-control" readonly>
         </div>
 

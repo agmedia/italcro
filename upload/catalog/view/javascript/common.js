@@ -137,7 +137,7 @@ $(document).ready(function() {
 
 // Cart add remove functions
 var cart = {
-	'add': function(product_id, quantity, confirm_duplicate) {
+	'add': function(product_id, quantity, confirm_duplicate, qiqo_grouped_variant) {
 		quantity = (typeof(quantity) != 'undefined' ? quantity : 1);
 
 		$.ajax({
@@ -146,7 +146,8 @@ var cart = {
 			data: {
 				product_id: product_id,
 				quantity: quantity,
-				confirm_duplicate: confirm_duplicate ? 1 : 0
+				confirm_duplicate: confirm_duplicate ? 1 : 0,
+				qiqo_grouped_variant: qiqo_grouped_variant ? 1 : 0
 			},
 			dataType: 'json',
 			beforeSend: function() {
@@ -158,9 +159,15 @@ var cart = {
 			success: function(json) {
 				$('.alert-dismissible, .text-danger').remove();
 
+				if (json['error'] && json['error']['warning']) {
+					$('#content').parent().before('<div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> ' + json['error']['warning'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$('html, body').animate({ scrollTop: 0 }, 'slow');
+					return;
+				}
+
 				if (json['confirm_duplicate']) {
 					if (confirm(json['confirm_duplicate']['message'] || json['confirm_duplicate'])) {
-						cart.add(product_id, quantity, true);
+						cart.add(product_id, quantity, true, qiqo_grouped_variant);
 					}
 
 					return;

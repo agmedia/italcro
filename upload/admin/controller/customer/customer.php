@@ -76,9 +76,15 @@ class ControllerCustomerCustomer extends Controller {
 		$this->load->model('customer/customer');
 
 		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {
-			$this->applyQiqoPartnerDetailsToPost();
 			$this->model_customer_customer->editCustomer($this->request->get['customer_id'], $this->request->post);
-			$this->saveQiqoAuthorizationFromPost((int)$this->request->get['customer_id']);
+			$qiqo_result = $this->saveQiqoAuthorizationFromPost((int)$this->request->get['customer_id']);
+
+			if (!$qiqo_result['success']) {
+				$this->error['warning'] = $qiqo_result['error'];
+				$this->getForm();
+
+				return;
+			}
 
 			$this->session->data['success'] = $this->language->get('text_success');
 
@@ -728,17 +734,9 @@ class ControllerCustomerCustomer extends Controller {
 			$data['qiqo_partner_id'] = !empty($data['qiqo_authorization']) ? (int)$data['qiqo_authorization']['partner_id'] : 0;
 		}
 
-		if (isset($this->request->post['qiqo_partner_name'])) {
-			$data['qiqo_partner_name'] = $this->request->post['qiqo_partner_name'];
-		} else {
-			$data['qiqo_partner_name'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_name'] : '';
-		}
-
-		if (isset($this->request->post['qiqo_partner_discount'])) {
-			$data['qiqo_partner_discount'] = $this->request->post['qiqo_partner_discount'];
-		} else {
-			$data['qiqo_partner_discount'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_discount'] : '';
-		}
+		$data['qiqo_partner_name'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_name'] : '';
+		$data['qiqo_partner_oib'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_oib'] : '';
+		$data['qiqo_partner_discount'] = !empty($data['qiqo_authorization']) ? (string)$data['qiqo_authorization']['partner_discount'] : '';
 
 		if (isset($this->request->post['qiqo_delivery_place_id'])) {
 			$data['qiqo_delivery_place_id'] = (int)$this->request->post['qiqo_delivery_place_id'];
@@ -759,7 +757,22 @@ class ControllerCustomerCustomer extends Controller {
 			$this->load->model('customer/customer_approval');
 
 			if ($data['qiqo_partner_id']) {
-				$data['qiqo_delivery_places'] = $this->model_customer_customer_approval->getQiqoDeliveryPlacesByPartnerId($data['qiqo_partner_id']);
+				if ($this->request->server['REQUEST_METHOD'] == 'POST') {
+					$qiqo_partner = $this->model_customer_customer_approval->getQiqoPartnerById($data['qiqo_partner_id']);
+
+					if ($qiqo_partner) {
+						$data['qiqo_partner_name'] = (string)$qiqo_partner['name'];
+						$data['qiqo_partner_oib'] = (string)$qiqo_partner['oib'];
+						$data['qiqo_partner_discount'] = (string)$qiqo_partner['base_discount'];
+						$data['qiqo_delivery_places'] = $this->model_customer_customer_approval->getQiqoDeliveryPlacesByPartnerId($data['qiqo_partner_id']);
+					} else {
+						$data['qiqo_partner_name'] = '';
+						$data['qiqo_partner_oib'] = '';
+						$data['qiqo_partner_discount'] = '';
+					}
+				} else {
+					$data['qiqo_delivery_places'] = $this->model_customer_customer_approval->getQiqoDeliveryPlacesByPartnerId($data['qiqo_partner_id']);
+				}
 			}
 
 			$data['qiqo_sales_reps'] = $this->model_customer_customer_approval->getQiqoSalesReps();
@@ -1101,34 +1114,17 @@ class ControllerCustomerCustomer extends Controller {
 		$qiqo_delivery_place_id = isset($this->request->post['qiqo_delivery_place_id']) ? (int)$this->request->post['qiqo_delivery_place_id'] : 0;
 		$qiqo_sales_rep_id = isset($this->request->post['qiqo_sales_rep_id']) ? (int)$this->request->post['qiqo_sales_rep_id'] : 0;
 
-		if (($qiqo_partner_id && !$qiqo_delivery_place_id) || (!$qiqo_partner_id && $qiqo_delivery_place_id)) {
-			$this->error['warning'] = 'Za QIQO autorizaciju treba odabrati i partnera i mjesto isporuke.';
-		} elseif ($qiqo_partner_id && $qiqo_delivery_place_id) {
+		if ($qiqo_partner_id || $qiqo_delivery_place_id || $qiqo_sales_rep_id) {
 			$this->load->model('customer/customer_approval');
 
-			$partner = $this->model_customer_customer_approval->getQiqoPartnerById($qiqo_partner_id);
+			$selection = $this->model_customer_customer_approval->validateQiqoAuthorizationSelection(
+				$qiqo_partner_id,
+				$qiqo_delivery_place_id,
+				$qiqo_sales_rep_id
+			);
 
-			if (!$partner) {
-				$this->error['warning'] = 'Odabrani partner ne postoji u lokalnom cacheu.';
-			} else {
-				$places = $this->model_customer_customer_approval->getQiqoDeliveryPlacesByPartnerId($qiqo_partner_id);
-				$allowed_place_ids = array_map('intval', array_column($places, 'delivery_place_id'));
-
-				if (!in_array($qiqo_delivery_place_id, $allowed_place_ids, true)) {
-					$this->error['warning'] = 'Odabrano mjesto isporuke ne pripada partneru.';
-				}
-			}
-
-			if (empty($this->error['warning'])) {
-				$reps = $this->model_customer_customer_approval->getQiqoSalesReps();
-
-				if ($reps) {
-					$allowed_rep_ids = array_map('intval', array_column($reps, 'sales_rep_id'));
-
-					if (!$qiqo_sales_rep_id || !in_array($qiqo_sales_rep_id, $allowed_rep_ids, true)) {
-						$this->error['warning'] = 'Odabrani komercijalist nije valjan.';
-					}
-				}
+			if (!$selection['valid']) {
+				$this->error['warning'] = $selection['error'];
 			}
 		}
 
@@ -1250,75 +1246,6 @@ class ControllerCustomerCustomer extends Controller {
 		return !$this->error;
 	}
 
-	private function applyQiqoPartnerDetailsToPost() {
-		$partner_id = isset($this->request->post['qiqo_partner_id']) ? (int)$this->request->post['qiqo_partner_id'] : 0;
-
-		if (!$partner_id) {
-			return;
-		}
-
-		$this->load->model('customer/customer_approval');
-
-		$partner = $this->model_customer_customer_approval->getQiqoPartnerById($partner_id);
-
-		if (!$partner) {
-			return;
-		}
-
-		$this->setAccountCustomFieldPostValue(array('Naziv tvrtke', 'Tvrtka', 'Firma'), (string)$partner['name']);
-		$this->setAccountCustomFieldPostValue(array('OIB'), (string)$partner['oib']);
-	}
-
-	private function setAccountCustomFieldPostValue($field_names, $value) {
-		$value = trim((string)$value);
-
-		if ($value === '') {
-			return;
-		}
-
-		$this->load->model('customer/custom_field');
-
-		$filter_data = array(
-			'filter_customer_group_id' => isset($this->request->post['customer_group_id']) ? (int)$this->request->post['customer_group_id'] : 0
-		);
-
-		$custom_fields = $this->model_customer_custom_field->getCustomFields($filter_data);
-		$normalized_names = array();
-
-		foreach ($field_names as $field_name) {
-			$normalized_names[] = $this->normalizeCustomFieldName($field_name);
-		}
-
-		foreach ($custom_fields as $custom_field) {
-			if ($custom_field['location'] !== 'account') {
-				continue;
-			}
-
-			if (!in_array($this->normalizeCustomFieldName($custom_field['name']), $normalized_names, true)) {
-				continue;
-			}
-
-			if (!isset($this->request->post['custom_field']) || !is_array($this->request->post['custom_field'])) {
-				$this->request->post['custom_field'] = array();
-			}
-
-			$this->request->post['custom_field'][(int)$custom_field['custom_field_id']] = $value;
-		}
-	}
-
-	private function normalizeCustomFieldName($value) {
-		$value = trim((string)$value);
-		$value = strtr($value, array(
-			'Č' => 'C', 'Ć' => 'C', 'Đ' => 'D', 'Š' => 'S', 'Ž' => 'Z',
-			'č' => 'c', 'ć' => 'c', 'đ' => 'd', 'š' => 's', 'ž' => 'z'
-		));
-		$value = function_exists('utf8_strtolower') ? utf8_strtolower($value) : strtolower($value);
-		$value = preg_replace('/[^a-z0-9]+/u', ' ', $value);
-		$value = preg_replace('/\s+/u', ' ', $value);
-
-		return trim($value);
-	}
-
 	protected function validateDelete() {
 		if (!$this->user->hasPermission('modify', 'customer/customer')) {
 			$this->error['warning'] = $this->language->get('error_permission');
@@ -1340,49 +1267,21 @@ class ControllerCustomerCustomer extends Controller {
 		$delivery_place_id = isset($this->request->post['qiqo_delivery_place_id']) ? (int)$this->request->post['qiqo_delivery_place_id'] : 0;
 		$sales_rep_id = isset($this->request->post['qiqo_sales_rep_id']) ? (int)$this->request->post['qiqo_sales_rep_id'] : 0;
 
-		if (!$partner_id || !$delivery_place_id) {
-			return;
+		if (!$partner_id && !$delivery_place_id && !$sales_rep_id) {
+			return array(
+				'success' => true,
+				'changed' => false,
+				'error' => ''
+			);
 		}
 
 		$this->load->model('customer/customer_approval');
 
-		$partner = $this->model_customer_customer_approval->getQiqoPartnerById($partner_id);
-
-		if (!$partner) {
-			return;
-		}
-
-		$places = $this->model_customer_customer_approval->getQiqoDeliveryPlacesByPartnerId($partner_id);
-		$allowed_place_ids = array_map('intval', array_column($places, 'delivery_place_id'));
-
-		if (!in_array($delivery_place_id, $allowed_place_ids, true)) {
-			return;
-		}
-
-		$reps = $this->model_customer_customer_approval->getQiqoSalesReps();
-
-		if ($reps) {
-			$allowed_rep_ids = array_map('intval', array_column($reps, 'sales_rep_id'));
-
-			if (!$sales_rep_id || !in_array($sales_rep_id, $allowed_rep_ids, true)) {
-				$sales_rep_id = 0;
-			}
-		}
-
-		$partner_discount = (float)$partner['base_discount'];
-
-		$this->model_customer_customer_approval->saveCustomerQiqoAuthorization($customer_id, array(
+		return $this->model_customer_customer_approval->applyCustomerQiqoAuthorization($customer_id, array(
 			'partner_id' => $partner_id,
 			'delivery_place_id' => $delivery_place_id,
-			'sales_rep_id' => $sales_rep_id,
-			'partner_discount' => $partner_discount
+			'sales_rep_id' => $sales_rep_id
 		), (int)$this->user->getId());
-
-		$this->model_customer_customer_approval->syncCustomerAddressFromDeliveryPlace(
-			$customer_id,
-			$delivery_place_id,
-			$partner['name']
-		);
 	}
 
 	public function login() {
@@ -1534,7 +1433,7 @@ class ControllerCustomerCustomer extends Controller {
 
 		$json = array();
 
-		if (!$this->user->hasPermission('access', 'customer/customer')) {
+		if (!$this->user->hasPermission('modify', 'customer/customer')) {
 			$json['error'] = $this->language->get('error_permission');
 		} else {
 			$partner_id = isset($this->request->get['partner_id']) ? (int)$this->request->get['partner_id'] : 0;
@@ -1553,6 +1452,37 @@ class ControllerCustomerCustomer extends Controller {
 				);
 				$json['delivery_places'] = $this->model_customer_customer_approval->getQiqoDeliveryPlacesByPartnerId($partner_id);
 				$json['sales_reps'] = $this->model_customer_customer_approval->getQiqoSalesReps();
+			}
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
+	public function revokeQiqoAuthorization() {
+		$this->load->language('customer/customer');
+
+		$json = array();
+		$customer_id = isset($this->request->get['customer_id']) ? (int)$this->request->get['customer_id'] : 0;
+
+		if ($this->request->server['REQUEST_METHOD'] != 'POST') {
+			$json['error'] = 'QIQO autorizaciju moguće je ukloniti samo POST zahtjevom.';
+		} elseif (!$this->user->hasPermission('modify', 'customer/customer')) {
+			$json['error'] = $this->language->get('error_permission');
+		} else {
+			$this->load->model('customer/customer');
+
+			if (!$customer_id || !$this->model_customer_customer->getCustomer($customer_id)) {
+				$json['error'] = 'Kupac ne postoji.';
+			} else {
+				$this->load->model('customer/customer_approval');
+				$deleted = $this->model_customer_customer_approval->deleteCustomerQiqoAuthorization($customer_id);
+
+				if ($deleted === null) {
+					$json['error'] = 'Autorizaciju kupca trenutačno mijenja drugi proces. Pokušajte ponovno.';
+				} else {
+					$json['success'] = 'QIQO autorizacija je uklonjena. Adrese kupca nisu automatski mijenjane.';
+				}
 			}
 		}
 

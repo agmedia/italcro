@@ -39,7 +39,7 @@
     <span class="review_link">(<a class="hover_uline to_reviews" href="{{ product_href }}">{{ reviews }}</a>)</span>
 	{% endif %}
 
-    {% if price %}
+	    {% if price %}
       <ul class="list-unstyled price">
         {% if not special %}
         <li><span class="live-price">{{ price }}<span></li>
@@ -56,7 +56,10 @@
         </p>
         {% endif %}
       
-      {% endif %} <!-- if price ends -->
+	      {% endif %} <!-- if price ends -->
+	      {% if qiqo_discount_percent is defined and qiqo_discount_percent > 0 %}
+	      <p class="info"><b>Rabat:</b> -{{ qiqo_discount_percent|number_format(0, '.', '') }}%</p>
+	      {% endif %}
       
       
       {% if meta_description_status and meta_description %}
@@ -246,7 +249,8 @@
             {% endif %}
 			
                         
-       <div class="form-group buy catalog_hide">
+	       {% if is_single_article %}
+	       <div class="form-group buy catalog_hide">
 
           <input step="1" min="{{ minimum }}" type="number" name="quantity" value="{{ minimum }}" class="input-quantity" id="input-quantity" class="form-control" />
           <input type="hidden" name="product_id" value="{{ product_id }}" />
@@ -255,7 +259,12 @@
 
           <a href="{{ product_href }}" class="btn btn-outline details">{{ basel_text_view_details }}</a>
           
-            </div>
+	       </div>
+	       {% else %}
+	       <div class="form-group buy catalog_hide">
+	         <a href="{{ product_href }}" class="btn btn-primary details">{{ basel_text_view_details }}</a>
+	       </div>
+	       {% endif %}
             {% if minimum > 1 %}
             <div class="alert alert-sm alert-info"><i class="fa fa-info-circle"></i> {{ text_minimum }}</div>
             {% endif %}
@@ -335,7 +344,7 @@ window.open($(this).attr('href'));
 });
 </script>
 
-{% if basel_price_update %}
+{% if basel_price_update and is_single_article %}
 <script src="index.php?route=extension/basel/live_options/js&product_id={{ product_id }}"></script>
 {% endif %}
 

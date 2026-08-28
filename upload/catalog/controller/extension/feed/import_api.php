@@ -2,6 +2,13 @@
 //set_time_limit(0);
 
 class ControllerExtensionFeedImportApi extends Controller {
+	const SIGNATURE_TTL = 120;
+	const MAX_FEED_BYTES = 33554432;
+	const MAX_IMAGE_BYTES = 10485760;
+	const MAX_IMAGE_PIXELS = 40000000;
+	const FEED_TIMEOUT = 60;
+	const IMAGE_TIMEOUT = 20;
+
 	private $settings = array();
 	private $importer;
 	private $languages;
@@ -250,7 +257,7 @@ class ControllerExtensionFeedImportApi extends Controller {
 		
 		return $oc_product;
 	}
-	
+
 	public function generateProductDescriptions($name, $description, $languages){
 		$product_description = array();
 		foreach($languages as $language_id){
@@ -343,110 +350,208 @@ class ControllerExtensionFeedImportApi extends Controller {
 		return $laguanges;
 	}
 	
-	function URL_exists($uri){
-		if(@getimagesize($uri)){
-			return true;
-		} else {
-			return false;
-		}
-	}
-	
-	function getImagePath($url){
-		$parts = parse_url($url);
-		$name = basename($parts["path"]);
-		$name = str_replace('%20', ' ', $name);
+	protected function getImagePath($url){
+		$url = html_entity_decode(trim((string)$url), ENT_QUOTES, 'UTF-8');
 
-		if(is_file('image/api/' . $name)){
+		if (!$this->isAllowedImportSourceUrl($url)) {
+			$this->log->write('Import API rejected an unsafe remote image URL.');
+
+			return '';
+		}
+
+		try {
+			$image_data = $this->fetchRemoteResource($url, self::MAX_IMAGE_BYTES, self::IMAGE_TIMEOUT, 'image/*');
+		} catch (RuntimeException $e) {
+			$this->log->write('Import API image download failed: ' . $e->getMessage());
+
+			return '';
+		}
+
+		$image_info = @getimagesizefromstring($image_data);
+		$mime = is_array($image_info) && isset($image_info['mime']) ? strtolower($image_info['mime']) : '';
+		$extensions = array(
+			'image/jpeg' => 'jpg',
+			'image/png' => 'png',
+			'image/gif' => 'gif',
+			'image/webp' => 'webp'
+		);
+
+		if (!isset($extensions[$mime]) || empty($image_info[0]) || empty($image_info[1])) {
+			$this->log->write('Import API rejected a remote file that is not a supported raster image.');
+
+			return '';
+		}
+
+		$width = (int)$image_info[0];
+		$height = (int)$image_info[1];
+		if ($width > 12000 || $height > 12000 || $width * $height > self::MAX_IMAGE_PIXELS) {
+			$this->log->write('Import API rejected a remote image with excessive dimensions.');
+
+			return '';
+		}
+
+		$parts = parse_url($url);
+		$source_name = isset($parts['path']) ? rawurldecode(basename($parts['path'])) : '';
+		$stem = pathinfo($source_name, PATHINFO_FILENAME);
+		$stem = preg_replace('/[^A-Za-z0-9_-]+/', '-', $stem);
+		$stem = trim((string)$stem, '-_');
+		$stem = $stem === '' ? 'image' : substr($stem, 0, 80);
+		$name = $stem . '-' . substr(hash('sha256', $url), 0, 16) . '.' . $extensions[$mime];
+		$directory = rtrim(DIR_IMAGE, '/\\') . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR;
+		$target = $directory . $name;
+
+		if (!is_dir($directory) || !is_writable($directory)) {
+			$this->log->write('Import API image directory is unavailable or not writable.');
+
+			return '';
+		}
+
+		if (is_file($target) && filesize($target) > 0) {
 			return 'api/' . $name;
 		}
-		
-	/*	if(!$this->URL_exists($url)){
+
+		$temporary = tempnam($directory, 'import-image-');
+		if ($temporary === false) {
+			$this->log->write('Import API could not allocate a temporary image file.');
+
 			return '';
-		}*/
-		
-		copy($url, 'image/api/' . $name);
+		}
+
+		$written = file_put_contents($temporary, $image_data, LOCK_EX);
+		if ($written !== strlen($image_data) || !@rename($temporary, $target)) {
+			@unlink($temporary);
+			$this->log->write('Import API could not persist a downloaded image.');
+
+			return is_file($target) ? 'api/' . $name : '';
+		}
+
+		@chmod($target, 0644);
 
 		return 'api/' . $name;
 	}
 
 	public function test(){
-		
-		$json = array();
-		
-		$view = isset($this->request->get['id']) ? $this->request->get['id'] : '';
-	
-		$product_links = $this->getProductLinks('test');
-		
-		foreach($product_links as $link){
-			$json[] = $this->importer->getAllData($link, $view);
+		if (!$this->authorizeSignedRequest('test')) {
+			return;
 		}
-		
-		$this->response->addHeader('Content-Type: application/json');
-		$this->response->setOutput(json_encode($json));		
+
+		try {
+			$json = array();
+			$view = isset($this->request->post['view']) ? (string)$this->request->post['view'] : '';
+			$allowed_views = array('view-raw', 'view-split', 'view-grouping', 'view-modified');
+
+			if (!in_array($view, $allowed_views, true)) {
+				throw new RuntimeException('Nepoznat Import API testni prikaz.');
+			}
+
+			$product_links = $this->getProductLinks('test');
+
+			foreach($product_links as $link){
+				$json[] = $this->importer->getAllData($link, $view);
+			}
+
+			$this->sendJson($json);
+		} catch (RuntimeException $e) {
+			$this->log->write('Import API test rejected: ' . $e->getMessage());
+			$this->sendJson(array('error' => $e->getMessage()), 422);
+		} catch (Throwable $e) {
+			$this->log->write('Import API test failed: ' . $e->getMessage());
+			$this->sendJson(array('error' => 'Import API test nije moguće izvršiti.'), 500);
+		}
 	}
-	
-	public function import(){		
-	    $product_links = $this->getProductLinks();
 
-		$products_created = 0;
-		$products_updated = 0;
-		
-		$json['notice'] = '';
-		$json['total'] = count($product_links);
-
-		foreach($product_links as $link){
-			$original_product = $this->importer->getAllData($link);
-			$oc_product = $this->convertToOcProduct($original_product);
-			
-		    $equivalent = $this->settings['unique_equivalent'];
-			if($equivalent == 'name'){
-				$dsc = current($oc_product['product_description']);
-				$unique = $this->request->clean($dsc['name']);
-			} else {
-				$unique = $this->request->clean($original_product[$equivalent]);
-			}
-
-			$unique = is_array($unique) ? current($unique) : $unique;
-			
-			$product_id = $this->getProductId($unique, $this->settings['table_equivalent'], $equivalent);
-			if($product_id){
-				$this->model_module_oc_model->editProduct($product_id, $oc_product);
-				$products_updated++;
-			} else {
-				$product_id = $this->model_module_oc_model->addProduct($oc_product);
-				$products_created++;
-			}
-
-			if(isset($_SERVER["REQUEST_TIME"])){
-				if(microtime(true) - $_SERVER["REQUEST_TIME"] > ini_get('max_execution_time') - 10){
-					$json['notice'] = 'time_out';
-					break;
-				}
-			}
-		    //$product_related[] = $product_id;		
+	public function import(){
+		if (!$this->authorizeSignedRequest('import')) {
+			return;
 		}
-		
-		$this->cache->delete('product');
-		$this->cache->delete('manufacturer');		
-		$this->cache->delete('category');
-		
-		if(isset($this->request->get['from']) && $this->request->get['from'] == 'admin'){
+
+		try {
+			$product_links = $this->getProductLinks();
+			$execution_budget = (int)ini_get('max_execution_time');
+			if ($execution_budget <= 0 || $execution_budget > 100) {
+				$execution_budget = 100;
+			}
+
+			$products_created = 0;
+			$products_updated = 0;
+
+			$json['notice'] = '';
+			$json['total'] = count($product_links);
+
+			foreach($product_links as $link){
+				$original_product = $this->importer->getAllData($link);
+				$oc_product = $this->convertToOcProduct($original_product);
+
+				$equivalent = $this->settings['unique_equivalent'];
+				if($equivalent == 'name'){
+					$dsc = current($oc_product['product_description']);
+					$unique = $this->request->clean($dsc['name']);
+				} else {
+					$unique = $this->request->clean($original_product[$equivalent]);
+				}
+
+				$unique = is_array($unique) ? current($unique) : $unique;
+
+				$product_id = $this->getProductId($unique, $this->settings['table_equivalent'], $equivalent);
+				if($product_id){
+					$this->model_module_oc_model->editProduct($product_id, $oc_product);
+					$products_updated++;
+				} else {
+					$product_id = $this->model_module_oc_model->addProduct($oc_product);
+					$products_created++;
+				}
+
+				if(isset($_SERVER["REQUEST_TIME"])){
+					if(microtime(true) - $_SERVER["REQUEST_TIME"] > max(1, $execution_budget - 10)){
+						$json['notice'] = 'time_out';
+						break;
+					}
+				}
+				//$product_related[] = $product_id;
+			}
+
+			$this->cache->delete('product');
+			$this->cache->delete('manufacturer');
+			$this->cache->delete('category');
+
 			$json['products_created'] = $products_created;
 			$json['products_updated'] = $products_updated;
-			$this->response->addHeader('Content-Type: application/json');
-			$this->response->setOutput(json_encode($json));	
+			$this->sendJson($json);
+		} catch (RuntimeException $e) {
+			$this->log->write('Import API import rejected: ' . $e->getMessage());
+			$this->sendJson(array('error' => $e->getMessage()), 422);
+		} catch (Throwable $e) {
+			$this->log->write('Import API import failed: ' . $e->getMessage());
+			$this->sendJson(array('error' => 'Import API uvoz nije moguće izvršiti.'), 500);
 		}
-	
 	}
 	
-	function getProductLinks($action = 'import'){
-		
+	protected function getProductLinks($action = 'import'){
+
 		$begin_character = 'FEED';
 		
 		$settings = $this->getModuleSettings();
 		$settings['import_api_link'] = html_entity_decode($settings['import_api_link'], ENT_QUOTES, "UTF-8");
-		$external_string = file_get_contents($settings['import_api_link']);	
-		$ob = simplexml_load_string($external_string, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_PARSEHUGE);
+
+		if (!$this->isAllowedImportSourceUrl($settings['import_api_link'])) {
+			throw new RuntimeException('Import API izvor mora biti valjani HTTP ili HTTPS URL.');
+		}
+
+		$external_string = $this->fetchRemoteResource(
+			$settings['import_api_link'],
+			self::MAX_FEED_BYTES,
+			self::FEED_TIMEOUT,
+			'application/xml, text/xml;q=0.9, */*;q=0.1'
+		);
+
+		$previous_errors = libxml_use_internal_errors(true);
+		$ob = simplexml_load_string($external_string, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NONET);
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous_errors);
+
+		if ($ob === false) {
+			throw new RuntimeException('Import API izvor nije valjani XML.');
+		}
 		
 		//$ob = @simplexml_load_string($external_string);
 		$json_string = @json_encode($ob);
@@ -475,12 +580,12 @@ class ControllerExtensionFeedImportApi extends Controller {
 			$limit = 20;
 		}
 		
-		if(isset($this->request->get['start'])){
-			$start = $this->request->get['start'];
+		if(isset($this->request->post['start'])){
+			$start = max(0, (int)$this->request->post['start']);
 		}
 		
-		if(isset($this->request->get['limit'])){
-			$limit = $this->request->get['limit'];
+		if(isset($this->request->post['limit'])){
+			$limit = max(0, (int)$this->request->post['limit']);
 		}
 		
 		if($start && !$limit){
@@ -494,7 +599,7 @@ class ControllerExtensionFeedImportApi extends Controller {
 		return $product_links;
 	}
 	
-	function getModuleSettings(){
+	protected function getModuleSettings(){
 		
 		$this->load->model('catalog/product');
 		$this->load->model('module/oc_model');
@@ -504,15 +609,19 @@ class ControllerExtensionFeedImportApi extends Controller {
 		$settings_fields = array('link', 'attribute_group', 'default_brand', 'default_category', 'top_category', 'weight_class_id', 'stock_status_id', 'tax', 'default_option', 'category_path', 'multiplier');
 		
 		if(isset($this->request->post['import_api_field'])){
+			if (!is_array($this->request->post['import_api_field'])) {
+				throw new RuntimeException('Import API mapiranje polja nije valjano.');
+			}
 			
 			$settings = array(
 				'import_api_field' => $this->request->post['import_api_field'],
-				'import_api_modification' =>  $this->request->post['import_api_modification'],
-				'import_api_combination' =>  $this->request->post['import_api_combination'],
+				'import_api_modification' => isset($this->request->post['import_api_modification']) && is_array($this->request->post['import_api_modification']) ? $this->request->post['import_api_modification'] : array(),
+				'import_api_combination' => isset($this->request->post['import_api_combination']) && is_array($this->request->post['import_api_combination']) ? $this->request->post['import_api_combination'] : array(),
 			);
 			
 			foreach($settings_fields as $field){
-				$settings['import_api_'. $field] = $this->request->post['import_api_'. $field];
+				$key = 'import_api_' . $field;
+				$settings[$key] = isset($this->request->post[$key]) ? $this->request->post[$key] : '';
 			}
 			
 		} else {
@@ -531,7 +640,7 @@ class ControllerExtensionFeedImportApi extends Controller {
 		if(!empty($settings['import_api_field']['unique'])){
 			$settings['unique_field'] = html_entity_decode($settings['import_api_field']['unique'], ENT_QUOTES, 'UTF-8');
 		} else {
-			exit('you need to set unique field');
+			throw new RuntimeException('Potrebno je postaviti jedinstveno Import API polje.');
 		}
 		
 		if (isset($this->request->post['import_api_start_index'])){
@@ -579,25 +688,248 @@ class ControllerExtensionFeedImportApi extends Controller {
 	}
 	
 	public function printSettings(){
-		$settings = $this->getModuleSettings();
-		var_dump($settings);
+		$this->sendJson(array('error' => 'Not Found'), 404);
 	}
-	
+
 	public function product_links(){
-		$product_links = $this->getProductLinks();
-		
-		foreach($product_links as $key => $link){
-			echo $key . ', Unique: ' . $link. '</br>';
-			/*$original_product = $this->importer->getAllData($link);
-			//$oc_product = $this->convertToOcProduct($original_product);
-			$unique = $this->request->clean($original_product['unique']);
-		    $equivalent = $this->request->clean($this->settings['unique_equivalent']);
-			if($this->getProductId($unique, $this->settings['table_equivalent'], $equivalent)){
-				echo '<p style="color:red">Exists: Yes<p>';
-			} else {
-				echo '<p style="color:blue">Exists: No<p>';
-			}
-			*/
+		$this->sendJson(array('error' => 'Not Found'), 404);
+	}
+
+	private function isAllowedImportSourceUrl($url) {
+		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+			return false;
 		}
+
+		$parts = parse_url($url);
+		$scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : '';
+
+		return !empty($parts['host'])
+			&& !isset($parts['user'])
+			&& !isset($parts['pass'])
+			&& in_array($scheme, array('http', 'https'), true);
+	}
+
+	private function fetchRemoteResource($url, $max_bytes, $timeout, $accept) {
+		if (!$this->isAllowedImportSourceUrl($url)) {
+			throw new RuntimeException('Udaljeni Import API URL nije dopušten.');
+		}
+
+		if (!function_exists('curl_init')) {
+			throw new RuntimeException('HTTP dohvat za Import API nije dostupan.');
+		}
+
+		$data = '';
+		$too_large = false;
+		$ch = curl_init($url);
+		if ($ch === false) {
+			throw new RuntimeException('Udaljeni Import API sadržaj nije dostupan.');
+		}
+
+		$curl_options = array(
+			CURLOPT_FOLLOWLOCATION => defined('CURLOPT_DISALLOW_USERNAME_IN_URL'),
+			CURLOPT_MAXREDIRS => 3,
+			CURLOPT_CONNECTTIMEOUT => 10,
+			CURLOPT_TIMEOUT => max(1, (int)$timeout),
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_SSL_VERIFYHOST => 2,
+			CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+			CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+			CURLOPT_ENCODING => '',
+			CURLOPT_HTTPHEADER => array('Accept: ' . $accept),
+			CURLOPT_USERAGENT => 'Italcro Import API fetcher'
+		);
+		if (defined('CURLOPT_DISALLOW_USERNAME_IN_URL')) {
+			$curl_options[constant('CURLOPT_DISALLOW_USERNAME_IN_URL')] = true;
+		}
+		curl_setopt_array($ch, $curl_options);
+		curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $chunk) use (&$data, &$too_large, $max_bytes) {
+			$chunk_length = strlen($chunk);
+			if (strlen($data) + $chunk_length > $max_bytes) {
+				$too_large = true;
+
+				return 0;
+			}
+
+			$data .= $chunk;
+
+			return $chunk_length;
+		});
+
+		$result = curl_exec($ch);
+		$status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if ($too_large) {
+			throw new RuntimeException('Udaljeni Import API sadržaj prelazi dopuštenu veličinu.');
+		}
+
+		if ($result === false || $status < 200 || $status >= 300) {
+			throw new RuntimeException('Udaljeni Import API sadržaj nije dostupan.');
+		}
+
+		return $data;
+	}
+
+	private function authorizeSignedRequest($action) {
+		if (!isset($this->request->server['REQUEST_METHOD']) || $this->request->server['REQUEST_METHOD'] !== 'POST') {
+			$this->sendJson(array('error' => 'Method Not Allowed'), 405, array('Allow: POST'));
+
+			return false;
+		}
+
+		$timestamp = isset($this->request->server['HTTP_X_IMPORT_API_TIMESTAMP'])
+			? (string)$this->request->server['HTTP_X_IMPORT_API_TIMESTAMP']
+			: '';
+		$nonce = isset($this->request->server['HTTP_X_IMPORT_API_NONCE'])
+			? strtolower((string)$this->request->server['HTTP_X_IMPORT_API_NONCE'])
+			: '';
+		$provided_signature = isset($this->request->server['HTTP_X_IMPORT_API_SIGNATURE'])
+			? strtolower((string)$this->request->server['HTTP_X_IMPORT_API_SIGNATURE'])
+			: '';
+
+		if (!preg_match('/^[0-9]{9,11}$/D', $timestamp)
+			|| !preg_match('/^[a-f0-9]{32,128}$/D', $nonce)
+			|| !preg_match('/^[a-f0-9]{64}$/D', $provided_signature)) {
+			$this->sendJson(array('error' => 'Unauthorized'), 401);
+
+			return false;
+		}
+
+		if (abs(time() - (int)$timestamp) > self::SIGNATURE_TTL) {
+			$this->sendJson(array('error' => 'Unauthorized'), 401);
+
+			return false;
+		}
+
+		$master_secret = (string)$this->config->get('config_encryption');
+
+		if (strlen($master_secret) < 32) {
+			$this->log->write('Import API signing is unavailable because config_encryption is missing.');
+			$this->sendJson(array('error' => 'Service Unavailable'), 503);
+
+			return false;
+		}
+
+		$raw_body = file_get_contents('php://input');
+		$raw_body = $raw_body === false ? '' : $raw_body;
+		$canonical = "v1\n" . $action . "\n" . $timestamp . "\n" . $nonce . "\n" . hash('sha256', $raw_body);
+		$signing_key = hash_hmac('sha256', 'italcro-import-api-v1', $master_secret, true);
+		$expected_signature = hash_hmac('sha256', $canonical, $signing_key);
+
+		if (!hash_equals($expected_signature, $provided_signature)) {
+			$this->sendJson(array('error' => 'Unauthorized'), 401);
+
+			return false;
+		}
+
+		try {
+			if (!$this->isSignedRequestNonceStorageReady()) {
+				$this->log->write('Import API nonce migration is required before signed requests can be accepted.');
+				$this->sendJson(array('error' => 'Import API sigurnosna migracija nije primijenjena.'), 503);
+
+				return false;
+			}
+
+			$nonce_consumed = $this->consumeSignedRequestNonce($nonce);
+		} catch (Throwable $e) {
+			$this->log->write('Import API nonce storage is unavailable: ' . $e->getMessage());
+			$this->sendJson(array('error' => 'Service Unavailable'), 503);
+
+			return false;
+		}
+
+		if (!$nonce_consumed) {
+			$this->sendJson(array('error' => 'Request already used'), 409);
+
+			return false;
+		}
+
+		return true;
+	}
+
+	private function consumeSignedRequestNonce($nonce) {
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "import_api_request_nonce`
+			WHERE expires_at < NOW()");
+
+		$nonce_hash = hash('sha256', $nonce);
+		$this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "import_api_request_nonce`
+			SET nonce_hash = '" . $this->db->escape($nonce_hash) . "',
+				expires_at = DATE_ADD(NOW(), INTERVAL " . (self::SIGNATURE_TTL + 30) . " SECOND),
+				date_added = NOW()");
+
+		return $this->db->countAffected() === 1;
+	}
+
+	private function isSignedRequestNonceStorageReady() {
+		$table = $this->db->escape(DB_PREFIX . 'import_api_request_nonce');
+		$query = $this->db->query("SELECT COUNT(*) AS total
+			FROM INFORMATION_SCHEMA.TABLES t
+			WHERE t.TABLE_SCHEMA = DATABASE()
+				AND t.TABLE_NAME = '" . $table . "'
+				AND UPPER(t.ENGINE) = 'INNODB'
+				AND t.TABLE_COLLATION = 'utf8mb4_unicode_ci'
+				AND EXISTS (
+					SELECT 1
+					FROM INFORMATION_SCHEMA.COLUMNS c
+					WHERE c.TABLE_SCHEMA = DATABASE()
+						AND c.TABLE_NAME = t.TABLE_NAME
+						AND c.COLUMN_NAME = 'nonce_hash'
+						AND c.COLUMN_TYPE = 'char(64)'
+						AND c.CHARACTER_SET_NAME = 'ascii'
+						AND c.IS_NULLABLE = 'NO'
+				)
+				AND 1 = (
+					SELECT COUNT(*)
+					FROM INFORMATION_SCHEMA.STATISTICS s
+					WHERE s.TABLE_SCHEMA = DATABASE()
+						AND s.TABLE_NAME = t.TABLE_NAME
+						AND s.INDEX_NAME = 'PRIMARY'
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM INFORMATION_SCHEMA.STATISTICS s
+					WHERE s.TABLE_SCHEMA = DATABASE()
+						AND s.TABLE_NAME = t.TABLE_NAME
+						AND s.INDEX_NAME = 'PRIMARY'
+						AND s.COLUMN_NAME = 'nonce_hash'
+						AND s.SEQ_IN_INDEX = 1
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM INFORMATION_SCHEMA.STATISTICS s
+					WHERE s.TABLE_SCHEMA = DATABASE()
+						AND s.TABLE_NAME = t.TABLE_NAME
+						AND s.INDEX_NAME = 'idx_expires_at'
+						AND s.COLUMN_NAME = 'expires_at'
+						AND s.SEQ_IN_INDEX = 1
+				)");
+
+		return !empty($query->row['total']);
+	}
+
+	private function sendJson($data, $status = 200, $headers = array()) {
+		$status_text = array(
+			200 => 'OK',
+			401 => 'Unauthorized',
+			404 => 'Not Found',
+			405 => 'Method Not Allowed',
+			409 => 'Conflict',
+			422 => 'Unprocessable Entity',
+			500 => 'Internal Server Error',
+			503 => 'Service Unavailable'
+		);
+		$protocol = !empty($this->request->server['SERVER_PROTOCOL']) ? $this->request->server['SERVER_PROTOCOL'] : 'HTTP/1.1';
+		$text = isset($status_text[$status]) ? $status_text[$status] : 'Error';
+
+		$this->response->addHeader($protocol . ' ' . (int)$status . ' ' . $text);
+		$this->response->addHeader('Content-Type: application/json; charset=utf-8');
+		$this->response->addHeader('Cache-Control: no-store');
+
+		foreach ($headers as $header) {
+			$this->response->addHeader($header);
+		}
+
+		$output = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		$this->response->setOutput($output === false ? '{"error":"JSON encoding failed"}' : $output);
 	}
 }

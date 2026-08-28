@@ -30,9 +30,18 @@ class ControllerExtensionBaselLiveOptions extends Controller {
 		}
 
 		if (isset($this->request->post['quantity'])) {
-			$quantity = (int)$this->request->post['quantity'];
+			$quantity_value = str_replace(array(' ', "\xc2\xa0"), '', trim((string)$this->request->post['quantity']));
+			if (strpos($quantity_value, ',') !== false) {
+				$quantity_value = str_replace('.', '', $quantity_value);
+				$quantity_value = str_replace(',', '.', $quantity_value);
+			}
+			$quantity = (float)$quantity_value;
 		} else {
-			$quantity = 1;
+			$quantity = 1.0;
+		}
+
+		if ($quantity <= 0) {
+			$quantity = 1.0;
 		}
 
 		$this->load->model('catalog/product');
@@ -47,27 +56,55 @@ class ControllerExtensionBaselLiveOptions extends Controller {
 			$product_info = $this->model_catalog_product->getProduct($product_id);
 			// Prepare data
 			if ($product_info) {
+					$resolved_price_raw = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
+					$resolved_special_raw = 0.0;
+					$has_resolved_special = false;
+					$sku = trim((string)$product_info['sku']);
+				$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
+
+				// Grouped MPN roots are navigation shells. Their own legacy special
+				// must never overwrite the per-SKU rows rendered by the product page.
+				if (!$is_single_article) {
+					$json['success'] = false;
+					$this->response->addHeader('Content-Type: application/json');
+					$this->response->setOutput(json_encode($json));
+					return;
+				}
+
+				if ($this->customer->isLogged() && $sku !== '') {
+					$base_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
+					if ($base_unit > 0) {
+						$pricing_map = $this->model_catalog_product->getQiqoPricingMap(
+							(int)$this->customer->getId(),
+							array($sku => $quantity),
+							array($sku => $base_unit),
+							false,
+							false
+						);
+
+						if (isset($pricing_map[$sku])) {
+							$pricing = $pricing_map[$sku];
+							$has_resolved_special = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false;
+							$resolved_price_raw = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+								? (float)$pricing['old_unit_price']
+								: (float)$pricing['base_unit_price'];
+							$resolved_special_raw = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+								? (float)$pricing['final_unit_price']
+								: 0.0;
+						}
+					}
+				}
 
 				if (($this->config->get('config_customer_price') && $this->customer->isLogged()) || !$this->config->get('config_customer_price')) {
-					$this->data['price'] = $this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax'));
+					$this->data['price'] = $this->tax->calculate($resolved_price_raw, $product_info['tax_class_id'], $this->config->get('config_tax'));
 				} else {
 					$this->data['price'] = false;
 				}
 
-				if ((float)$product_info['special']) {
-					$this->data['special'] = $this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax'));
+				if ($has_resolved_special) {
+					$this->data['special'] = $this->tax->calculate($resolved_special_raw, $product_info['tax_class_id'], $this->config->get('config_tax'));
 				} else {
 					$this->data['special'] = false;
-				}
-
-				// Discount
-				$discount_price = $this->get_discount_price($product_id, $quantity);
-				if($discount_price && !$this->data['special']){
-					if ((float)$discount_price) {
-						$this->data['price'] = $this->tax->calculate($discount_price, $product_info['tax_class_id'], $this->config->get('config_tax'));
-					} else {
-						$this->data['price'] = false;
-					}
 				}
 
 				// If some options are selected
@@ -107,7 +144,7 @@ class ControllerExtensionBaselLiveOptions extends Controller {
 					  $json['new_price']['priceeur'] = '';
 				}
 
-				if ($this->data['special']) {
+				if ($has_resolved_special) {
 					$json['new_price']['special'] = $this->currency->format(($this->data['special'] + $options_makeup) * $quantity, $currency_code);
 
 					if($currency_code=='HRK'){
@@ -122,10 +159,11 @@ class ControllerExtensionBaselLiveOptions extends Controller {
 				}
 
 				if ($this->config->get('config_tax')) {
-					$json['new_price']['tax'] = $this->currency->format(((float)$product_info['special'] ? ($product_info['special'] + $options_makeup) : ($product_info['price'] + $options_makeup_notax)) * $quantity, $currency_code );
+					$resolved_tax_raw = $has_resolved_special ? $resolved_special_raw : $resolved_price_raw;
+					$json['new_price']['tax'] = $this->currency->format(($resolved_tax_raw + $options_makeup_notax) * $quantity, $currency_code );
 
 						if($currency_code=='HRK'){
-		               $json['new_price']['taxeur'] = $this->currency->format(((float)$product_info['special'] ? ($product_info['special'] + $options_makeup) : ($product_info['price'] + $options_makeup_notax)) * $quantity, 'EUR' );
+		               $json['new_price']['taxeur'] = $this->currency->format(($resolved_tax_raw + $options_makeup_notax) * $quantity, 'EUR' );
 
 		            }
 		            else{
@@ -166,15 +204,6 @@ class ControllerExtensionBaselLiveOptions extends Controller {
 		return $options_makeup;
 	}
 
-	private function get_discount_price($product_id, $discount_quantity){
-		$price = false;
-		$product_discount_query = $this->db->query("SELECT price FROM " . DB_PREFIX . "product_discount WHERE product_id = '" . (int)$product_id . "' AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND quantity <= '" . (int)$discount_quantity . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY quantity DESC, priority ASC, price ASC LIMIT 1");
-
-		if ($product_discount_query->num_rows) {
-			$price = (float)$product_discount_query->row['price'];
-		}
-		return $price;
-	}
 	function js() {
 		header('Content-Type: application/javascript'); 
 		$product_id = isset($this->request->get['product_id']) ? (int)$this->request->get['product_id'] : 0;

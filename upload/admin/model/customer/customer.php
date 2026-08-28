@@ -55,15 +55,50 @@ class ModelCustomerCustomer extends Model {
 	}
 
 	public function deleteCustomer($customer_id) {
-		$this->db->query("DELETE FROM " . DB_PREFIX . "customer WHERE customer_id = '" . (int)$customer_id . "'");
-		$this->db->query("DELETE FROM " . DB_PREFIX . "customer_activity WHERE customer_id = '" . (int)$customer_id . "'");
-		$this->db->query("DELETE FROM " . DB_PREFIX . "customer_affiliate WHERE customer_id = '" . (int)$customer_id . "'");
-		$this->db->query("DELETE FROM " . DB_PREFIX . "customer_approval WHERE customer_id = '" . (int)$customer_id . "'");
- 		$this->db->query("DELETE FROM " . DB_PREFIX . "customer_history WHERE customer_id = '" . (int)$customer_id . "'");
-		$this->db->query("DELETE FROM " . DB_PREFIX . "customer_reward WHERE customer_id = '" . (int)$customer_id . "'");
-		$this->db->query("DELETE FROM " . DB_PREFIX . "customer_transaction WHERE customer_id = '" . (int)$customer_id . "'");
-		$this->db->query("DELETE FROM " . DB_PREFIX . "customer_ip WHERE customer_id = '" . (int)$customer_id . "'");
-		$this->db->query("DELETE FROM " . DB_PREFIX . "address WHERE customer_id = '" . (int)$customer_id . "'");
+		$customer_id = (int)$customer_id;
+		$lock_name = 'qiqo_auth_' . sha1(DB_DATABASE . ':' . DB_PREFIX . $customer_id);
+
+		if (!$this->acquireCustomerQiqoAuthorizationLock($lock_name)) {
+			throw new Exception('QIQO authorization for this customer is currently being changed.');
+		}
+
+		try {
+			if ($this->hasCustomerQiqoAuthorizationTable()) {
+				$this->db->query("DELETE FROM " . DB_PREFIX . "customer_qiqo_authorization WHERE customer_id = '" . $customer_id . "'");
+			}
+
+			$this->db->query("DELETE FROM " . DB_PREFIX . "customer WHERE customer_id = '" . $customer_id . "'");
+			$this->db->query("DELETE FROM " . DB_PREFIX . "customer_activity WHERE customer_id = '" . $customer_id . "'");
+			$this->db->query("DELETE FROM " . DB_PREFIX . "customer_affiliate WHERE customer_id = '" . $customer_id . "'");
+			$this->db->query("DELETE FROM " . DB_PREFIX . "customer_approval WHERE customer_id = '" . $customer_id . "'");
+			$this->db->query("DELETE FROM " . DB_PREFIX . "customer_history WHERE customer_id = '" . $customer_id . "'");
+			$this->db->query("DELETE FROM " . DB_PREFIX . "customer_reward WHERE customer_id = '" . $customer_id . "'");
+			$this->db->query("DELETE FROM " . DB_PREFIX . "customer_transaction WHERE customer_id = '" . $customer_id . "'");
+			$this->db->query("DELETE FROM " . DB_PREFIX . "customer_ip WHERE customer_id = '" . $customer_id . "'");
+			$this->db->query("DELETE FROM " . DB_PREFIX . "address WHERE customer_id = '" . $customer_id . "'");
+		} finally {
+			$this->releaseCustomerQiqoAuthorizationLock($lock_name);
+		}
+	}
+
+	private function hasCustomerQiqoAuthorizationTable() {
+		$query = $this->db->query("SELECT TABLE_NAME
+			FROM information_schema.TABLES
+			WHERE TABLE_SCHEMA = DATABASE()
+			  AND TABLE_NAME = '" . $this->db->escape(DB_PREFIX . "customer_qiqo_authorization") . "'
+			LIMIT 1");
+
+		return !empty($query->row);
+	}
+
+	private function acquireCustomerQiqoAuthorizationLock($lock_name) {
+		$query = $this->db->query("SELECT GET_LOCK('" . $this->db->escape($lock_name) . "', 5) AS lock_acquired");
+
+		return isset($query->row['lock_acquired']) && (int)$query->row['lock_acquired'] === 1;
+	}
+
+	private function releaseCustomerQiqoAuthorizationLock($lock_name) {
+		$this->db->query("SELECT RELEASE_LOCK('" . $this->db->escape($lock_name) . "')");
 	}
 
 	public function getCustomer($customer_id) {

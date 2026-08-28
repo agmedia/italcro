@@ -14,36 +14,6 @@ class ModelCustomerQiqoSalesRep extends Model {
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 	}
 
-	public function addSalesRep($data) {
-		$this->ensureTable();
-
-		$this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_sales_rep`
-			SET `code` = '" . $this->db->escape(trim($data['code'])) . "',
-				`name` = '" . $this->db->escape(trim($data['name'])) . "',
-				`active` = '" . (int)$data['active'] . "',
-				`date_added` = NOW(),
-				`date_modified` = NOW()");
-
-		return $this->db->getLastId();
-	}
-
-	public function editSalesRep($sales_rep_id, $data) {
-		$this->ensureTable();
-
-		$this->db->query("UPDATE `" . DB_PREFIX . "qiqo_sales_rep`
-			SET `code` = '" . $this->db->escape(trim($data['code'])) . "',
-				`name` = '" . $this->db->escape(trim($data['name'])) . "',
-				`active` = '" . (int)$data['active'] . "',
-				`date_modified` = NOW()
-			WHERE sales_rep_id = '" . (int)$sales_rep_id . "'");
-	}
-
-	public function deleteSalesRep($sales_rep_id) {
-		$this->ensureTable();
-
-		$this->db->query("DELETE FROM `" . DB_PREFIX . "qiqo_sales_rep` WHERE sales_rep_id = '" . (int)$sales_rep_id . "'");
-	}
-
 	public function getSalesRep($sales_rep_id) {
 		$this->ensureTable();
 

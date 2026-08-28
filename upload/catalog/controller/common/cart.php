@@ -85,10 +85,12 @@ class ControllerCommonCart extends Controller {
 
 			// Display prices
 			if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
-				$unit_price = $this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax'));
+				$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/i', '', isset($product['cent']) ? (string)$product['cent'] : ''));
+				$display_unit_price = (float)$product['price'] * ($cent_normalized === 'C100' ? 100 : 1);
+				$unit_price = $this->tax->calculate($display_unit_price, $product['tax_class_id'], $this->config->get('config_tax'));
 				
 				$price = $this->currency->format($unit_price, $this->session->data['currency']);
-				$total = $this->currency->format($unit_price * $product['quantity'], $this->session->data['currency']);
+				$total = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')) * $product['quantity'], $this->session->data['currency']);
 			} else {
 				$price = false;
 				$total = false;

@@ -1,6 +1,7 @@
 <?php
 
 require_once DIR_STORAGE . 'vendor/agmedia/api/src/Connection/Soap/Qiqo.php';
+require_once DIR_SYSTEM . 'library/qiqo/sync_guard.php';
 
 class ModelExtensionModuleQiqo extends Model
 {
@@ -112,7 +113,7 @@ class ModelExtensionModuleQiqo extends Model
         }
 
         $this->db->query("ALTER TABLE `" . DB_PREFIX . "product`
-            ADD COLUMN `vpc` DECIMAL(15,4) NOT NULL DEFAULT 0 AFTER `price`,
+            ADD COLUMN `vpc` DECIMAL(15,7) NOT NULL DEFAULT 0 AFTER `price`,
             ADD INDEX `idx_vpc` (`vpc`)");
 
         unset($this->columnExistsCache['product.vpc']);
@@ -190,20 +191,72 @@ class ModelExtensionModuleQiqo extends Model
 
     public function importArticles(): int
     {
-        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
+        if (!$this->acquireQiqoWriteLock($lockName)) {
+            $this->log('Import', 'BUSY product catalog reconciliation/import is already running; no articles imported.');
+            return -1;
+        }
+
+        try {
+            return $this->importArticlesLocked();
+        } catch (\Throwable $error) {
+            $this->log('Import', 'ABORT article import failed; no success reported.');
+            return -1;
+        } finally {
+            $this->releaseQiqoWriteLock($lockName);
+        }
+    }
+
+    private function importArticlesLocked(): int
+    {
+        try {
+            $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+            $groupRows = $qiqo->getGroups();
+            $groupFetch = $qiqo->getLastFetchResult();
+            $articleRows = $qiqo->getArticles();
+            $articleFetch = $qiqo->getLastFetchResult();
+            $partnerRows = $qiqo->getPartners();
+            $partnerFetch = $qiqo->getLastFetchResult();
+        } catch (\Throwable $error) {
+            $this->log('Import', 'ABORT QIQO transport/configuration failure; no articles imported.');
+            return -1;
+        }
+
+        $normalizedArticles = QiqoSyncGuard::normalizeArticlePriceRows((array)$articleRows);
+        if (empty($groupFetch['success']) || empty($articleFetch['success']) || empty($partnerFetch['success'])
+            || !$normalizedArticles['valid'] || !QiqoSyncGuard::validateArticleImportSchema($normalizedArticles)) {
+            $this->log('Import', 'ABORT QIQO feed/schema validation failed; no articles imported.');
+            return -1;
+        }
+
+        if (!$normalizedArticles['rows']) {
+            $this->log('Import', 'EMPTY qArtikliWeb returned no rows; no articles imported.');
+            return 0;
+        }
+
+        $groups = collect((array)$groupRows);
+        $partners = collect((array)$partnerRows);
+        foreach ($normalizedArticles['rows'] as $item) {
+            $source = $item['source'];
+            if (!$groups->firstWhere('id', $source['kataloggrupa']) || !$partners->firstWhere('id', $source['partner'])) {
+                $this->log('Import', 'ABORT QIQO article references a missing group/partner row; no articles imported.');
+                return -1;
+            }
+        }
+
+        // Runtime compatibility checks happen only after the entire upstream
+        // batch has validated, so malformed feeds cannot trigger product writes.
         $this->ensureProductPartnerColumn();
         $this->ensureProductPakColumn();
         $this->ensureProductJmColumn();
         $this->ensureProductPakkolColumn();
         $this->ensureProductVpcColumn();
 
-        $groups   = collect($qiqo->getGroups());
-        $articles = collect($qiqo->getArticles());
-        $partners = collect($qiqo->getPartners());
-
         $imported = 0;
 
-        foreach ($articles as $a) {
+        foreach ($normalizedArticles['rows'] as $item) {
+            $a = $item['source'];
+            $a['id'] = $item['sku'];
             // ⚙️ Provjera postoji li već proizvod (po SKU)
             $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '" . $this->db->escape($a['id']) . "' LIMIT 1");
 
@@ -222,17 +275,10 @@ class ModelExtensionModuleQiqo extends Model
             $name = trim((string) ($group['naziv'] ?? 'Artikl ' . $a['id']));
             $dimmodel = trim((string)($a['dimmodel'] ?? ''));
             $opiskatalog  = trim((string)($a['opiskatalog'] ?? ''));
-            $vpc = (float)($a['cijena'] ?? 0);
-            $price = $vpc;
-            $cent  = trim((string)($a['cent'] ?? null));
+            $vpc = (float)$item['vpc'];
+            $price = (float)$item['price'];
+            $cent = $item['cent'] !== '' ? $item['cent'] : null;
             $sortid = (int)($a['sortid'] ?? 0);
-
-            // Ako ERP šalje "C-100", cijenu dijelimo sa 100
-            if ($cent && strtoupper($cent) === 'C-100') {
-                $price = $price / 100;
-            } else {
-                $cent = null;
-            }
 
             /*if ($dimmodel != '' || $dimmodel != '-') {
                 $name = $name . ' ' . $dimmodel;
@@ -260,7 +306,7 @@ class ModelExtensionModuleQiqo extends Model
                 'pak'         => (int)($a['pak'] ?? 0),
                 'minimum'     => $minimum,
                 'sort_order'  => $sortid,
-                'status'      => $a['aktivan'] === 'true' ? 1 : 0,
+                'status'      => in_array(strtolower(trim((string)$a['aktivan'])), ['1', 'true'], true) ? 1 : 0,
                 'image'       => $group['picpath'] ?? '',
                 'category_id' => $category_id,
                 'name'        => $name,
@@ -403,30 +449,59 @@ class ModelExtensionModuleQiqo extends Model
 
     public function updatePrices(): int
     {
-        $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
+        if (!$this->acquireQiqoWriteLock($lockName)) {
+            $this->log('Prices', 'BUSY product catalog reconciliation/import is already running; prices preserved.');
+            return -1;
+        }
+
+        try {
+            return $this->updatePricesLocked();
+        } catch (\Throwable $error) {
+            $this->log('Prices', 'ABORT price update failed; prices preserved.');
+            return -1;
+        } finally {
+            $this->releaseQiqoWriteLock($lockName);
+        }
+    }
+
+    private function updatePricesLocked(): int
+    {
+        try {
+            $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+            $articleRows = $qiqo->getArticles();
+            $fetchResult = $qiqo->getLastFetchResult();
+        } catch (\Throwable $error) {
+            $this->log('Prices', 'ABORT QIQO transport/configuration failure; prices preserved.');
+            return -1;
+        }
+
+        $articles = QiqoSyncGuard::normalizeArticlePriceRows((array)$articleRows);
+        if (empty($fetchResult['success']) || !$articles['valid']) {
+            $this->log('Prices', 'ABORT qArtikliWeb transport/schema validation failed; prices preserved.');
+            return -1;
+        }
+
+        if (!$articles['rows']) {
+            $this->log('Prices', 'EMPTY qArtikliWeb returned no rows; prices preserved.');
+            return 0;
+        }
+
         $hasVpcColumn = $this->ensureProductVpcColumn();
-        $articles = collect($qiqo->getArticles());
         $updated  = 0;
 
         $this->log('Prices', '=== START UPDATE PRICES (with cent factor) ===');
 
-        foreach ($articles as $a) {
-            $sku = $this->db->escape($a['id']);
+        foreach ($articles['rows'] as $a) {
+            $sku = $this->db->escape($a['sku']);
             $exists = $this->db->query("SELECT product_id, price FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
             if (!$exists->num_rows) continue;
 
             $product_id = (int)$exists->row['product_id'];
-            $vpc = (float)($a['cijena'] ?? 0);
-            $price = $vpc;
-            $cent  = trim((string)($a['cent'] ?? null));
+            $vpc = (float)$a['vpc'];
+            $price = (float)$a['price'];
+            $cent = $a['cent'] !== '' ? $a['cent'] : null;
             $vpcSql = $hasVpcColumn ? "vpc = '{$vpc}', " : "";
-
-            // Ako ERP šalje "C-100", cijenu dijelimo sa 100
-            if ($cent && strtoupper($cent) === 'C-100') {
-                $price = $price / 100;
-            } else {
-                $cent = null;
-            }
 
             $this->db->query("UPDATE " . DB_PREFIX . "product 
 	                          SET price = '{$price}', {$vpcSql}cent = '{$cent}', date_modified = NOW()
@@ -1622,46 +1697,147 @@ class ModelExtensionModuleQiqo extends Model
         return $stats;
     }
 
+    public function isFullSnapshotReplacementEnabled(): bool
+    {
+        return QiqoSyncGuard::hasConfirmedFullSnapshotConfiguration(
+            $this->config->get('qiqo_full_snapshot_confirmed'),
+            trim((string)$this->config->get('qiqo_full_snapshot_since'))
+        );
+    }
+
+    public function isDisableMissingArticlesEnabled(): bool
+    {
+        return $this->isFullSnapshotReplacementEnabled() && $this->isQiqoProductTableTransactional();
+    }
 
     public function disableMissingArticles(): int
     {
-        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
-        $articles = $qiqo->getArticles();
-
-        // 1) SKU-ovi iz API-ja
-        $api_skus = [];
-        foreach ($articles as $a) {
-            $sku = trim($a['id'] ?? '');
-            if ($sku !== '') {
-                $api_skus[$sku] = true;
-            }
+        if (!$this->isDisableMissingArticlesEnabled()) {
+            $this->log('DisableCheck', 'BLOCKED qArtikliWeb full-snapshot semantics are not confirmed; product statuses preserved.');
+            return 0;
         }
 
-        // 2) SKU-ovi iz OC baze
-        $db = $this->db->query("SELECT product_id, sku 
-        FROM " . DB_PREFIX . "product 
-        WHERE sku <> ''");
-
-        $disabled = 0;
-
-        foreach ($db->rows as $row) {
-            $sku = trim($row['sku']);
-            $product_id = (int)$row['product_id'];
-
-            // 3) Ako SKU iz baze NE postoji u API-ju → disable
-            if (!isset($api_skus[$sku])) {
-                $this->db->query("UPDATE " . DB_PREFIX . "product 
-                SET status = 0, date_modified = NOW() 
-                WHERE product_id = " . (int)$product_id);
-
-                $disabled++;
-                $this->log('DisableCheck', "SKU {$sku} / product_id={$product_id}: DISABLED (nema u ERP API).");
-            }
+        $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
+        if (!$this->acquireQiqoWriteLock($lockName)) {
+            $this->log('DisableCheck', 'BUSY product catalog reconciliation/import is already running; product statuses preserved.');
+            return 0;
         }
 
-        $this->log('DisableCheck', "Gotovo. Disabled proizvoda: {$disabled}");
+        try {
+            return $this->disableMissingArticlesLocked();
+        } finally {
+            $this->releaseQiqoWriteLock($lockName);
+        }
+    }
 
-        return $disabled;
+    private function disableMissingArticlesLocked(): int
+    {
+        // qArtikliWeb accepts a modified-since date. Never infer a complete
+        // catalog from its historical default window: deletion-style
+        // reconciliation stays disabled until the ERP owner confirms the
+        // full-snapshot contract and an explicit inception date is configured.
+        if (!$this->isDisableMissingArticlesEnabled()) {
+            $this->log('DisableCheck', 'BLOCKED qArtikliWeb full-snapshot semantics are not confirmed; product statuses preserved.');
+            return 0;
+        }
+
+        if (!$this->isQiqoProductTableTransactional()) {
+            $this->log('DisableCheck', 'BLOCKED product table is not transactional; product statuses preserved.');
+            return 0;
+        }
+
+        $fullSnapshotSince = trim((string)$this->config->get('qiqo_full_snapshot_since'));
+
+        try {
+            $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+            $articles = $qiqo->getArticles($fullSnapshotSince);
+            $fetchResult = $qiqo->getLastFetchResult();
+        } catch (\Throwable $error) {
+            $this->log('DisableCheck', 'ABORT qArtikliWeb fetch failed; product statuses preserved.');
+            return 0;
+        }
+
+        $normalized = QiqoSyncGuard::normalizeArticleSkuRows($articles);
+        if (!QiqoSyncGuard::canDisableMissingArticles($fetchResult, $normalized)) {
+            $reason = empty($fetchResult['success'])
+                ? (isset($fetchResult['error']) ? (string)$fetchResult['error'] : 'fetch_failed')
+                : (!empty($normalized['invalid_rows']) ? 'invalid_rows=' . (int)$normalized['invalid_rows'] : 'empty_feed');
+            $this->log('DisableCheck', "ABORT qArtikliWeb {$reason}; product statuses preserved.");
+            return 0;
+        }
+
+        $localCountQuery = $this->db->query("SELECT COUNT(DISTINCT `sku`) AS total FROM `" . DB_PREFIX . "product` WHERE `sku` <> ''");
+        $localCount = isset($localCountQuery->row['total']) ? (int)$localCountQuery->row['total'] : -1;
+        $minimumRatio = (float)$this->config->get('qiqo_full_snapshot_min_ratio');
+        if ($minimumRatio <= 0) {
+            $minimumRatio = 0.8;
+        }
+
+        if (!QiqoSyncGuard::passesArticleSnapshotSanity(count($normalized['skus']), $localCount, $minimumRatio)) {
+            $this->log('DisableCheck', 'ABORT qArtikliWeb snapshot count/ratio sanity check failed; product statuses preserved.');
+            return 0;
+        }
+
+        $temporaryTable = DB_PREFIX . 'qiqo_article_sku_guard_tmp';
+        $transactionStarted = false;
+
+        try {
+            $this->db->query("DROP TEMPORARY TABLE IF EXISTS `" . $temporaryTable . "`");
+            $this->db->query("CREATE TEMPORARY TABLE `" . $temporaryTable . "` (
+                `sku` VARCHAR(64) NOT NULL,
+                PRIMARY KEY (`sku`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $batch = [];
+            foreach ($normalized['skus'] as $sku) {
+                $batch[] = "('" . $this->db->escape($sku) . "')";
+
+                if (count($batch) >= 1000) {
+                    $this->db->query("INSERT INTO `" . $temporaryTable . "` (`sku`) VALUES " . implode(',', $batch));
+                    $batch = [];
+                }
+            }
+
+            if ($batch) {
+                $this->db->query("INSERT INTO `" . $temporaryTable . "` (`sku`) VALUES " . implode(',', $batch));
+            }
+
+            $countQuery = $this->db->query("SELECT COUNT(*) AS total FROM `" . $temporaryTable . "`");
+            $stagedCount = isset($countQuery->row['total']) ? (int)$countQuery->row['total'] : -1;
+            if ($stagedCount !== count($normalized['skus'])) {
+                throw new \RuntimeException('qArtikliWeb staged SKU count mismatch.');
+            }
+
+            $this->db->query('START TRANSACTION');
+            $transactionStarted = true;
+            $this->db->query("UPDATE `" . DB_PREFIX . "product` p
+                LEFT JOIN `" . $temporaryTable . "` a ON a.`sku` = p.`sku`
+                SET p.`status` = 0, p.`date_modified` = NOW()
+                WHERE p.`sku` <> '' AND p.`status` <> 0 AND a.`sku` IS NULL");
+            $disabled = (int)$this->db->countAffected();
+            $this->db->query('COMMIT');
+            $transactionStarted = false;
+
+            $this->log('DisableCheck', "END qArtikliWeb staged_skus={$stagedCount} disabled={$disabled}");
+            return $disabled;
+        } catch (\Throwable $error) {
+            if ($transactionStarted) {
+                try {
+                    $this->db->query('ROLLBACK');
+                } catch (\Throwable $rollbackError) {
+                    $this->log('DisableCheck', 'WARN rollback failed after disable-missing-articles error.');
+                }
+            }
+
+            $this->log('DisableCheck', 'ABORT qArtikliWeb validation/staging/update failed; product statuses preserved.');
+            return 0;
+        } finally {
+            try {
+                $this->db->query("DROP TEMPORARY TABLE IF EXISTS `" . $temporaryTable . "`");
+            } catch (\Throwable $cleanupError) {
+                $this->log('DisableCheck', 'WARN temporary SKU table cleanup failed; connection close will remove it.');
+            }
+        }
     }
 
 
@@ -1855,6 +2031,20 @@ class ModelExtensionModuleQiqo extends Model
         @set_time_limit(0);
         $this->ensurePartnerSyncTables();
 
+        if ($forceDefaultSince && !$this->isFullSnapshotReplacementEnabled()) {
+            $this->log('PartnerSync', 'BLOCKED destructive FULL sync: ERP full-snapshot contract/configuration is not confirmed.');
+            return [
+                'partners' => 0,
+                'delivery_places' => 0,
+                'sales_reps' => 0,
+                'action_prices' => 0,
+            ];
+        }
+
+        if ($forceDefaultSince) {
+            $defaultSince = trim((string)$this->config->get('qiqo_full_snapshot_since'));
+        }
+
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
         $now  = date('Y-m-d H:i:s');
 
@@ -1894,15 +2084,45 @@ class ModelExtensionModuleQiqo extends Model
         foreach ($feeds as $feed) {
             $this->log('PartnerSync', "START {$feed['label']} since={$feed['since']}");
             $rows = $qiqo->{$feed['fetcher']}($feed['since']);
-            if ($feed['key'] === 'action_prices' && $forceDefaultSince && $rows) {
-                $this->clearActionPrices();
+            $fetchResult = $qiqo->getLastFetchResult();
+            if (empty($fetchResult['success'])) {
+                $error = isset($fetchResult['error']) ? (string)$fetchResult['error'] : 'unknown_fetch_error';
+                $this->log('PartnerSync', "ABORT {$feed['label']} error={$error}; cache and last_sync preserved.");
+                $result[$feed['key']] = 0;
+                continue;
             }
-            $count = $this->{$feed['writer']}($rows);
-            if ($feed['key'] !== 'action_prices' || $rows || $this->hasCachedActionPrices()) {
-                $this->setFeedLastSync($feed['key'], $now);
-            } else {
-                $this->log('PartnerSync', 'SKIP qAkcijskiCjenikWeb last_sync because no rows were returned and cache is empty.');
+
+            if ($feed['key'] === 'action_prices' && $forceDefaultSince && !QiqoSyncGuard::canReplaceFullCache($fetchResult, $rows)) {
+                $this->log('PartnerSync', 'EMPTY qAkcijskiCjenikWeb full feed; live cache and last_sync preserved.');
+                $result[$feed['key']] = 0;
+                continue;
             }
+
+			try {
+				if ($feed['key'] === 'action_prices' && $forceDefaultSince) {
+					$count = $this->replaceActionPricesFull($rows);
+					if ($count <= 0) {
+						$result[$feed['key']] = 0;
+						continue;
+					}
+				} else {
+					$count = $this->{$feed['writer']}($rows);
+				}
+			} catch (\Throwable $error) {
+				$this->log('PartnerSync', "ABORT {$feed['label']} validation/write failed; cache and last_sync preserved.");
+				$result[$feed['key']] = 0;
+				continue;
+			}
+
+			try {
+				$this->setFeedLastSync($feed['key'], $now);
+			} catch (\Throwable $watermarkError) {
+				if ($feed['key'] === 'action_prices' && $forceDefaultSince) {
+					$this->log('PartnerSync', 'WARN qAkcijskiCjenikWeb live cache swapped, but last_sync was not updated.');
+				} else {
+					throw $watermarkError;
+				}
+			}
             $this->log('PartnerSync', "END {$feed['label']} rows=" . count($rows) . " upserted={$count}");
             $result[$feed['key']] = $count;
         }
@@ -1910,9 +2130,9 @@ class ModelExtensionModuleQiqo extends Model
         return $result;
     }
 
-    public function syncPartnerBaseDataFull(string $defaultSince = '-2 years'): array
+    public function syncPartnerBaseDataFull(): array
     {
-        return $this->syncPartnerBaseData($defaultSince, true);
+        return $this->syncPartnerBaseData('', true);
     }
 
     public function syncActionPrices(string $defaultSince = '-30 days', bool $forceDefaultSince = false): int
@@ -1920,31 +2140,64 @@ class ModelExtensionModuleQiqo extends Model
         @set_time_limit(0);
         $this->ensurePartnerSyncTables();
 
+        if ($forceDefaultSince && !$this->isFullSnapshotReplacementEnabled()) {
+            $this->log('PartnerSync', 'BLOCKED qAkcijskiCjenikWeb FULL: ERP full-snapshot contract/configuration is not confirmed.');
+            return 0;
+        }
+
+        if ($forceDefaultSince) {
+            $defaultSince = trim((string)$this->config->get('qiqo_full_snapshot_since'));
+        }
+
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
         $now = date('Y-m-d H:i:s');
         $since = $this->resolveSince('action_prices', $defaultSince, $forceDefaultSince);
 
         $this->log('PartnerSync', "START qAkcijskiCjenikWeb since={$since}");
         $rows = $qiqo->getActionPriceList($since);
-        if ($forceDefaultSince && $rows) {
-            $this->clearActionPrices();
+        $fetchResult = $qiqo->getLastFetchResult();
+        if (empty($fetchResult['success'])) {
+            $error = isset($fetchResult['error']) ? (string)$fetchResult['error'] : 'unknown_fetch_error';
+            $this->log('PartnerSync', "ABORT qAkcijskiCjenikWeb error={$error}; cache and last_sync preserved.");
+            return 0;
         }
-        $count = $this->upsertActionPrices($rows);
 
-        if ($rows || $this->hasCachedActionPrices()) {
-            $this->setFeedLastSync('action_prices', $now);
-        } else {
-            $this->log('PartnerSync', 'SKIP qAkcijskiCjenikWeb last_sync because no rows were returned and cache is empty.');
+        if ($forceDefaultSince && !QiqoSyncGuard::canReplaceFullCache($fetchResult, $rows)) {
+            $this->log('PartnerSync', 'EMPTY qAkcijskiCjenikWeb full feed; live cache and last_sync preserved.');
+            return 0;
         }
+
+		try {
+			$count = $forceDefaultSince
+				? $this->replaceActionPricesFull($rows)
+				: $this->upsertActionPrices($rows);
+		} catch (\Throwable $error) {
+			$this->log('PartnerSync', 'ABORT qAkcijskiCjenikWeb validation/write failed; live cache and last_sync preserved.');
+			return 0;
+		}
+
+		if ($forceDefaultSince && $count <= 0) {
+			return 0;
+		}
+
+		try {
+			$this->setFeedLastSync('action_prices', $now);
+		} catch (\Throwable $watermarkError) {
+			if ($forceDefaultSince) {
+				$this->log('PartnerSync', 'WARN qAkcijskiCjenikWeb live cache swapped, but last_sync was not updated.');
+			} else {
+				throw $watermarkError;
+			}
+		}
 
         $this->log('PartnerSync', "END qAkcijskiCjenikWeb rows=" . count($rows) . " upserted={$count}");
 
         return $count;
     }
 
-    public function syncActionPricesFull(string $defaultSince = '-2 years'): int
+    public function syncActionPricesFull(): int
     {
-        return $this->syncActionPrices($defaultSince, true);
+        return $this->syncActionPrices('', true);
     }
 
     public function syncSalesReps(string $defaultSince = '-30 days', bool $forceDefaultSince = false): int
@@ -1957,6 +2210,13 @@ class ModelExtensionModuleQiqo extends Model
 
         $this->log('PartnerSync', "START qKomercijalistWeb since={$since}");
         $rows = $qiqo->getSalesReps($since);
+        $fetchResult = $qiqo->getLastFetchResult();
+        if (empty($fetchResult['success'])) {
+            $error = isset($fetchResult['error']) ? (string)$fetchResult['error'] : 'unknown_fetch_error';
+            $this->log('PartnerSync', "ABORT qKomercijalistWeb error={$error}; cache and last_sync preserved.");
+            return 0;
+        }
+
         $count = $this->upsertSalesReps($rows);
         $this->setFeedLastSync('sales_reps', date('Y-m-d H:i:s'));
         $this->log('PartnerSync', "END qKomercijalistWeb rows=" . count($rows) . " upserted={$count}");
@@ -1969,63 +2229,165 @@ class ModelExtensionModuleQiqo extends Model
         return $this->syncSalesReps($defaultSince, true);
     }
 
-    public function syncPartnerArticleDiscountsFull(string $since = '-2 years'): int
+    public function syncPartnerArticleDiscountsFull(): int
     {
         @set_time_limit(0);
         $this->ensurePartnerSyncTables();
+
+        if (!$this->isFullSnapshotReplacementEnabled()) {
+            $this->log('PartnerSync', 'BLOCKED qPartnerArtikalRabatWeb FULL: ERP full-snapshot contract/configuration is not confirmed.');
+            return 0;
+        }
+
+        $since = trim((string)$this->config->get('qiqo_full_snapshot_since'));
 
         $this->log('PartnerSync', "START qPartnerArtikalRabatWeb full since={$since}");
 
         $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
         $rows = $qiqo->getPartnerArticleDiscounts($since);
 
-        $this->db->query("TRUNCATE TABLE `" . DB_PREFIX . "qiqo_partner_article_discount`");
+        $fetchResult = $qiqo->getLastFetchResult();
+        if (empty($fetchResult['success'])) {
+            $error = isset($fetchResult['error']) ? (string)$fetchResult['error'] : 'unknown_fetch_error';
+            $this->log('PartnerSync', "ABORT qPartnerArtikalRabatWeb full error={$error}; live cache preserved.");
+            return 0;
+        }
 
-        $inserted = 0;
-        $batch = [];
-        $batchSize = 1000;
+
+        if (!QiqoSyncGuard::canReplaceFullCache($fetchResult, $rows)) {
+            $this->log('PartnerSync', 'EMPTY qPartnerArtikalRabatWeb full feed; live cache and last_sync preserved.');
+            return 0;
+        }
+
+        $normalized = [];
+        $invalidRows = 0;
 
         foreach ($rows as $row) {
             $partner = (int)($row['partner'] ?? 0);
             $article = trim((string)($row['artikal'] ?? ''));
-            $discount = (float)($row['rabat'] ?? 0);
+            $discountRaw = $row['rabat'] ?? '';
 
-            if (!$partner || $article === '') {
+            if ($partner <= 0 || $article === '' || strlen($article) > 64 || !$this->isValidQiqoDecimal($discountRaw)) {
+                $invalidRows++;
                 continue;
             }
 
-            $batch[] = "("
-                . $partner . ", "
-                . "'" . $this->db->escape($article) . "', "
-                . "'" . (float)$discount . "', "
-                . "NOW(), NOW()"
-                . ")";
+            $discount = $this->qiqoDecimal($discountRaw);
+            if ($discount < 0 || $discount > 100) {
+                $invalidRows++;
+                continue;
+            }
 
-            if (count($batch) >= $batchSize) {
-                $this->flushPartnerDiscountBatch($batch);
-                $inserted += count($batch);
-                $batch = [];
+            $key = $partner . '|' . $article;
+            if (isset($normalized[$key]) && abs((float)$normalized[$key]['discount'] - $discount) > 0.00001) {
+                $invalidRows++;
+                continue;
+            }
+
+            $normalized[$key] = [
+                'partner' => $partner,
+                'article' => $article,
+                'discount' => $discount,
+            ];
+        }
+
+        if ($invalidRows > 0) {
+            $this->log('PartnerSync', "ABORT qPartnerArtikalRabatWeb full invalid_rows={$invalidRows}; live cache preserved.");
+            return 0;
+        }
+
+        $liveTable = DB_PREFIX . 'qiqo_partner_article_discount';
+        $stageTable = $liveTable . '_stage';
+        $previousTable = $liveTable . '_previous';
+        $lockName = DB_PREFIX . 'qiqo_partner_article_discount_full';
+
+        $lockQuery = $this->db->query("SELECT GET_LOCK('" . $this->db->escape($lockName) . "', 0) AS acquired");
+        if (!isset($lockQuery->row['acquired']) || (int)$lockQuery->row['acquired'] !== 1) {
+            $this->log('PartnerSync', 'BUSY qPartnerArtikalRabatWeb full sync already running; live cache preserved.');
+            return 0;
+        }
+
+        try {
+            $this->ensurePartnerDiscountStageTable($liveTable, $stageTable);
+            $this->db->query("TRUNCATE TABLE `" . $stageTable . "`");
+
+            $batch = [];
+            $batchSize = 1000;
+            foreach ($normalized as $item) {
+                $batch[] = "("
+                    . (int)$item['partner'] . ", "
+                    . "'" . $this->db->escape((string)$item['article']) . "', "
+                    . "'" . (float)$item['discount'] . "', "
+                    . "NOW(), NOW()"
+                    . ")";
+
+                if (count($batch) >= $batchSize) {
+                    $this->flushPartnerDiscountBatch($stageTable, $batch);
+                    $batch = [];
+                }
+            }
+
+            if ($batch) {
+                $this->flushPartnerDiscountBatch($stageTable, $batch);
+            }
+
+            $stageCountQuery = $this->db->query("SELECT COUNT(*) AS total FROM `" . $stageTable . "`");
+            $stageCount = isset($stageCountQuery->row['total']) ? (int)$stageCountQuery->row['total'] : -1;
+            if ($stageCount !== count($normalized)) {
+                $this->log('PartnerSync', "ABORT qPartnerArtikalRabatWeb full staging_count={$stageCount} expected=" . count($normalized) . '; live cache preserved.');
+                return 0;
+            }
+
+            $this->db->query("DROP TABLE IF EXISTS `" . $previousTable . "`");
+            $this->db->query("RENAME TABLE `" . $liveTable . "` TO `" . $previousTable . "`, `" . $stageTable . "` TO `" . $liveTable . "`, `" . $previousTable . "` TO `" . $stageTable . "`");
+
+            try {
+                $this->setFeedLastSync('partner_article_discounts', date('Y-m-d H:i:s'));
+            } catch (\Throwable $watermarkError) {
+                // The atomic data swap is already complete. Keep the older
+                // watermark so the next run safely replays the full feed.
+                $this->log('PartnerSync', 'WARN qPartnerArtikalRabatWeb live cache swapped, but last_sync was not updated.');
+            }
+
+            // Cleanup is deliberately after the atomic swap and watermark. A
+            // cleanup failure must not invalidate an otherwise successful swap.
+            try {
+                $this->db->query("TRUNCATE TABLE `" . $stageTable . "`");
+            } catch (\Throwable $cleanupError) {
+                $this->log('PartnerSync', 'WARN qPartnerArtikalRabatWeb old staging cache cleanup failed.');
+            }
+        } catch (\Throwable $error) {
+            $this->log('PartnerSync', 'ABORT qPartnerArtikalRabatWeb full staging/swap failed; live cache preserved.');
+            return 0;
+        } finally {
+            try {
+                $this->db->query("SELECT RELEASE_LOCK('" . $this->db->escape($lockName) . "')");
+            } catch (\Throwable $lockError) {
+                $this->log('PartnerSync', 'WARN qPartnerArtikalRabatWeb sync lock release failed; connection close will release it.');
             }
         }
 
-        if ($batch) {
-            $this->flushPartnerDiscountBatch($batch);
-            $inserted += count($batch);
-        }
-
-        $this->setFeedLastSync('partner_article_discounts', date('Y-m-d H:i:s'));
+        $inserted = count($normalized);
         $this->log('PartnerSync', "END qPartnerArtikalRabatWeb full inserted={$inserted}");
 
         return $inserted;
     }
 
-    private function flushPartnerDiscountBatch(array $batch): void
+    private function ensurePartnerDiscountStageTable(string $liveTable, string $stageTable): void
+    {
+        // Recreate on every full run so a stale stage table can never replace
+        // the live table with an older schema during the atomic rename.
+        $this->db->query("DROP TABLE IF EXISTS `" . $stageTable . "`");
+        $this->db->query("CREATE TABLE `" . $stageTable . "` LIKE `" . $liveTable . "`");
+    }
+
+    private function flushPartnerDiscountBatch(string $table, array $batch): void
     {
         if (!$batch) {
             return;
         }
 
-        $sql = "INSERT INTO `" . DB_PREFIX . "qiqo_partner_article_discount`
+        $sql = "INSERT INTO `" . $table . "`
                 (`partner_id`, `article_code`, `discount`, `date_added`, `date_modified`)
                 VALUES " . implode(',', $batch) . "
                 ON DUPLICATE KEY UPDATE
@@ -2033,6 +2395,21 @@ class ModelExtensionModuleQiqo extends Model
                     `date_modified` = NOW()";
 
         $this->db->query($sql);
+    }
+
+    private function isValidQiqoDecimal($value): bool
+    {
+        $value = trim((string)$value);
+        if ($value === '') {
+            return false;
+        }
+
+        $value = str_replace([' ', "\xc2\xa0"], '', $value);
+        if (strpos($value, ',') !== false && strpos($value, '.') !== false) {
+            $value = str_replace('.', '', $value);
+        }
+
+        return is_numeric(str_replace(',', '.', $value));
     }
 
     private function upsertPartners(array $rows): int
@@ -2189,9 +2566,10 @@ class ModelExtensionModuleQiqo extends Model
 
         $firstRow = reset($rows);
         $columns = is_array($firstRow) ? implode(', ', array_keys($firstRow)) : '(first row is not an array)';
-        $sampleRows = array_slice($rows, 0, 3);
 
-        $this->log('SalesRepsDebug', 'columns=' . $columns . ' sample=' . json_encode($sampleRows, JSON_UNESCAPED_UNICODE));
+        // Schema/count diagnostics are enough to troubleshoot mapping. Never
+        // persist raw personnel rows (names, codes or other ERP fields).
+        $this->log('SalesRepsDebug', 'rows=' . count($rows) . ' columns=' . $columns);
     }
 
     private function resolveQiqoSalesRepName(array $row, string $code): string
@@ -2332,7 +2710,7 @@ class ModelExtensionModuleQiqo extends Model
             return 0.0;
         }
 
-        $value = str_replace(' ', '', $value);
+        $value = str_replace([' ', "\xc2\xa0"], '', $value);
 
         if (strpos($value, ',') !== false && strpos($value, '.') !== false) {
             $value = str_replace('.', '', $value);
@@ -2343,48 +2721,154 @@ class ModelExtensionModuleQiqo extends Model
         return (float)$value;
     }
 
-    private function upsertActionPrices(array $rows): int
-    {
-        $count = 0;
+	private function upsertActionPrices(array $rows): int
+	{
+		$normalized = QiqoSyncGuard::normalizeActionRows($rows);
+		if (!$normalized['valid']) {
+			throw new \UnexpectedValueException('qAkcijskiCjenikWeb contains invalid rows.');
+		}
 
-        foreach ($rows as $row) {
-            $article = $this->firstQiqoValue($row, ['artikal', 'article_code', 'artikl', 'sifra', 'sifra_artikla', 'code']);
-            $indicator = $this->firstQiqoValue($row, ['indikator', 'indicator', 'oznaka', 'tip']);
-            $quantity = $this->qiqoDecimal($this->firstQiqoValue($row, ['kolicina', 'quantity', 'qty', 'kol']));
-            $price = $this->qiqoDecimal($this->firstQiqoValue($row, ['cijena', 'price', 'neto_cijena', 'net_price']));
-            $discount = $this->qiqoDecimal($this->firstQiqoValue($row, ['rabat', 'discount', 'popust']));
+		if (!$normalized['rows']) {
+			return 0;
+		}
 
-            if ($article === '' || $indicator === '') {
-                continue;
-            }
+		$lockName = DB_PREFIX . 'qiqo_action_prices_write';
+		if (!$this->acquireQiqoWriteLock($lockName)) {
+			throw new \RuntimeException('qAkcijskiCjenikWeb sync is already running.');
+		}
 
-            $indicator = strtoupper($indicator);
+		try {
+			foreach ($normalized['rows'] as $item) {
+				$this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_action_price`
+					SET `article_code` = '" . $this->db->escape((string)$item['article']) . "',
+						`indicator` = '" . $this->db->escape((string)$item['indicator']) . "',
+						`quantity` = '" . (float)$item['quantity'] . "',
+						`price` = '" . (float)$item['price'] . "',
+						`discount` = '" . (float)$item['discount'] . "',
+						`date_added` = NOW(),
+						`date_modified` = NOW()
+					ON DUPLICATE KEY UPDATE
+						`price` = VALUES(`price`),
+						`discount` = VALUES(`discount`),
+						`date_modified` = NOW()");
+			}
 
-            if ($indicator === 'X') {
-                $this->db->query("DELETE FROM `" . DB_PREFIX . "qiqo_action_price`
-                    WHERE `article_code` = '" . $this->db->escape($article) . "'");
-                $count++;
-                continue;
-            }
+			return count($normalized['rows']);
+		} finally {
+			$this->releaseQiqoWriteLock($lockName);
+		}
+	}
 
-            $this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_action_price`
-                SET `article_code` = '" . $this->db->escape($article) . "',
-                    `indicator` = '" . $this->db->escape($indicator) . "',
-                    `quantity` = '" . (float)$quantity . "',
-                    `price` = '" . (float)$price . "',
-                    `discount` = '" . (float)$discount . "',
-                    `date_added` = NOW(),
-                    `date_modified` = NOW()
-                ON DUPLICATE KEY UPDATE
-                    `price` = VALUES(`price`),
-                    `discount` = VALUES(`discount`),
-                    `date_modified` = NOW()");
+	private function replaceActionPricesFull(array $rows): int
+	{
+		$normalized = QiqoSyncGuard::normalizeActionRows($rows);
+		if (!$normalized['valid']) {
+			$this->log('PartnerSync', 'ABORT qAkcijskiCjenikWeb full invalid_rows=' . (int)$normalized['invalid_rows'] . '; live cache preserved.');
+			return 0;
+		}
 
-            $count++;
-        }
+		if (!$normalized['rows']) {
+			$this->log('PartnerSync', 'EMPTY qAkcijskiCjenikWeb full normalized feed; live cache and last_sync preserved.');
+			return 0;
+		}
 
-        return $count;
-    }
+		$liveTable = DB_PREFIX . 'qiqo_action_price';
+		$stageTable = $liveTable . '_stage';
+		$previousTable = $liveTable . '_previous';
+		$lockName = DB_PREFIX . 'qiqo_action_prices_write';
+
+		if (!$this->acquireQiqoWriteLock($lockName)) {
+			$this->log('PartnerSync', 'BUSY qAkcijskiCjenikWeb sync already running; live cache preserved.');
+			return 0;
+		}
+
+		try {
+			$this->db->query("DROP TABLE IF EXISTS `" . $stageTable . "`");
+			$this->db->query("CREATE TABLE `" . $stageTable . "` LIKE `" . $liveTable . "`");
+
+			$batch = [];
+			foreach ($normalized['rows'] as $item) {
+				$batch[] = "('" . $this->db->escape((string)$item['article']) . "', '"
+					. $this->db->escape((string)$item['indicator']) . "', '"
+					. (float)$item['quantity'] . "', '"
+					. (float)$item['price'] . "', '"
+					. (float)$item['discount'] . "', NOW(), NOW())";
+
+				if (count($batch) >= 1000) {
+					$this->flushActionPriceBatch($stageTable, $batch);
+					$batch = [];
+				}
+			}
+
+			if ($batch) {
+				$this->flushActionPriceBatch($stageTable, $batch);
+			}
+
+			$countQuery = $this->db->query("SELECT COUNT(*) AS total FROM `" . $stageTable . "`");
+			$stageCount = isset($countQuery->row['total']) ? (int)$countQuery->row['total'] : -1;
+			if ($stageCount !== count($normalized['rows'])) {
+				$this->log('PartnerSync', 'ABORT qAkcijskiCjenikWeb full staging count mismatch; live cache preserved.');
+				return 0;
+			}
+
+			$this->db->query("DROP TABLE IF EXISTS `" . $previousTable . "`");
+			$this->db->query("RENAME TABLE `" . $liveTable . "` TO `" . $previousTable . "`, `" . $stageTable . "` TO `" . $liveTable . "`, `" . $previousTable . "` TO `" . $stageTable . "`");
+
+			try {
+				$this->db->query("TRUNCATE TABLE `" . $stageTable . "`");
+			} catch (\Throwable $cleanupError) {
+				$this->log('PartnerSync', 'WARN qAkcijskiCjenikWeb old staging cache cleanup failed.');
+			}
+
+			return count($normalized['rows']);
+		} catch (\Throwable $error) {
+			$this->log('PartnerSync', 'ABORT qAkcijskiCjenikWeb full staging/swap failed; live cache preserved.');
+			return 0;
+		} finally {
+			$this->releaseQiqoWriteLock($lockName);
+		}
+	}
+
+	private function flushActionPriceBatch(string $table, array $batch): void
+	{
+		if (!$batch) {
+			return;
+		}
+
+		$this->db->query("INSERT INTO `" . $table . "`
+			(`article_code`, `indicator`, `quantity`, `price`, `discount`, `date_added`, `date_modified`)
+			VALUES " . implode(',', $batch));
+	}
+
+	private function acquireQiqoWriteLock(string $lockName): bool
+	{
+		$query = $this->db->query("SELECT GET_LOCK('" . $this->db->escape($lockName) . "', 0) AS acquired");
+
+		return isset($query->row['acquired']) && (int)$query->row['acquired'] === 1;
+	}
+
+	private function releaseQiqoWriteLock(string $lockName): void
+	{
+		try {
+			$this->db->query("SELECT RELEASE_LOCK('" . $this->db->escape($lockName) . "')");
+		} catch (\Throwable $error) {
+			$this->log('PartnerSync', 'WARN QIQO write lock release failed; connection close will release it.');
+		}
+	}
+
+	private function isQiqoProductTableTransactional(): bool
+	{
+		try {
+			$query = $this->db->query("SHOW TABLE STATUS LIKE '" . $this->db->escape(DB_PREFIX . 'product') . "'");
+			$engine = $query->num_rows && isset($query->row['Engine'])
+				? strtoupper(trim((string)$query->row['Engine']))
+				: '';
+		} catch (\Throwable $error) {
+			return false;
+		}
+
+		return in_array($engine, ['INNODB', 'XTRADB'], true);
+	}
 
     private function ensurePartnerSyncTables(): void
     {
@@ -2443,7 +2927,7 @@ class ModelExtensionModuleQiqo extends Model
             `article_code` VARCHAR(64) NOT NULL,
             `indicator` CHAR(1) NOT NULL,
             `quantity` DECIMAL(15,4) NOT NULL DEFAULT 0,
-            `price` DECIMAL(15,4) NOT NULL DEFAULT 0,
+            `price` DECIMAL(15,7) NOT NULL DEFAULT 0,
             `discount` DECIMAL(10,4) NOT NULL DEFAULT 0,
             `date_added` DATETIME NOT NULL,
             `date_modified` DATETIME NOT NULL,
@@ -2458,19 +2942,7 @@ class ModelExtensionModuleQiqo extends Model
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
-    private function hasCachedActionPrices(): bool
-    {
-        $q = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "qiqo_action_price`");
-
-        return !empty($q->row['total']);
-    }
-
-    private function clearActionPrices(): void
-    {
-        $this->db->query("DELETE FROM `" . DB_PREFIX . "qiqo_action_price`");
-    }
-
-    private function resolveSince(string $feedKey, string $fallback, bool $forceDefaultSince = false): string
+	private function resolveSince(string $feedKey, string $fallback, bool $forceDefaultSince = false): string
     {
         if ($forceDefaultSince) {
             return $fallback;

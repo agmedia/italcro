@@ -66,7 +66,9 @@
                         {% set button_cart = default_button_cart %}
                     {% endif %}
 
-                    <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="var quantityInput=$(this).closest('.single-product').find('.input-number').first(); cart.add('{{ product.product_id }}', quantityInput.length && window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : '{{ product.minimum }}');">{{ button_cart }}</a></div>
+                    {% if is_single_article %}
+                        <div class="btn-center catalog_hide"><a class="btn btn-light-outline btn-thin" onclick="var quantityInput=$(this).closest('.single-product').find('.input-number').first(); cart.add('{{ product.product_id }}', quantityInput.length && window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : '{{ product.minimum }}');">{{ button_cart }}</a></div>
+                    {% endif %}
 
                 </div><!-- .image ends -->
                 <div class="caption">

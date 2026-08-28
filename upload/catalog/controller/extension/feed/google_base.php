@@ -1,6 +1,15 @@
 <?php
 class ControllerExtensionFeedGoogleBase extends Controller {
 	public function index() {
+		// Public feed pricing needs an explicit policy for buyer-specific base
+		// rebates, C-100 display basis and grouped MPNs. Keep the legacy raw
+		// OpenCart price/special exporter fail-closed until that contract exists.
+		http_response_code(404);
+		$this->response->addHeader('HTTP/1.1 404 Not Found');
+		$this->response->addHeader('Cache-Control: no-store, private');
+		$this->response->setOutput('');
+		return;
+
 		if ($this->config->get('feed_google_base_status')) {
 			$output  = '<?xml version="1.0" encoding="UTF-8" ?>';
 			$output .= '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">';

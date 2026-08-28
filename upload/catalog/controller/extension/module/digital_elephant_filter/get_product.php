@@ -169,7 +169,7 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                     $sku_quantities,
                     $base_unit_prices,
 	                    false,
-	                    true
+	                    false
                 );
             }
 
@@ -189,14 +189,16 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 	            $minimum = $this->qiqoPackQuantity($result);
 	            $pak = isset($result['pak']) ? (int)$result['pak'] : 0;
 	            $list_min = $this->qiqoMinimumStep($result['cent'], $pak, $minimum);
-	            $display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
-            $display_special_unit = 0.0;
+		            $display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
+	            $display_special_unit = 0.0;
+	            $has_display_special = false;
             $qiqo_discount_percent = 0.0;
             $qiqo_action = ($sku_key !== '' && !empty($qiqo_action_article_map[$sku_key]))
                 || (isset($result['mpn_count']) && (int)$result['mpn_count'] > 1 && !empty($result['mpn']) && !empty($qiqo_action_mpn_map[(string)$result['mpn']]));
 
 	            if ($is_single_article && $sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
-	                $pricing = $qiqo_price_map[$sku_key];
+		                $pricing = $qiqo_price_map[$sku_key];
+		                $has_display_special = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false;
 	                $display_price_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
 	                    ? (float)$pricing['old_unit_price']
 	                    : (float)$pricing['base_unit_price'];
@@ -242,7 +244,7 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                  $priceeur  ='';
             }
 
-            if ($display_special_unit > 0) {
+	            if ($has_display_special) {
                 $special = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
                   if($this->session->data['currency']=='HRK'){
@@ -264,7 +266,7 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 				$image2 = false;
 			}
 			
-			if ($display_special_unit > 0 && ($this->config->get('salebadge_status')) ) {
+			if ($has_display_special && ($this->config->get('salebadge_status')) ) {
 			if ($this->config->get('salebadge_status') == '2') {
 				$sale_badge = '-' . number_format(((($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')))-($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax'))))/(($this->tax->calculate($display_price_unit, $result['tax_class_id'], $this->config->get('config_tax')))/100)), 0, ',', '.') . '%';
 			} else {
@@ -280,14 +282,14 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
 				$is_new = false;
 			}
 			
-			if ($display_special_unit > 0) {
+			if ($has_display_special) {
 				$date_end = $this->model_extension_basel_basel->getSpecialEndDate($result['product_id']);
 			} else {
 				$date_end = false;
 			}
 
             if ($this->config->get('config_tax')) {
-                $tax = $this->currency->format($display_special_unit > 0 ? $display_special_unit : $display_price_unit, $this->session->data['currency']);
+	                $tax = $this->currency->format($has_display_special ? $display_special_unit : $display_price_unit, $this->session->data['currency']);
             } else {
                 $tax = false;
             }
@@ -307,10 +309,11 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
             $price_raw = (float)$display_price_unit;
             $special_raw = (float)$display_special_unit;
             $preview_price_alt = false;
+			$preview_price_basis = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$result['cent'])) === 'C100' ? 100.0 : $list_min;
 
-            if ($special_raw > 0) {
-                $preview_price_raw = $special_raw * $list_min;
-                $preview_price_alt_raw = $price_raw * $list_min;
+	            if ($has_display_special) {
+                $preview_price_raw = $special_raw * $preview_price_basis;
+                $preview_price_alt_raw = $price_raw * $preview_price_basis;
 
                 $preview_price_alt = $this->currency->format(
                     $this->tax->calculate(
@@ -321,10 +324,10 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                     $this->session->data['currency']
                 );
             } else {
-                $preview_price_raw = $price_raw * $list_min;
+                $preview_price_raw = $price_raw * $preview_price_basis;
             }
 
-            $preview_price = ($preview_price_raw > 0) ? $this->currency->format(
+	            $preview_price = ($has_display_special || $preview_price_raw > 0) ? $this->currency->format(
                 $this->tax->calculate(
                     $preview_price_raw,
                     $result['tax_class_id'],

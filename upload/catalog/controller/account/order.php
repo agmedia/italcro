@@ -269,7 +269,7 @@ class ControllerAccountOrder extends Controller {
 					continue;
 				}
 
-				$sku_quantities[$sku] = $qty;
+				$sku_quantities[$sku] = isset($sku_quantities[$sku]) ? $sku_quantities[$sku] + $qty : $qty;
 				$base_unit_prices[$sku] = $base_unit;
 			}
 
@@ -446,7 +446,7 @@ class ControllerAccountOrder extends Controller {
 						}
 					}
 
-					$this->cart->add($order_product_info['product_id'], $order_product_info['quantity'], $option_data);
+					$this->cart->add($order_product_info['product_id'], $order_product_info['quantity'], $option_data, 0, true);
 
 					$this->session->data['success'] = sprintf($this->language->get('text_success'), $this->url->link('product/product', 'product_id=' . $product_info['product_id']), $product_info['name'], $this->url->link('checkout/cart'));
 

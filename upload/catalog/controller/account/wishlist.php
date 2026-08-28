@@ -66,7 +66,8 @@ class ControllerAccountWishList extends Controller {
 				$wishlist_products[] = $product_info;
 
 				$sku = trim((string)$product_info['sku']);
-				if ($sku !== '') {
+				$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
+				if ($is_single_article && $sku !== '') {
 					$wishlist_skus[] = $sku;
 				}
 			} else {
@@ -83,8 +84,9 @@ class ControllerAccountWishList extends Controller {
 
 			foreach ($wishlist_products as $product_info) {
 				$sku = trim((string)$product_info['sku']);
+				$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
 
-				if ($sku === '') {
+				if (!$is_single_article || $sku === '') {
 					continue;
 				}
 
@@ -107,7 +109,7 @@ class ControllerAccountWishList extends Controller {
 					$sku_quantities,
 					$base_prices,
 						false,
-						true
+						false
 				);
 			}
 		}
@@ -117,8 +119,9 @@ class ControllerAccountWishList extends Controller {
 			$pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
 			$minimum_step = $this->qiqoMinimumStep($product_info['cent'], $pak, $minimum);
 			$sku = trim((string)$product_info['sku']);
+			$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
 
-			if ($this->qiqoIsC100($product_info['cent'])) {
+			if ($is_single_article && $this->qiqoIsC100($product_info['cent'])) {
 				$data['wishlist_has_c100'] = true;
 			}
 
@@ -127,7 +130,7 @@ class ControllerAccountWishList extends Controller {
 			$discount_percent = 0.0;
 			$row_pricing = array();
 
-			if ($sku !== '' && isset($qiqo_price_map[$sku])) {
+			if ($is_single_article && $sku !== '' && isset($qiqo_price_map[$sku])) {
 				$row_pricing = $qiqo_price_map[$sku];
 				$vpc_unit_raw = isset($row_pricing['base_unit_price']) ? (float)$row_pricing['base_unit_price'] : $vpc_unit_raw;
 				$price_unit_raw = isset($row_pricing['final_unit_price']) ? (float)$row_pricing['final_unit_price'] : $vpc_unit_raw;
@@ -143,7 +146,7 @@ class ControllerAccountWishList extends Controller {
 				$price_display_raw = $vpc_display_raw * (1 - ($discount_percent / 100));
 			}
 
-			$action_conditions = ($sku !== '' && isset($qiqo_action_details_map[$sku]))
+			$action_conditions = ($is_single_article && $sku !== '' && isset($qiqo_action_details_map[$sku]))
 				? $this->formatQiqoActionConditions($qiqo_action_details_map[$sku])
 				: array();
 			$thumb = !empty($product_info['image'])
@@ -167,12 +170,13 @@ class ControllerAccountWishList extends Controller {
 				'packaging'  => $this->formatQiqoPackaging($this->qiqoJm($product_info), $minimum, $pak),
 				'minimumifc100' => $minimum_step,
 				'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($product_info),
+				'is_single_article' => $is_single_article,
 				'qiqo_discount_percent' => $discount_percent,
 				'qiqo_action' => !empty($action_conditions),
 				'qiqo_action_conditions' => $action_conditions,
-				'vpc'        => $data['show_prices'] ? $this->currency->format($vpc_display_raw, $this->session->data['currency']) : false,
-				'final_price' => $data['show_prices'] ? $this->currency->format($price_display_raw, $this->session->data['currency']) : false,
-				'price'      => $data['show_prices'] ? $this->currency->format($price_display_raw, $this->session->data['currency']) : false,
+				'vpc'        => ($data['show_prices'] && $is_single_article) ? $this->currency->format($vpc_display_raw, $this->session->data['currency']) : false,
+				'final_price' => ($data['show_prices'] && $is_single_article) ? $this->currency->format($price_display_raw, $this->session->data['currency']) : false,
+				'price'      => ($data['show_prices'] && $is_single_article) ? $this->currency->format($price_display_raw, $this->session->data['currency']) : false,
 				'href'       => $this->url->link('product/product', 'product_id=' . $product_info['product_id']),
 				'remove'     => $this->url->link('account/wishlist', 'remove=' . $product_info['product_id'])
 			);

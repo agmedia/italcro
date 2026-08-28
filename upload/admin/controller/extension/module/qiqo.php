@@ -13,11 +13,20 @@ class ControllerExtensionModuleQiqo extends Controller
         $this->load->model('extension/module/qiqo');
 
         if ($this->request->server['REQUEST_METHOD'] == 'POST' && isset($this->request->post['action'])) {
+			if (!$this->user->hasPermission('modify', 'extension/module/qiqo')) {
+				$this->session->data['error'] = 'Nemate dopuštenje za izmjenu QIQO modula.';
+				$this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+				return;
+			}
 
             switch ($this->request->post['action']) {
                 case 'import':
                     $count = $this->model_extension_module_qiqo->importArticles();
-                    $this->session->data['success'] = "Import završen. Uvezeno {$count} novih artikala.";
+                    if ($count < 0) {
+                        $this->session->data['error'] = 'Import je sigurnosno prekinut. Podaci nisu mijenjani; provjeri QIQO log i konfiguraciju.';
+                    } else {
+                        $this->session->data['success'] = "Import završen. Uvezeno {$count} novih artikala.";
+                    }
                     break;
 
                 case 'update_qty':
@@ -27,7 +36,11 @@ class ControllerExtensionModuleQiqo extends Controller
 
                 case 'update_price':
                     $count = $this->model_extension_module_qiqo->updatePrices();
-                    $this->session->data['success'] = "Ažurirano cijena: {$count} artikala.";
+                    if ($count < 0) {
+                        $this->session->data['error'] = 'Ažuriranje cijena je sigurnosno prekinuto. Cijene nisu namjerno mijenjane; provjeri QIQO log i konfiguraciju.';
+                    } else {
+                        $this->session->data['success'] = "Ažurirano cijena: {$count} artikala.";
+                    }
                     break;
 
                 case 'update_assets':
@@ -67,8 +80,14 @@ class ControllerExtensionModuleQiqo extends Controller
                     break;
 
                 case 'disable_missing':
-                    $count = $this->model_extension_module_qiqo->disableMissingArticles();
-                    $this->session->data['success'] = "Onemogućeno {$count} proizvoda koji ne postoje u ERP-u.";
+                    if (!$this->model_extension_module_qiqo->isDisableMissingArticlesEnabled()) {
+                        $this->session->data['error'] = 'Sigurnosno blokirano: potreban je potvrđen potpuni qArtikliWeb snapshot i transakcijska product tablica. Nijedan artikl nije onemogućen.';
+                    } else {
+                        $count = $this->model_extension_module_qiqo->disableMissingArticles();
+                        $this->session->data[$count ? 'success' : 'error'] = $count
+                            ? "Onemogućeno {$count} proizvoda koji ne postoje u potvrđenom ERP snapshotu."
+                            : 'Nijedan artikl nije onemogućen. Provjeri QIQO log i snapshot sanity provjere.';
+                    }
                     break;
 
                 case 'sync_sales_reps':
@@ -91,8 +110,12 @@ class ControllerExtensionModuleQiqo extends Controller
                     break;
 
                 case 'sync_partner_base_full':
-                    $stats = $this->model_extension_module_qiqo->syncPartnerBaseDataFull();
-                    $this->session->data['success'] = "Partner base FULL sync: partneri {$stats['partners']}, mjesta isporuke {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcijski cjenik {$stats['action_prices']}.";
+                    if (!$this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled()) {
+                        $this->session->data['error'] = 'FULL sync je sigurnosno blokiran dok ERP ne potvrdi potpuni snapshot i dok se ne postavi eksplicitni početni datum.';
+                    } else {
+                        $stats = $this->model_extension_module_qiqo->syncPartnerBaseDataFull();
+                        $this->session->data['success'] = "Partner base FULL sync: partneri {$stats['partners']}, mjesta isporuke {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcijski cjenik {$stats['action_prices']}.";
+                    }
                     break;
 
                 case 'sync_action_prices':
@@ -101,19 +124,35 @@ class ControllerExtensionModuleQiqo extends Controller
                     break;
 
                 case 'sync_action_prices_full':
-                    $count = $this->model_extension_module_qiqo->syncActionPricesFull();
-                    $this->session->data['success'] = "Akcijski cjenik FULL sync: {$count} slogova.";
+                    if (!$this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled()) {
+                        $this->session->data['error'] = 'Akcijski cjenik FULL je blokiran dok ERP ne potvrdi potpuni snapshot.';
+                    } else {
+                        $count = $this->model_extension_module_qiqo->syncActionPricesFull();
+                        $this->session->data[$count ? 'success' : 'error'] = $count
+                            ? "Akcijski cjenik FULL sync: {$count} slogova."
+                            : 'Akcijski cjenik FULL nije zamijenjen; live cache i watermark su sačuvani.';
+                    }
                     break;
 
                 case 'sync_partner_discounts':
-                    $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
-                    $this->session->data['success'] = "Partner-artikl rabati full sync: {$count} slogova.";
+                    if (!$this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled()) {
+                        $this->session->data['error'] = 'Partner-artikl FULL je blokiran dok ERP ne potvrdi potpuni snapshot.';
+                    } else {
+                        $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
+                        $this->session->data[$count ? 'success' : 'error'] = $count
+                            ? "Partner-artikl rabati FULL sync: {$count} slogova."
+                            : 'Partner-artikl rabati nisu zamijenjeni; live cache i watermark su sačuvani.';
+                    }
                     break;
 
                 case 'sync_partner_all':
-                    $stats = $this->model_extension_module_qiqo->syncPartnerBaseData();
-                    $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
-                    $this->session->data['success'] = "Kompletan partner sync: partneri {$stats['partners']}, mjesta {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcije {$stats['action_prices']}, partner-artikl rabati {$count}.";
+                    if (!$this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled()) {
+                        $this->session->data['error'] = 'Kompletan sync je blokiran jer uključuje destruktivni FULL snapshot. Koristi inkrementalni partner sync.';
+                    } else {
+                        $stats = $this->model_extension_module_qiqo->syncPartnerBaseData();
+                        $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
+                        $this->session->data['success'] = "Kompletan partner sync: partneri {$stats['partners']}, mjesta {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcije {$stats['action_prices']}, partner-artikl rabati {$count}.";
+                    }
                     break;
 
                 case 'update_article_partners':
@@ -140,12 +179,15 @@ class ControllerExtensionModuleQiqo extends Controller
         $data['heading_title'] = $this->language->get('heading_title');
         $data['action']        = $this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true);
         $data['cancel']        = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=module', true);
+		$data['order_outbox']  = $this->url->link('extension/module/qiqo/orderOutbox', 'user_token=' . $this->session->data['user_token'], true);
         $data['success']       = $this->session->data['success'] ?? '';
         $data['error']       = $this->session->data['error'] ?? '';
         unset($this->session->data['success']);
         unset($this->session->data['error']);
 
         $data['last_log'] = $this->model_extension_module_qiqo->getLastLog();
+        $data['disable_missing_enabled'] = $this->model_extension_module_qiqo->isDisableMissingArticlesEnabled();
+        $data['full_snapshot_enabled'] = $this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled();
         $data['upload_action'] = $this->url->link('extension/module/qiqo/uploadLogos', 'user_token=' . $this->session->data['user_token'], true);
 
         // --- FILTERI ZA oc_product_asset_sync ---
@@ -239,11 +281,132 @@ class ControllerExtensionModuleQiqo extends Controller
         $this->response->setOutput($this->load->view('extension/module/qiqo', $data));
     }
 
+	public function orderOutbox()
+	{
+		$this->load->language('extension/module/qiqo');
+		$this->load->model('extension/module/qiqo_order_outbox');
+		$this->document->setTitle('QIQO NarudzbaSend');
+
+		$filter_status = isset($this->request->get['filter_status']) ? trim((string)$this->request->get['filter_status']) : '';
+		$page = isset($this->request->get['page']) ? max(1, (int)$this->request->get['page']) : 1;
+		$limit = 50;
+
+		$data['rows'] = array();
+		$rows = $this->model_extension_module_qiqo_order_outbox->getRows(array(
+			'filter_status' => $filter_status,
+			'start' => ($page - 1) * $limit,
+			'limit' => $limit
+		));
+
+		foreach ($rows as $row) {
+			$decoded = json_decode($row['payload_json'], true);
+			$row['payload_pretty'] = is_array($decoded)
+				? json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION)
+				: $row['payload_json'];
+			$row['order_link'] = $this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . (int)$row['order_id'], true);
+			$data['rows'][] = $row;
+		}
+
+		$total = $this->model_extension_module_qiqo_order_outbox->getTotal($filter_status);
+		$config = $this->model_extension_module_qiqo_order_outbox->getConfigurationState();
+		$data['send_enabled'] = $config['enabled'];
+		$data['credentials_configured'] = $config['credentials_configured'];
+		$data['endpoint_configured'] = $config['endpoint_configured'];
+		$data['secure_transport'] = $config['secure_transport'];
+		$data['transport_approved'] = $config['transport_approved'];
+		$data['endpoint'] = $config['endpoint'];
+		$data['counts'] = $this->model_extension_module_qiqo_order_outbox->getCounts();
+		$data['outbox_start_at'] = $this->model_extension_module_qiqo_order_outbox->getOutboxStartAt();
+		$data['missing_order_count'] = $this->model_extension_module_qiqo_order_outbox->getMissingEligibleOrderCount();
+		$data['missing_orders'] = $this->model_extension_module_qiqo_order_outbox->getMissingEligibleOrders(20);
+		$data['filter_status'] = $filter_status;
+		$data['modify'] = $this->user->hasPermission('modify', 'extension/module/qiqo');
+		$data['user_token'] = $this->session->data['user_token'];
+
+		$data['heading_title'] = 'QIQO NarudzbaSend';
+		$data['back'] = $this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true);
+		$data['filter_action'] = $this->url->link('extension/module/qiqo/orderOutbox', 'user_token=' . $this->session->data['user_token'], true);
+		$data['action'] = $this->url->link('extension/module/qiqo/orderOutboxAction', 'user_token=' . $this->session->data['user_token'], true);
+		$data['success'] = isset($this->session->data['success']) ? $this->session->data['success'] : '';
+		$data['error'] = isset($this->session->data['error']) ? $this->session->data['error'] : '';
+		unset($this->session->data['success'], $this->session->data['error']);
+
+		$pagination = new Pagination();
+		$pagination->total = $total;
+		$pagination->page = $page;
+		$pagination->limit = $limit;
+		$pagination->url = $this->url->link('extension/module/qiqo/orderOutbox', 'user_token=' . $this->session->data['user_token'] . ($filter_status !== '' ? '&filter_status=' . urlencode($filter_status) : '') . '&page={page}', true);
+		$data['pagination'] = $pagination->render();
+		$data['results'] = sprintf('Prikazano %d–%d od %d zapisa', $total ? (($page - 1) * $limit + 1) : 0, min($page * $limit, $total), $total);
+
+		$data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+		$this->response->setOutput($this->load->view('extension/module/qiqo_order_outbox', $data));
+	}
+
+	public function orderOutboxAction()
+	{
+		if ($this->request->server['REQUEST_METHOD'] !== 'POST') {
+			$this->response->redirect($this->url->link('extension/module/qiqo/orderOutbox', 'user_token=' . $this->session->data['user_token'], true));
+			return;
+		}
+		if (!$this->user->hasPermission('modify', 'extension/module/qiqo')) {
+			$this->session->data['error'] = 'Nemate dopuštenje za izmjenu QIQO modula.';
+			$this->response->redirect($this->url->link('extension/module/qiqo/orderOutbox', 'user_token=' . $this->session->data['user_token'], true));
+			return;
+		}
+
+		$this->load->model('extension/module/qiqo_order_outbox');
+		$outbox_id = isset($this->request->post['outbox_id']) ? (int)$this->request->post['outbox_id'] : 0;
+		$action = isset($this->request->post['outbox_action']) ? (string)$this->request->post['outbox_action'] : '';
+
+		try {
+			switch ($action) {
+				case 'rebuild':
+					$this->model_extension_module_qiqo_order_outbox->rebuild($outbox_id);
+					$this->session->data['success'] = 'Payload je ponovno izgrađen i spreman za provjeru.';
+					break;
+				case 'send':
+					$result = $this->model_extension_module_qiqo_order_outbox->send($outbox_id);
+					$this->session->data[$result['state'] === 'sent' ? 'success' : 'error'] = 'NarudzbaSend rezultat: ' . $result['state'] . ' — ' . $result['description'];
+					break;
+				case 'retry':
+					$this->model_extension_module_qiqo_order_outbox->allowRetry($outbox_id);
+					$this->session->data['success'] = 'Potvrđeno neuspjelo slanje vraćeno je u red.';
+					break;
+				case 'mark_sent':
+					$this->model_extension_module_qiqo_order_outbox->markVerifiedSent($outbox_id);
+					$this->session->data['success'] = 'Zapis je označen poslanim nakon ručne provjere u ERP-u.';
+					break;
+				case 'mark_not_sent':
+					$this->model_extension_module_qiqo_order_outbox->markVerifiedNotSent($outbox_id);
+					$this->session->data['success'] = 'Potvrđeno je da zapis nije stigao u ERP; ponovno slanje je sada dopušteno.';
+					break;
+				case 'mark_uncertain':
+					$this->model_extension_module_qiqo_order_outbox->markProcessingUncertain($outbox_id);
+					$this->session->data['success'] = 'Prekinuta obrada označena je nepoznatom; prije nastavka provjerite ERP.';
+					break;
+				default:
+					throw new RuntimeException('Nepoznata outbox akcija.');
+			}
+		} catch (Throwable $e) {
+			$this->session->data['error'] = $e->getMessage();
+		}
+
+		$this->response->redirect($this->url->link('extension/module/qiqo/orderOutbox', 'user_token=' . $this->session->data['user_token'], true));
+	}
+
 
     public function uploadLogos()
     {
         $this->load->language('extension/module/qiqo');
         $this->load->model('extension/module/qiqo');
+		if (!$this->user->hasPermission('modify', 'extension/module/qiqo')) {
+			$this->session->data['error'] = 'Nemate dopuštenje za prijenos QIQO datoteka.';
+			$this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+			return;
+		}
 
         // Gdje želimo završne slike/dokumente:
         // fizički: /upload/image/Slike/...

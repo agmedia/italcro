@@ -1398,7 +1398,7 @@ class ControllerRestOrderAdmin extends RestAdminController
             }
             
             if (empty($this->json['error'])) {
-                $this->cart->add($data['product_id'], $quantity, $option);
+				$this->cart->add($data['product_id'], $quantity, $option, $recurring_id, true);
             }
         } else {
 

@@ -397,14 +397,15 @@ var unsubscribe = function(module) {
 
 // Cart add remove functions
 var cart = {
-	'add': function(product_id, quantity, source, confirm_duplicate) {
+	'add': function(product_id, quantity, source, confirm_duplicate, qiqo_grouped_variant) {
 		$.ajax({
 			url: 'index.php?route=extension/basel/basel_features/add_to_cart',
 			type: 'post',
 			data: {
 				product_id: product_id,
 				quantity: (typeof(quantity) != 'undefined' ? quantity : 1),
-				confirm_duplicate: confirm_duplicate ? 1 : 0
+				confirm_duplicate: confirm_duplicate ? 1 : 0,
+				qiqo_grouped_variant: qiqo_grouped_variant ? 1 : 0
 			},
 			dataType: 'json',
 			
@@ -421,7 +422,7 @@ var cart = {
 				if (json['confirm_duplicate']) {
 					$('.basel-spinner.ajax-call').remove();
 					if (confirm(json['confirm_duplicate']['message'] || json['confirm_duplicate'])) {
-						cart.add(product_id, quantity, source, true);
+						cart.add(product_id, quantity, source, true, qiqo_grouped_variant);
 					}
 
 					return;

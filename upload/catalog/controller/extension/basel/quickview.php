@@ -57,7 +57,8 @@ class ControllerExtensionBaselQuickview extends Controller {
 			$data['reviews'] = sprintf($this->language->get('text_reviews'), (int)$product_info['reviews']);
 			$data['rating'] = (int)$product_info['rating'];
 
-			$data['button_cart'] = $this->language->get('button_cart');
+				$data['button_cart'] = $this->language->get('button_cart');
+				$data['is_single_article'] = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
 			
 			
 			
@@ -96,26 +97,62 @@ class ControllerExtensionBaselQuickview extends Controller {
 				);
 			}
 
-			if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
-				$data['price'] = $this->currency->format($this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
-			} else {
-				$data['price'] = false;
-			}
+					$display_price_unit = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
+						$display_special_unit = 0.0;
+						$has_display_special = false;
+					$data['qiqo_discount_percent'] = 0.0;
 
-			if ((float)$product_info['special']) {
-				$data['special'] = $this->currency->format($this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
-			} else {
-				$data['special'] = false;
-			}
+				$sku = trim((string)$product_info['sku']);
+					if ($data['is_single_article'] && $this->customer->isLogged() && $sku !== '' && $display_price_unit > 0) {
+					$quantity = isset($product_info['pakkol']) && (float)$product_info['pakkol'] > 0
+						? (float)$product_info['pakkol']
+						: (isset($product_info['minimum']) && (float)$product_info['minimum'] > 0 ? (float)$product_info['minimum'] : 1.0);
+					$pricing_map = $this->model_catalog_product->getQiqoPricingMap(
+						(int)$this->customer->getId(),
+						array($sku => $quantity),
+						array($sku => $display_price_unit),
+						false,
+						false
+					);
 
-			if ($this->config->get('config_tax')) {
-				$data['tax'] = $this->currency->format((float)$product_info['special'] ? $product_info['special'] : $product_info['price'], $this->session->data['currency']);
-			} else {
-				$data['tax'] = false;
-			}
+						if (isset($pricing_map[$sku])) {
+							$pricing = $pricing_map[$sku];
+							$has_display_special = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false;
+						$display_price_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+							? (float)$pricing['old_unit_price']
+							: (float)$pricing['base_unit_price'];
+						$display_special_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
+							? (float)$pricing['final_unit_price']
+							: 0.0;
+						$data['qiqo_discount_percent'] = isset($pricing['discount_percent']) ? (float)$pricing['discount_percent'] : 0.0;
+						}
+				}
+
+				$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/i', '', isset($product_info['cent']) ? (string)$product_info['cent'] : ''));
+				$display_multiplier = $cent_normalized === 'C100' ? 100 : 1;
+				$display_price = $display_price_unit * $display_multiplier;
+				$display_special = $display_special_unit * $display_multiplier;
+
+					if ($data['is_single_article'] && ($this->customer->isLogged() || !$this->config->get('config_customer_price'))) {
+					$data['price'] = $this->currency->format($this->tax->calculate($display_price, $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+				} else {
+					$data['price'] = false;
+				}
+
+					if ($has_display_special) {
+					$data['special'] = $this->currency->format($this->tax->calculate($display_special, $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+				} else {
+					$data['special'] = false;
+				}
+
+				if ($this->config->get('config_tax')) {
+						$data['tax'] = $this->currency->format($has_display_special ? $display_special : $display_price, $this->session->data['currency']);
+				} else {
+					$data['tax'] = false;
+				}
 			
 			
-			$discounts = $this->model_catalog_product->getProductDiscounts($this->request->get['product_id']);
+					$discounts = array();
 
 			$data['discounts'] = array();
 

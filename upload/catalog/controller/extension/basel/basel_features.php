@@ -125,7 +125,15 @@ public function add_to_cart() {
 				if ($existing_quantity > 0 && empty($this->request->post['confirm_duplicate'])) {
 					$json['confirm_duplicate'] = $this->getConfirmDuplicatePayload($existing_quantity, $product_info);
 				} else {
-					$this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id);
+					$allow_grouped_variant = !empty($this->request->post['qiqo_grouped_variant']);
+					$added = $this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id, $allow_grouped_variant);
+
+					if (!$added) {
+						$json['error']['warning'] = 'Odaberite točan artikl iz tablice varijanti prije dodavanja u košaricu.';
+						$this->response->addHeader('Content-Type: application/json');
+						$this->response->setOutput(json_encode($json));
+						return;
+					}
 						
 					if ($this->config->get('basel_cart_action') == 'redirect_cart') $json['success_redirect'] = $this->url->link('checkout/cart');
 					if ($this->config->get('basel_cart_action') == 'redirect_checkout') $json['success_redirect'] = $this->url->link('checkout/checkout', '', true);

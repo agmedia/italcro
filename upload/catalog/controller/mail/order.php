@@ -226,7 +226,7 @@ class ControllerMailOrder extends Controller {
 					continue;
 				}
 
-				$sku_quantities[$sku] = $qty;
+				$sku_quantities[$sku] = isset($sku_quantities[$sku]) ? $sku_quantities[$sku] + $qty : $qty;
 				$base_unit_prices[$sku] = $base_unit;
 			}
 

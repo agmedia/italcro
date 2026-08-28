@@ -47,6 +47,13 @@ class ControllerExtensionModuleTfFilter extends Controller
         $this->info['search_on_limit'] = 10;
         $this->info['filter_sort_by'] = 'sort_order'; // product/sort_order
 
+        // Catalog cards now use buyer/article QIQO pricing which this legacy
+        // SQL filter cannot reproduce safely. Hide the price slider until the
+        // filter has a verified buyer-aware price projection; returning a
+        // misleading range is worse than omitting this optional control.
+        $this->info['filter']['price']['status'] = false;
+        $this->info['filter']['discount']['status'] = false;
+
         // Language
         $this->load->language('extension/module/tf_filter');
         $this->translate(); // Translate language
@@ -1501,19 +1508,6 @@ class ControllerExtensionModuleTfFilter extends Controller
     private function param($filter_data = array())
     {
 
-        // Filter Price
-        if (!empty($this->request->get['tf_fp']) && ($this->customer->isLogged() || !$this->config->get('config_customer_price'))) {
-            $price = explode('p', $this->request->get['tf_fp']);
-
-            if (isset($price[0])) { // Minimum price
-                $filter_data['filter_min_price'] = (int) $price[0] / $this->currency->getValue($this->session->data['currency']);
-            }
-
-            if (isset($price[1])) { // Maximum price
-                $filter_data['filter_max_price'] = (int) $price[1] / $this->currency->getValue($this->session->data['currency']);
-            }
-        }
-
         // Filter Manufacturer
         if (!empty($this->request->get['tf_fm'])) {
             $filter_data['filter_manufacturer_id'] = explode('.', $this->request->get['tf_fm']);
@@ -1549,11 +1543,6 @@ class ControllerExtensionModuleTfFilter extends Controller
             $filter_data['filter_min_rating'] = $this->request->get['tf_fr'];
         }
 
-        // Filter discount
-        if (!empty($this->request->get['tf_fd'])) {
-            $filter_data['filter_min_special_perc'] = $this->request->get['tf_fd'];
-        }
-
         // Filter Filter
         if (!empty($this->request->get['tf_ff'])) {
             $filter_data['filter_filter'] = explode('.', $this->request->get['tf_ff']);
@@ -1576,6 +1565,19 @@ class ControllerExtensionModuleTfFilter extends Controller
 
     public function filter_data($filter_data = array())
     {
+        unset($filter_data['filter_min_price'], $filter_data['filter_max_price'], $filter_data['filter_min_special_perc']);
+
+        if (isset($filter_data['sort']) && in_array($filter_data['sort'], ['p.price', 'ps.price'], true)) {
+            $filter_data['sort'] = 'p.sort_order';
+            $filter_data['order'] = 'ASC';
+        }
+
+        if (!empty($filter_data['sort_order']) && is_array($filter_data['sort_order'])) {
+            $filter_data['sort_order'] = array_values(array_filter($filter_data['sort_order'], function ($sortOrder) {
+                return empty($sortOrder['sort']) || !in_array($sortOrder['sort'], ['p.price', 'ps.price'], true);
+            }));
+        }
+
         if (!isset($filter_data['filter_sub_category']) && $this->config->get('module_tf_filter_sub_category')) {
             $filter_data['filter_sub_category'] = true;
         }
@@ -1601,11 +1603,6 @@ class ControllerExtensionModuleTfFilter extends Controller
      */
     public function url($url)
     {
-
-        // Filter Price
-        if (!empty($this->request->get['tf_fp'])) {
-            $url .= '&tf_fp=' . $this->request->get['tf_fp'];
-        }
 
         // Filter Manufacturer
         if (!empty($this->request->get['tf_fm'])) {
@@ -1635,11 +1632,6 @@ class ControllerExtensionModuleTfFilter extends Controller
         // Filter rating
         if (!empty($this->request->get['tf_fr'])) {
             $url .= '&tf_fr=' . $this->request->get['tf_fr'];
-        }
-
-        // Filter discount
-        if (!empty($this->request->get['tf_fd'])) {
-            $url .= '&tf_fd=' . $this->request->get['tf_fd'];
         }
 
         // Filter filter

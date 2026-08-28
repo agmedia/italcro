@@ -184,10 +184,14 @@ class ControllerProductProduct extends Controller {
 
 					$data['qiqo_discount_percent'] = 0;
 					$data['qiqo_action'] = false;
-				$data['mpn_count'] = ($product_info && isset($product_info['mpn_count'])) ? (int)$product_info['mpn_count'] : 1;
-				$data['is_single_article'] = !$product_info || empty($product_info['mpn']) || $data['mpn_count'] <= 1;
-				if ($product_info) {
-					$main_sku = trim((string)$product_info['sku']);
+					$data['mpn_count'] = ($product_info && isset($product_info['mpn_count'])) ? (int)$product_info['mpn_count'] : 1;
+					$data['is_single_article'] = !$product_info || empty($product_info['mpn']) || $data['mpn_count'] <= 1;
+					if ($product_info) {
+						// Product pages are catalog surfaces: legacy OpenCart special /
+						// discount rows must never leak action pricing here.
+						$product_info['price'] = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
+						$product_info['special'] = null;
+						$main_sku = trim((string)$product_info['sku']);
 				if ($main_sku !== '') {
 					$main_action_map = $this->model_catalog_product->getQiqoActionArticleMap(array($main_sku));
 					$data['qiqo_action'] = !empty($main_action_map[$main_sku]);
@@ -209,7 +213,7 @@ class ControllerProductProduct extends Controller {
 							array($main_sku => $main_minimum),
 							array($main_sku => $main_base_unit),
 								false,
-								true
+								false
 						);
 
 						if (isset($main_map[$main_sku])) {
@@ -230,19 +234,21 @@ class ControllerProductProduct extends Controller {
 
 	        $minimum = $this->qiqoMinimumStep($product_info['cent'], isset($product_info['pak']) ? (int)$product_info['pak'] : 0, $this->qiqoPackQuantity($product_info));
 
-        $price_raw   = (float)$product_info['price'];
-        $special_raw = (float)$product_info['special'];
+	        $price_raw   = (float)$product_info['price'];
+	        $special_raw = (float)$product_info['special'];
+	        $main_has_special = !is_null($product_info['special']);
 
 
 
 // default
-        $data['preview_price_old'] = false;
-        $data['preview_price_new'] = false;
+	        $data['preview_price_old'] = false;
+	        $data['preview_price_new'] = false;
+	        $main_preview_basis = $this->qiqoIsC100($product_info['cent']) ? 100.0 : $minimum;
 
         if ($price_raw > 0) {
             // uvijek izračunaj "novo" (ako nema special, novo je regular)
-            $new_unit = ($special_raw > 0) ? $special_raw : $price_raw;
-            $new_total = $new_unit * $minimum;
+	            $new_unit = $main_has_special ? $special_raw : $price_raw;
+	            $new_total = $new_unit * $main_preview_basis;
 
             $data['preview_price_new'] = $this->currency->format(
                 $this->tax->calculate($new_total, $product_info['tax_class_id'], $this->config->get('config_tax')),
@@ -250,8 +256,8 @@ class ControllerProductProduct extends Controller {
             );
 
             // ako ima special, izračunaj i "staro"
-            if ($special_raw > 0) {
-                $old_total = $price_raw * $minimum;
+	            if ($main_has_special) {
+	                $old_total = $price_raw * $main_preview_basis;
 
                 $data['preview_price_old'] = $this->currency->format(
                     $this->tax->calculate($old_total, $product_info['tax_class_id'], $this->config->get('config_tax')),
@@ -262,7 +268,7 @@ class ControllerProductProduct extends Controller {
             $data['preview_text_tax_included'] = false;
 
 // samo ako imamo preview_price_new
-            if ($new_total > 0) {
+	            if ($main_has_special || $new_total > 0) {
                 $data['preview_text_tax_included'] = $this->currency->format(
                     $new_total, // ⬅️ BEZ PDV-a
                     $this->session->data['currency']
@@ -449,7 +455,7 @@ class ControllerProductProduct extends Controller {
 
 
 
-            if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
+            if ($data['is_single_article'] && ($this->customer->isLogged() || !$this->config->get('config_customer_price'))) {
 				$data['price'] = $this->currency->format($this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 				if($this->session->data['currency']=='HRK'){
@@ -466,7 +472,7 @@ class ControllerProductProduct extends Controller {
 				  $data['priceeur'] ='';
 			}
 
-			if (!is_null($product_info['special']) && (float)$product_info['special'] >= 0) {
+			if ($data['is_single_article'] && !is_null($product_info['special']) && (float)$product_info['special'] >= 0) {
 				$data['special'] = $this->currency->format($this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 				  if($this->session->data['currency']=='HRK'){
@@ -485,15 +491,17 @@ class ControllerProductProduct extends Controller {
 				$tax_price = (float)$product_info['price'];
 			}
 
-            $final_price = isset($product_info['special']) ? $product_info['special'] : $product_info['price'];
+			$final_price = $data['is_single_article']
+				? (isset($product_info['special']) ? $product_info['special'] : $product_info['price'])
+				: 0.0;
 
 		
 
-            $data['three_rates'] = number_format(($final_price / 3), '2', '.', '');
-            $data['six_rates'] = number_format(($final_price / 6), '2', '.', '');
-            $data['twelve_rates'] = number_format(($final_price / 12), '2', '.', '');
+			$data['three_rates'] = $data['is_single_article'] ? number_format(($final_price / 3), '2', '.', '') : '';
+			$data['six_rates'] = $data['is_single_article'] ? number_format(($final_price / 6), '2', '.', '') : '';
+			$data['twelve_rates'] = $data['is_single_article'] ? number_format(($final_price / 12), '2', '.', '') : '';
 
-              if($this->session->data['currency']=='HRK'){
+			if ($data['is_single_article'] && $this->session->data['currency']=='HRK') {
 
 					$final_priceeur = $final_price / 7.53450;
 		             $data['three_rateseur'] = number_format(($final_priceeur / 3), '2', '.', '');
@@ -506,7 +514,7 @@ class ControllerProductProduct extends Controller {
 			           	$data['twelve_rateseur'] = '';
 	           }
 
-            if(isset($product_info['special'])){
+			if ($data['is_single_article'] && isset($product_info['special'])) {
                 $data['stedis'] = $product_info['price'] - $product_info['special'];
 
                 $data['stedis'] = $this->currency->format($this->tax->calculate($data['stedis'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
@@ -529,13 +537,13 @@ class ControllerProductProduct extends Controller {
 
 
 
-            if ($this->config->get('config_tax')) {
+			if ($data['is_single_article'] && $this->config->get('config_tax')) {
 				$data['tax'] = $this->currency->format($tax_price, $this->session->data['currency']);
 			} else {
 				$data['tax'] = false;
 			}
 
-			$discounts = $this->model_catalog_product->getProductDiscounts($this->request->get['product_id']);
+				$discounts = array();
 
 			$data['discounts'] = array();
 
@@ -553,7 +561,7 @@ class ControllerProductProduct extends Controller {
 
 				foreach ($option['product_option_value'] as $option_value) {
 					if (!$option_value['subtract'] || ($option_value['quantity'] > 0)) {
-						if ((($this->config->get('config_customer_price') && $this->customer->isLogged()) || !$this->config->get('config_customer_price')) && (float)$option_value['price']) {
+						if ($data['is_single_article'] && (($this->config->get('config_customer_price') && $this->customer->isLogged()) || !$this->config->get('config_customer_price')) && (float)$option_value['price']) {
 							$price = $this->currency->format($this->tax->calculate($option_value['price'], $product_info['tax_class_id'], $this->config->get('config_tax') ? 'P' : false), $this->session->data['currency']);
 						} else {
 							$price = false;
@@ -678,7 +686,7 @@ class ControllerProductProduct extends Controller {
 							$related_sku_quantities,
 							$related_base_unit_prices,
 								false,
-								true
+								false
 						);
 					}
 
@@ -712,12 +720,14 @@ class ControllerProductProduct extends Controller {
 
 					$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
 					$display_special_unit = 0.0;
+					$has_display_special = false;
 					$qiqo_discount_percent = 0.0;
 					$qiqo_action = ($row_sku_key !== '' && !empty($related_qiqo_action_article_map[$row_sku_key]))
 						|| (isset($result['mpn_count']) && (int)$result['mpn_count'] > 1 && !empty($result['mpn']) && !empty($related_qiqo_action_mpn_map[(string)$result['mpn']]));
 
 						if ($is_single_article && $row_sku_key !== '' && isset($related_qiqo_price_map[$row_sku_key])) {
 							$row_pricing = $related_qiqo_price_map[$row_sku_key];
+							$has_display_special = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false;
 							$display_price_unit = isset($row_pricing['old_unit_price']) && $row_pricing['old_unit_price'] !== false
 								? (float)$row_pricing['old_unit_price']
 							: (float)$row_pricing['base_unit_price'];
@@ -749,7 +759,7 @@ class ControllerProductProduct extends Controller {
 					   $priceeur  ='';
 				}
 
-					if ($display_special_unit > 0) {
+					if ($has_display_special) {
 						$special = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 						if($this->session->data['currency']=='HRK'){
@@ -790,11 +800,12 @@ class ControllerProductProduct extends Controller {
 
 // default: nema "stare" cijene
                 $preview_price_alt = false;
+				$preview_price_basis = $this->qiqoIsC100($result['cent']) ? 100.0 : $list_min;
 
 // NOVO: ako ima special (>0) onda je novo = special, staro = price
-                if ($special_raw > 0) {
-	                    $preview_price_raw = $special_raw * $list_min;
-	                    $preview_price_alt_raw = $price_raw * $list_min;
+	                if ($has_display_special) {
+	                    $preview_price_raw = $special_raw * $preview_price_basis;
+	                    $preview_price_alt_raw = $price_raw * $preview_price_basis;
 
                     $preview_price_alt = $this->currency->format(
                         $this->tax->calculate(
@@ -806,11 +817,11 @@ class ControllerProductProduct extends Controller {
                     );
                 } else {
                     // nema akcije: novo = regular
-	                    $preview_price_raw = $price_raw * $list_min;
+	                    $preview_price_raw = $price_raw * $preview_price_basis;
                 }
 
 // NOVA (glavna) preview cijena
-                $preview_price = ($preview_price_raw > 0) ? $this->currency->format(
+	                $preview_price = ($has_display_special || $preview_price_raw > 0) ? $this->currency->format(
                     $this->tax->calculate(
                         $preview_price_raw,
                         $result['tax_class_id'],
@@ -942,7 +953,7 @@ class ControllerProductProduct extends Controller {
                             $mpn_sku_quantities,
                             $mpn_base_prices,
 	                            false,
-	                            true
+	                            false
                         );
                     }
                 }
@@ -1049,7 +1060,7 @@ class ControllerProductProduct extends Controller {
 	                                array($single_sku => $single_minimum_step),
 	                                array($single_sku => $single_base_unit),
 	                                false,
-	                                true
+	                                false
 	                            );
 
 	                            if (isset($single_map[$single_sku])) {

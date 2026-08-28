@@ -362,7 +362,7 @@
 	                                                                <button type="button"
 	                                                                        class="btn btn-neutral"
 
-	                                                                        onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ p.product_id }}', window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : quantityInput.val());">
+	                                                                        onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ p.product_id }}', window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : quantityInput.val(), false, false, true);">
                                                                     <span class="global-cart"></span>
                                                                 </button>
                                                             </span>
@@ -1112,9 +1112,9 @@
 <script src="catalog/view/theme/basel/js/lightgallery/js/lightgallery.min.js"></script>
 <script src="catalog/view/theme/basel/js/lightgallery/js/lg-zoom.min.js"></script>
 <script src="catalog/view/theme/basel/js/cloudzoom/cloud-zoom.1.0.2.min.js"></script>
-{% if basel_price_update %}
-    <script src="index.php?route=extension/basel/live_options/js&product_id={{ product_id }}"></script>
-{% endif %}
+	{% if basel_price_update and is_single_article %}
+	    <script src="index.php?route=extension/basel/live_options/js&product_id={{ product_id }}"></script>
+	{% endif %}
 
 
 

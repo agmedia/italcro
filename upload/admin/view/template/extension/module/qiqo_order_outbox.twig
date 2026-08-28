@@ -1,0 +1,147 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+	    <div class="pull-right"><a href="{{ back|escape }}" class="btn btn-default"><i class="fa fa-reply"></i> Natrag na QIQO</a></div>
+	    <h1>{{ heading_title|escape }}</h1>
+	    <ul class="breadcrumb"><li><a href="{{ back|escape }}">QIQO</a></li><li>NarudzbaSend</li></ul>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+	{% if success %}<div class="alert alert-success"><i class="fa fa-check-circle"></i> {{ success|escape }}</div>{% endif %}
+	{% if error %}<div class="alert alert-danger"><i class="fa fa-exclamation-triangle"></i> {{ error|escape }}</div>{% endif %}
+
+    {% if not send_enabled %}
+      <div class="alert alert-warning"><i class="fa fa-lock"></i>
+        ERP slanje je sigurnosno isključeno (<code>qiqo_order_send_enabled=0</code>). Payload se stvara i može provjeriti, ali HTTP poziv nije moguć.
+      </div>
+    {% endif %}
+    {% if not credentials_configured %}
+      <div class="alert alert-info"><i class="fa fa-key"></i>
+        Vjerodajnice nisu spremljene u bazu ni repozitorij. Za odobreni test postavite <code>QIQO_ORDER_USERNAME</code> i <code>QIQO_ORDER_PASSWORD</code> u privatnom okruženju.
+      </div>
+    {% endif %}
+	{% if not endpoint_configured %}
+	  <div class="alert alert-danger">NarudzbaSend endpoint nije konfiguriran.</div>
+	{% else %}
+	  <p class="text-muted"><strong>Endpoint:</strong> <code>{{ endpoint|escape }}</code></p>
+	  {% if not secure_transport %}
+	    <div class="alert alert-danger"><i class="fa fa-shield"></i>
+	      Endpoint koristi obični HTTP. Slanje ostaje blokirano dok Italcro ne potvrdi zaštićeni VPN/TLS kanal i dok se izričito ne uključi <code>qiqo_order_allow_insecure_http=1</code>.
+	    </div>
+	  {% endif %}
+	{% endif %}
+
+	{% if not outbox_start_at %}
+	  <div class="alert alert-danger"><i class="fa fa-database"></i>
+	    Nedostaje <code>qiqo_order_outbox_start_at</code>. Primijenite outbox migraciju; automatska provjera propuštenih narudžbi je isključena kako se ne bi zahvatile povijesne narudžbe.
+	  </div>
+	{% elseif missing_order_count > 0 %}
+	  <div class="alert alert-danger"><i class="fa fa-exclamation-triangle"></i>
+	    <strong>{{ missing_order_count }} prihvaćenih narudžbi nema outbox zapis.</strong>
+	    ERP slanje za njih nije pokrenuto. Pokrenite kontrolirani CLI reconciliation nakon provjere popisa:
+	    <code>php scripts/reconcile_qiqo_order_outbox.php --enqueue</code>
+	    <ul style="margin-top:8px;">
+	      {% for missing in missing_orders %}
+	        <li>#{{ missing.order_id }} — {{ missing.date_added|escape }} — {{ missing.firstname|escape }} {{ missing.lastname|escape }}</li>
+	      {% endfor %}
+	    </ul>
+	  </div>
+	{% endif %}
+
+    <div class="row" style="margin-bottom:15px;">
+      {% for key, value in counts %}
+	    <div class="col-sm-2"><a href="{{ filter_action|escape }}&amp;filter_status={{ key|escape }}" class="btn btn-default btn-block"><strong>{{ key|escape }}</strong> <span class="badge">{{ value }}</span></a></div>
+      {% endfor %}
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <form action="{{ filter_action }}" method="get" class="form-inline">
+          <input type="hidden" name="route" value="extension/module/qiqo/orderOutbox">
+	      <input type="hidden" name="user_token" value="{{ user_token|escape }}">
+          <label for="filter-status">Status</label>
+          <select id="filter-status" name="filter_status" class="form-control">
+            <option value="">svi</option>
+		{% for status in ['pending','blocked','failed','verified_not_sent','uncertain','processing','rebuilding','cancelled','sent'] %}
+              <option value="{{ status }}" {{ filter_status == status ? 'selected' : '' }}>{{ status }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-primary" type="submit"><i class="fa fa-filter"></i> Filtriraj</button>
+        </form>
+      </div>
+      <div class="panel-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead><tr><th>ID / narudžba</th><th>Status</th><th>Partner / lokacija / komercijalist</th><th>Pokušaji</th><th>Zadnji rezultat</th><th>Payload</th><th class="text-right">Akcije</th></tr></thead>
+            <tbody>
+            {% if rows is empty %}
+              <tr><td colspan="7" class="text-center text-muted">Nema zapisa.</td></tr>
+            {% endif %}
+            {% for row in rows %}
+              <tr>
+		<td><strong>#{{ row.outbox_id }}</strong><br><a href="{{ row.order_link|escape }}">Narudžba #{{ row.order_id }}</a><br><small>{{ row.date_added|escape }}</small></td>
+                <td>
+                  {% set label = row.status == 'sent' ? 'success' : (row.status == 'pending' ? 'info' : (row.status == 'uncertain' ? 'warning' : (row.status == 'processing' ? 'primary' : 'danger'))) %}
+		  <span class="label label-{{ label|escape }}">{{ row.status|escape }}</span>
+		</td>
+		<td><code>{{ (row.partner_code ? row.partner_code : '—')|escape }}</code><br><code>{{ (row.delivery_place_code ? row.delivery_place_code : '—')|escape }}</code><br><code>{{ (row.sales_rep_code ? row.sales_rep_code : '—')|escape }}</code></td>
+		<td>{{ row.attempts }}<br><small>HTTP {{ row.last_http_status ? row.last_http_status : '—' }}</small></td>
+		<td style="max-width:300px;"><strong>{{ row.last_error_code|escape }}</strong><br><small>{{ row.last_error_description|escape }}</small></td>
+		<td>
+		  <details><summary>Prikaži</summary><pre style="max-width:520px;max-height:320px;overflow:auto;white-space:pre-wrap;">{{ row.payload_pretty|escape }}</pre><small>SHA-256: <code>{{ row.payload_hash|escape }}</code></small></details>
+		</td>
+		<td class="text-right" style="min-width:170px;">
+		  {% if modify and row.status in ['pending','blocked','failed'] %}
+		    <form action="{{ action|escape }}" method="post" style="display:inline-block;">
+                      <input type="hidden" name="outbox_id" value="{{ row.outbox_id }}">
+                      <input type="hidden" name="outbox_action" value="rebuild">
+                      <button class="btn btn-default btn-sm" title="Ponovno izgradi iz narudžbe"><i class="fa fa-refresh"></i></button>
+                    </form>
+                  {% endif %}
+                  {% if modify and row.status == 'failed' %}
+		    <form action="{{ action|escape }}" method="post" style="display:inline-block;">
+                      <input type="hidden" name="outbox_id" value="{{ row.outbox_id }}">
+                      <input type="hidden" name="outbox_action" value="retry">
+                      <button class="btn btn-warning btn-sm" title="Vrati u red"><i class="fa fa-repeat"></i></button>
+                    </form>
+                  {% endif %}
+                  {% if modify and row.status == 'uncertain' %}
+		    <form action="{{ action|escape }}" method="post" style="display:inline-block;" onsubmit="return confirm('Potvrđujete da ste ovu narudžbu pronašli u Italcro bazi?');">
+                      <input type="hidden" name="outbox_id" value="{{ row.outbox_id }}">
+                      <input type="hidden" name="outbox_action" value="mark_sent">
+		      <button class="btn btn-success btn-sm" title="Potvrđeno u ERP-u"><i class="fa fa-check"></i></button>
+		    </form>
+		    <form action="{{ action|escape }}" method="post" style="display:inline-block;" onsubmit="return confirm('Potvrđujete da ove narudžbe NEMA u Italcro bazi i da je sigurno ponovno poslati?');">
+		      <input type="hidden" name="outbox_id" value="{{ row.outbox_id }}">
+		      <input type="hidden" name="outbox_action" value="mark_not_sent">
+		      <button class="btn btn-warning btn-sm" title="Potvrđeno da nije u ERP-u"><i class="fa fa-times"></i></button>
+		    </form>
+		  {% endif %}
+		  {% if modify and row.status == 'processing' and row.processing_recoverable %}
+		    <form action="{{ action|escape }}" method="post" style="display:inline-block;" onsubmit="return confirm('Označiti obradu prekinutom? Ishod će ostati nepoznat dok ne provjerite ERP.');">
+		      <input type="hidden" name="outbox_id" value="{{ row.outbox_id }}">
+		      <input type="hidden" name="outbox_action" value="mark_uncertain">
+		      <button class="btn btn-warning btn-sm" title="Prekinuta obrada — provjeriti ERP"><i class="fa fa-question"></i></button>
+		    </form>
+		  {% endif %}
+		  {% if modify and send_enabled and credentials_configured and endpoint_configured and transport_approved and row.status in ['pending','verified_not_sent'] %}
+		    <form action="{{ action|escape }}" method="post" style="display:inline-block;" onsubmit="return confirm('Poslati narudžbu prema ERP-u?');">
+                      <input type="hidden" name="outbox_id" value="{{ row.outbox_id }}">
+                      <input type="hidden" name="outbox_action" value="send">
+                      <button class="btn btn-primary btn-sm" title="Pošalji jednom"><i class="fa fa-paper-plane"></i></button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="row"><div class="col-sm-6">{{ pagination }}</div><div class="col-sm-6 text-right">{{ results }}</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+{{ footer }}

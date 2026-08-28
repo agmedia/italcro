@@ -41,11 +41,15 @@ class ControllerProductSearch extends Controller {
 			$sub_category = '';
 		}
 
-		if (isset($this->request->get['sort'])) {
-			$sort = $this->request->get['sort'];
-		} else {
-			$sort = 'p.sort_order';
-		}
+			if (isset($this->request->get['sort'])) {
+				$sort = $this->request->get['sort'];
+			} else {
+				$sort = 'p.sort_order';
+			}
+
+			if (in_array($sort, ['p.price', 'ps.price'], true)) {
+				$sort = 'p.sort_order';
+			}
 
 		if (isset($this->request->get['order'])) {
 			$order = $this->request->get['order'];
@@ -205,9 +209,11 @@ class ControllerProductSearch extends Controller {
 				$action_skus = array();
 				$action_mpns = array();
 
-				foreach ($results as $r) {
-					$sku_key = trim((string)$r['sku']);
-					$r_minimum = $this->qiqoPackQuantity($r);
+					foreach ($results as $r) {
+						$sku_key = trim((string)$r['sku']);
+						$r_mpn_count = isset($r['mpn_count']) ? (int)$r['mpn_count'] : 1;
+						$is_single_article = empty($r['mpn']) || $r_mpn_count <= 1;
+						$r_minimum = $this->qiqoPackQuantity($r);
 					$r_pak = isset($r['pak']) ? (int)$r['pak'] : 0;
 					$r_list_min = $this->qiqoMinimumStep($r['cent'], $r_pak, $r_minimum);
 					$r_base_unit = isset($r['base_price']) ? (float)$r['base_price'] : (float)$r['price'];
@@ -215,7 +221,7 @@ class ControllerProductSearch extends Controller {
 					if ($sku_key !== '') {
 						$action_skus[] = $sku_key;
 
-						if ($this->customer->isLogged() && $r_base_unit > 0) {
+							if ($is_single_article && $this->customer->isLogged() && $r_base_unit > 0) {
 							$sku_quantities[$sku_key] = $r_list_min;
 							$base_unit_prices[$sku_key] = $r_base_unit;
 						}
@@ -232,7 +238,7 @@ class ControllerProductSearch extends Controller {
 						$sku_quantities,
 						$base_unit_prices,
 							false,
-							true
+							false
 					);
 				}
 
@@ -245,20 +251,24 @@ class ControllerProductSearch extends Controller {
 				}
 			}
 
-			foreach ($results as $result) {
-				$sku_key = trim((string)$result['sku']);
+				foreach ($results as $result) {
+					$sku_key = trim((string)$result['sku']);
+					$mpn_count = isset($result['mpn_count']) ? (int)$result['mpn_count'] : 1;
+					$is_single_article = empty($result['mpn']) || $mpn_count <= 1;
 				$minimum = $this->qiqoPackQuantity($result);
 				$pak = isset($result['pak']) ? (int)$result['pak'] : 0;
 				$list_min = $this->qiqoMinimumStep($result['cent'], $pak, $minimum);
 
-				$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
-				$display_special_unit = 0.0;
+					$display_price_unit = isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price'];
+					$display_special_unit = 0.0;
+					$has_display_special = false;
 				$qiqo_discount_percent = 0.0;
 				$qiqo_action = ($sku_key !== '' && !empty($qiqo_action_article_map[$sku_key]))
 					|| (isset($result['mpn_count']) && (int)$result['mpn_count'] > 1 && !empty($result['mpn']) && !empty($qiqo_action_mpn_map[(string)$result['mpn']]));
 
-				if ($sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
-					$pricing = $qiqo_price_map[$sku_key];
+					if ($is_single_article && $sku_key !== '' && isset($qiqo_price_map[$sku_key])) {
+						$pricing = $qiqo_price_map[$sku_key];
+						$has_display_special = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false;
 					$display_price_unit = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false
 						? (float)$pricing['old_unit_price']
 						: (float)$pricing['base_unit_price'];
@@ -290,7 +300,7 @@ class ControllerProductSearch extends Controller {
 					   $priceeur  ='';
 				}
 
-				if ($display_special_unit > 0) {
+					if ($has_display_special) {
 					$special = $this->currency->format($this->tax->calculate($display_special_unit, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 
 					if($this->session->data['currency']=='HRK'){
@@ -330,11 +340,12 @@ class ControllerProductSearch extends Controller {
 
 // default: nema "stare" cijene
                 $preview_price_alt = false;
+				$preview_price_basis = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$result['cent'])) === 'C100' ? 100.0 : $list_min;
 
-// NOVO: ako ima special (>0) onda je novo = special, staro = price
-                if ($special_raw > 0) {
-                    $preview_price_raw = $special_raw * $list_min;
-                    $preview_price_alt_raw = $price_raw * $list_min;
+				// A 100% rebate is a valid zero-price special, so use the explicit flag.
+				if ($has_display_special) {
+                    $preview_price_raw = $special_raw * $preview_price_basis;
+                    $preview_price_alt_raw = $price_raw * $preview_price_basis;
 
                     $preview_price_alt = $this->currency->format(
                         $this->tax->calculate(
@@ -346,11 +357,11 @@ class ControllerProductSearch extends Controller {
                     );
                 } else {
                     // nema akcije: novo = regular
-                    $preview_price_raw = $price_raw * $list_min;
+                    $preview_price_raw = $price_raw * $preview_price_basis;
                 }
 
 // NOVA (glavna) preview cijena
-                $preview_price = ($preview_price_raw > 0) ? $this->currency->format(
+				$preview_price = ($has_display_special || $preview_price_raw > 0) ? $this->currency->format(
                     $this->tax->calculate(
                         $preview_price_raw,
                         $result['tax_class_id'],
@@ -376,8 +387,9 @@ class ControllerProductSearch extends Controller {
                     'preview_price'     => $preview_price,
                     'preview_price_alt' => $preview_price_alt,
 
-                    'mpn_count'       => $result['mpn_count'],
-                    'mpn_artikl'  => $this->artiklLabel($result['mpn_count']),
+					'mpn_count'       => $mpn_count,
+					'mpn_artikl'  => $this->artiklLabel($mpn_count),
+					'is_single_article' => $is_single_article,
                     'pak'  => $pak,
                     'cent'  => $result['cent'],
                     'attention'     => $data['attention'],
@@ -436,18 +448,6 @@ class ControllerProductSearch extends Controller {
 				'text'  => $this->language->get('text_name_desc'),
 				'value' => 'pd.name-DESC',
 				'href'  => $this->url->link('product/search', 'sort=pd.name&order=DESC' . $url)
-			);
-
-			$data['sorts'][] = array(
-				'text'  => $this->language->get('text_price_asc'),
-				'value' => 'p.price-ASC',
-				'href'  => $this->url->link('product/search', 'sort=p.price&order=ASC' . $url)
-			);
-
-			$data['sorts'][] = array(
-				'text'  => $this->language->get('text_price_desc'),
-				'value' => 'p.price-DESC',
-				'href'  => $this->url->link('product/search', 'sort=p.price&order=DESC' . $url)
 			);
 
 			if ($this->config->get('config_review_status')) {

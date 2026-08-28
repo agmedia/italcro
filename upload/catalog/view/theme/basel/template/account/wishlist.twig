@@ -27,6 +27,11 @@
         min-width: 76px;
         text-align: center;
     }
+    .wishlist-variants .remove-cell {
+        width: 44px;
+        min-width: 44px;
+        text-align: center;
+    }
     .wishlist-variants .wishlist-thumb {
         display: inline-block;
         width: 60px;
@@ -78,11 +83,12 @@
       <h1 id="page-title">{{ heading_title }}</h1>
       
       {% if products %}
-        {% set wishlist_colspan = show_prices ? (wishlist_has_c100 ? 13 : 12) : 6 %}
+        {% set wishlist_colspan = show_prices ? (wishlist_has_c100 ? 14 : 13) : 7 %}
         <div class="mpn-variants wishlist-variants table-responsive">
           <table class="table table-bordered table-striped">
             <thead>
               <tr>
+                <th class="remove-cell"><span class="sr-only">{{ button_remove }}</span></th>
                 <th class="qiqo-action-cell"></th>
                 <th class="wishlist-thumb-cell">Slika</th>
                 <th>Šifra</th>
@@ -105,6 +111,12 @@
             <tbody>
               {% for product in products %}
               <tr>
+                <td class="remove-cell">
+                  <a href="{{ product.remove }}"
+                     class="product-remove"
+                     title="{{ button_remove }} – {{ product.name }}"
+                     aria-label="{{ button_remove }} – {{ product.name }}"></a>
+                </td>
                 <td class="qiqo-action-cell">
                   {% if product.qiqo_action is defined and product.qiqo_action %}
                     <button type="button"
@@ -139,6 +151,7 @@
                 </td>
                 <td class="text-right price mpn-final-price">{{ product.final_price }}</td>
                 <td class="text-right price">
+                  {% if product.is_single_article is not defined or product.is_single_article %}
                   <div class="input-group addtocart mpn-addtocart" style="margin-left:auto;">
                     <span class="input-group-btn">
                       <button type="button"
@@ -176,10 +189,12 @@
                       </button>
                     </span>
                   </div>
+                  {% else %}
+                    <a href="{{ product.href }}" class="btn btn-default btn-sm">Pregled artikala</a>
+                  {% endif %}
                 </td>
                 <td>
                   <div class="wishlist-actions">
-                    <span class="info is_wishlist"><a href="{{ product.remove }}" title="{{ button_remove }}"><i class="icon-heart"></i> </a></span>
                     <span class="info is_compare"><a onclick="compare.add('{{ product.product_id }}');"><i class="icon-refresh"></i> </a></span>
                   </div>
                 </td>

@@ -26,16 +26,18 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			$model 			= $product_info['model'];
 			$url			= $this->url->link('product/product','product_id='.$product_id);
 			$review_count 	= $product_info['reviews'];
+			$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
+			// This metadata is cacheable/public and cannot safely carry a buyer-specific
+			// price. Publish a VPC offer only on stores where prices are public to guests.
+			$may_publish_price = $is_single_article && !$this->config->get('config_customer_price');
 
-			if ((float)$product_info['special']) {
-				$price = (float)$product_info['special'];
-			}else{
-				$price = (float)$product_info['price'];
-			}
-			
-			$actual_price = (float)$product_info['price'];		
+			$display_multiplier = strtoupper(preg_replace('/[^A-Z0-9]/i', '', isset($product_info['cent']) ? (string)$product_info['cent'] : '')) === 'C100' ? 100 : 1;
+			$price = isset($product_info['vpc']) && (float)$product_info['vpc'] > 0
+				? (float)$product_info['vpc']
+				: (isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price']) * $display_multiplier;
+			$actual_price = $price;
 
-			$formatted_price =  $this->currency->format($price, $currencycode);
+			$formatted_price = $may_publish_price ? $this->currency->format($price, $currencycode) : '';
 			
 			$currency_value = $this->currency->getValue($currencycode);
 			$price 			= $price * $currency_value;
@@ -43,7 +45,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 			
 			if ($this->config->get('hb_snippets_incl_tax')) {
 				$price 			= $this->tax->calculate($price, $product_info['tax_class_id'], $this->config->get('config_tax'));
-				$actual_price 	= $this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax'));
+				$actual_price 	= $this->tax->calculate($actual_price, $product_info['tax_class_id'], $this->config->get('config_tax'));
 			}			
 			
 			$price = number_format($price, 2, '.', '');
@@ -352,8 +354,11 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					'brand'				=>	$brand,
 					'review'			=> 	$review_data,
 					'aggregateRating'	=> 	$aggregateRating,
-					'offers'			=> 	$offers,
 				);
+
+				if ($may_publish_price) {
+					$product_snippet['offers'] = $offers;
+				}
 				
 				$ldjson .= '<script type="application/ld+json">';
 				$ldjson .= json_encode($product_snippet);
@@ -398,12 +403,7 @@ class ModelExtensionModuleHbSeoSnippets extends Model {
 					}
 				}*/
 				
-				if ((float)$product_info['special']) {
-					$this->document->setOpengraph('product:sale_price:amount', $price);
-					$this->document->setOpengraph('product:sale_price:currency', $currencycode);
-					$this->document->setOpengraph('product:original_price:amount', $actual_price);
-					$this->document->setOpengraph('product:original_price:currency', $currencycode);
-				} else {
+				if ($may_publish_price) {
 					$this->document->setOpengraph('product:original_price:amount', $price);
 					$this->document->setOpengraph('product:original_price:currency', $currencycode);
 				}

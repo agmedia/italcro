@@ -223,70 +223,39 @@ class ControllerCustomerCustomerApproval extends Controller {
 		} else {
 			$this->load->model('customer/customer_approval');
 
-			if ($this->request->get['type'] == 'customer') {
+			$type = isset($this->request->get['type']) ? $this->request->get['type'] : '';
+			$customer_id = isset($this->request->get['customer_id']) ? (int)$this->request->get['customer_id'] : 0;
+
+			if ($type == 'customer') {
 				$partner_id = isset($this->request->post['partner_id']) ? (int)$this->request->post['partner_id'] : 0;
 				$delivery_place_id = isset($this->request->post['delivery_place_id']) ? (int)$this->request->post['delivery_place_id'] : 0;
 				$sales_rep_id = isset($this->request->post['sales_rep_id']) ? (int)$this->request->post['sales_rep_id'] : 0;
-				$partner_discount = 0;
 
-				if (!$partner_id) {
-					$json['error'] = 'Partner je obavezan.';
-				}
-
-				if (!$delivery_place_id && empty($json['error'])) {
-					$json['error'] = 'Mjesto isporuke je obavezno.';
+				if ($this->request->server['REQUEST_METHOD'] != 'POST') {
+					$json['error'] = 'Autorizaciju kupca moguće je potvrditi samo POST zahtjevom.';
 				}
 
 				if (empty($json['error'])) {
-					$partner = $this->model_customer_customer_approval->getQiqoPartnerById($partner_id);
-
-					if (!$partner) {
-						$json['error'] = 'Partner ne postoji u lokalnom cacheu. Pokreni partner sync.';
-					} else {
-						$places = $this->model_customer_customer_approval->getQiqoDeliveryPlacesByPartnerId($partner_id);
-						$allowed_place_ids = array_column($places, 'delivery_place_id');
-
-						if (!in_array($delivery_place_id, array_map('intval', $allowed_place_ids), true)) {
-							$json['error'] = 'Odabrano mjesto isporuke ne pripada partneru.';
-						}
-
-						if (empty($json['error'])) {
-							$reps = $this->model_customer_customer_approval->getQiqoSalesReps();
-
-							if ($reps) {
-								$allowed_rep_ids = array_map('intval', array_column($reps, 'sales_rep_id'));
-								if (!$sales_rep_id || !in_array($sales_rep_id, $allowed_rep_ids, true)) {
-									$json['error'] = 'Komercijalist je obavezan.';
-								}
-							}
-						}
-					}
-				}
-
-				if (empty($json['error'])) {
-					$partner_discount = (float)$partner['base_discount'];
-
-					$this->model_customer_customer_approval->saveCustomerQiqoAuthorization(
-						$this->request->get['customer_id'],
-						[
+					$result = $this->model_customer_customer_approval->approvePendingCustomerWithQiqoAuthorization(
+						$customer_id,
+						array(
 							'partner_id' => $partner_id,
 							'delivery_place_id' => $delivery_place_id,
-							'sales_rep_id' => $sales_rep_id,
-							'partner_discount' => $partner_discount
-						],
+							'sales_rep_id' => $sales_rep_id
+						),
 						$this->user->getId()
 					);
-					$this->model_customer_customer_approval->syncCustomerAddressFromDeliveryPlace(
-						(int)$this->request->get['customer_id'],
-						$delivery_place_id,
-						$partner['name']
-					);
 
-					$this->model_customer_customer_approval->approveCustomer($this->request->get['customer_id']);
-					$this->sendCustomerApprovedMail((int)$this->request->get['customer_id']);
+					if (!$result['success']) {
+						$json['error'] = $result['error'];
+					} else {
+						$this->sendCustomerApprovedMail($customer_id);
+					}
 				}
-			} elseif ($this->request->get['type'] == 'affiliate') {
-				$this->model_customer_customer_approval->approveAffiliate($this->request->get['customer_id']);
+			} elseif ($type == 'affiliate') {
+				$this->model_customer_customer_approval->approveAffiliate($customer_id);
+			} else {
+				$json['error'] = 'Nepoznata vrsta odobrenja.';
 			}
 
 			if (empty($json['error'])) {

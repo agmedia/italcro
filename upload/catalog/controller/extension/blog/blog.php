@@ -203,6 +203,55 @@ class ControllerExtensionBlogBlog extends Controller {
 			$data['products'] = array();
 			
 			$results = $this->model_extension_blog_blog->getProductRelated($this->request->get['blog_id']);
+			$this->load->model('catalog/product');
+
+			$related_price_map = array();
+			$related_action_article_map = array();
+			$related_action_mpn_map = array();
+			$related_sku_quantities = array();
+			$related_base_unit_prices = array();
+			$related_action_skus = array();
+			$related_action_mpns = array();
+
+			foreach ($results as $candidate) {
+				$sku = trim((string)$candidate['sku']);
+				$mpn_count = isset($candidate['mpn_count']) ? (int)$candidate['mpn_count'] : 1;
+				$is_single_article = empty($candidate['mpn']) || $mpn_count <= 1;
+				$minimum = $this->qiqoBlogPackQuantity($candidate);
+				$pak = isset($candidate['pak']) ? (int)$candidate['pak'] : 0;
+				$list_min = $this->qiqoBlogMinimumStep($candidate['cent'], $pak, $minimum);
+				$base_unit = isset($candidate['base_price']) ? (float)$candidate['base_price'] : (float)$candidate['price'];
+
+				if ($is_single_article && $sku !== '') {
+					$related_action_skus[] = $sku;
+					if ($this->customer->isLogged() && $base_unit > 0) {
+						$related_sku_quantities[$sku] = $list_min;
+						$related_base_unit_prices[$sku] = $base_unit;
+					}
+				}
+
+				if (!$is_single_article && !empty($candidate['mpn'])) {
+					$related_action_mpns[] = (string)$candidate['mpn'];
+				}
+			}
+
+			if ($this->customer->isLogged() && $related_sku_quantities) {
+				$related_price_map = $this->model_catalog_product->getQiqoPricingMap(
+					(int)$this->customer->getId(),
+					$related_sku_quantities,
+					$related_base_unit_prices,
+					false,
+					false
+				);
+			}
+
+			if ($related_action_skus) {
+				$related_action_article_map = $this->model_catalog_product->getQiqoActionArticleMap($related_action_skus);
+			}
+
+			if ($related_action_mpns) {
+				$related_action_mpn_map = $this->model_catalog_product->getQiqoActionMpnMap($related_action_mpns);
+			}
 
 			foreach ($results as $result) {
 				if ($result['image']) {
@@ -217,34 +266,56 @@ class ControllerExtensionBlogBlog extends Controller {
 				} else {
 					$image2 = false;
 				}
-				if ((float)$result['special']) {
-					$date_end = $this->model_extension_basel_basel->getSpecialEndDate($result['product_id']);
-				} else {
-					$date_end = false;
+				$sku = trim((string)$result['sku']);
+				$mpn_count = isset($result['mpn_count']) ? (int)$result['mpn_count'] : 1;
+				$is_single_article = empty($result['mpn']) || $mpn_count <= 1;
+				$minimum = $this->qiqoBlogPackQuantity($result);
+				$pak = isset($result['pak']) ? (int)$result['pak'] : 0;
+				$list_min = $this->qiqoBlogMinimumStep($result['cent'], $pak, $minimum);
+				$display_multiplier = $this->qiqoBlogIsC100($result['cent']) ? 100 : 1;
+				$display_price = isset($result['vpc']) && (float)$result['vpc'] > 0
+					? (float)$result['vpc']
+					: (isset($result['base_price']) ? (float)$result['base_price'] : (float)$result['price']) * $display_multiplier;
+				$display_special = 0.0;
+				$has_display_special = false;
+				$qiqo_discount_percent = 0.0;
+
+				if ($is_single_article && $sku !== '' && isset($related_price_map[$sku])) {
+					$pricing = $related_price_map[$sku];
+					$has_display_special = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false;
+					$qiqo_discount_percent = isset($pricing['discount_percent']) ? (float)$pricing['discount_percent'] : 0.0;
+					if ($has_display_special) {
+						$display_special = $display_price * (1 - ($qiqo_discount_percent / 100));
+					}
 				}
 
-				if (($this->config->get('config_customer_price') && $this->customer->isLogged()) || !$this->config->get('config_customer_price')) {
-					$price = $this->currency->format($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+				$qiqo_action = $is_single_article
+					? ($sku !== '' && !empty($related_action_article_map[$sku]))
+					: (!empty($result['mpn']) && !empty($related_action_mpn_map[(string)$result['mpn']]));
+				$date_end = false;
+
+				if ($is_single_article && (($this->config->get('config_customer_price') && $this->customer->isLogged()) || !$this->config->get('config_customer_price'))) {
+					$price = $this->currency->format($this->tax->calculate($display_price, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 				} else {
 					$price = false;
 				}
 
-				if ((float)$result['special']) {
-					$special = $this->currency->format($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+				if ($is_single_article && $has_display_special) {
+					$special = $this->currency->format($this->tax->calculate($display_special, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 				} else {
 					$special = false;
 				}
-				if ( (float)$result['special'] && ($this->config->get('salebadge_status')) ) {
+				if ($is_single_article && $has_display_special && $this->config->get('salebadge_status')) {
 					if ($this->config->get('salebadge_status') == '2') {
-						$sale_badge = '-' . number_format(((($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')))-($this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax'))))/(($this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax')))/100)), 0, ',', '.') . '%';
+						$sale_badge = '-' . number_format($qiqo_discount_percent, 0, ',', '.') . '%';
 					} else {
 						$sale_badge = $this->language->get('basel_text_sale');
 					}		
 				} else {
 					$sale_badge = false;
 				}
-				if ($this->config->get('config_tax')) {
-					$tax = $this->currency->format((float)$result['special'] ? $result['special'] : $result['price'], $this->session->data['currency']);
+				if ($is_single_article && $this->config->get('config_tax')) {
+					$tax = $this->currency->format($has_display_special ? $display_special : $display_price, $this->session->data['currency']);
 				} else {
 					$tax = false;
 				}
@@ -256,27 +327,41 @@ class ControllerExtensionBlogBlog extends Controller {
 				}
 				if (strtotime($result['date_available']) > strtotime('-' . $this->config->get('newlabel_status') . ' day')) {
 					$is_new = true;
-				} else {
-					$is_new = false;
-				}
+					} else {
+						$is_new = false;
+					}
+					$preview_price_basis = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$result['cent'])) === 'C100' ? 100.0 : $list_min;
 
 				$data['products'][] = array(
 					'product_id'  => $result['product_id'],
 					'quantity'  => $result['quantity'],
 					'thumb'       => $image,
 					'thumb2'  => $this->model_tool_image->resize($image2, $this->config->get('theme_default_image_product_width'), $this->config->get('theme_default_image_product_height')),
-					'sale_end_date' => $date_end['date_end'] ?? '',
+					'sale_end_date' => '',
 					'name'        => $result['name'],
+					'name_add'    => isset($result['name_add']) ? $result['name_add'] : '',
 					'description' => utf8_substr(strip_tags(html_entity_decode($result['description'], ENT_QUOTES, 'UTF-8')), 0, $this->config->get('config_product_description_length')) . '..',
 					'price'       => $price,
 					'special'     => $special,
+					'mpn_count'   => $mpn_count,
+					'mpn_artikl'  => $this->qiqoBlogArticleLabel($mpn_count),
+					'is_single_article' => $is_single_article,
+					'pak'         => $pak,
+					'cent'        => isset($result['cent']) ? $result['cent'] : '',
+					'sku'         => $sku,
+					'list_min'    => $list_min,
+					'decimal_quantity' => $this->qiqoBlogAllowsDecimalQuantity($result),
+						'preview_price' => $is_single_article ? $this->currency->format($this->tax->calculate(($has_display_special ? $display_special : $display_price) * $preview_price_basis, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']) : false,
+						'preview_price_alt' => ($is_single_article && $has_display_special) ? $this->currency->format($this->tax->calculate($display_price * $preview_price_basis, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']) : false,
+					'qiqo_discount_percent' => $qiqo_discount_percent,
+					'qiqo_action' => $qiqo_action,
 					'tax'         => $tax,
 					'sale_badge' => $sale_badge,
 					'new_label'  => $is_new,
-					'minimum'     => $result['minimum'] > 0 ? $result['minimum'] : 1,
+					'minimum'     => $minimum,
 					'rating'      => $rating,
 					'href'        => $this->url->link('product/product', 'product_id=' . $result['product_id'])
-				);
+			);
 			}
 			
 			$data['store'] = $this->config->get('config_name');
@@ -378,7 +463,46 @@ class ControllerExtensionBlogBlog extends Controller {
 			
 			$this->response->setOutput($this->load->view('error/not_found', $data));
 			
-    	}
+		}
+	}
+
+	private function qiqoBlogIsC100($cent) {
+		return strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$cent)) === 'C100';
+	}
+
+	private function qiqoBlogPackQuantity($product) {
+		$pakkol = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
+		if ($pakkol <= 0) {
+			$pakkol = isset($product['minimum']) ? (float)$product['minimum'] : 1.0;
+		}
+		return $pakkol > 0 ? $pakkol : 1.0;
+	}
+
+	private function qiqoBlogMinimumStep($cent, $pak, $pakkol) {
+		if ($this->qiqoBlogIsC100($cent) || (int)$pak === 1 || abs((float)$pakkol - round((float)$pakkol)) > 0.00001) {
+			return (float)$pakkol > 0 ? (float)$pakkol : 1.0;
+		}
+		return 1.0;
+	}
+
+	private function qiqoBlogAllowsDecimalQuantity($product) {
+		$pakkol = $this->qiqoBlogPackQuantity($product);
+		return abs($pakkol - round($pakkol)) > 0.00001;
+	}
+
+	private function qiqoBlogArticleLabel($count) {
+		$count = abs((int)$count) % 100;
+		$unit = $count % 10;
+		if ($count > 10 && $count < 20) {
+			return 'artikala';
+		}
+		if ($unit === 1) {
+			return 'artikl';
+		}
+		if ($unit >= 2 && $unit <= 4) {
+			return 'artikla';
+		}
+		return 'artikala';
 	}
 	
 		

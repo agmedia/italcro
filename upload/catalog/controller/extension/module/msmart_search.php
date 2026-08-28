@@ -13,6 +13,26 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 
 	private function prepareProduct( $product ) {
 		require_once DIR_SYSTEM . 'library/msmart_search_mobile.php';
+		$is_grouped = !empty($product['mpn']) && isset($product['mpn_count']) && (int)$product['mpn_count'] > 1;
+
+		$base_unit_price = isset($product['base_price']) ? (float)$product['base_price'] : (float)$product['price'];
+		$display_price = isset($product['vpc']) && (float)$product['vpc'] > 0
+			? (float)$product['vpc']
+			: $base_unit_price * (strtoupper(preg_replace('/[^A-Z0-9]/i', '', isset($product['cent']) ? (string)$product['cent'] : '')) === 'C100' ? 100 : 1);
+		$display_special = 0.0;
+		$qiqo_discount_percent = 0.0;
+		$has_display_special = false;
+
+		if (!$is_grouped && !empty($product['_qiqo_pricing'])) {
+			$pricing = $product['_qiqo_pricing'];
+			$qiqo_discount_percent = isset($pricing['discount_percent'])
+				? (float)$pricing['discount_percent']
+				: 0.0;
+			$has_display_special = isset($pricing['old_unit_price']) && $pricing['old_unit_price'] !== false;
+			$display_special = $has_display_special
+				? $display_price * (1 - ($qiqo_discount_percent / 100))
+				: 0.0;
+		}
 		
 		/* @var $mobile Mobile_Detect_MFS */
 		$mobile = new Mobile_Detect_MSS();
@@ -41,18 +61,18 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 		/* @var $special string|null */
 		$special = null;
 
-		if( $this->customer->isLogged() || ! $this->config->get('config_customer_price') ) {
+		if( !$is_grouped && ($this->customer->isLogged() || ! $this->config->get('config_customer_price')) ) {
 			if( version_compare( VERSION, '2.2.0.0', '>=' ) ) {
-				$price = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+				$price = $this->currency->format($this->tax->calculate($display_price, $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 			} else {
-				$price = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')));
+				$price = $this->currency->format($this->tax->calculate($display_price, $product['tax_class_id'], $this->config->get('config_tax')));
 			}
 
-			if( ! empty( $product['special'] ) ) {
+			if( $has_display_special ) {
 				if( version_compare( VERSION, '2.2.0.0', '>=' ) ) {
-					$special = $this->currency->format($this->tax->calculate($product['special'], $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+					$special = $this->currency->format($this->tax->calculate($display_special, $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 				} else {
-					$special = $this->currency->format($this->tax->calculate($product['special'], $product['tax_class_id'], $this->config->get('config_tax')));
+					$special = $this->currency->format($this->tax->calculate($display_special, $product['tax_class_id'], $this->config->get('config_tax')));
 				}
 			}
 		}
@@ -78,9 +98,54 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 			'img_h' => $height,
 			'price' => empty( $config['show_price'] ) ? null : $price,
 			'special' => empty( $config['show_price'] ) ? null : $special,
+			'qiqo_discount_percent' => $qiqo_discount_percent,
 			'manufacturer' => empty( $config['show_manufacturer'] ) ? null : $product['manufacturer'],
 			'model' => empty( $config['show_model'] ) ? null : $product['model'],
 		);
+	}
+
+	private function applyQiqoCatalogPricing( $products ) {
+		if (!$products || !$this->customer->isLogged()) {
+			return $products;
+		}
+
+		$this->load->model('catalog/product');
+
+		$sku_quantities = array();
+		$base_unit_prices = array();
+
+		foreach ($products as $product) {
+			$is_grouped = !empty($product['mpn']) && isset($product['mpn_count']) && (int)$product['mpn_count'] > 1;
+			$sku = trim((string)$product['sku']);
+			$base_unit = isset($product['base_price']) ? (float)$product['base_price'] : (float)$product['price'];
+
+			if (!$is_grouped && $sku !== '' && $base_unit > 0) {
+				$sku_quantities[$sku] = 1.0;
+				$base_unit_prices[$sku] = $base_unit;
+			}
+		}
+
+		if (!$sku_quantities) {
+			return $products;
+		}
+
+		$pricing_map = $this->model_catalog_product->getQiqoPricingMap(
+			(int)$this->customer->getId(),
+			$sku_quantities,
+			$base_unit_prices,
+			false,
+			false
+		);
+
+		foreach ($products as $key => $product) {
+			$is_grouped = !empty($product['mpn']) && isset($product['mpn_count']) && (int)$product['mpn_count'] > 1;
+			$sku = trim((string)$product['sku']);
+			if (!$is_grouped && $sku !== '' && isset($pricing_map[$sku])) {
+				$products[$key]['_qiqo_pricing'] = $pricing_map[$sku];
+			}
+		}
+
+		return $products;
 	}
 	
 	public function generateExtraPhrases( $products, $phrase, $config ) {
@@ -194,6 +259,7 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 					'filter_name'					=> $phrase,
 					'not_save_in_search_history'	=> true
 				))->getProducts();
+				$products = $this->applyQiqoCatalogPricing($products);
 
 				foreach( $products as $product ) {
 					if( count( $response['results'] ) < $limit ) {					
@@ -210,12 +276,17 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 					$recommended_data = $this->config->get( 'msmart_search_recommended' );
 					if(!empty($recommended_data['recommended_in_live_search'])){
 						$this->load->model('catalog/product');
+						$recommended_products = array();
 						foreach($recommended_data['recommended_products'] as $product_id) {
 							$product_info = $this->model_catalog_product->getProduct($product_id);
 							if ($product_info) {
-								if( count( $response['results'] ) < $limit ) {					
-									$response['results'][] = $this->prepareProduct( $product_info );
-								}
+								$recommended_products[] = $product_info;
+							}
+						}
+						$recommended_products = $this->applyQiqoCatalogPricing($recommended_products);
+						foreach ($recommended_products as $product_info) {
+							if( count( $response['results'] ) < $limit ) {
+								$response['results'][] = $this->prepareProduct( $product_info );
 							}
 						}
 						
@@ -240,12 +311,14 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 						continue;
 					}
 					
-					foreach( Msmart_Search::make( $this )->reset()->filterData(array(
+					$extra_products = Msmart_Search::make( $this )->reset()->filterData(array(
 						'limit'							=> $limit,
 						'start'							=> 0,
 						'filter_name'					=> $extra_phrase,
 						'not_save_in_search_history'	=> true
-					))->getProducts() as $product ) {
+					))->getProducts();
+					$extra_products = $this->applyQiqoCatalogPricing($extra_products);
+					foreach( $extra_products as $product ) {
 						$response['results'][] = array_replace( $this->prepareProduct( $product ), array(
 							'extra_phrase' => $extra_phrase,
 						));

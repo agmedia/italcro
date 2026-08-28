@@ -1,6 +1,9 @@
 <?php
+require_once(DIR_SYSTEM . 'library/qiqo/pricing_resolver.php');
+
 class ModelCatalogProduct extends Model {
-	private $qiqo_tables_ready = null;
+	private $qiqo_base_tables_ready = null;
+	private $qiqo_partner_article_table_ready = null;
 	private $qiqo_action_price_table_ready = null;
 	private $product_pak_column_ready = null;
 	private $product_vpc_column_ready = null;
@@ -351,7 +354,7 @@ class ModelCatalogProduct extends Model {
 	}
 
 	private function getQiqoActionProducts($data = array()) {
-		$sql = "SELECT p.product_id, (SELECT AVG(rating) FROM " . DB_PREFIX . "review r1 WHERE r1.product_id = p.product_id AND r1.status = '1' GROUP BY r1.product_id) AS rating, MIN(CASE WHEN UPPER(qap.indicator) = 'C' AND qap.price > 0 THEN qap.price WHEN qap.discount > 0 THEN (p.price * (1 - (qap.discount / 100))) ELSE p.price END) AS qiqo_sort_price FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND UPPER(qap.indicator) <> 'X' GROUP BY p.product_id";
+			$sql = "SELECT p.product_id, (SELECT AVG(rating) FROM " . DB_PREFIX . "review r1 WHERE r1.product_id = p.product_id AND r1.status = '1' GROUP BY r1.product_id) AS rating, p.price AS qiqo_sort_price FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND UPPER(qap.indicator) <> 'X' GROUP BY p.product_id";
 
 		$sort_data = array(
 			'pd.name',
@@ -849,7 +852,7 @@ class ModelCatalogProduct extends Model {
 		$map = array();
 		$customer_id = (int)$customer_id;
 
-		if (!$customer_id || !$sku_quantities || !$this->hasQiqoPricingTables()) {
+		if (!$customer_id || !$sku_quantities || !$this->hasQiqoBasePricingTables()) {
 			return $map;
 		}
 
@@ -879,33 +882,45 @@ class ModelCatalogProduct extends Model {
 		$in = $this->buildEscapedInList($sku_list);
 
 		$article_discounts = array();
-		$article_q = $this->db->query("SELECT article_code, discount
-			FROM `" . DB_PREFIX . "qiqo_partner_article_discount`
-			WHERE partner_id = '" . $partner_id . "'
-			  AND article_code IN (" . $in . ")");
+		if ($this->hasQiqoPartnerArticleDiscountTable()) {
+			$article_q = $this->db->query("SELECT article_code, discount
+				FROM `" . DB_PREFIX . "qiqo_partner_article_discount`
+				WHERE partner_id = '" . $partner_id . "'
+				  AND article_code IN (" . $in . ")");
 
-		foreach ($article_q->rows as $row) {
-			$article_discounts[(string)$row['article_code']] = (float)$row['discount'];
+			foreach ($article_q->rows as $row) {
+				$article_discounts[(string)$row['article_code']] = (float)$row['discount'];
+			}
 		}
 
 		$action_rows_by_article = array();
-		$action_q = $this->db->query("SELECT article_code, indicator, quantity, price, discount
-			FROM `" . DB_PREFIX . "qiqo_action_price`
-			WHERE article_code IN (" . $in . ")");
+		$product_cents = array();
+		if ($include_action_discount && $this->hasQiqoActionPriceTable()) {
+			$action_q = $this->db->query("SELECT article_code, indicator, quantity, price, discount
+				FROM `" . DB_PREFIX . "qiqo_action_price`
+				WHERE article_code IN (" . $in . ")");
 
-		foreach ($action_q->rows as $row) {
-			$code = (string)$row['article_code'];
+			foreach ($action_q->rows as $row) {
+				$code = (string)$row['article_code'];
 
-			if (!isset($action_rows_by_article[$code])) {
-				$action_rows_by_article[$code] = array();
+				if (!isset($action_rows_by_article[$code])) {
+					$action_rows_by_article[$code] = array();
+				}
+
+				$action_rows_by_article[$code][] = array(
+					'indicator' => strtoupper(trim((string)$row['indicator'])),
+					'quantity'  => (float)$row['quantity'],
+					'price'     => (float)$row['price'],
+					'discount'  => (float)$row['discount']
+				);
 			}
 
-			$action_rows_by_article[$code][] = array(
-				'indicator' => strtoupper(trim((string)$row['indicator'])),
-				'quantity'  => (float)$row['quantity'],
-				'price'     => (float)$row['price'],
-				'discount'  => (float)$row['discount']
-			);
+			$cent_q = $this->db->query("SELECT sku, cent
+				FROM `" . DB_PREFIX . "product`
+				WHERE sku IN (" . $in . ")");
+			foreach ($cent_q->rows as $row) {
+				$product_cents[(string)$row['sku']] = (string)$row['cent'];
+			}
 		}
 
 		foreach ($sku_list as $sku) {
@@ -919,58 +934,19 @@ class ModelCatalogProduct extends Model {
 				continue;
 			}
 
-			$article_discount = isset($article_discounts[$sku]) ? (float)$article_discounts[$sku] : null;
-			$base_discount = ($article_discount !== null) ? $article_discount : $partner_discount;
-			$base_discount = min(100.0, max(0.0, $base_discount));
+			$has_article_discount = array_key_exists($sku, $article_discounts);
+			$base_discount = $has_article_discount ? (float)$article_discounts[$sku] : $partner_discount;
+			$base_source = $has_article_discount ? 'article' : 'partner';
 
-			$action = $this->resolveQiqoActionForArticle(
+			$map[$sku] = QiqoPricingResolver::resolve(
+				$base_unit,
+				$base_discount,
+				$base_source,
 				isset($action_rows_by_article[$sku]) ? $action_rows_by_article[$sku] : array(),
 				$qty,
-				$is_proforma
-			);
-
-			$final_unit = $base_unit;
-			$old_unit = false;
-			$effective_discount = 0.0;
-			$action_applied = false;
-			$action_discount = min(100.0, max(0.0, (float)$action['discount']));
-
-			if ($base_discount > 0) {
-				$final_unit = $base_unit * (1 - ($base_discount / 100));
-				if ($final_unit < $base_unit) {
-					$old_unit = $base_unit;
-					$effective_discount = $base_discount;
-				}
-			}
-
-			if ($include_action_discount) {
-				if ($action['net_price'] !== null && $action['net_price'] > 0 && (float)$action['net_price'] < $final_unit) {
-					$final_unit = (float)$action['net_price'];
-					$old_unit = $base_unit;
-					$effective_discount = (($base_unit - $final_unit) / $base_unit) * 100;
-					$action_applied = true;
-				} elseif ($action_discount > $base_discount) {
-					$action_unit = $base_unit * (1 - ($action_discount / 100));
-					if ($action_unit < $final_unit) {
-						$final_unit = $action_unit;
-						$old_unit = $base_unit;
-						$effective_discount = $action_discount;
-						$action_applied = true;
-					}
-				}
-			}
-
-			$map[$sku] = array(
-				'base_unit_price'       => (float)$base_unit,
-				'old_unit_price'        => $old_unit !== false ? (float)$old_unit : false,
-				'final_unit_price'      => (float)$final_unit,
-				'discount_percent'      => round((float)$base_discount, 2),
-				'effective_discount_percent' => round((float)$effective_discount, 2),
-				'base_discount_percent' => round((float)$base_discount, 2),
-				'action_discount'       => round((float)$action_discount, 2),
-				'action_net_price'      => $action['net_price'] !== null ? (float)$action['net_price'] : null,
-				'action_applied'        => $action_applied,
-				'has_action'            => !empty($action_rows_by_article[$sku])
+				$include_action_discount,
+				$is_proforma,
+				isset($product_cents[$sku]) ? $product_cents[$sku] : ''
 			);
 		}
 
@@ -1099,25 +1075,29 @@ class ModelCatalogProduct extends Model {
 	public function getCustomerQiqoAuthorization($customer_id) {
 		$customer_id = (int)$customer_id;
 
-		if (!$customer_id || !$this->hasQiqoPricingTables()) {
+		if (!$customer_id || !$this->hasQiqoBasePricingTables()) {
 			return array();
 		}
 
 		$query = $this->db->query("SELECT cqa.partner_id,
-				cqa.partner_discount,
-				qp.base_discount
+					cqa.partner_discount,
+					qp.base_discount,
+					qp.active AS partner_active
 			FROM `" . DB_PREFIX . "customer_qiqo_authorization` cqa
 			LEFT JOIN `" . DB_PREFIX . "qiqo_partner` qp ON (qp.partner_id = cqa.partner_id)
 			WHERE cqa.customer_id = '" . $customer_id . "'
 			LIMIT 1");
 
-		if (!$query->num_rows) {
+		if (!$query->num_rows || empty($query->row['partner_active'])) {
 			return array();
 		}
 
-		$partner_discount = isset($query->row['partner_discount']) && $query->row['partner_discount'] !== null
-			? (float)$query->row['partner_discount']
-			: (isset($query->row['base_discount']) ? (float)$query->row['base_discount'] : 0.0);
+			// The authorization row identifies the ERP partner; the current partner
+			// rebate remains owned by qPartnerWeb and must not become a stale/manual
+			// snapshot after approval.
+			$partner_discount = isset($query->row['base_discount']) && $query->row['base_discount'] !== null
+				? (float)$query->row['base_discount']
+				: (isset($query->row['partner_discount']) ? (float)$query->row['partner_discount'] : 0.0);
 
 		return array(
 			'partner_id'       => (int)$query->row['partner_id'],
@@ -1128,7 +1108,7 @@ class ModelCatalogProduct extends Model {
 	public function getQiqoProformaExtraDiscountMap($sku_list = array()) {
 		$map = array();
 
-		if (!$sku_list || !$this->hasQiqoPricingTables()) {
+		if (!$sku_list || !$this->hasQiqoActionPriceTable()) {
 			return $map;
 		}
 
@@ -1160,69 +1140,6 @@ class ModelCatalogProduct extends Model {
 		return $map;
 	}
 
-	private function resolveQiqoActionForArticle($rows, $qty, $is_proforma) {
-		$result = array(
-			'net_price' => null,
-			'discount'  => 0.0
-		);
-
-		if (!$rows) {
-			return $result;
-		}
-
-		$qty = (float)$qty;
-		$c_discount = 0.0;
-		$p_always_discount = 0.0;
-		$p_tier_qty = -1;
-		$p_tier_discount = 0.0;
-		$x_discount = 0.0;
-		$net_price = null;
-
-		foreach ($rows as $row) {
-			$indicator = isset($row['indicator']) ? (string)$row['indicator'] : '';
-			$quantity = isset($row['quantity']) ? (float)$row['quantity'] : 0.0;
-			$price = isset($row['price']) ? (float)$row['price'] : 0.0;
-			$discount = isset($row['discount']) ? (float)$row['discount'] : 0.0;
-
-			if ($indicator === 'C' && $price > 0) {
-				if ($net_price === null || $price < $net_price) {
-					$net_price = $price;
-				}
-			}
-
-			if ($indicator === 'C' && $price <= 0 && $discount > $c_discount) {
-				$c_discount = $discount;
-			}
-
-			if ($indicator === 'P') {
-				if ($quantity <= 0 && $discount > $p_always_discount) {
-					$p_always_discount = $discount;
-				} elseif ($quantity > 0 && $qty >= $quantity) {
-					if ($quantity > $p_tier_qty || ($quantity == $p_tier_qty && $discount > $p_tier_discount)) {
-						$p_tier_qty = $quantity;
-						$p_tier_discount = $discount;
-					}
-				}
-			}
-
-			if ($is_proforma && $indicator === 'X' && $discount > $x_discount) {
-				$x_discount = $discount;
-			}
-		}
-
-		if ($net_price !== null && $net_price > 0) {
-			$result['net_price'] = $net_price;
-			$result['discount'] = 0.0;
-			return $result;
-		}
-
-		$action_discount = max($c_discount, $p_always_discount, $p_tier_discount);
-		$action_discount += $x_discount;
-
-		$result['discount'] = max(0.0, $action_discount);
-		return $result;
-	}
-
 	private function buildEscapedInList($values) {
 		$escaped = array();
 
@@ -1233,28 +1150,37 @@ class ModelCatalogProduct extends Model {
 		return implode(',', $escaped);
 	}
 
-	private function hasQiqoPricingTables() {
-		if ($this->qiqo_tables_ready !== null) {
-			return $this->qiqo_tables_ready;
+	private function hasQiqoBasePricingTables() {
+		if ($this->qiqo_base_tables_ready !== null) {
+			return $this->qiqo_base_tables_ready;
 		}
 
 		$required = array(
 			DB_PREFIX . 'customer_qiqo_authorization',
-			DB_PREFIX . 'qiqo_partner',
-			DB_PREFIX . 'qiqo_partner_article_discount',
-			DB_PREFIX . 'qiqo_action_price'
+			DB_PREFIX . 'qiqo_partner'
 		);
 
 		foreach ($required as $table) {
 			$q = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape($table) . "'");
 			if (!$q->num_rows) {
-				$this->qiqo_tables_ready = false;
-				return $this->qiqo_tables_ready;
+				$this->qiqo_base_tables_ready = false;
+				return $this->qiqo_base_tables_ready;
 			}
 		}
 
-		$this->qiqo_tables_ready = true;
-		return $this->qiqo_tables_ready;
+		$this->qiqo_base_tables_ready = true;
+		return $this->qiqo_base_tables_ready;
+	}
+
+	private function hasQiqoPartnerArticleDiscountTable() {
+		if ($this->qiqo_partner_article_table_ready !== null) {
+			return $this->qiqo_partner_article_table_ready;
+		}
+
+		$q = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_partner_article_discount') . "'");
+		$this->qiqo_partner_article_table_ready = (bool)$q->num_rows;
+
+		return $this->qiqo_partner_article_table_ready;
 	}
 
 	private function hasQiqoActionPriceTable() {

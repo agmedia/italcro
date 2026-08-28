@@ -13,101 +13,15 @@ class ControllerCustomerQiqoSalesRep extends Controller {
 	}
 
 	public function add() {
-		$this->load->language('customer/qiqo_sales_rep');
-
-		$this->document->setTitle($this->language->get('heading_title'));
-
-		$this->load->model('customer/qiqo_sales_rep');
-
-		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {
-			$this->model_customer_qiqo_sales_rep->addSalesRep($this->request->post);
-
-			$this->session->data['success'] = $this->language->get('text_success');
-
-			$url = '';
-
-			if (isset($this->request->get['sort'])) {
-				$url .= '&sort=' . $this->request->get['sort'];
-			}
-
-			if (isset($this->request->get['order'])) {
-				$url .= '&order=' . $this->request->get['order'];
-			}
-
-			if (isset($this->request->get['page'])) {
-				$url .= '&page=' . $this->request->get['page'];
-			}
-
-			$this->response->redirect($this->url->link('customer/qiqo_sales_rep', 'user_token=' . $this->session->data['user_token'] . $url, true));
-		}
-
-		$this->getForm();
+		$this->denyManualMutation();
 	}
 
 	public function edit() {
-		$this->load->language('customer/qiqo_sales_rep');
-
-		$this->document->setTitle($this->language->get('heading_title'));
-
-		$this->load->model('customer/qiqo_sales_rep');
-
-		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {
-			$this->model_customer_qiqo_sales_rep->editSalesRep($this->request->get['sales_rep_id'], $this->request->post);
-
-			$this->session->data['success'] = $this->language->get('text_success');
-
-			$url = '';
-
-			if (isset($this->request->get['sort'])) {
-				$url .= '&sort=' . $this->request->get['sort'];
-			}
-
-			if (isset($this->request->get['order'])) {
-				$url .= '&order=' . $this->request->get['order'];
-			}
-
-			if (isset($this->request->get['page'])) {
-				$url .= '&page=' . $this->request->get['page'];
-			}
-
-			$this->response->redirect($this->url->link('customer/qiqo_sales_rep', 'user_token=' . $this->session->data['user_token'] . $url, true));
-		}
-
-		$this->getForm();
+		$this->denyManualMutation();
 	}
 
 	public function delete() {
-		$this->load->language('customer/qiqo_sales_rep');
-
-		$this->document->setTitle($this->language->get('heading_title'));
-
-		$this->load->model('customer/qiqo_sales_rep');
-
-		if (isset($this->request->post['selected']) && $this->validateDelete()) {
-			foreach ($this->request->post['selected'] as $sales_rep_id) {
-				$this->model_customer_qiqo_sales_rep->deleteSalesRep($sales_rep_id);
-			}
-
-			$this->session->data['success'] = $this->language->get('text_success');
-
-			$url = '';
-
-			if (isset($this->request->get['sort'])) {
-				$url .= '&sort=' . $this->request->get['sort'];
-			}
-
-			if (isset($this->request->get['order'])) {
-				$url .= '&order=' . $this->request->get['order'];
-			}
-
-			if (isset($this->request->get['page'])) {
-				$url .= '&page=' . $this->request->get['page'];
-			}
-
-			$this->response->redirect($this->url->link('customer/qiqo_sales_rep', 'user_token=' . $this->session->data['user_token'] . $url, true));
-		}
-
-		$this->getList();
+		$this->denyManualMutation();
 	}
 
 	protected function getList() {
@@ -155,9 +69,6 @@ class ControllerCustomerQiqoSalesRep extends Controller {
 			'href' => $this->url->link('customer/qiqo_sales_rep', 'user_token=' . $this->session->data['user_token'] . $url, true)
 		);
 
-		$data['add'] = $this->url->link('customer/qiqo_sales_rep/add', 'user_token=' . $this->session->data['user_token'] . $url, true);
-		$data['delete'] = $this->url->link('customer/qiqo_sales_rep/delete', 'user_token=' . $this->session->data['user_token'] . $url, true);
-
 		$data['sales_reps'] = array();
 
 		$filter_data = array(
@@ -176,12 +87,14 @@ class ControllerCustomerQiqoSalesRep extends Controller {
 				'code'          => $result['code'],
 				'name'          => $result['name'],
 				'active'        => $result['active'],
-				'date_modified' => date($this->language->get('date_format_short'), strtotime($result['date_modified'])),
-				'edit'          => $this->url->link('customer/qiqo_sales_rep/edit', 'user_token=' . $this->session->data['user_token'] . '&sales_rep_id=' . $result['sales_rep_id'] . $url, true)
+				'date_modified' => date($this->language->get('date_format_short'), strtotime($result['date_modified']))
 			);
 		}
 
-		if (isset($this->error['warning'])) {
+		if (isset($this->session->data['error_warning'])) {
+			$data['error_warning'] = $this->session->data['error_warning'];
+			unset($this->session->data['error_warning']);
+		} elseif (isset($this->error['warning'])) {
 			$data['error_warning'] = $this->error['warning'];
 		} else {
 			$data['error_warning'] = '';
@@ -245,6 +158,12 @@ class ControllerCustomerQiqoSalesRep extends Controller {
 		$data['footer'] = $this->load->controller('common/footer');
 
 		$this->response->setOutput($this->load->view('customer/qiqo_sales_rep_list', $data));
+	}
+
+	private function denyManualMutation() {
+		$this->session->data['error_warning'] = 'Komercijalisti se sinkroniziraju isključivo iz qKomercijalistWeb; ručne izmjene nisu dopuštene.';
+
+		$this->response->redirect($this->url->link('customer/qiqo_sales_rep', 'user_token=' . $this->session->data['user_token'], true));
 	}
 
 	protected function getForm() {

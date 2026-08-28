@@ -18,7 +18,7 @@ class ControllerApiCart extends Controller {
 						$option = array();
 					}
 
-					$this->cart->add($product['product_id'], $product['quantity'], $option);
+					$this->cart->add($product['product_id'], $product['quantity'], $option, 0, true);
 				}
 
 				$json['success'] = $this->language->get('text_success');
@@ -54,7 +54,7 @@ class ControllerApiCart extends Controller {
 					}
 
 					if (!isset($json['error']['option'])) {
-						$this->cart->add($this->request->post['product_id'], $quantity, $option);
+						$this->cart->add($this->request->post['product_id'], $quantity, $option, 0, true);
 
 						$json['success'] = $this->language->get('text_success');
 

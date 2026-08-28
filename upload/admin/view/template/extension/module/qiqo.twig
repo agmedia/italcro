@@ -2,6 +2,11 @@
 <div id="content">
     <div class="page-header">
         <div class="container-fluid">
+            <div class="pull-right">
+                <a href="{{ order_outbox }}" class="btn btn-info" title="NarudzbaSend red i kontrolirano ERP slanje">
+                    <i class="fa fa-paper-plane"></i> NarudzbaSend
+                </a>
+            </div>
             <h1>{{ heading_title }}</h1>
             <ul class="breadcrumb">
                 <li><a href="{{ cancel }}">Modules</a></li>
@@ -85,9 +90,12 @@
 
                             <hr>
 
-                            <button type="submit" name="action" value="disable_missing" class="btn btn-danger">
+                            <button type="submit" name="action" value="disable_missing" class="btn btn-danger"{% if not disable_missing_enabled %} disabled title="Blokirano bez potvrđenog potpunog snapshota i transakcijske product tablice"{% endif %}>
                                 <i class="fa fa-ban"></i> Onemogući artikle kojih nema u ERP-u
                             </button>
+                            {% if not disable_missing_enabled %}
+                                <p class="help-block text-danger">Sigurnosno blokirano: qArtikliWeb mora biti potvrđen kao potpuni ERP katalog, a product tablica mora podržavati transakcijski rollback.</p>
+                            {% endif %}
 
                             <hr>
 
@@ -105,7 +113,7 @@
                                 <i class="fa fa-users"></i> Sync partnera i komercijalista (inkrementalno)
                             </button>
 
-                            <button type="submit" name="action" value="sync_partner_base_full" class="btn btn-info">
+                            <button type="submit" name="action" value="sync_partner_base_full" class="btn btn-info"{% if not full_snapshot_enabled %} disabled{% endif %}>
                                 <i class="fa fa-history"></i> Sync partnera i komercijalista (FULL)
                             </button>
 
@@ -113,17 +121,21 @@
                                 <i class="fa fa-tags"></i> Sync akcijskog cjenika
                             </button>
 
-                            <button type="submit" name="action" value="sync_action_prices_full" class="btn btn-info">
+                            <button type="submit" name="action" value="sync_action_prices_full" class="btn btn-info"{% if not full_snapshot_enabled %} disabled{% endif %}>
                                 <i class="fa fa-history"></i> Sync akcijskog cjenika (FULL)
                             </button>
 
-                            <button type="submit" name="action" value="sync_partner_discounts" class="btn btn-warning">
+                            <button type="submit" name="action" value="sync_partner_discounts" class="btn btn-warning"{% if not full_snapshot_enabled %} disabled{% endif %}>
                                 <i class="fa fa-percent"></i> Sync partner-artikl rabata (full)
                             </button>
 
-                            <button type="submit" name="action" value="sync_partner_all" class="btn btn-primary">
+                            <button type="submit" name="action" value="sync_partner_all" class="btn btn-primary"{% if not full_snapshot_enabled %} disabled{% endif %}>
                                 <i class="fa fa-refresh"></i> Sync svih partner podataka
                             </button>
+
+                            {% if not full_snapshot_enabled %}
+                                <p class="help-block text-warning">Destruktivne FULL zamjene su blokirane (<code>qiqo_full_snapshot_confirmed=0</code>). Inkrementalni sync ostaje dostupan.</p>
+                            {% endif %}
 
                             <button type="submit" name="action" value="update_article_partners" class="btn btn-info">
                                 <i class="fa fa-link"></i> Ažuriraj partnere na artiklima

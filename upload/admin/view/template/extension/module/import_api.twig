@@ -269,39 +269,58 @@
 var global_limit = 0;
 var created = 0;
 var updated = 0;
+var import_has_limit = false;
 
 $(document).delegate('#start-import', 'click', function() {
-   $('#start-import').button('loading');
-   $('#import-number').html('');
-   $('#update-number').html('');
-   start = +($('#input-live-start').val());
-   global_limit = limit = +($('#input-live-limit').val());
-   created = 0;
-   updated = 0;
-   importProducts(start, limit); 
+	   $('#start-import').button('loading');
+	   $('#import-number').text('');
+	   $('#update-number').text('');
+	   var start = Math.max(0, parseInt($('#input-live-start').val(), 10) || 0);
+	   var limit = Math.max(0, parseInt($('#input-live-limit').val(), 10) || 0);
+	   global_limit = limit;
+	   import_has_limit = limit > 0;
+	   created = 0;
+	   updated = 0;
+	   importProducts(start, limit);
 });
 
 function importProducts(start = 0, limit = 0){
 	$.ajax({
-	url: '../index.php?route=extension/feed/import_api/import&from=admin&start=' + start + '&limit=' + limit,
-        type: 'post',
-        data: $('#form-json-api').serialize(),
-        dataType: 'json',
-        beforeSend: function() {       	
-			$('#import-number').html($('#import-number').html() + ' /Please wait...');
-			$('#update-number').html($('#update-number').html() + ' /Please wait...');
+		url: 'index.php?route=extension/module/import_api/import&user_token={{ user_token }}',
+	        type: 'post',
+	        data: $('#form-json-api').serialize() + '&start=' + encodeURIComponent(start) + '&limit=' + encodeURIComponent(limit),
+	        dataType: 'json',
+	        beforeSend: function() {
+			$('#import-number').text($('#import-number').text() + ' /Please wait...');
+			$('#update-number').text($('#update-number').text() + ' /Please wait...');
 		},
         complete: function() {
            
-        },
-        success: function(ret) {
-			session_processed = ret['products_created'] + ret['products_updated'];
+	        },
+	        success: function(ret) {
+			if (ret && ret.error) {
+				$('#start-import').button('reset');
+				alert(ret.error);
+				return;
+			}
+
+			var session_processed = (parseInt(ret.products_created, 10) || 0) + (parseInt(ret.products_updated, 10) || 0);
 			createVisialProgress(ret);
 			if(ret['notice'] == 'time_out'){
+				if (session_processed <= 0) {
+					$('#start-import').button('reset');
+					alert('Import je zaustavljen jer u ovoj seriji nije obrađen nijedan proizvod.');
+					return;
+				}
+
 				start = start + session_processed;
 
-                if	(limit){
+				if (import_has_limit) {
 					limit -= session_processed;
+					if (limit <= 0) {
+						$('#start-import').button('reset');
+						return;
+					}
 				}
 
 				importProducts(start, limit);
@@ -309,29 +328,33 @@ function importProducts(start = 0, limit = 0){
 			} else {
 				$('#start-import').button('reset');
 			}
-        },
-        error: function(xhr, ajaxOptions, thrownError) {
-            //alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
-			importProducts(start, limit);
-        }
-    });	
+	        },
+	        error: function(xhr, ajaxOptions, thrownError) {
+			$('#start-import').button('reset');
+			var message = 'Import API zahtjev nije uspio (' + xhr.status + ').';
+			if (xhr.responseJSON && xhr.responseJSON.error) {
+				message += '\n' + xhr.responseJSON.error;
+			}
+			alert(message);
+	        }
+	    });
 }
 
 
 function createVisialProgress(ret){
-	updated += ret['products_updated'];
-	created += ret['products_created'];
-	$('#import-number').html(created);
-	$('#update-number').html(updated);
-	processed = created + updated;
+	updated += parseInt(ret['products_updated'], 10) || 0;
+	created += parseInt(ret['products_created'], 10) || 0;
+	$('#import-number').text(created);
+	$('#update-number').text(updated);
+	var processed = created + updated;
 
 	if(!global_limit){
-		global_limit = ret['total'];
-		$('#total-number').html(ret['total']);
+		global_limit = parseInt(ret['total'], 10) || 0;
+		$('#total-number').text(global_limit);
 	}
 
 	if(global_limit){
-		valeur = ( processed / global_limit ) * 100;
+		var valeur = Math.min(100, (processed / global_limit) * 100);
 		$('.progress-bar').css('width', valeur+'%').attr('aria-valuenow', valeur);
 	}
 }
@@ -355,7 +378,7 @@ $(document).delegate('#button-link', 'click', function() {
 				$('.alert, .text-danger').remove();
 			
 				$('.form-group').removeClass('has-error');
-				
+
 				$('.api_field').empty(); 
 				$('.api_field').append(new Option('--Please select--', 0));
 				$.each(json.field, function(key, value) {
@@ -372,11 +395,12 @@ $(document).delegate('#button-link', 'click', function() {
 });
 
 $(document).delegate('.api-test', 'click', function() {
-    $.ajax({
-	    url: '../index.php?route=extension/feed/import_api/test&id=' + $(this).attr('id'),
-        type: 'post',
-        data: $('#form-json-api').serialize(),
-        dataType: 'json',
+	var view = $(this).attr('id');
+	    $.ajax({
+		    url: 'index.php?route=extension/module/import_api/test&user_token={{ user_token }}',
+	        type: 'post',
+	        data: $('#form-json-api').serialize() + '&view=' + encodeURIComponent(view),
+	        dataType: 'json',
         beforeSend: function() {
 			$('#test-result').html('Please wait...');
         	$(".api-test").attr("disabled", true);
@@ -385,45 +409,62 @@ $(document).delegate('.api-test', 'click', function() {
         complete: function() {
            //$('.api-test').button('reset');
 		   $(".api-test").attr("disabled", false);
-        },
-        success: function(ret) {
-            $('.alert, .text-danger').remove();
-			
-            $('.form-group').removeClass('has-error');
-			html = '';
-			$.each(ret,function(p, product){
-				html += jsonObjToHtml(product);
-				html += '</br><hr>';
-			});
+	        },
+	        success: function(ret) {
+	            $('.alert, .text-danger').remove();
+
+	            $('.form-group').removeClass('has-error');
+				if (ret && ret.error) {
+					$('#test-result').text(ret.error);
+					return;
+				}
+
+				var html = '';
+				$.each(ret,function(p, product){
+					html += jsonObjToHtml(product);
+					html += '<br><hr>';
+				});
 			
             $('#test-result').html(html);						
-        },
-        error: function(xhr, ajaxOptions, thrownError) {
-            alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
-        }
-    });
+	        },
+	        error: function(xhr, ajaxOptions, thrownError) {
+			var message = 'Import API test nije uspio (' + xhr.status + ').';
+			if (xhr.responseJSON && xhr.responseJSON.error) {
+				message += '\n' + xhr.responseJSON.error;
+			}
+			$('#test-result').text(message);
+	        }
+	    });
 });
 
+function importApiEscapeHtml(value) {
+	if (value === null || typeof value === 'undefined') {
+		return '';
+	}
+
+	return $('<div/>').text(String(value)).html();
+}
+
 function jsonObjToHtml(obj){
-	html = '';
+	var html = '';
 	$.each(obj, function(index, value){					
 		if(Array.isArray(value)){
-			html += '<p><b>' + index + '</b></p>';
+			html += '<p><b>' + importApiEscapeHtml(index) + '</b></p>';
 			html += '<ul>';
 			$.each(value, function(i, v) {
 				if (v !== null && typeof (v) === 'object') {
 					html += jsonObjToHtml(v);
 				} else {
-					html += '<li>' + v + '</li>';
+					html += '<li>' + importApiEscapeHtml(v) + '</li>';
 				}
 			});
 			html += '</ul>';
 		} else if (value !== null && typeof (value) === 'object') {
-			html += '<p><b>' + index + '</b></p>';
+			html += '<p><b>' + importApiEscapeHtml(index) + '</b></p>';
 			html += jsonObjToHtml(value);
 		} else {
-			html += '<p><b>' + index + '</b>: ' + value + '</p>';
-		}	   
+			html += '<p><b>' + importApiEscapeHtml(index) + '</b>: ' + importApiEscapeHtml(value) + '</p>';
+		}
 	});
 	return html;
 }

@@ -105,12 +105,14 @@ class ControllerExtensionQuickCheckoutCart extends Controller {
 					$qty = 1.0;
 				}
 
-				$base_unit = ((float)$product_info['special'] > 0) ? (float)$product_info['special'] : (float)$product_info['price'];
+					$base_unit = isset($product_info['base_price'])
+						? (float)$product_info['base_price']
+						: (float)$product_info['price'];
 				if ($base_unit <= 0) {
 					continue;
 				}
 
-				$sku_quantities[$sku] = $qty;
+					$sku_quantities[$sku] = isset($sku_quantities[$sku]) ? $sku_quantities[$sku] + $qty : $qty;
 				$base_unit_prices[$sku] = $base_unit;
 			}
 
@@ -173,7 +175,9 @@ class ControllerExtensionQuickCheckoutCart extends Controller {
 			
 			// Display prices
 			if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
-				$price = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+				$cent_normalized = strtoupper(preg_replace('/[^A-Z0-9]/i', '', isset($product['cent']) ? (string)$product['cent'] : ''));
+				$display_unit_price = (float)$product['price'] * ($cent_normalized === 'C100' ? 100 : 1);
+				$price = $this->currency->format($this->tax->calculate($display_unit_price, $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
 			} else {
 				$price = false;
 			}
@@ -232,7 +236,7 @@ class ControllerExtensionQuickCheckoutCart extends Controller {
 
 					if ($old_unit_raw > 0 && $old_unit_raw > $current_unit_raw) {
 						$price_old = $this->currency->format(
-							$this->tax->calculate($old_unit_raw, $product['tax_class_id'], $this->config->get('config_tax')),
+							$this->tax->calculate($old_unit_raw * ($cent_normalized === 'C100' ? 100 : 1), $product['tax_class_id'], $this->config->get('config_tax')),
 							$this->session->data['currency']
 						);
 					}

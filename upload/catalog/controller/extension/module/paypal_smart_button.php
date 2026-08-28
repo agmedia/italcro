@@ -1,6 +1,21 @@
 <?php
 class ControllerExtensionModulePayPalSmartButton extends Controller {
 	private $error = array();
+
+	private function denyDisabledIntegration() {
+		if ((int)$this->config->get('payment_paypal_status') === 1) {
+			return false;
+		}
+
+		$this->response->addHeader('HTTP/1.1 404 Not Found');
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->addHeader('Cache-Control: no-store');
+		$this->response->setOutput(json_encode(array(
+			'error' => array('warning' => 'PayPal integracija nije omogućena.')
+		)));
+
+		return true;
+	}
 		
 	public function __construct($registry) {
 		parent::__construct($registry);
@@ -11,8 +26,16 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 		}
 	}
 	
-	public function index() {		
-		if ($this->config->get('payment_paypal_status') && isset($this->request->get['route'])) {						
+	public function index() {
+		// The legacy product-page widget derives its amount from raw
+		// product_special/product.price and cannot represent buyer pricing,
+		// C-100 or a grouped MPN safely. Cart-level PayPal remains available
+		// because its amount is based on the resolved cart total.
+		if (isset($this->request->get['route']) && $this->request->get['route'] === 'product/product') {
+			return false;
+		}
+
+		if ($this->config->get('payment_paypal_status') && isset($this->request->get['route'])) {
 			$status = false;
 			
 			// Setting
@@ -132,15 +155,22 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 	}
 	
 	public function createOrder() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->load->language('extension/module/paypal_smart_button');
 		
 		$this->load->model('extension/module/paypal_smart_button');
 		
-		$errors = array();
+			$errors = array();
+			if (isset($this->request->post['product_id'])) {
+				$errors[] = 'PayPal plaćanje pojedinačnog artikla nije dostupno; dodajte točan artikl u košaricu i nastavite iz košarice.';
+			}
 		
 		$data['order_id'] = '';
 		
-		if (isset($this->request->post['product_id'])) {
+			if (isset($this->request->post['product_id']) && !$errors) {
 			$product_id = (int)$this->request->post['product_id'];
 		
 			$this->load->model('catalog/product');
@@ -188,10 +218,12 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 					}
 				}
 
-				if (!$errors) {					
-					if (!$this->model_extension_module_paypal_smart_button->hasProductInCart($this->request->post['product_id'], $option, $recurring_id)) {
-						$this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id);
-					}
+					if (!$errors) {
+						if (!$this->model_extension_module_paypal_smart_button->hasProductInCart($this->request->post['product_id'], $option, $recurring_id)) {
+							if (!$this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id)) {
+								$errors[] = 'Odaberite točan artikl iz tablice varijanti prije dodavanja u košaricu.';
+							}
+						}
 					
 					// Unset all shipping and payment methods
 					unset($this->session->data['shipping_method']);
@@ -337,6 +369,10 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 	}
 	
 	public function approveOrder() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->load->language('extension/module/paypal_smart_button');
 		
 		$this->load->model('extension/module/paypal_smart_button');
@@ -535,6 +571,10 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 	}
 	
 	public function confirmOrder() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->load->language('extension/module/paypal_smart_button');
 		$this->load->language('checkout/cart');
 
@@ -925,7 +965,11 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 		$this->response->setOutput($this->load->view('extension/module/paypal_smart_button/confirm', $data));
 	}
 	
-	public function completeOrder() {		
+	public function completeOrder() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->load->language('extension/module/paypal_smart_button');
 						
 		$this->load->model('extension/module/paypal_smart_button');
@@ -1426,6 +1470,10 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 	}
 	
 	public function paymentAddress() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->load->language('extension/module/paypal_smart_button');
 		
 		$data['guest'] = isset($this->session->data['guest']) ? $this->session->data['guest'] : array();
@@ -1443,6 +1491,10 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 	}
 	
 	public function shippingAddress() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->load->language('extension/module/paypal_smart_button');
 		
 		$data['shipping_address'] = isset($this->session->data['shipping_address']) ? $this->session->data['shipping_address'] : array();
@@ -1459,12 +1511,20 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 	}
 	
 	public function confirmShipping() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->validateShipping($this->request->post['shipping_method']);
 
 		$this->response->redirect($this->url->link('extension/module/paypal_smart_button/confirmOrder', '', true));
 	}
 	
 	public function confirmPaymentAddress() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->load->language('extension/module/paypal_smart_button');
 		
 		$data['url'] = '';
@@ -1535,6 +1595,10 @@ class ControllerExtensionModulePayPalSmartButton extends Controller {
 	}
 	
 	public function confirmShippingAddress() {
+		if ($this->denyDisabledIntegration()) {
+			return;
+		}
+
 		$this->load->language('extension/module/paypal_smart_button');
 		
 		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateShippingAddress()) {			

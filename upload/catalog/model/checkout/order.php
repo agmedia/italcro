@@ -1,9 +1,6 @@
 <?php
 class ModelCheckoutOrder extends Model {
-	private static $qiqo_order_quantity_column_checked = false;
-
 	public function addOrder($data) {
-		$this->ensureQiqoOrderQuantityColumn();
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "order` SET invoice_prefix = '" . $this->db->escape($data['invoice_prefix']) . "', store_id = '" . (int)$data['store_id'] . "', store_name = '" . $this->db->escape($data['store_name']) . "', store_url = '" . $this->db->escape($data['store_url']) . "', customer_id = '" . (int)$data['customer_id'] . "', customer_group_id = '" . (int)$data['customer_group_id'] . "', firstname = '" . $this->db->escape($data['firstname']) . "', lastname = '" . $this->db->escape($data['lastname']) . "', email = '" . $this->db->escape($data['email']) . "', telephone = '" . $this->db->escape($data['telephone']) . "', custom_field = '" . $this->db->escape(isset($data['custom_field']) ? json_encode($data['custom_field']) : '') . "', payment_firstname = '" . $this->db->escape($data['payment_firstname']) . "', payment_lastname = '" . $this->db->escape($data['payment_lastname']) . "', payment_company = '" . $this->db->escape($data['payment_company']) . "', payment_address_1 = '" . $this->db->escape($data['payment_address_1']) . "', payment_address_2 = '" . $this->db->escape($data['payment_address_2']) . "', payment_city = '" . $this->db->escape($data['payment_city']) . "', payment_postcode = '" . $this->db->escape($data['payment_postcode']) . "', payment_country = '" . $this->db->escape($data['payment_country']) . "', payment_country_id = '" . (int)$data['payment_country_id'] . "', payment_zone = '" . $this->db->escape($data['payment_zone']) . "', payment_zone_id = '" . (int)$data['payment_zone_id'] . "', payment_address_format = '" . $this->db->escape($data['payment_address_format']) . "', payment_custom_field = '" . $this->db->escape(isset($data['payment_custom_field']) ? json_encode($data['payment_custom_field']) : '') . "', payment_method = '" . $this->db->escape($data['payment_method']) . "', payment_code = '" . $this->db->escape($data['payment_code']) . "', shipping_firstname = '" . $this->db->escape($data['shipping_firstname']) . "', shipping_lastname = '" . $this->db->escape($data['shipping_lastname']) . "', shipping_company = '" . $this->db->escape($data['shipping_company']) . "', shipping_address_1 = '" . $this->db->escape($data['shipping_address_1']) . "', shipping_address_2 = '" . $this->db->escape($data['shipping_address_2']) . "', shipping_city = '" . $this->db->escape($data['shipping_city']) . "', shipping_postcode = '" . $this->db->escape($data['shipping_postcode']) . "', shipping_country = '" . $this->db->escape($data['shipping_country']) . "', shipping_country_id = '" . (int)$data['shipping_country_id'] . "', shipping_zone = '" . $this->db->escape($data['shipping_zone']) . "', shipping_zone_id = '" . (int)$data['shipping_zone_id'] . "', shipping_address_format = '" . $this->db->escape($data['shipping_address_format']) . "', shipping_custom_field = '" . $this->db->escape(isset($data['shipping_custom_field']) ? json_encode($data['shipping_custom_field']) : '') . "', shipping_method = '" . $this->db->escape($data['shipping_method']) . "', shipping_code = '" . $this->db->escape($data['shipping_code']) . "', comment = '" . $this->db->escape($data['comment']) . "', total = '" . (float)$data['total'] . "', affiliate_id = '" . (int)$data['affiliate_id'] . "', commission = '" . (float)$data['commission'] . "', marketing_id = '" . (int)$data['marketing_id'] . "', tracking = '" . $this->db->escape($data['tracking']) . "', language_id = '" . (int)$data['language_id'] . "', currency_id = '" . (int)$data['currency_id'] . "', currency_code = '" . $this->db->escape($data['currency_code']) . "', currency_value = '" . (float)$data['currency_value'] . "', ip = '" . $this->db->escape($data['ip']) . "', forwarded_ip = '" .  $this->db->escape($data['forwarded_ip']) . "', user_agent = '" . $this->db->escape($data['user_agent']) . "', accept_language = '" . $this->db->escape($data['accept_language']) . "', date_added = NOW(), date_modified = NOW()");
 
 		$order_id = $this->db->getLastId();
@@ -12,7 +9,8 @@ class ModelCheckoutOrder extends Model {
 		if (isset($data['products'])) {
 			foreach ($data['products'] as $product) {
 				$quantity = $this->formatQiqoQuantity($product['quantity']);
-				$this->db->query("INSERT INTO " . DB_PREFIX . "order_product SET order_id = '" . (int)$order_id . "', product_id = '" . (int)$product['product_id'] . "', name = '" . $this->db->escape($product['name']) . "', model = '" . $this->db->escape($product['model']) . "', quantity = '" . $quantity . "', price = '" . (float)$product['price'] . "', total = '" . (float)$product['total'] . "', tax = '" . (float)$product['tax'] . "', reward = '" . (int)$product['reward'] . "'");
+				$snapshot = $this->getQiqoOrderProductSnapshot($product);
+				$this->db->query("INSERT INTO " . DB_PREFIX . "order_product SET order_id = '" . (int)$order_id . "', product_id = '" . (int)$product['product_id'] . "', name = '" . $this->db->escape($product['name']) . "', model = '" . $this->db->escape($product['model']) . "', quantity = '" . $quantity . "', price = '" . (float)$product['price'] . "', total = '" . (float)$product['total'] . "', tax = '" . (float)$product['tax'] . "', reward = '" . (int)$product['reward'] . "', sku = '" . $this->db->escape($snapshot['sku']) . "', qiqo_cent = '" . $this->db->escape($snapshot['cent']) . "'");
 
 				$order_product_id = $this->db->getLastId();
 
@@ -49,7 +47,6 @@ class ModelCheckoutOrder extends Model {
 	}
 
 	public function editOrder($order_id, $data) {
-		$this->ensureQiqoOrderQuantityColumn();
 		// Void the order first
 		$this->addOrderHistory($order_id, 0);
 
@@ -62,7 +59,8 @@ class ModelCheckoutOrder extends Model {
 		if (isset($data['products'])) {
 			foreach ($data['products'] as $product) {
 				$quantity = $this->formatQiqoQuantity($product['quantity']);
-				$this->db->query("INSERT INTO " . DB_PREFIX . "order_product SET order_id = '" . (int)$order_id . "', product_id = '" . (int)$product['product_id'] . "', name = '" . $this->db->escape($product['name']) . "', model = '" . $this->db->escape($product['model']) . "', quantity = '" . $quantity . "', price = '" . (float)$product['price'] . "', total = '" . (float)$product['total'] . "', tax = '" . (float)$product['tax'] . "', reward = '" . (int)$product['reward'] . "'");
+				$snapshot = $this->getQiqoOrderProductSnapshot($product);
+				$this->db->query("INSERT INTO " . DB_PREFIX . "order_product SET order_id = '" . (int)$order_id . "', product_id = '" . (int)$product['product_id'] . "', name = '" . $this->db->escape($product['name']) . "', model = '" . $this->db->escape($product['model']) . "', quantity = '" . $quantity . "', price = '" . (float)$product['price'] . "', total = '" . (float)$product['total'] . "', tax = '" . (float)$product['tax'] . "', reward = '" . (int)$product['reward'] . "', sku = '" . $this->db->escape($snapshot['sku']) . "', qiqo_cent = '" . $this->db->escape($snapshot['cent']) . "'");
 
 				$order_product_id = $this->db->getLastId();
 
@@ -268,6 +266,12 @@ class ModelCheckoutOrder extends Model {
 	}	
 			
 	public function addOrderHistory($order_id, $order_status_id, $comment = '', $notify = false, $override = false) {
+		require_once DIR_SYSTEM . 'library/qiqo/order_export_lock.php';
+		if (!QiqoOrderExportLock::acquire($this->db, $order_id, 25)) {
+			throw new RuntimeException('Narudžba se trenutačno izvozi prema ERP-u. Promjena statusa nije izvršena; pokušajte ponovno.');
+		}
+
+		try {
 		$order_info = $this->getOrder($order_id);
 		
 		if ($order_info) {
@@ -388,27 +392,48 @@ class ModelCheckoutOrder extends Model {
 			}
 
 			$this->cache->delete('product');
+
+			// Only create an immutable outbox snapshot here. The private ERP request is
+			// processed separately from checkout, so a slow/unreachable ERP cannot
+			// break the customer's order confirmation or cause an automatic duplicate.
+			$this->enqueueQiqoOrder($order_id);
+		}
+		} finally {
+			try {
+				QiqoOrderExportLock::release($this->db, $order_id);
+			} catch (Throwable $e) {
+				$this->log->write('QIQO NarudzbaSend: zaključavanje narudžbe nije uredno otpušteno; zatvaranje veze će ga otpustiti.');
+			}
 		}
 	}
 
-	private function ensureQiqoOrderQuantityColumn() {
-		if (self::$qiqo_order_quantity_column_checked) {
-			return;
+	private function getQiqoOrderProductSnapshot($product) {
+		$sku = !empty($product['sku']) ? trim((string)$product['sku']) : '';
+		$cent = isset($product['cent']) ? trim((string)$product['cent']) : '';
+
+		if ($sku === '' || $cent === '') {
+			$query = $this->db->query("SELECT sku, cent FROM `" . DB_PREFIX . "product` WHERE product_id = '" . (int)$product['product_id'] . "' LIMIT 1");
+			if ($query->num_rows) {
+				if ($sku === '') {
+					$sku = trim((string)$query->row['sku']);
+				}
+				if ($cent === '') {
+					$cent = trim((string)$query->row['cent']);
+				}
+			}
 		}
 
-		self::$qiqo_order_quantity_column_checked = true;
+		return array('sku' => $sku, 'cent' => $cent);
+	}
 
-		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "order_product` LIKE 'quantity'");
-		if (!$query->num_rows) {
-			return;
+	private function enqueueQiqoOrder($order_id) {
+		try {
+			$this->load->model('extension/module/qiqo_order_outbox');
+			$this->model_extension_module_qiqo_order_outbox->enqueueOrder($order_id);
+		} catch (Throwable $e) {
+			$message = preg_replace('/[\x00-\x1F\x7F]/', ' ', (string)$e->getMessage());
+			$this->log->write('QIQO NarudzbaSend: outbox enqueue nije uspio za narudžbu #' . (int)$order_id . ': ' . substr($message, 0, 500));
 		}
-
-		$type = strtolower((string)$query->row['Type']);
-		if (strpos($type, 'decimal') !== false || strpos($type, 'double') !== false || strpos($type, 'float') !== false) {
-			return;
-		}
-
-		$this->db->query("ALTER TABLE `" . DB_PREFIX . "order_product` MODIFY `quantity` DECIMAL(15,4) NOT NULL DEFAULT 0");
 	}
 
 	private function formatQiqoQuantity($quantity) {

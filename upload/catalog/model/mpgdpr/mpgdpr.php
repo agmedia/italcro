@@ -545,24 +545,58 @@ class ModelMpGdprMpgdpr extends Model {
     }
 
     public function deleteCustomer($customer_id, $query) {
-        $this->mpgdpr->log("called front model.mpgdpr.deleteCustomer({$customer_id}, query)");
+		$this->mpgdpr->log("called front model.mpgdpr.deleteCustomer({$customer_id}, query)");
+		$customer_id = (int)$customer_id;
+		$lock_name = 'qiqo_auth_' . sha1(DB_DATABASE . ':' . DB_PREFIX . $customer_id);
 
-        $this->deleteCustomerAddresses($customer_id, $query);
-        $this->deleteCustomerActivity($customer_id, $query);
-        $this->deleteCustomerHistories($customer_id, $query);
-        $this->deleteCustomerIp($customer_id, $query);
-        $this->deleteCustomerLogins($customer_id, $query);
-        $this->deleteCustomerRewards($customer_id, $query);
-        $this->deleteCustomerTransactions($customer_id, $query);
-        $this->deleteCustomerWishlists($customer_id, $query);
-        $this->anonymouseCustomerGDPRData($customer_id, $query);
+		if (!$this->acquireCustomerQiqoAuthorizationLock($lock_name)) {
+			throw new Exception('QIQO authorization for this customer is currently being changed.');
+		}
 
-        $this->load->model('mpgdpr/mpgdpr_others');
+		try {
+			if ($this->hasCustomerQiqoAuthorizationTable()) {
+				$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_qiqo_authorization` WHERE `customer_id`='" . $customer_id . "'");
+			}
 
-        $this->mpgdpr->log("if having further customer related data, then it also need to anonymouse. Thus we call separate model function mpgdpr.mpgdpr_others.anonymouseCustomerOtherData. Parameters are  customer_id: {". $customer_id . "}, query ");
+			$this->deleteCustomerAddresses($customer_id, $query);
+			$this->deleteCustomerActivity($customer_id, $query);
+			$this->deleteCustomerHistories($customer_id, $query);
+			$this->deleteCustomerIp($customer_id, $query);
+			$this->deleteCustomerLogins($customer_id, $query);
+			$this->deleteCustomerRewards($customer_id, $query);
+			$this->deleteCustomerTransactions($customer_id, $query);
+			$this->deleteCustomerWishlists($customer_id, $query);
+			$this->anonymouseCustomerGDPRData($customer_id, $query);
 
-        $this->model_mpgdpr_mpgdpr_others->anonymouseCustomerOtherData($customer_id, $query);
+			$this->load->model('mpgdpr/mpgdpr_others');
+
+			$this->mpgdpr->log("if having further customer related data, then it also need to anonymouse. Thus we call separate model function mpgdpr.mpgdpr_others.anonymouseCustomerOtherData. Parameters are  customer_id: {". $customer_id . "}, query ");
+
+			$this->model_mpgdpr_mpgdpr_others->anonymouseCustomerOtherData($customer_id, $query);
+		} finally {
+			$this->releaseCustomerQiqoAuthorizationLock($lock_name);
+		}
     }
+
+	private function hasCustomerQiqoAuthorizationTable() {
+		$query = $this->db->query("SELECT TABLE_NAME
+			FROM information_schema.TABLES
+			WHERE TABLE_SCHEMA = DATABASE()
+			  AND TABLE_NAME = '" . $this->db->escape(DB_PREFIX . "customer_qiqo_authorization") . "'
+			LIMIT 1");
+
+		return !empty($query->row);
+	}
+
+	private function acquireCustomerQiqoAuthorizationLock($lock_name) {
+		$query = $this->db->query("SELECT GET_LOCK('" . $this->db->escape($lock_name) . "', 5) AS lock_acquired");
+
+		return isset($query->row['lock_acquired']) && (int)$query->row['lock_acquired'] === 1;
+	}
+
+	private function releaseCustomerQiqoAuthorizationLock($lock_name) {
+		$this->db->query("SELECT RELEASE_LOCK('" . $this->db->escape($lock_name) . "')");
+	}
 
 
     public function anonymouseCustomerGDPRData($customer_id, $query) {

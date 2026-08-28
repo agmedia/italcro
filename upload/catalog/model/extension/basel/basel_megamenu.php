@@ -4,9 +4,9 @@ class ModelExtensionBaselBaselMegamenu extends Model {
 	public function getMenu($module_id, $mobile) {
 
 	if ($mobile) {
-		$output = $this->cache->get('megamenu.module_id_' . $module_id . '.mobile_true.' . (int)$this->config->get('config_language_id'));
+		$output = $this->cache->get('megamenu.rev4.module_id_' . $module_id . '.mobile_true.' . (int)$this->config->get('config_language_id'));
 	} else {
-		$output = $this->cache->get('megamenu.module_id_' . $module_id . '.mobile_false' . (int)$this->config->get('config_language_id'));	
+		$output = $this->cache->get('megamenu.rev4.module_id_' . $module_id . '.mobile_false.' . (int)$this->config->get('config_language_id'));
 	}
 	
 	if (!$output) {
@@ -73,9 +73,9 @@ class ModelExtensionBaselBaselMegamenu extends Model {
 		}
 		
 		if ($mobile) {
-			$this->cache->set('megamenu.module_id_' . $module_id . '.mobile_true.' . (int)$this->config->get('config_language_id'), $output);
+			$this->cache->set('megamenu.rev4.module_id_' . $module_id . '.mobile_true.' . (int)$this->config->get('config_language_id'), $output);
 		} else {
-			$this->cache->set('megamenu.module_id_' . $module_id . '.mobile_false' . (int)$this->config->get('config_language_id'), $output);	
+			$this->cache->set('megamenu.rev4.module_id_' . $module_id . '.mobile_false.' . (int)$this->config->get('config_language_id'), $output);
 		}
 	
 	}
@@ -137,20 +137,11 @@ class ModelExtensionBaselBaselMegamenu extends Model {
                 $product = $model->getProduct($content['product']['id']);
                 if(is_array($product)) {
                     $product_link = $this->url->link('product/product', 'product_id=' . $content['product']['id']);
-	
-						if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
-							$price = $this->currency->format($this->tax->calculate($product['price'], $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
-						} else {
-							$price = false;
-						}
-
-						if ((float)$product['special']) {
-							$special = $this->currency->format($this->tax->calculate($product['special'], $product['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
-							$date_end = $this->model_extension_basel_basel->getSpecialEndDate($content['product']['id']);
-						} else {
-							$special = false;
-							$date_end = false;
-						}
+						// Menu output is cached across customers. Never cache a personalized or
+						// legacy action price in this shared payload; the product page resolves it.
+						$price = false;
+						$special = false;
+						$date_end = false;
 					
                 } else {
                     $product = false;
@@ -180,11 +171,8 @@ class ModelExtensionBaselBaselMegamenu extends Model {
 				$image2 = false;
 			}
 			
-			if ($product && (float)$product['special']) {						
-				$date_end = $this->model_extension_basel_basel->getSpecialEndDate($content['product']['id']);
-			} else {
-				$date_end = false;
-			}
+			$date_end = false;
+			$is_single_article = !$product || empty($product['mpn']) || !isset($product['mpn_count']) || (int)$product['mpn_count'] <= 1;
 			if (!empty($product['date_available']) && strtotime($product['date_available']) > strtotime('-' . $this->config->get('newlabel_status') . ' day')) {
 				$is_new = true;
 			} else {
@@ -225,6 +213,7 @@ class ModelExtensionBaselBaselMegamenu extends Model {
                     'image' => $product_image,
 					'image2' => $image2,
 					'rating' => !empty($product['rating']) ? $product['rating'] : '',
+					'is_single_article' => $is_single_article,
 					'sale_end_date' => !empty($date_end['date_end']) ? $date_end['date_end'] : '',
                     'price' => $price,
 					'new_label' => $is_new,

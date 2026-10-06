@@ -197,6 +197,7 @@
         <div id="content" class="product-main no-min-height {{ class }}">
             {{ content_top }}
             {% set is_single_article = is_single_article is defined ? is_single_article : (mpn_count is not defined or mpn_count == 1) %}
+            {% set show_variant_prices = show_variant_prices is defined ? show_variant_prices : price %}
 
             <div class="table product-info product-page">
 
@@ -277,7 +278,7 @@
 	                                        <th class="mpn-barcode">Barcode</th>
 	                                        <th class="mpn-attribute">Atribut</th>
 	                                        <th class="mpn-packaging">Pakiranje</th>
-	                                        {% if price %}
+	                                        {% if show_variant_prices %}
 	                                        <th class="text-right mpn-stock">Zaliha</th>
 	                                            {% if same_mpn_has_c100 %}
 	                                            <th class="text-right mpn-c100">C-100</th>
@@ -309,7 +310,7 @@
 
 	                                            <td class="mpn-attribute">{{ p.name_add }}</td>
 	                                            <td class="mpn-packaging">{{ p.packaging is defined ? p.packaging : (p.ean ~ ' ' ~ p.minimum) }}</td>
-	                                            {% if price %}
+	                                            {% if show_variant_prices %}
 	                                                        <td class="text-right mpn-stock">{{ p.stock }}</td>
 	                                                {% if same_mpn_has_c100 %}
 	                                                <td class="text-right mpn-c100">{{ p.cent }}</td>

@@ -292,6 +292,7 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 		
 		if (isset($this->request->post['payment_method']) && isset($this->session->data['payment_methods'][$this->request->post['payment_method']])) {
 			$this->session->data['payment_method'] = $this->session->data['payment_methods'][$this->request->post['payment_method']];
+			$this->refreshSelectedShippingQuote();
 		}
 	}
 	
@@ -410,6 +411,7 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 
 		if (!$json) {
 			$this->session->data['payment_method'] = $this->session->data['payment_methods'][$payment_method];
+			$this->refreshSelectedShippingQuote();
 		  
 			$this->session->data['order_comment'] = isset($this->request->post['comment']) ? strip_tags($this->request->post['comment']) : '';
 			
@@ -426,5 +428,61 @@ class ControllerExtensionQuickCheckoutPaymentMethod extends Controller {
 		}
 
 		return array();
+	}
+
+	/**
+	 * Some shipping rules depend on the selected payment method. Rebuild the
+	 * quote server-side before cart totals are rendered so checkout never keeps
+	 * a stale delivery price after a payment change.
+	 */
+	private function refreshSelectedShippingQuote() {
+		if (!$this->cart->hasShipping()
+			|| empty($this->session->data['shipping_address'])
+			|| empty($this->session->data['shipping_method']['code'])) {
+			return;
+		}
+
+		$selected_code = (string)$this->session->data['shipping_method']['code'];
+		$code_parts = explode('.', $selected_code, 2);
+		if (count($code_parts) !== 2) {
+			unset($this->session->data['shipping_method']);
+			return;
+		}
+
+		$this->load->model('setting/extension');
+		$method_data = array();
+		$results = $this->model_setting_extension->getExtensions('shipping');
+
+		foreach ($results as $result) {
+			if (!$this->config->get('shipping_' . $result['code'] . '_status')) {
+				continue;
+			}
+
+			$this->load->model('extension/shipping/' . $result['code']);
+			$quote = $this->{'model_extension_shipping_' . $result['code']}->getQuote($this->session->data['shipping_address']);
+			if ($quote) {
+				$method_data[$result['code']] = array(
+					'title'      => $quote['title'],
+					'quote'      => $quote['quote'],
+					'sort_order' => $quote['sort_order'],
+					'error'      => $quote['error']
+				);
+			}
+		}
+
+		$sort_order = array();
+		foreach ($method_data as $key => $value) {
+			$sort_order[$key] = $value['sort_order'];
+		}
+		if ($method_data) {
+			array_multisort($sort_order, SORT_ASC, $method_data);
+		}
+
+		$this->session->data['shipping_methods'] = $method_data;
+		if (isset($method_data[$code_parts[0]]['quote'][$code_parts[1]])) {
+			$this->session->data['shipping_method'] = $method_data[$code_parts[0]]['quote'][$code_parts[1]];
+		} else {
+			unset($this->session->data['shipping_method']);
+		}
 	}
 }

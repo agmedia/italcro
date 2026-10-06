@@ -22,6 +22,18 @@
 			  {% if product.sku %}
 			  <small>Šifra: {{ product.sku }}</small><br />
 			  {% endif %}
+			  {% if product.name_add %}
+			  <small>Atribut: {{ product.name_add }}</small><br />
+			  {% endif %}
+			  {% if product.packaging %}
+			  <small>Pakiranje: {{ product.packaging }}</small><br />
+			  {% endif %}
+			  {% if product.cent %}
+			  <small>C-100: {{ product.cent }}</small><br />
+			  {% endif %}
+			  {% if product.barcode %}
+			  <small>Barcode: {{ product.barcode }}</small><br />
+			  {% endif %}
               {% for option in product.option %} 
               <small>{{ option.name }}: {{ option.value }}</small><br />
 			  {% endfor %}

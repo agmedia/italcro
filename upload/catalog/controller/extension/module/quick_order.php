@@ -447,9 +447,17 @@ class ControllerExtensionModuleQuickOrder extends Controller {
         $thumb = !empty($product_info['image']) ? $this->model_tool_image->resize($product_info['image'], 60, 60) : '';
         $action_conditions = $this->formatQiqoActionConditions($action_rows);
 
-        return array(
+	        $display_name = trim((string)($product_info['name'] ?? ''));
+	        if ($display_name === '') {
+	            $display_name = trim((string)($product_info['meta_title'] ?? ''));
+	        }
+	        if ($display_name === '') {
+	            $display_name = trim((string)($product_info['sku'] ?? ''));
+	        }
+
+	        return array(
             'product_id' => (int)$product_info['product_id'],
-            'name'       => html_entity_decode($product_info['name'], ENT_QUOTES, 'UTF-8'),
+	            'name'       => html_entity_decode($display_name, ENT_QUOTES, 'UTF-8'),
             'model'      => $product_info['model'],
             'sku'        => $product_info['sku'],
             'name_add'   => $product_info['name_add'],

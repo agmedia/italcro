@@ -515,6 +515,10 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 					'cart_id'	 => isset($product['cart_id']) ? $product['cart_id'] : $product['key'],
 					'product_id' => $product['product_id'],
 					'name'       => $product['name'],
+					'name_add'   => isset($product['name_add']) ? $product['name_add'] : '',
+					'packaging'  => $this->qiqoPackaging($product),
+					'cent'       => isset($product['cent']) ? $product['cent'] : '',
+					'barcode'    => $product['model'],
 					'sku'        => $product_sku,
 					'model'      => $product['model'],
 					'option'     => $option_data,
@@ -538,9 +542,9 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 					$data['vouchers'][] = array(
 						'description' => $voucher['description'],
 						'amount'      => $this->currency->format($voucher['amount'], $this->session->data['currency'])
-					);
+						);
+					}
 				}
-			}
 
 			$data['totals'] = array();
 
@@ -572,4 +576,23 @@ class ControllerExtensionQuickCheckoutConfirm extends Controller {
 		
 		$this->response->setOutput($this->load->view('extension/quickcheckout/confirm', $data));
   	}
+
+	private function qiqoPackaging(array $product) {
+		$jm = isset($product['jm']) ? trim((string)$product['jm']) : '';
+		$quantity = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
+		$parts = array();
+		if ($jm !== '') {
+			$parts[] = $jm;
+		}
+		if ($quantity > 0) {
+			$parts[] = abs($quantity - round($quantity)) < 0.00001
+				? number_format($quantity, 0, ',', '.')
+				: rtrim(rtrim(number_format($quantity, 4, ',', '.'), '0'), ',');
+		}
+		$label = trim(implode(' ', $parts));
+		if (!empty($product['pak'])) {
+			$label .= '*';
+		}
+		return $label !== '' ? $label : '-';
+	}
 }

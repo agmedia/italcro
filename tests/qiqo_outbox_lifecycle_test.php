@@ -69,7 +69,9 @@ class QiqoLifecycleConfig {
 	public function get($key) {
 		$values = array(
 			'qiqo_order_accepted_status_ids' => $this->acceptedStatusIds,
-			'qiqo_order_price_mode' => 'erp_display'
+			'qiqo_order_price_mode' => 'erp_display',
+			'qiqo_order_pickup_location_code' => '0001',
+			'qiqo_order_delivery_shipping_codes' => 'xshippingpro.xshippingpro1'
 		);
 		return isset($values[$key]) ? $values[$key] : null;
 	}
@@ -116,10 +118,11 @@ try {
 	$config->acceptedStatusIds = '1';
 	$connection->query("UPDATE oc_order SET order_status_id = 1 WHERE order_id = 19");
 	$model->enqueueOrder(19);
-	$rebuilt = $connection->query("SELECT status, payload_json, payload_hash FROM oc_qiqo_order_outbox WHERE order_id = 19")->fetch_assoc();
+	$rebuilt = $connection->query("SELECT status, payload_json, payload_hash, payload_contract_version FROM oc_qiqo_order_outbox WHERE order_id = 19")->fetch_assoc();
 	lifecycleAssert($rebuilt['status'] === 'pending', 'Returning to an accepted status must rebuild the cancelled snapshot.');
 	lifecycleAssert($rebuilt['payload_json'] !== $oldPayload, 'Rebuilt snapshot must not retain stale order contents.');
 	lifecycleAssert(hash_equals($rebuilt['payload_hash'], hash('sha256', $rebuilt['payload_json'])), 'Rebuilt payload hash is invalid.');
+	lifecycleAssert((int)$rebuilt['payload_contract_version'] === QiqoOrderPayload::CONTRACT_VERSION, 'Rebuilt payload must use the current API contract.');
 
 	// Reproduce a stale cancellation read racing with a concurrent re-accept.
 	// The guarded UPDATE must observe the current accepted status and preserve

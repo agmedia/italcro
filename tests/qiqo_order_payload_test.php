@@ -29,6 +29,17 @@ class QiqoTestResult {
 
 class QiqoTestDb {
 	public $salesRepCode = '137';
+	public $shippingCode = 'xshippingpro.xshippingpro1';
+	public $productRows = array(
+		array('order_product_id' => 1, 'product_id' => 10, 'quantity' => '1000.0000', 'price' => '0.0083', 'total' => '8.3210', 'article_code' => '507817', 'cent' => 'C-100'),
+		array('order_product_id' => 2, 'product_id' => 11, 'quantity' => '2.0000', 'price' => '1.5000', 'total' => '3.0000', 'article_code' => 'ABC-2', 'cent' => '')
+	);
+	public $totalRows = array(
+		array('code' => 'sub_total', 'total_value' => '11.3210'),
+		array('code' => 'shipping', 'total_value' => '1.5000'),
+		array('code' => 'tax', 'total_value' => '0.3750'),
+		array('code' => 'total', 'total_value' => '13.1960')
+	);
 	public function query($sql) {
 		if (strpos($sql, 'FROM `oc_order`') !== false) {
 			return new QiqoTestResult(array(array(
@@ -36,7 +47,8 @@ class QiqoTestDb {
 				'customer_id' => 103,
 				'order_status_id' => 1,
 				'currency_code' => 'EUR',
-				'total' => '11.32',
+				'shipping_code' => $this->shippingCode,
+				'total' => '13.1960',
 				'comment' => 'Testna napomena'
 			)));
 		}
@@ -51,18 +63,28 @@ class QiqoTestDb {
 			)));
 		}
 		if (strpos($sql, 'FROM `oc_order_product`') !== false) {
-			return new QiqoTestResult(array(
-				array('order_product_id' => 1, 'product_id' => 10, 'quantity' => '1000.0000', 'price' => '0.0083', 'total' => '8.3210', 'article_code' => '507817', 'cent' => 'C-100'),
-				array('order_product_id' => 2, 'product_id' => 11, 'quantity' => '2.0000', 'price' => '1.5000', 'total' => '3.0000', 'article_code' => 'ABC-2', 'cent' => '')
-			));
+			return new QiqoTestResult($this->productRows);
+		}
+		if (strpos($sql, 'FROM `oc_order_total`') !== false) {
+			return new QiqoTestResult($this->totalRows);
 		}
 		throw new RuntimeException('Unexpected query in payload test: ' . $sql);
 	}
 }
 
 class QiqoTestConfig {
+	public $legacyPriceMode = 'per_piece';
 	public function get($key) {
-		return $key === 'qiqo_order_price_mode' ? 'erp_display' : null;
+		if ($key === 'qiqo_order_price_mode') {
+			return $this->legacyPriceMode;
+		}
+		if ($key === 'qiqo_order_pickup_location_code') {
+			return '0001';
+		}
+		if ($key === 'qiqo_order_delivery_shipping_codes') {
+			return 'xshippingpro.xshippingpro1';
+		}
+		return null;
 	}
 }
 
@@ -93,12 +115,164 @@ $order = $result['payload']['narudzba'];
 assertOrderSame(1020054, $order['partner'], 'Partner code should be numeric');
 assertOrderSame(137, $order['komercijalist'], 'Sales representative code should be numeric');
 assertOrderSame('0079', $order['lokacija'], 'Delivery place must preserve leading zeroes');
+assertOrderSame(2, $result['payload_contract_version'], 'Payload must use the confirmed contract version');
+assertOrderClose(12.82, $order['ukupno'], 'Order total must be net item totals plus delivery, rounded to two decimals');
+assertOrderClose(1000.0, $order['stavke'][0]['kolicina'], 'C-100 quantity must remain expressed in pieces');
 assertOrderClose(0.8321, $order['stavke'][0]['cijena'], 'C-100 price must be restored to ERP per-100 basis');
 assertOrderClose(1.5, $order['stavke'][1]['cijena'], 'Regular article price must remain per unit');
+$recomputedItems = ($order['stavke'][0]['cijena'] / 100 * $order['stavke'][0]['kolicina'])
+	+ ($order['stavke'][1]['cijena'] * $order['stavke'][1]['kolicina']);
+assertOrderClose($order['ukupno'], round($recomputedItems + 1.5, 2), 'Header total must be reproducible from exported five-decimal prices');
 assertOrderSame('507817', $order['stavke'][0]['artikal'], 'SKU snapshot');
 assertOrderSame('Testna napomena', $order['napomena'], 'Order note snapshot');
 assertOrderSame(false, strpos($result['payload_json'], 'korisnik') !== false, 'Persisted payload must not contain a username');
 assertOrderSame(false, strpos($result['payload_json'], 'lozinka') !== false, 'Persisted payload must not contain a password');
+
+$db->shippingCode = 'pickup.pickup';
+$db->totalRows = array(
+	array('code' => 'sub_total', 'total_value' => '11.3210'),
+	array('code' => 'shipping', 'total_value' => '0.0000'),
+	array('code' => 'tax', 'total_value' => '0.0000'),
+	array('code' => 'total', 'total_value' => '11.3210')
+);
+$pickupResult = $builder->build(42);
+assertOrderSame('0001', $pickupResult['payload']['narudzba']['lokacija'], 'Store pickup must use the ERP pickup location');
+assertOrderClose(11.32, $pickupResult['payload']['narudzba']['ukupno'], 'Store pickup total must not add delivery');
+$db->shippingCode = 'xshippingpro.xshippingpro1';
+$db->totalRows = array(
+	array('code' => 'sub_total', 'total_value' => '11.3210'),
+	array('code' => 'shipping', 'total_value' => '1.5000'),
+	array('code' => 'tax', 'total_value' => '0.3750'),
+	array('code' => 'total', 'total_value' => '13.1960')
+);
+
+$db->totalRows[] = array('code' => 'coupon', 'total_value' => '-1.0000');
+try {
+	$builder->build(42);
+	throw new RuntimeException('Unsupported non-zero total components must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'nepodržanu total komponentu') !== false, 'Unsupported total validation');
+}
+array_pop($db->totalRows);
+
+$validTotals = $db->totalRows;
+$db->totalRows = array();
+try {
+	$builder->build(42);
+	throw new RuntimeException('Missing order totals must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'obavezne stavke') !== false, 'Missing order totals validation');
+}
+
+$db->totalRows = $validTotals;
+unset($db->totalRows[1]);
+$db->totalRows = array_values($db->totalRows);
+try {
+	$builder->build(42);
+	throw new RuntimeException('Missing shipping total must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'obavezne stavke') !== false, 'Missing shipping total validation');
+}
+
+$db->totalRows = $validTotals;
+$db->totalRows[0]['total_value'] = '11.0000';
+try {
+	$builder->build(42);
+	throw new RuntimeException('Mismatched subtotal must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'ne odgovara zbroju stavki') !== false, 'Subtotal mismatch validation');
+}
+
+$db->totalRows = $validTotals;
+$db->totalRows[3]['total_value'] = '99.0000';
+try {
+	$builder->build(42);
+	throw new RuntimeException('Inconsistent grand total must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'ne odgovara osnovici') !== false, 'Grand total integrity validation');
+}
+
+$db->totalRows = $validTotals;
+$db->totalRows[1]['total_value'] = '-0.0100';
+try {
+	$builder->build(42);
+	throw new RuntimeException('Negative shipping must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'ne smije biti negativan') !== false, 'Negative delivery validation');
+}
+
+$originalProductRows = $db->productRows;
+$db->productRows = array(
+	array('order_product_id' => 1, 'product_id' => 10, 'quantity' => '100000.0000', 'price' => '0.1235', 'total' => '12345.6789', 'article_code' => 'ROUNDING', 'cent' => '')
+);
+$db->totalRows = array(
+	array('code' => 'sub_total', 'total_value' => '12345.6789'),
+	array('code' => 'shipping', 'total_value' => '0.0000'),
+	array('code' => 'tax', 'total_value' => '0.0000'),
+	array('code' => 'total', 'total_value' => '12345.6789')
+);
+try {
+	$builder->build(42);
+	throw new RuntimeException('Material five-decimal line drift must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'pet decimala') !== false, 'Five-decimal line reconstruction validation');
+}
+$db->productRows = $originalProductRows;
+
+$db->productRows = array(
+	array('order_product_id' => 1, 'product_id' => 10, 'quantity' => '100000.0000', 'price' => '0.1235', 'total' => '12345.6789', 'article_code' => 'ROUND-UP', 'cent' => ''),
+	array('order_product_id' => 2, 'product_id' => 11, 'quantity' => '100000.0000', 'price' => '0.1235', 'total' => '12345.3211', 'article_code' => 'ROUND-DOWN', 'cent' => '')
+);
+$db->totalRows = array(
+	array('code' => 'sub_total', 'total_value' => '24691.0000'),
+	array('code' => 'shipping', 'total_value' => '0.0000'),
+	array('code' => 'tax', 'total_value' => '0.0000'),
+	array('code' => 'total', 'total_value' => '24691.0000')
+);
+try {
+	$builder->build(42);
+	throw new RuntimeException('Opposite line-rounding errors must not cancel each other out.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'njezin neto iznos') !== false, 'Per-line five-decimal reconstruction validation');
+}
+$db->productRows = $originalProductRows;
+
+$db->productRows = array(
+	array('order_product_id' => 1, 'product_id' => 10, 'quantity' => '6.0000', 'price' => '0.2058', 'total' => '1.2350', 'article_code' => 'CENT-BOUNDARY', 'cent' => '')
+);
+$db->totalRows = array(
+	array('code' => 'sub_total', 'total_value' => '1.2350'),
+	array('code' => 'shipping', 'total_value' => '0.0000'),
+	array('code' => 'tax', 'total_value' => '0.0000'),
+	array('code' => 'total', 'total_value' => '1.2350')
+);
+try {
+	$builder->build(42);
+	throw new RuntimeException('Five-decimal drift across a cent boundary must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'zaokruženi neto ukupni') !== false, 'Rounded header cent-boundary validation');
+}
+$db->productRows = $originalProductRows;
+
+$db->shippingCode = 'pickup.pickup';
+$db->totalRows = $validTotals;
+try {
+	$builder->build(42);
+	throw new RuntimeException('Pickup with delivery fee must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'ne smije sadržavati trošak dostave') !== false, 'Pickup delivery fee validation');
+}
+$db->shippingCode = 'xshippingpro.xshippingpro1';
+$db->totalRows = $validTotals;
+
+$db->shippingCode = 'unknown.unknown';
+try {
+	$builder->build(42);
+	throw new RuntimeException('Unknown shipping methods must block the payload.');
+} catch (RuntimeException $e) {
+	assertOrderSame(true, strpos($e->getMessage(), 'nije odobren') !== false, 'Unknown shipping method validation');
+}
+$db->shippingCode = 'xshippingpro.xshippingpro1';
 
 $db->salesRepCode = '';
 try {

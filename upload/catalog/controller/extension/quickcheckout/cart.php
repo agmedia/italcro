@@ -243,10 +243,14 @@ class ControllerExtensionQuickCheckoutCart extends Controller {
 				}
 			}
 
-			$data['products'][] = array(
+				$data['products'][] = array(
 				'key'        => isset($product['key']) ? $product['key'] : $product['cart_id'],
 				'thumb'     => $image,
-				'name'      => $product['name'],
+					'name'      => $product['name'],
+					'name_add'  => isset($product['name_add']) ? $product['name_add'] : '',
+					'packaging' => $this->qiqoPackaging($product),
+					'cent'      => isset($product['cent']) ? $product['cent'] : '',
+					'barcode'   => $product['model'],
 				'sku'       => $product_sku,
 				'model'     => $product['model'],
 				'option'    => $option_data,
@@ -370,5 +374,24 @@ class ControllerExtensionQuickCheckoutCart extends Controller {
 		
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));	
+	}
+
+	private function qiqoPackaging(array $product) {
+		$jm = isset($product['jm']) ? trim((string)$product['jm']) : '';
+		$quantity = isset($product['pakkol']) ? (float)$product['pakkol'] : 0.0;
+		$parts = array();
+		if ($jm !== '') {
+			$parts[] = $jm;
+		}
+		if ($quantity > 0) {
+			$parts[] = abs($quantity - round($quantity)) < 0.00001
+				? number_format($quantity, 0, ',', '.')
+				: rtrim(rtrim(number_format($quantity, 4, ',', '.'), '0'), ',');
+		}
+		$label = trim(implode(' ', $parts));
+		if (!empty($product['pak'])) {
+			$label .= '*';
+		}
+		return $label !== '' ? $label : '-';
 	}
 }

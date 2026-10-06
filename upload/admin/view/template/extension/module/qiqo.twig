@@ -125,13 +125,17 @@
                                 <i class="fa fa-history"></i> Sync akcijskog cjenika (FULL)
                             </button>
 
-                            <button type="submit" name="action" value="sync_partner_discounts" class="btn btn-warning"{% if not full_snapshot_enabled %} disabled{% endif %}>
-                                <i class="fa fa-percent"></i> Sync partner-artikl rabata (full)
+                            <button type="submit" name="action" value="sync_partner_discounts" class="btn btn-warning"{% if not partner_discount_incremental_ready %} disabled{% endif %}>
+                                <i class="fa fa-percent"></i> Sync partner-artikl rabata (inkrementalno)
                             </button>
 
-                            <button type="submit" name="action" value="sync_partner_all" class="btn btn-primary"{% if not full_snapshot_enabled %} disabled{% endif %}>
+                            <button type="submit" name="action" value="sync_partner_all" class="btn btn-primary"{% if not partner_discount_incremental_ready %} disabled{% endif %}>
                                 <i class="fa fa-refresh"></i> Sync svih partner podataka
                             </button>
+
+                            {% if not partner_discount_incremental_ready %}
+                                <p class="help-block text-warning">qPartnerArtikalRabatWeb je inkrementalni feed. Početno punjenje od približno 2 milijuna slogova mora se odraditi kontroliranim importom, izvan preglednika; postojeći rabati se ne brišu.</p>
+                            {% endif %}
 
                             {% if not full_snapshot_enabled %}
                                 <p class="help-block text-warning">Destruktivne FULL zamjene su blokirane (<code>qiqo_full_snapshot_confirmed=0</code>). Inkrementalni sync ostaje dostupan.</p>

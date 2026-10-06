@@ -11,9 +11,23 @@
     var ADD_LOCK = {}; // spriječi dupli fastAdd
 
     /* ===================== localStorage ===================== */
-    function loadLS(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e){ return []; } }
-    function saveLS(arr){ try { localStorage.setItem(LS_KEY, JSON.stringify(arr || [])); } catch(e){} }
+    function validStoredItem(item){
+      return !!item && typeof item === 'object' && !Array.isArray(item) &&
+          item.product_id != null && String(item.product_id).trim() !== '';
+    }
+    function loadLS(){
+      try {
+        var parsed = JSON.parse(localStorage.getItem(LS_KEY));
+        return Array.isArray(parsed) ? parsed.filter(validStoredItem) : [];
+      } catch(e){
+        return [];
+      }
+    }
+    function saveLS(arr){
+      try { localStorage.setItem(LS_KEY, JSON.stringify(Array.isArray(arr) ? arr.filter(validStoredItem) : [])); } catch(e){}
+    }
     function upsertLS(item){
+      if(!validStoredItem(item)) return;
       var arr = loadLS();
       var i = arr.findIndex(function(x){ return String(x.product_id) === String(item.product_id); });
       if(i >= 0){ arr[i] = Object.assign({}, arr[i], item); } else { arr.push(item); }
@@ -304,16 +318,16 @@
       return '\
         <tr data-id="'+esc(item.product_id)+'" data-price="'+(item.price_raw || 0)+'" data-vpc="'+(item.vpc_raw || 0)+'" data-cent="'+esc(item.cent || '')+'" data-pak="'+(item.pak || 0)+'" data-decimal="'+(decimalQty ? 1 : 0)+'" data-action-net="'+(item.qiqo_action_net_price_raw || 0)+'" '+(added?'data-added="1"':'')+'>\
           <td class="qo-action-cell">'+actionButtonHtml(item)+'</td>\n\
-          <td>'+(item.thumb ? '<img src="'+esc(item.thumb)+'" style="width:60px;height:60px;object-fit:cover">' : '')+'</td>\n\
-          <td>'+esc(item.sku || '')+'</td>\n\
-          <td>'+esc(item.name || '')+'</td>\n\
-          <td>'+esc(item.name_add || '')+'</td>\n\
-          <td>'+esc(pack || '-')+'</td>\n\
-          <td>'+esc(item.cent || '-')+'</td>\n\
-          <td>'+qtyHtml+'</td>\n\
-          <td class="qo-price">'+displayVpcHtml(item)+'</td>\n\
+          <td class="qo-image-cell">'+(item.thumb ? '<img src="'+esc(item.thumb)+'" style="width:60px;height:60px;object-fit:cover">' : '')+'</td>\n\
+          <td class="qo-sku-cell">'+esc(item.sku || '')+'</td>\n\
+          <td class="qo-name-cell">'+esc(item.name || '')+'</td>\n\
+          <td class="qo-attribute-cell">'+esc(item.name_add || '')+'</td>\n\
+          <td class="qo-packaging-cell">'+esc(pack || '-')+'</td>\n\
+          <td class="qo-cent-cell">'+esc(item.cent || '-')+'</td>\n\
+          <td class="qo-quantity-cell">'+qtyHtml+'</td>\n\
+          <td class="qo-price qo-vpc-cell">'+displayVpcHtml(item)+'</td>\n\
           <td class="qo-discount-cell'+discountClass(item)+'">'+displayPercent(item.qiqo_discount_percent, '-', item)+'</td>\n\
-          <td class="qo-price">'+displayPriceHtml(item)+'</td>\n\
+          <td class="qo-price qo-final-price-cell">'+displayPriceHtml(item)+'</td>\n\
           <td class="qo-total-cell">'+subtotalCell+'</td>\n\
           <td class="qo-remove-cell"><button type="button" class="qo-remove" aria-label="Ukloni">&times;</button></td>\n\
         </tr>';
@@ -339,7 +353,7 @@
     }
     function recomputeTotal(){
       var total = 0;
-      $table.find('.qo-subtotal').each(function(){
+      $table.find('tr[data-added="1"] .qo-subtotal').each(function(){
         total += parseFloat($(this).attr('data-sub') || '0');
       });
       formatCurrency(total, function(txt){ $('#qo-total').text(txt); });
@@ -396,39 +410,40 @@
         if(added){
           $existing.attr('data-added','1').addClass('success');
         }
-        var $td = $existing.find('td');
         if (item.qiqo_action != null) {
-          $td.eq(0).html(actionButtonHtml(item));
+          $existing.find('.qo-action-cell').html(actionButtonHtml(item));
         }
         if (item.sku) {
-          $td.eq(2).text(item.sku);
+          $existing.find('.qo-sku-cell').text(item.sku);
         }
         if (item.name != null) {
-          $td.eq(3).text(item.name);
+          $existing.find('.qo-name-cell').text(item.name);
         }
         if (item.name_add != null) {
-          $td.eq(4).text(item.name_add);
+          $existing.find('.qo-attribute-cell').text(item.name_add);
         }
         if (item.packaging != null || item.minimum) {
-          $td.eq(5).text(item.packaging || item.minimum);
+          $existing.find('.qo-packaging-cell').text(item.packaging || item.minimum);
         }
         if (item.cent != null) {
-          $td.eq(6).text(item.cent || '-');
+          $existing.find('.qo-cent-cell').text(item.cent || '-');
         }
 
         if(item.vpc_raw != null || item.vpc != null){
-          $td.eq(8).html(displayVpcHtml({
-            vpc: item.vpc != null ? item.vpc : $td.eq(8).text()
+          var $vpcCell = $existing.find('.qo-vpc-cell');
+          $vpcCell.html(displayVpcHtml({
+            vpc: item.vpc != null ? item.vpc : $vpcCell.text()
           }));
         }
         if (item.qiqo_discount_percent != null || item.qiqo_action_net_price_raw != null) {
-          $td.eq(9)
+          $existing.find('.qo-discount-cell')
               .toggleClass('qo-discount-action', discountClass(item) !== '')
               .text(displayPercent(item.qiqo_discount_percent, '-', item));
         }
         if(item.price_raw != null || item.price != null){
-          $td.eq(10).html(displayPriceHtml({
-            price: item.price != null ? item.price : $td.eq(10).text(),
+          var $finalPriceCell = $existing.find('.qo-final-price-cell');
+          $finalPriceCell.html(displayPriceHtml({
+            price: item.price != null ? item.price : $finalPriceCell.text(),
             qiqo_action_net_price_raw: item.qiqo_action_net_price_raw != null ? item.qiqo_action_net_price_raw : parseFloat($existing.attr('data-action-net') || '0')
           }));
         }
@@ -454,25 +469,23 @@
 
       var pRaw = parseFloat($tr.attr('data-price') || '0');
       var vpcRaw = parseFloat($tr.attr('data-vpc') || '0');
-      var tds  = $tr.find('td');
-
-      var minimumText = tds.eq(5).text().trim().replace(/[^\d.,-]/g, '').replace(',', '.');
+      var minimumText = $tr.find('.qo-packaging-cell').text().trim().replace(/[^\d.,-]/g, '').replace(',', '.');
       var minimumVal = parseQty(minimumText || minStep);
       if (isNaN(minimumVal) || minimumVal <= 0) minimumVal = minStep;
 
       return {
         product_id: pid,
-        name: tds.eq(3).text().trim(),
-        name_add: tds.eq(4).text().trim(),
-        packaging: tds.eq(5).text().trim(),
-        cent: $tr.attr('data-cent') || tds.eq(6).text().trim(),
-        sku:  tds.eq(2).text().trim(),
-        qiqo_discount_percent: Math.abs(parseFloat(String(tds.eq(9).text() || '').replace(/[^\d.-]/g, ''))) || 0,
-        qiqo_action: !!tds.eq(0).find('.qiqo-action-button').length,
+        name: $tr.find('.qo-name-cell').text().trim(),
+        name_add: $tr.find('.qo-attribute-cell').text().trim(),
+        packaging: $tr.find('.qo-packaging-cell').text().trim(),
+        cent: $tr.attr('data-cent') || $tr.find('.qo-cent-cell').text().trim(),
+        sku:  $tr.find('.qo-sku-cell').text().trim(),
+        qiqo_discount_percent: Math.abs(parseFloat(String($tr.find('.qo-discount-cell').text() || '').replace(/[^\d.-]/g, ''))) || 0,
+        qiqo_action: !!$tr.find('.qo-action-cell .qiqo-action-button').length,
         qiqo_action_net_price_raw: parseFloat($tr.attr('data-action-net') || '0') || 0,
-        vpc: tds.eq(8).text().trim(),
+        vpc: $tr.find('.qo-vpc-cell').text().trim(),
         vpc_raw: isNaN(vpcRaw) ? 0 : vpcRaw,
-        price: tds.eq(10).text().trim(),
+        price: $tr.find('.qo-final-price-cell').text().trim(),
         price_raw: isNaN(pRaw) ? 0 : pRaw,
         quantity: qty,
         minimum: minimumVal,
@@ -481,7 +494,7 @@
         pak: parseInt($tr.attr('data-pak') || '0', 10) || 0,
         line_total_raw: lineTotalRaw(isNaN(pRaw) ? 0 : pRaw, qty, $tr.attr('data-cent') || ''),
         thumb: (function(){
-          var img = tds.eq(1).find('img');
+          var img = $tr.find('.qo-image-cell img');
           return img.length ? img.attr('src') : '';
         })()
       };
@@ -793,14 +806,15 @@
     $.get('index.php?route=extension/module/quick_order/cartState&_=' + Date.now(), function(res){
       if(res && res.items){
         var storedItems = loadLS();
-        var hasAddedItems = storedItems.some(function(x){ return x && x.added; });
-        if(!res.items.length && hasAddedItems){
-          clearLS();
-          $table.empty();
-          recomputeTotal();
-          baselHeaderRefreshDebounced();
-          return;
-        }
+        var serverIds = {};
+        res.items.forEach(function(it){ serverIds[String(it.product_id)] = true; });
+        storedItems = storedItems.filter(function(it){
+          return !!it && (!it.added || !!serverIds[String(it.product_id)]);
+        });
+        saveLS(storedItems);
+        $table.find('tr[data-added="1"]').each(function(){
+          if(!serverIds[String($(this).attr('data-id'))]) $(this).remove();
+        });
 
         var map = {}; storedItems.forEach(function(x){ map[String(x.product_id)] = x; });
         res.items.forEach(function(it){

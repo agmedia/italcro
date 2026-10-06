@@ -186,6 +186,9 @@ class ControllerProductProduct extends Controller {
 					$data['qiqo_action'] = false;
 					$data['mpn_count'] = ($product_info && isset($product_info['mpn_count'])) ? (int)$product_info['mpn_count'] : 1;
 					$data['is_single_article'] = !$product_info || empty($product_info['mpn']) || $data['mpn_count'] <= 1;
+					// A grouped product intentionally has no single representative price, but
+					// every variant still needs its own price columns for an authorised buyer.
+					$data['show_variant_prices'] = $this->customer->isLogged() || !$this->config->get('config_customer_price');
 					if ($product_info) {
 						// Product pages are catalog surfaces: legacy OpenCart special /
 						// discount rows must never leak action pricing here.

@@ -13,7 +13,7 @@ function adminSmokeAssert($condition, $message) {
 	}
 }
 
-function adminSmokeRequest($cookieFile, $url, array $post = null) {
+function adminSmokeRequest($cookieFile, $url, ?array $post = null) {
 	$ch = curl_init($url);
 	curl_setopt_array($ch, array(
 		CURLOPT_RETURNTRANSFER => true,
@@ -56,7 +56,7 @@ $testOrderId = 2147483647;
 $uncertainOrderId = 2147483646;
 $processingOrderId = 2147483645;
 $settingRows = array();
-foreach (array('qiqo_order_send_enabled', 'qiqo_order_allow_insecure_http') as $settingKey) {
+foreach (array('qiqo_order_send_enabled', 'qiqo_order_allow_insecure_http', 'qiqo_partner_article_initial_complete') as $settingKey) {
 	$result = $db->query("SELECT setting_id, value FROM oc_setting WHERE store_id = 0 AND `key` = '" . $db->real_escape_string($settingKey) . "' ORDER BY setting_id");
 	while ($result && $row = $result->fetch_assoc()) {
 		$settingRows[] = $row;
@@ -68,6 +68,7 @@ $db->query("DELETE FROM oc_qiqo_order_outbox WHERE order_id IN ('" . $testOrderI
 try {
 	$db->query("UPDATE oc_setting SET value = 'false' WHERE store_id = 0 AND `key` = 'qiqo_order_send_enabled'");
 	$db->query("UPDATE oc_setting SET value = 'off' WHERE store_id = 0 AND `key` = 'qiqo_order_allow_insecure_http'");
+	$db->query("UPDATE oc_setting SET value = '0' WHERE store_id = 0 AND `key` = 'qiqo_partner_article_initial_complete'");
 	$salt = substr(bin2hex(random_bytes(8)), 0, 9);
 	$passwordHash = sha1($salt . sha1($salt . sha1($password)));
 	$db->query("INSERT INTO oc_user SET user_group_id = 1, username = '" . $db->real_escape_string($username) . "',
@@ -115,6 +116,8 @@ try {
 	adminSmokeAssert($qiqo['status'] === 200 && strpos($qiqo['body'], 'NarudzbaSend') !== false, 'QIQO page does not expose the NarudzbaSend outbox link.');
 	adminSmokeAssert(strpos($qiqo['body'], 'qiqo_full_snapshot_confirmed=0') !== false, 'Admin page does not explain the fail-closed FULL snapshot gate.');
 	adminSmokeAssert((bool)preg_match('/value="sync_action_prices_full"[^>]*disabled/', $qiqo['body']), 'Destructive action-price FULL button must be disabled by default.');
+	adminSmokeAssert((bool)preg_match('/value="sync_partner_discounts"[^>]*disabled/', $qiqo['body']), 'Partner-article delta sync must stay disabled before a verified initial import.');
+	adminSmokeAssert((bool)preg_match('/value="sync_partner_all"[^>]*disabled/', $qiqo['body']), 'Combined partner sync must stay disabled before a verified initial import.');
 
 	$actionCacheBefore = $db->query("SELECT COUNT(*) AS total,
 		COALESCE(SUM(CRC32(CONCAT_WS('|', article_code, indicator, quantity, price, discount))), 0) AS signature
@@ -124,7 +127,7 @@ try {
 		FROM oc_qiqo_partner_article_discount")->fetch_assoc();
 	$enabledProductsBefore = $db->query("SELECT COUNT(*) AS total FROM oc_product WHERE status = 1")->fetch_assoc();
 
-	foreach (array('sync_action_prices_full', 'sync_partner_discounts', 'disable_missing') as $blockedAction) {
+	foreach (array('sync_action_prices_full', 'sync_partner_discounts', 'sync_partner_all', 'disable_missing') as $blockedAction) {
 		$blocked = adminSmokeRequest($cookieFile, $base . 'index.php?route=extension/module/qiqo&user_token=' . urlencode($userToken), array(
 			'action' => $blockedAction
 		));

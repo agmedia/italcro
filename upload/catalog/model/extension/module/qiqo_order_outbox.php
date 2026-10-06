@@ -6,6 +6,10 @@ class ModelExtensionModuleQiqoOrderOutbox extends Model {
 			$this->log->write('QIQO NarudzbaSend: outbox migracija nije primijenjena; narudžba #' . $order_id . ' nije stavljena u red.');
 			return false;
 		}
+		if (!$this->columnExists('qiqo_order_outbox', 'payload_contract_version')) {
+			$this->log->write('QIQO NarudzbaSend: Rev3.1 API migracija nije primijenjena; narudžba #' . $order_id . ' nije stavljena u red.');
+			return false;
+		}
 
 		$order_query = $this->db->query("SELECT order_status_id FROM `" . DB_PREFIX . "order` WHERE order_id = '" . $order_id . "' LIMIT 1");
 		$existing = $this->db->query("SELECT outbox_id, status FROM `" . DB_PREFIX . "qiqo_order_outbox` WHERE order_id = '" . $order_id . "' LIMIT 1");
@@ -59,14 +63,14 @@ class ModelExtensionModuleQiqoOrderOutbox extends Model {
 
 			$this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "qiqo_order_outbox`
 				(order_id, order_status_id, partner_code, delivery_place_code, sales_rep_code,
-				 currency_code, payload_json, payload_hash, status, date_added, date_modified)
+				 currency_code, payload_json, payload_hash, payload_contract_version, status, date_added, date_modified)
 				SELECT '" . (int)$data['order_id'] . "', '" . (int)$data['order_status_id'] . "',
 					'" . $this->db->escape($data['partner_code']) . "',
 					'" . $this->db->escape($data['delivery_place_code']) . "',
 					'" . $this->db->escape($data['sales_rep_code']) . "',
 					'" . $this->db->escape($data['currency_code']) . "',
 					'" . $this->db->escape($data['payload_json']) . "',
-					'" . $this->db->escape($data['payload_hash']) . "', 'pending', NOW(), NOW()
+					'" . $this->db->escape($data['payload_hash']) . "', '" . (int)$data['payload_contract_version'] . "', 'pending', NOW(), NOW()
 				FROM `" . DB_PREFIX . "order` o
 				WHERE o.order_id = '" . $order_id . "'
 				  AND o.order_status_id IN (" . $this->acceptedStatusSql() . ")
@@ -74,9 +78,9 @@ class ModelExtensionModuleQiqoOrderOutbox extends Model {
 		} catch (Throwable $e) {
 			$error = $this->safeError($e->getMessage());
 			$this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "qiqo_order_outbox`
-				(order_id, order_status_id, payload_json, payload_hash, status,
+				(order_id, order_status_id, payload_json, payload_hash, payload_contract_version, status,
 				 last_error_code, last_error_description, date_added, date_modified)
-				SELECT '" . $order_id . "', o.order_status_id, '{}', '" . hash('sha256', '{}') . "',
+				SELECT '" . $order_id . "', o.order_status_id, '{}', '" . hash('sha256', '{}') . "', '" . (int)QiqoOrderPayload::CONTRACT_VERSION . "',
 					'blocked', 'PAYLOAD_VALIDATION', '" . $this->db->escape($error) . "', NOW(), NOW()
 				FROM `" . DB_PREFIX . "order` o
 				WHERE o.order_id = '" . $order_id . "'
@@ -113,6 +117,7 @@ class ModelExtensionModuleQiqoOrderOutbox extends Model {
 					currency_code = '" . $this->db->escape($data['currency_code']) . "',
 					payload_json = '" . $this->db->escape($data['payload_json']) . "',
 					payload_hash = '" . $this->db->escape($data['payload_hash']) . "',
+					payload_contract_version = '" . (int)$data['payload_contract_version'] . "',
 					status = 'pending', attempts = 0, locked_at = NULL,
 					last_http_status = 0, last_error_code = '', last_error_description = '',
 					last_response = NULL, sent_at = NULL, date_modified = NOW()
@@ -169,6 +174,15 @@ class ModelExtensionModuleQiqoOrderOutbox extends Model {
 		$query = $this->db->query("SELECT 1 FROM INFORMATION_SCHEMA.TABLES
 			WHERE TABLE_SCHEMA = DATABASE()
 			  AND TABLE_NAME = '" . $this->db->escape(DB_PREFIX . $table) . "'
+			LIMIT 1");
+		return (bool)$query->num_rows;
+	}
+
+	private function columnExists($table, $column) {
+		$query = $this->db->query("SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+			WHERE TABLE_SCHEMA = DATABASE()
+			  AND TABLE_NAME = '" . $this->db->escape(DB_PREFIX . $table) . "'
+			  AND COLUMN_NAME = '" . $this->db->escape($column) . "'
 			LIMIT 1");
 		return (bool)$query->num_rows;
 	}

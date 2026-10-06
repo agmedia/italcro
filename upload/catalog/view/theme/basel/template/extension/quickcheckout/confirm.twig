@@ -16,9 +16,20 @@
 		  <tr>
 			<td class="text-left">{{ product.quantity }} x <a href="{{ product.href }}">{{ product.name }}</a>
 			  {% if product.sku %}
-			  <br /><small>Šifra: {{ product.sku }}</small>
-			  {% endif %}
-			  <br /><small>({{ product.model }})</small>
+				  <br /><small>Šifra: {{ product.sku }}</small>
+				  {% endif %}
+				  {% if product.name_add %}
+				  <br /><small>Atribut: {{ product.name_add }}</small>
+				  {% endif %}
+				  {% if product.packaging %}
+				  <br /><small>Pakiranje: {{ product.packaging }}</small>
+				  {% endif %}
+				  {% if product.cent %}
+				  <br /><small>C-100: {{ product.cent }}</small>
+				  {% endif %}
+				  {% if product.barcode %}
+				  <br /><small>Barcode: {{ product.barcode }}</small>
+				  {% endif %}
 			  {% for option in product.option %} 
 			  <br />
 			  &nbsp;<small>- {{ option.name }}: {{ option.value }}</small>

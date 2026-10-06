@@ -296,10 +296,18 @@ class Cart {
 					$resolved_unit_price = round((float)$price + (float)$option_price, $unit_price_scale);
 					$resolved_line_total = round($resolved_unit_price * (float)$cart['quantity'], 5);
 
+					$display_name = trim((string)$product_query->row['name']);
+					if ($display_name === '' && isset($product_query->row['meta_title'])) {
+						$display_name = trim((string)$product_query->row['meta_title']);
+					}
+					if ($display_name === '') {
+						$display_name = trim((string)$product_query->row['sku']);
+					}
+
 					$product_data[] = array(
 					'cart_id'         => $cart['cart_id'],
 					'product_id'      => $product_query->row['product_id'],
-					'name'            => $product_query->row['name'],
+						'name'            => $display_name,
 					'name_add'        => isset($product_query->row['name_add']) ? $product_query->row['name_add'] : '',
 					'model'           => $product_query->row['model'],
 					'sku'             => $product_query->row['sku'],

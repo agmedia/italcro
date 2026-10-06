@@ -2229,156 +2229,154 @@ class ModelExtensionModuleQiqo extends Model
         return $this->syncSalesReps($defaultSince, true);
     }
 
-    public function syncPartnerArticleDiscountsFull(): int
+    public function hasPartnerArticleDiscountWatermark(): bool
+    {
+        $this->ensurePartnerSyncTables();
+        if ((string)$this->config->get('qiqo_partner_article_initial_complete') !== '1') {
+            return false;
+        }
+
+		$watermark = $this->getFeedLastSync('partner_article_discounts');
+		if ($watermark === null || !$this->validQiqoSyncTimestamp($watermark)
+			|| strtotime($watermark) > time() + 300) {
+			return false;
+		}
+
+		$sample = $this->db->query("SELECT 1 FROM `" . DB_PREFIX . "qiqo_partner_article_discount` LIMIT 1");
+		return (bool)$sample->num_rows;
+    }
+
+    /**
+     * qPartnerArtikalRabatWeb is a modified-since feed. It must only upsert
+     * returned changes; a successful empty response means "no changes" and
+     * advances the watermark without clearing the live cache.
+     *
+     * The initial response is expected to contain about two million rows, so
+     * it is deliberately not started from the browser. Establish the initial
+     * cache through a controlled import/CLI process, then use this method for
+     * normal incremental deltas.
+     *
+     * @return array{success:bool,count:int,empty:bool,error:string,since:string}
+     */
+    public function syncPartnerArticleDiscounts(): array
     {
         @set_time_limit(0);
         $this->ensurePartnerSyncTables();
 
-        if (!$this->isFullSnapshotReplacementEnabled()) {
-            $this->log('PartnerSync', 'BLOCKED qPartnerArtikalRabatWeb FULL: ERP full-snapshot contract/configuration is not confirmed.');
-            return 0;
+        $initialSince = trim((string)$this->config->get('qiqo_partner_article_initial_since'));
+        if (!$this->validQiqoSyncTimestamp($initialSince)) {
+            $initialSince = '2026-08-01 00:00:00';
         }
 
-        $since = trim((string)$this->config->get('qiqo_full_snapshot_since'));
-
-        $this->log('PartnerSync', "START qPartnerArtikalRabatWeb full since={$since}");
-
-        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
-        $rows = $qiqo->getPartnerArticleDiscounts($since);
-
-        $fetchResult = $qiqo->getLastFetchResult();
-        if (empty($fetchResult['success'])) {
-            $error = isset($fetchResult['error']) ? (string)$fetchResult['error'] : 'unknown_fetch_error';
-            $this->log('PartnerSync', "ABORT qPartnerArtikalRabatWeb full error={$error}; live cache preserved.");
-            return 0;
+        $since = $this->resolveSince('partner_article_discounts', $initialSince);
+        if (!$this->hasPartnerArticleDiscountWatermark()) {
+            $this->log('PartnerSync', "BLOCKED qPartnerArtikalRabatWeb initial browser sync since={$since}; controlled initial import required.");
+            return ['success' => false, 'count' => 0, 'empty' => false, 'error' => 'initial_import_required', 'since' => $since];
         }
 
-
-        if (!QiqoSyncGuard::canReplaceFullCache($fetchResult, $rows)) {
-            $this->log('PartnerSync', 'EMPTY qPartnerArtikalRabatWeb full feed; live cache and last_sync preserved.');
-            return 0;
-        }
-
-        $normalized = [];
-        $invalidRows = 0;
-
-        foreach ($rows as $row) {
-            $partner = (int)($row['partner'] ?? 0);
-            $article = trim((string)($row['artikal'] ?? ''));
-            $discountRaw = $row['rabat'] ?? '';
-
-            if ($partner <= 0 || $article === '' || strlen($article) > 64 || !$this->isValidQiqoDecimal($discountRaw)) {
-                $invalidRows++;
-                continue;
-            }
-
-            $discount = $this->qiqoDecimal($discountRaw);
-            if ($discount < 0 || $discount > 100) {
-                $invalidRows++;
-                continue;
-            }
-
-            $key = $partner . '|' . $article;
-            if (isset($normalized[$key]) && abs((float)$normalized[$key]['discount'] - $discount) > 0.00001) {
-                $invalidRows++;
-                continue;
-            }
-
-            $normalized[$key] = [
-                'partner' => $partner,
-                'article' => $article,
-                'discount' => $discount,
-            ];
-        }
-
-        if ($invalidRows > 0) {
-            $this->log('PartnerSync', "ABORT qPartnerArtikalRabatWeb full invalid_rows={$invalidRows}; live cache preserved.");
-            return 0;
-        }
-
-        $liveTable = DB_PREFIX . 'qiqo_partner_article_discount';
-        $stageTable = $liveTable . '_stage';
-        $previousTable = $liveTable . '_previous';
-        $lockName = DB_PREFIX . 'qiqo_partner_article_discount_full';
-
+        $lockName = DB_PREFIX . 'qiqo_partner_article_discount_incremental';
         $lockQuery = $this->db->query("SELECT GET_LOCK('" . $this->db->escape($lockName) . "', 0) AS acquired");
         if (!isset($lockQuery->row['acquired']) || (int)$lockQuery->row['acquired'] !== 1) {
-            $this->log('PartnerSync', 'BUSY qPartnerArtikalRabatWeb full sync already running; live cache preserved.');
-            return 0;
+            $this->log('PartnerSync', 'BUSY qPartnerArtikalRabatWeb incremental sync already running.');
+            return ['success' => false, 'count' => 0, 'empty' => false, 'error' => 'sync_busy', 'since' => $since];
         }
 
+        $runStartedAt = date('Y-m-d H:i:s');
         try {
-            $this->ensurePartnerDiscountStageTable($liveTable, $stageTable);
-            $this->db->query("TRUNCATE TABLE `" . $stageTable . "`");
+            $this->log('PartnerSync', "START qPartnerArtikalRabatWeb incremental since={$since}");
+            $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+            $rows = $qiqo->getPartnerArticleDiscounts($since);
+            $fetchResult = $qiqo->getLastFetchResult();
 
-            $batch = [];
-            $batchSize = 1000;
-            foreach ($normalized as $item) {
-                $batch[] = "("
-                    . (int)$item['partner'] . ", "
-                    . "'" . $this->db->escape((string)$item['article']) . "', "
-                    . "'" . (float)$item['discount'] . "', "
-                    . "NOW(), NOW()"
-                    . ")";
+            if (empty($fetchResult['success'])) {
+                $error = isset($fetchResult['error']) ? (string)$fetchResult['error'] : 'unknown_fetch_error';
+                $this->log('PartnerSync', "ABORT qPartnerArtikalRabatWeb incremental error={$error}; cache and watermark preserved.");
+                return ['success' => false, 'count' => 0, 'empty' => false, 'error' => $error, 'since' => $since];
+            }
 
-                if (count($batch) >= $batchSize) {
-                    $this->flushPartnerDiscountBatch($stageTable, $batch);
-                    $batch = [];
+            $normalized = [];
+            $invalidRows = 0;
+            foreach ($rows as $row) {
+                $row = array_change_key_case((array)$row, CASE_LOWER);
+                $partner = (int)($row['partner'] ?? 0);
+                $article = trim((string)($row['artikal'] ?? ''));
+                $discountRaw = $row['rabat'] ?? '';
+
+                if ($partner <= 0 || $article === '' || strlen($article) > 64 || !$this->isValidQiqoDecimal($discountRaw)) {
+                    $invalidRows++;
+                    continue;
                 }
+
+                $discount = $this->qiqoDecimal($discountRaw);
+                if ($discount < 0 || $discount > 100) {
+                    $invalidRows++;
+                    continue;
+                }
+
+                $key = $partner . '|' . $article;
+                if (isset($normalized[$key]) && abs((float)$normalized[$key]['discount'] - $discount) > 0.00001) {
+                    $invalidRows++;
+                    continue;
+                }
+
+                $normalized[$key] = [
+                    'partner' => $partner,
+                    'article' => $article,
+                    'discount' => $discount,
+                ];
             }
 
-            if ($batch) {
-                $this->flushPartnerDiscountBatch($stageTable, $batch);
+            if ($invalidRows > 0) {
+                $this->log('PartnerSync', "ABORT qPartnerArtikalRabatWeb incremental invalid_rows={$invalidRows}; cache and watermark preserved.");
+                return ['success' => false, 'count' => 0, 'empty' => false, 'error' => 'invalid_rows', 'since' => $since];
             }
 
-            $stageCountQuery = $this->db->query("SELECT COUNT(*) AS total FROM `" . $stageTable . "`");
-            $stageCount = isset($stageCountQuery->row['total']) ? (int)$stageCountQuery->row['total'] : -1;
-            if ($stageCount !== count($normalized)) {
-                $this->log('PartnerSync', "ABORT qPartnerArtikalRabatWeb full staging_count={$stageCount} expected=" . count($normalized) . '; live cache preserved.');
-                return 0;
-            }
-
-            $this->db->query("DROP TABLE IF EXISTS `" . $previousTable . "`");
-            $this->db->query("RENAME TABLE `" . $liveTable . "` TO `" . $previousTable . "`, `" . $stageTable . "` TO `" . $liveTable . "`, `" . $previousTable . "` TO `" . $stageTable . "`");
-
+            $this->db->query('START TRANSACTION');
             try {
-                $this->setFeedLastSync('partner_article_discounts', date('Y-m-d H:i:s'));
-            } catch (\Throwable $watermarkError) {
-                // The atomic data swap is already complete. Keep the older
-                // watermark so the next run safely replays the full feed.
-                $this->log('PartnerSync', 'WARN qPartnerArtikalRabatWeb live cache swapped, but last_sync was not updated.');
+                $batch = [];
+                foreach ($normalized as $item) {
+                    $batch[] = "("
+                        . (int)$item['partner'] . ", "
+                        . "'" . $this->db->escape((string)$item['article']) . "', "
+                        . "'" . (float)$item['discount'] . "', NOW(), NOW())";
+
+                    if (count($batch) >= 1000) {
+                        $this->flushPartnerDiscountBatch(DB_PREFIX . 'qiqo_partner_article_discount', $batch);
+                        $batch = [];
+                    }
+                }
+
+                if ($batch) {
+                    $this->flushPartnerDiscountBatch(DB_PREFIX . 'qiqo_partner_article_discount', $batch);
+                }
+
+                $this->setFeedLastSync('partner_article_discounts', $runStartedAt);
+                $this->db->query('COMMIT');
+            } catch (\Throwable $writeError) {
+                $this->db->query('ROLLBACK');
+                throw $writeError;
             }
 
-            // Cleanup is deliberately after the atomic swap and watermark. A
-            // cleanup failure must not invalidate an otherwise successful swap.
-            try {
-                $this->db->query("TRUNCATE TABLE `" . $stageTable . "`");
-            } catch (\Throwable $cleanupError) {
-                $this->log('PartnerSync', 'WARN qPartnerArtikalRabatWeb old staging cache cleanup failed.');
-            }
+            $count = count($normalized);
+            $empty = $count === 0;
+            $this->log('PartnerSync', "END qPartnerArtikalRabatWeb incremental rows={$count} empty=" . ($empty ? '1' : '0'));
+            return ['success' => true, 'count' => $count, 'empty' => $empty, 'error' => '', 'since' => $since];
         } catch (\Throwable $error) {
-            $this->log('PartnerSync', 'ABORT qPartnerArtikalRabatWeb full staging/swap failed; live cache preserved.');
-            return 0;
+            $this->log('PartnerSync', 'ABORT qPartnerArtikalRabatWeb incremental exception; cache and watermark preserved.');
+            return ['success' => false, 'count' => 0, 'empty' => false, 'error' => 'sync_exception', 'since' => $since];
         } finally {
             try {
                 $this->db->query("SELECT RELEASE_LOCK('" . $this->db->escape($lockName) . "')");
             } catch (\Throwable $lockError) {
-                $this->log('PartnerSync', 'WARN qPartnerArtikalRabatWeb sync lock release failed; connection close will release it.');
+                $this->log('PartnerSync', 'WARN qPartnerArtikalRabatWeb incremental lock release failed.');
             }
         }
-
-        $inserted = count($normalized);
-        $this->log('PartnerSync', "END qPartnerArtikalRabatWeb full inserted={$inserted}");
-
-        return $inserted;
     }
 
-    private function ensurePartnerDiscountStageTable(string $liveTable, string $stageTable): void
+    public function syncPartnerArticleDiscountsFull(): int
     {
-        // Recreate on every full run so a stale stage table can never replace
-        // the live table with an older schema during the atomic rename.
-        $this->db->query("DROP TABLE IF EXISTS `" . $stageTable . "`");
-        $this->db->query("CREATE TABLE `" . $stageTable . "` LIKE `" . $liveTable . "`");
+        $this->log('PartnerSync', 'BLOCKED qPartnerArtikalRabatWeb destructive FULL sync: ERP confirmed this endpoint is incremental.');
+        return 0;
     }
 
     private function flushPartnerDiscountBatch(string $table, array $batch): void
@@ -2955,6 +2953,12 @@ class ModelExtensionModuleQiqo extends Model
 
         return $fallback;
     }
+
+	private function validQiqoSyncTimestamp(string $value): bool
+	{
+		$date = \DateTime::createFromFormat('!Y-m-d H:i:s', $value);
+		return $date !== false && $date->format('Y-m-d H:i:s') === $value;
+	}
 
     private function getFeedLastSync(string $feedKey): ?string
     {

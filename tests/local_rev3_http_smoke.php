@@ -13,7 +13,7 @@ function smokeAssert($condition, $message) {
 	}
 }
 
-function smokeRequest($cookieFile, $url, array $post = null) {
+function smokeRequest($cookieFile, $url, ?array $post = null) {
 	$ch = curl_init($url);
 	curl_setopt_array($ch, array(
 		CURLOPT_RETURNTRANSFER => true,
@@ -71,6 +71,7 @@ $baseUrl = 'https://italcro.test/';
 $email = 'codex-rev3-smoke@italcro.local';
 $password = 'LocalRev3Smoke!2026';
 $cookieFile = tempnam(sys_get_temp_dir(), 'italcro-smoke-');
+$guestCookieFile = tempnam(sys_get_temp_dir(), 'italcro-guest-');
 
 cleanupSmokeCustomer($db, $email);
 
@@ -158,13 +159,49 @@ try {
 	smokeAssert(!empty($liveOptionsJson['success']), 'Basel live options failed for a single article.');
 	smokeAssert((bool)preg_match('/1[,.]65/', (string)$liveOptionsJson['new_price']['special']), 'Basel live options reintroduced an action/legacy price.');
 
-	$grouped = $db->query("SELECT p.product_id
-		FROM oc_product p
-		WHERE p.status = 1 AND p.mpn <> ''
-		  AND (SELECT COUNT(*) FROM oc_product p2 WHERE p2.status = 1 AND p2.mpn = p.mpn) > 1
-		ORDER BY p.product_id LIMIT 1")->fetch_assoc();
+	$grouped = $db->query("SELECT product_id FROM oc_product WHERE product_id = 1058 AND status = 1 LIMIT 1")->fetch_assoc();
+	smokeAssert((bool)$grouped, 'Rev3.1 grouped test product 1058 is missing.');
 	if ($grouped) {
-		$groupedId = (int)$grouped['product_id'];
+		$groupedId = 1058;
+		$groupedPage = smokeRequest($cookieFile, $baseUrl . 'index.php?route=product/product&product_id=' . $groupedId);
+		smokeAssert($groupedPage['status'] === 200, 'Grouped product 1058 is not reachable for the authorised buyer.');
+		foreach (array('514048', '514049', '501112') as $groupedSku) {
+			smokeAssert(strpos($groupedPage['body'], $groupedSku) !== false, 'Grouped product is missing variant SKU ' . $groupedSku . '.');
+		}
+		smokeAssert((bool)preg_match('/<td[^>]*class=["\'][^"\']*mpn-vpc[^"\']*["\'][^>]*>/i', $groupedPage['body']), 'Grouped product does not render variant VPC prices for an authorised buyer.');
+		smokeAssert((bool)preg_match('/<td[^>]*class=["\'][^"\']*mpn-final-price[^"\']*["\'][^>]*>/i', $groupedPage['body']), 'Grouped product does not render final variant prices for an authorised buyer.');
+
+		$groupedDom = new DOMDocument();
+		libxml_use_internal_errors(true);
+		$groupedDom->loadHTML($groupedPage['body']);
+		libxml_clear_errors();
+		$groupedXPath = new DOMXPath($groupedDom);
+		$expectedVariants = array(
+			'514048' => array('vpc' => '14[,.]15', 'final' => '12[,.]03'),
+			'514049' => array('vpc' => '21[,.]77', 'final' => '18[,.]50'),
+			'501112' => array('vpc' => '26[,.]86', 'final' => '22[,.]83')
+		);
+		foreach ($expectedVariants as $sku => $expectedVariant) {
+			$rowNodes = $groupedXPath->query("//td[contains(concat(' ', normalize-space(@class), ' '), ' mpn-code ') and normalize-space(.)='" . $sku . "']/parent::tr");
+			smokeAssert($rowNodes && $rowNodes->length === 1, 'Grouped row is missing for SKU ' . $sku . '.');
+			$row = $rowNodes->item(0);
+			$vpcNodes = $groupedXPath->query(".//td[contains(concat(' ', normalize-space(@class), ' '), ' mpn-vpc ')]", $row);
+			$discountNodes = $groupedXPath->query(".//td[contains(concat(' ', normalize-space(@class), ' '), ' mpn-discount ')]", $row);
+			$finalNodes = $groupedXPath->query(".//td[contains(concat(' ', normalize-space(@class), ' '), ' mpn-final-price ')]", $row);
+			smokeAssert($vpcNodes->length === 1 && preg_match('/' . $expectedVariant['vpc'] . '\s*€/u', trim($vpcNodes->item(0)->textContent)), 'Wrong grouped VPC for SKU ' . $sku . '.');
+			smokeAssert($discountNodes->length === 1 && preg_match('/-15\s*%/', trim($discountNodes->item(0)->textContent)), 'Wrong grouped discount for SKU ' . $sku . '.');
+			smokeAssert($finalNodes->length === 1 && preg_match('/' . $expectedVariant['final'] . '\s*€/u', trim($finalNodes->item(0)->textContent)), 'Wrong grouped final price for SKU ' . $sku . '.');
+		}
+
+		if ($customerPriceSetting && !empty($customerPriceSetting['value'])) {
+			$guestGroupedPage = smokeRequest($guestCookieFile, $baseUrl . 'index.php?route=product/product&product_id=' . $groupedId);
+			smokeAssert($guestGroupedPage['status'] === 200, 'Grouped product 1058 is not reachable for a guest.');
+			foreach (array('514048', '514049', '501112') as $groupedSku) {
+				smokeAssert(strpos($guestGroupedPage['body'], $groupedSku) !== false, 'Guest grouped page is incomplete for SKU ' . $groupedSku . '.');
+			}
+			smokeAssert(!preg_match('/<td[^>]*class=["\'][^"\']*mpn-vpc[^"\']*["\'][^>]*>/i', $guestGroupedPage['body']), 'Grouped variant VPC leaked to an unauthenticated visitor.');
+			smokeAssert(!preg_match('/<td[^>]*class=["\'][^"\']*mpn-final-price[^"\']*["\'][^>]*>/i', $guestGroupedPage['body']), 'Grouped final price leaked to an unauthenticated visitor.');
+		}
 		$groupedQuickview = smokeRequest($cookieFile, $baseUrl . 'index.php?route=extension/basel/quickview&product_id=' . $groupedId);
 		smokeAssert(!preg_match('/<button[^>]+id=["\']button-cart-quickview["\']/i', $groupedQuickview['body']), 'Grouped quickview still exposes root add-to-cart.');
 		$groupedLiveOptions = smokeRequest($cookieFile, $baseUrl . 'index.php?route=extension/basel/live_options/index&product_id=' . $groupedId, array('quantity' => '1'));
@@ -200,6 +237,26 @@ try {
 
 	$shippingMethods = smokeRequest($cookieFile, $baseUrl . 'index.php?route=extension/quickcheckout/shipping_method&address_id=' . $addressId);
 	smokeAssert($shippingMethods['status'] === 200 && stripos($shippingMethods['body'], 'xshippingpro') !== false, 'Existing XShippingPro quotes disappeared after the cart pricing changes.');
+	preg_match('/name=["\']shipping_method["\'][^>]*value=["\'](xshippingpro\.[^"\']+)["\']/i', $shippingMethods['body'], $shippingMatch);
+	smokeAssert(!empty($shippingMatch[1]), 'Could not resolve the active XShippingPro quote.');
+	$shippingCode = html_entity_decode($shippingMatch[1], ENT_QUOTES, 'UTF-8');
+	smokeRequest($cookieFile, $baseUrl . 'index.php?route=extension/quickcheckout/shipping_method/set&address_id=' . $addressId, array(
+		'shipping_method' => $shippingCode,
+		'delivery_date' => '',
+		'delivery_time' => ''
+	));
+	$paymentMethods = smokeRequest($cookieFile, $baseUrl . 'index.php?route=extension/quickcheckout/payment_method&address_id=' . $addressId);
+	smokeAssert($paymentMethods['status'] === 200, 'Payment methods could not be refreshed.');
+	smokeRequest($cookieFile, $baseUrl . 'index.php?route=extension/quickcheckout/payment_method/set&address_id=' . $addressId, array(
+		'payment_method' => 'bank_transfer'
+	));
+	$shippingValidation = smokeRequest($cookieFile, $baseUrl . 'index.php?route=extension/quickcheckout/shipping_method/validate', array(
+		'shipping_method' => $shippingCode,
+		'delivery_date' => date('Y-m-d'),
+		'delivery_time' => ''
+	));
+	$shippingValidationJson = json_decode($shippingValidation['body'], true);
+	smokeAssert(is_array($shippingValidationJson) && empty($shippingValidationJson['error']) && empty($shippingValidationJson['redirect']), 'Changing payment left a stale or invalid shipping quote.');
 
 	foreach (array(array(1, 22, 1.5132), array(24, 25, 1.455), array(240, 28, 1.3968)) as $tier) {
 		smokeRequest($cookieFile, $baseUrl . 'index.php?route=extension/module/quick_order/updateQty', array('product_id' => $productId, 'quantity' => $tier[0]));
@@ -228,6 +285,9 @@ try {
 	cleanupSmokeCustomer($db, $email);
 	if ($cookieFile && is_file($cookieFile)) {
 		unlink($cookieFile);
+	}
+	if ($guestCookieFile && is_file($guestCookieFile)) {
+		unlink($guestCookieFile);
 	}
 	$db->close();
 }

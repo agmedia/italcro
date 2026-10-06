@@ -1,26 +1,28 @@
-# Italcro Revizija 3.0 — deploy i redoslijed ažuriranja
+# Italcro Revizija 3.0/3.1 — deploy i redoslijed ažuriranja
 
-Datum pripreme: 2026-08-28
+Zadnje ažuriranje: 2026-10-06
 
-Ovo je runbook za produkcijski deploy promjena Revizije 3.0, sigurnog QIQO synca i pripreme `NarudzbaSend` outboxa. Vanjsko slanje narudžbi i destruktivni FULL syncovi namjerno su ugašeni dok se ne ispune niže navedeni uvjeti.
+Ovo je runbook za produkcijski deploy promjena Revizije 3.0 i 3.1, sigurnog QIQO synca i pripreme `NarudzbaSend` outboxa. Vanjsko slanje narudžbi, početno partner–artikl punjenje i destruktivni FULL syncovi namjerno su ugašeni dok se ne ispune niže navedeni uvjeti.
 
 ## 0. Trenutno provjereno lokalno
 
 - Projekt radi na PHP-u **7.4.33**. Za ovaj OpenCart ne koristiti PHP 8.x.
 - Produkcijski dump je uvezen lokalno.
-- Sve migracije prolaze dva puta zaredom.
+- Sve migracije, uključujući Rev3.1 ugovor, prolaze dva puta zaredom.
 - OCMOD runtime je regeneriran i ključne izmjene su prisutne u `storage/modification`.
-- Prolaze pricing, sync, transport, grouped-cart, payload, outbox/race, storefront HTTP i admin smoke testovi.
+- Prolaze pricing, sync, transport, grouped-cart, payload, outbox/race, v1 contract gate, migration, storefront HTTP i admin smoke testovi.
+- Grupirani proizvod 1058 prikazuje sva tri artikla, njihove VPC cijene, rabat od 15% i konačne cijene; gostu se cijene ne otkrivaju kada je uključen buyer-only prikaz.
+- Potvrđeni API ugovor je ugrađen: C-100 cijena je na osnovici 100 komada, količina ostaje u komadima, a `ukupno` je neto zbroj stavki i dostave na dvije decimale.
 - Postojeći XShippingPro quoteovi i checkout ispod starog minimuma od 150 EUR rade.
 - `NarudzbaSend` nije pozvan; outbox je prazan.
 
 Poznate poslovne stavke koje nisu deploy blocker, ali traže podatak/odluku:
 
-- tablica partner–artikl rabata je prazna dok Italcro ne potvrdi semantiku potpunog feeda;
+- tablica partner–artikl rabata je prazna; potvrđeno je da je endpoint inkrementalan, a početnih približno 2 milijuna slogova čeka paketirani/paginirani kontrolirani import;
 - jedna postojeća autorizacija nema aktivno mapiranog komercijalista i zato je ispravno blokirana za ERP narudžbu;
 - Letak nema odobren URL/PDF pa je vidljiv, ali onemogućen;
 - Blog ruta radi, ali produkcijski dump nema blog sadržaj;
-- budući prag/trošak dostave od 200 EUR nije implementiran jer je u zahtjevu odgođen; postojeći XShippingPro ostaje aktivan.
+- novo pravilo dostave do praga 250 EUR nije uključeno jer još nedostaju točan fiksni iznos, pravilo za točno 250,00 EUR i porezni tretman; postojeći XShippingPro ostaje aktivan.
 
 ## 1. Obavezno prije deploya
 
@@ -51,11 +53,13 @@ Preflight na produkciji:
 
 ```bash
 php -r 'echo PHP_VERSION, PHP_EOL;'
-php -m | rg -i 'curl|dom|json|mbstring|mysqli|openssl|simplexml'
+php -m | grep -Ei 'curl|dom|json|mbstring|mysqli|openssl|simplexml'
 git status --short
 ```
 
 Očekivani PHP je 7.4.x i sve navedene ekstenzije moraju postojati.
+
+Ako `git pull` prijavi lokalne izmjene, ne prepisivati ih. Posebno prvo pregledati `upload/feed.php` i `upload/feed_brands.php`, spremiti njihov diff izvan web-roota i napraviti imenovani, ciljani stash. Tek nakon toga koristiti `git pull --ff-only origin main`. Stash se poslije ne vraća naslijepo: svaku razliku usporediti s novim kodom i vratiti samo namjerne serverske prilagodbe.
 
 ## 2. Točan deploy redoslijed
 
@@ -94,10 +98,13 @@ php scripts/run_sql_migration.php \
   upload/migration/2026-08-28_qiqo_safe_discount_sync.sql \
   upload/migration/2026-08-28_qiqo_authorization_orphan_cleanup.sql \
   upload/migration/2026-08-28_rev3_ux_configuration.sql \
-  upload/migration/2026-08-28_qiqo_order_outbox.sql
+  upload/migration/2026-08-28_qiqo_order_outbox.sql \
+  upload/migration/2026-10-06_rev31_api_contract.sql
 ```
 
 Svaka mora završiti s `OK`. Migracije su idempotentne; isti se poziv smije ponoviti kao provjera. Precision migracija mora biti prije outbox migracije.
+
+Rev3.1 migracija odmah drži `qiqo_order_send_enabled=0`, verzionira payload, blokira stare neposlane v1 zapise i postavlja lokaciju preuzimanja `0001`. Prije izvođenja svejedno potvrditi da nema aktivnog `processing` ili `rebuilding` zapisa; njihov se ishod provjerava ručno, ne automatskim rebuildom.
 
 ### Korak 4 — regeneriraj OCMOD
 
@@ -121,15 +128,33 @@ Provjeri najnoviji dio `storage/logs/ocmod.log`. U ovom starom projektu postoje 
 Minimalna provjera ključnog runtimea:
 
 ```bash
-rg -n 'allow_grouped_variant|ocm_special|base_discount' \
+grep -nE 'allow_grouped_variant|ocm_special|base_discount' \
   storage/modification/system/library/cart/cart.php
 
-rg -n 'mpn_count|getQiqoPricingMap' \
+grep -nE 'mpn_count|getQiqoPricingMap|show_variant_prices' \
   storage/modification/catalog/controller/account/wishlist.php \
-  storage/modification/catalog/controller/product/search.php
+  storage/modification/catalog/controller/product/search.php \
+  storage/modification/catalog/controller/product/product.php
 ```
 
 Ne uređivati datoteke u `storage/modification` ručno.
+
+Na lokalnoj/staging kopiji nakon migracije pokrenuti puni paket:
+
+```bash
+herd php tests/qiqo_order_payload_test.php
+herd php tests/qiqo_pricing_resolver_test.php
+herd php tests/qiqo_sync_guard_test.php
+herd php tests/qiqo_transport_parse_test.php
+herd php tests/qiqo_cart_group_guard_test.php
+herd php tests/qiqo_rev31_migration_test.php
+herd php tests/qiqo_outbox_lifecycle_test.php
+herd php tests/qiqo_outbox_contract_gate_test.php
+herd php tests/local_rev3_http_smoke.php
+herd php tests/local_qiqo_admin_smoke.php
+```
+
+Na produkciji ne pokretati zadnjih pet testova: koriste kontrolne DB zapise, fixture narudžbu/kupca ili privremenog admin korisnika. Tamo koristiti niže navedene read-only provjere i ručni smoke.
 
 ### Korak 5 — provjeri bazne sigurnosne gateove
 
@@ -142,7 +167,11 @@ WHERE `key` IN (
   'qiqo_full_snapshot_since',
   'qiqo_order_send_enabled',
   'qiqo_order_allow_insecure_http',
-  'qiqo_order_outbox_start_at'
+  'qiqo_order_outbox_start_at',
+  'qiqo_order_pickup_location_code',
+  'qiqo_order_delivery_shipping_codes',
+  'qiqo_partner_article_initial_since',
+  'qiqo_partner_article_initial_complete'
 )
 ORDER BY `key`;
 ```
@@ -155,6 +184,24 @@ Očekivano odmah nakon deploya:
 - `qiqo_order_send_enabled = 0`
 - `qiqo_order_allow_insecure_http = 0`
 - `qiqo_order_outbox_start_at` postoji
+- `qiqo_order_pickup_location_code = 0001`
+- `qiqo_order_delivery_shipping_codes = xshippingpro.xshippingpro1`
+- `qiqo_partner_article_initial_since = 2026-08-01 00:00:00`
+- `qiqo_partner_article_initial_complete = 0`
+
+Dodatna outbox provjera prije i poslije migracije:
+
+```sql
+SELECT status, COUNT(*) AS broj
+FROM `oc_qiqo_order_outbox`
+GROUP BY status
+ORDER BY status;
+
+SHOW COLUMNS FROM `oc_qiqo_order_outbox`
+LIKE 'payload_contract_version';
+```
+
+`processing` i `rebuilding` moraju biti 0 prije deploya. Stari neposlani payloadovi nakon migracije smiju ostati samo blokirani dok ih operater ne obnovi prema ugovoru v2.
 
 Provjera integriteta bez ispisa osobnih podataka:
 
@@ -183,7 +230,7 @@ SELECT COUNT(*) AS outbox_rows FROM `oc_qiqo_order_outbox`;
 SELECT COUNT(*) AS partner_article_discounts FROM `oc_qiqo_partner_article_discount`;
 ```
 
-`auth_orphans` mora biti 0. `missing_active_sales_rep` treba ručno mapirati prije ERP slanja. Prazan partner–artikl cache ne puniti dok se ne potvrdi FULL ugovor.
+`auth_orphans` mora biti 0. `missing_active_sales_rep` treba ručno mapirati prije ERP slanja. Prazan partner–artikl cache ne puniti iz preglednika; čekati kontrolirani početni import i njegovu provjeru.
 
 ### Korak 6 — produkcijski smoke dok je maintenance uključen
 
@@ -221,6 +268,9 @@ U browseru provjeriti:
 8. admin QIQO FULL gumbi su onemogućeni i prikazuju upozorenje;
 9. `https://.../upload` i stare debug/feed skripte vraćaju 404;
 10. stranica ne ispisuje `Deprecated`, `Warning` ni `Fatal error`.
+11. proizvod `product_id=1058` prikazuje SKU 514048, 514049 i 501112, svaki s VPC-om, rabatom 15% i konačnom cijenom;
+12. Brza narudžba prikazuje „Narudžba – osnovica”, a checkout nakon promjene načina plaćanja zadržava valjani, ponovno izračunani način dostave;
+13. atribut, pakiranje, C-100 oznaka, šifra i barkod nisu izmiješani između košarice i potvrde.
 
 Read-only outbox provjera:
 
@@ -248,6 +298,8 @@ Prvo potvrdi da novi QIQO credential i transport rade. Zatim u QIQO Importeru ko
 6. **Sync akcijskog cjenika** — inkrementalni gumb, bez oznake FULL
 7. **Ažuriraj partnere na artiklima**
 
+**Sync partner–artikl rabata (inkrementalno)** ostaje onemogućen dok kontrolirani početni import ne završi i dok se ne potvrde broj slogova, integritet cachea i watermark. Stari watermark bez stvarno popunjene tablice nije dovoljan i namjerno ne otključava gumb.
+
 Svaki feed sada validira transport i cijeli batch prije pisanja. Prazan, neispravan ili konfliktan feed mora završiti greškom/no-opom, a ne brisanjem ili nuliranjem podataka.
 
 Brend/grupa gumbi nisu dio rutinskog updatea:
@@ -255,9 +307,25 @@ Brend/grupa gumbi nisu dio rutinskog updatea:
 - **Kreiraj proizvođače**, **Linkaj grupe** i **Linkaj brandove** koristiti samo u kontroliranom maintenance zahvatu;
 - force linkanje ne pokretati bez svježeg backupa i prethodne provjere broja pogođenih artikala.
 
-### B. FULL update — trenutno NE pokretati
+### B. Početni partner–artikl import i FULL update — trenutno NE pokretati
 
-Dok Italcro pisano ne potvrdi da poziv s dogovorenim `datum` vraća potpuni snapshot, ostaviti:
+Italcro je potvrdio da `qPartnerArtikalRabatWeb` vraća samo promjene nakon `datum`, a prazan uspješan odgovor znači da promjena nije bilo. Zato se taj feed nikada ne koristi kao destruktivna FULL zamjena.
+
+Za početnih približno 2 milijuna slogova od `2026-08-01 00:00:00` treba dogovoriti jedan od sljedećih kontroliranih kanala:
+
+- paginirani API;
+- paketirani/streamani poziv;
+- komprimirani CSV/XML izvoz s očekivanim brojem slogova i kontrolnim zbrojem.
+
+Početni import ne pokretati iz administratorskog HTTP zahtjeva. Do dovršetka ostaviti:
+
+```text
+qiqo_partner_article_initial_complete = 0
+```
+
+Tek poseban importer, nakon provjere cijelog skupa, smije postaviti `qiqo_partner_article_initial_complete = 1` i točan watermark. Nakon toga prazan inkrementalni odgovor samo pomiče watermark; nikada ne briše postojeći cache.
+
+Za ostale destruktivne FULL zamjene i dalje ostaviti:
 
 ```text
 qiqo_full_snapshot_confirmed = 0
@@ -268,8 +336,7 @@ To blokira:
 
 - partner/komercijalist FULL;
 - akcijski cjenik FULL;
-- partner–artikl rabat FULL;
-- kompletni partner sync koji uključuje FULL zamjenu.
+- sve ostale nepotvrđene FULL zamjene.
 
 Nakon potvrde Italcra:
 
@@ -279,9 +346,7 @@ Nakon potvrde Italcra:
 4. pokretati zasebno i provjeravati broj redaka:
    - partner/komercijalist FULL;
    - akcijski cjenik FULL;
-   - partner–artikl rabat FULL;
-5. potvrditi da broj partner–artikl rabata nije neočekivano 0;
-6. vratiti `qiqo_full_snapshot_confirmed = 0` nakon kontroliranog zahvata.
+5. vratiti `qiqo_full_snapshot_confirmed = 0` nakon kontroliranog zahvata.
 
 Ne koristiti **Sync svih partner podataka** u istom zahvatu ako su tri pojedinačna FULL koraka već pokrenuta; to bi samo ponovilo dio posla i otežalo audit.
 
@@ -302,22 +367,33 @@ qiqo_order_send_enabled = 0
 qiqo_order_allow_insecure_http = 0
 ```
 
-Prije aktivacije moraju biti ispunjena sva četiri uvjeta:
+Potvrđeni API ugovor:
 
-1. Italcro potvrdi šalje li se C-100 `cijena` po 100 komada ili po fizičkoj jedinici i potvrdi zaokruživanje `ukupno`;
-2. endpoint je dostupan kroz HTTPS ili odobren VPN/private tunnel;
+- `stavke[].cijena` je konačna neto cijena nakon primjenjivih rabata;
+- za C-100 se `kolicina` šalje u komadima, a `cijena` na osnovici od 100 komada;
+- `narudzba.ukupno` je neto zbroj stavki i neto dostave, zaokružen na dvije decimale;
+- pickup koristi lokaciju `0001`, a dostava autoriziranu lokaciju kupca;
+- payload se blokira ako se cijene na pet decimala, subtotal, dostava, porez i ukupno ne mogu međusobno uskladiti.
+
+Prije aktivacije moraju biti ispunjeni svi uvjeti:
+
+1. endpoint je dostupan kroz HTTPS ili odobren VPN/private tunnel;
+2. integracijske vjerodajnice su rotirane i postavljene izvan repozitorija;
 3. sve aktivne autorizacije koje smiju slati imaju aktivnog komercijalista;
-4. dogovoren je workflow za izmjenu/otkazivanje već poslane narudžbe jer dostavljeni API nema Cancel/Update metodu.
+4. Italcro potvrdi da pickup lokacija `0001` smije biti poslana uz partnera kupca;
+5. dogovoren je workflow za izmjenu/otkazivanje već poslane narudžbe jer dostavljeni API nema Cancel/Update metodu;
+6. novo pravilo dostave ima potvrđen fiksni iznos, prag i porezni tretman ili je kontrolna narudžba napravljena s unaprijed potvrđenom postojećom dostavom.
 
 Kontrolirani test:
 
 1. postaviti nove order vjerodajnice izvan repozitorija;
 2. ostaviti automatsko slanje ugašeno;
-3. napraviti jednu dogovorenu testnu narudžbu s običnim i C-100 retkom;
+3. napraviti jednu dogovorenu testnu narudžbu s običnim i C-100 retkom te poznatim načinom dostave;
 4. u admin outboxu pregledati payload bez slanja;
 5. s Italcrom dogovoriti termin i privremeno uključiti transport/send gate;
 6. poslati samo tu narudžbu i potvrditi njihov zapis u bazi;
-7. tek nakon potpune potvrde odlučiti ostaje li slanje uključeno.
+7. potvrditi kod Italcra zaglavlje, stavke, C-100 osnovicu, lokaciju, dostavu i ukupni neto iznos;
+8. tek nakon potpune potvrde odlučiti ostaje li slanje uključeno.
 
 Status `uncertain` nikada ne slati ponovno naslijepo. Prvo provjeriti ERP, zatim koristiti operatersku potvrdu “nije poslano” ili označiti ručno potvrđeno slanje.
 
@@ -344,12 +420,15 @@ Nikada ne vraćati stare javne debug/feed skripte ni kompromitirane vjerodajnice
 - [ ] stare QIQO vjerodajnice rotirane
 - [ ] maintenance uključen
 - [ ] kod postavljen bez lokalnih config/storage podataka
-- [ ] šest migracija prošlo redoslijedom
+- [ ] sedam migracija prošlo redoslijedom, uključujući `2026-10-06_rev31_api_contract.sql`
 - [ ] OCMOD regeneriran i ključni runtime marker provjeren
 - [ ] sigurnosni gateovi ostali na 0
 - [ ] auth orphan count = 0
 - [ ] pricing SKU 300970 provjeren u katalogu i košarici
+- [ ] grupirani proizvod 1058 prikazuje sva tri artikla, rabat i konačne cijene
 - [ ] XShippingPro i checkout ispod 150 EUR provjereni
+- [ ] promjena načina plaćanja ne ostavlja zastarjeli shipping quote
+- [ ] `qiqo_partner_article_initial_complete = 0` dok početnih ~2 milijuna slogova nije provjereno uvezeno
 - [ ] debug/legacy price feedovi vraćaju 404
 - [ ] outbox reconciliation dry-run = 0
 - [ ] maintenance isključen tek nakon smokea

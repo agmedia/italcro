@@ -135,23 +135,31 @@ class ControllerExtensionModuleQiqo extends Controller
                     break;
 
                 case 'sync_partner_discounts':
-                    if (!$this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled()) {
-                        $this->session->data['error'] = 'Partner-artikl FULL je blokiran dok ERP ne potvrdi potpuni snapshot.';
+                    if (!$this->model_extension_module_qiqo->hasPartnerArticleDiscountWatermark()) {
+                        $this->session->data['error'] = 'Sigurnosno blokirano: početno partner-artikl punjenje (~2 milijuna slogova) nije dopušteno kroz preglednik. Potreban je kontrolirani inicijalni import.';
                     } else {
-                        $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
-                        $this->session->data[$count ? 'success' : 'error'] = $count
-                            ? "Partner-artikl rabati FULL sync: {$count} slogova."
-                            : 'Partner-artikl rabati nisu zamijenjeni; live cache i watermark su sačuvani.';
+                        $result = $this->model_extension_module_qiqo->syncPartnerArticleDiscounts();
+                        if (!empty($result['success'])) {
+                            $this->session->data['success'] = !empty($result['empty'])
+                                ? 'Partner-artikl inkrementalni sync završen: ERP nije vratio promjene.'
+                                : 'Partner-artikl inkrementalni sync: ' . (int)$result['count'] . ' promjena.';
+                        } else {
+                            $this->session->data['error'] = 'Partner-artikl inkrementalni sync nije uspio; postojeći rabati i watermark su sačuvani. Provjeri QIQO log.';
+                        }
                     }
                     break;
 
                 case 'sync_partner_all':
-                    if (!$this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled()) {
-                        $this->session->data['error'] = 'Kompletan sync je blokiran jer uključuje destruktivni FULL snapshot. Koristi inkrementalni partner sync.';
+                    if (!$this->model_extension_module_qiqo->hasPartnerArticleDiscountWatermark()) {
+                        $this->session->data['error'] = 'Sigurnosno blokirano: kompletan sync ne može uključiti partner-artikl rabate prije kontroliranog inicijalnog importa.';
                     } else {
                         $stats = $this->model_extension_module_qiqo->syncPartnerBaseData();
-                        $count = $this->model_extension_module_qiqo->syncPartnerArticleDiscountsFull();
-                        $this->session->data['success'] = "Kompletan partner sync: partneri {$stats['partners']}, mjesta {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcije {$stats['action_prices']}, partner-artikl rabati {$count}.";
+                        $discountResult = $this->model_extension_module_qiqo->syncPartnerArticleDiscounts();
+                        if (!empty($discountResult['success'])) {
+                            $this->session->data['success'] = "Kompletan inkrementalni sync: partneri {$stats['partners']}, mjesta {$stats['delivery_places']}, komercijalisti {$stats['sales_reps']}, akcije {$stats['action_prices']}, partner-artikl rabati " . (int)$discountResult['count'] . '.';
+                        } else {
+                            $this->session->data['error'] = 'Osnovni partner podaci su obrađeni, ali partner-artikl rabati nisu; postojeći rabati i watermark su sačuvani.';
+                        }
                     }
                     break;
 
@@ -188,6 +196,7 @@ class ControllerExtensionModuleQiqo extends Controller
         $data['last_log'] = $this->model_extension_module_qiqo->getLastLog();
         $data['disable_missing_enabled'] = $this->model_extension_module_qiqo->isDisableMissingArticlesEnabled();
         $data['full_snapshot_enabled'] = $this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled();
+        $data['partner_discount_incremental_ready'] = $this->model_extension_module_qiqo->hasPartnerArticleDiscountWatermark();
         $data['upload_action'] = $this->url->link('extension/module/qiqo/uploadLogos', 'user_token=' . $this->session->data['user_token'], true);
 
         // --- FILTERI ZA oc_product_asset_sync ---

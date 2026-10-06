@@ -166,6 +166,7 @@ class ModelExtensionModuleQiqoOrderOutbox extends Model {
 					currency_code = '" . $this->db->escape($data['currency_code']) . "',
 					payload_json = '" . $this->db->escape($data['payload_json']) . "',
 					payload_hash = '" . $this->db->escape($data['payload_hash']) . "',
+					payload_contract_version = '" . (int)$data['payload_contract_version'] . "',
 					status = 'pending',
 					locked_at = NULL,
 					last_http_status = 0,
@@ -277,6 +278,11 @@ class ModelExtensionModuleQiqoOrderOutbox extends Model {
 		// Always read the immutable snapshot after the atomic claim. A concurrent
 		// rebuild that completed just before the claim must not leave us with stale data.
 		$row = $this->getRow($outbox_id);
+		require_once DIR_SYSTEM . 'library/qiqo/order_payload.php';
+		if ((int)$row['payload_contract_version'] !== QiqoOrderPayload::CONTRACT_VERSION) {
+			$this->markBlocked($outbox_id, 'PAYLOAD_CONTRACT_MISMATCH', 'Payload je izrađen prema starom API ugovoru; obnova je obavezna.');
+			throw new RuntimeException('Payload je izrađen prema starom API ugovoru; slanje je blokirano.');
+		}
 		$calculated_hash = hash('sha256', (string)$row['payload_json']);
 		if (!preg_match('/^[a-f0-9]{64}$/i', (string)$row['payload_hash'])
 			|| !hash_equals(strtolower((string)$row['payload_hash']), strtolower($calculated_hash))) {

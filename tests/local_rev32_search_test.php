@@ -154,8 +154,23 @@ foreach (array('tabs', 'standard') as $mode) {
 	}
 }
 
+$legacy = $db->query("SELECT pd.name, pd.meta_title, p.mpn FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd USING (product_id) WHERE p.product_id = 9399 AND pd.language_id = '" . (int)$config->get('config_language_id') . "'")->row;
+searchCheck((bool)$legacy, 'The reported article 9399 is required for its title regression.');
+$expectedName = trim((string)$legacy['name']) !== '' ? trim((string)$legacy['name']) : trim((string)$legacy['meta_title']);
+$legacyProduct = $model->getProduct(9399);
+searchCheck($expectedName !== '' && $legacyProduct['name'] === $expectedName, 'An article with an empty imported name must use its product meta title.');
+searchCheck($legacyProduct['mpn'] === $legacy['mpn'], 'Display-name fallback must preserve the product group.');
+$request = curl_init('https://italcro.test/index.php?route=product/product&product_id=9399&search=509431');
+curl_setopt_array($request, array(CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0));
+$page = curl_exec($request);
+$status = (int)curl_getinfo($request, CURLINFO_HTTP_CODE);
+curl_close($request);
+searchCheck($status === 200 && is_string($page) && preg_match('/<h1[^>]*id="page-title"[^>]*>(.*?)<\/h1>/s', $page, $heading) === 1, 'The reported article must render its product heading over HTTP.');
+searchCheck(trim(html_entity_decode(strip_tags($heading[1]), ENT_QUOTES, 'UTF-8')) === $expectedName, 'The rendered product heading must retain the full fallback name after cache and SEO modifications.');
+echo "Reported article 9399 display name, product grouping and rendered HTTP heading passed.\n";
+
 $filter['filter_name'] = 'cipele radne';
 $filter['filter_tag'] = 'cipele radne';
 searchCheck((bool)$model->getProducts($filter), 'Ordinary product-name search must remain available.');
 
-echo "Revizija 3.2 search checks passed (real barcode fragment, exact SKU, totals and text search; no database writes).\n";
+echo "Revizija 3.2 search checks passed (barcode fragment, exact SKU, autocomplete, totals, text search and product heading).\n";

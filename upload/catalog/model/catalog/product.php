@@ -60,7 +60,8 @@ class ModelCatalogProduct extends Model {
                 WHERE p2.mpn = p.mpn 
                   AND p2.status = '1' 
                   AND p2.date_available <= NOW()) AS mpn_count,
-            p.sort_order
+            p.sort_order,
+            pd.meta_title AS qiqo_name_fallback
         FROM " . DB_PREFIX . "product p
         LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id)
         LEFT JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id)
@@ -74,6 +75,13 @@ class ModelCatalogProduct extends Model {
 
 
 		if ($query->num_rows) {
+			$product_name = trim((string)$query->row['name']);
+			if ($product_name === '') {
+				$product_name = trim((string)$query->row['qiqo_name_fallback']);
+			}
+			if ($product_name === '') {
+				$product_name = 'Artikl ' . (trim((string)$query->row['sku']) !== '' ? trim((string)$query->row['sku']) : '#' . (int)$query->row['product_id']);
+			}
 			$jm = isset($query->row['jm']) && trim((string)$query->row['jm']) !== '' ? $query->row['jm'] : $query->row['ean'];
 			$pakkol = isset($query->row['pakkol']) ? (float)$query->row['pakkol'] : 0.0;
 			if ($pakkol <= 0) {
@@ -88,7 +96,7 @@ class ModelCatalogProduct extends Model {
 
 			return array(
 				'product_id'       => $query->row['product_id'],
-				'name'             => $query->row['name'],
+				'name'             => $product_name,
                 'name_add'             => $query->row['name_add'],
 				'description'      => $query->row['description'],
                 'description_add'      => $query->row['description_add'],

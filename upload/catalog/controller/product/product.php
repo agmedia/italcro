@@ -177,7 +177,7 @@ class ControllerProductProduct extends Controller {
 	            $product_info = $this->model_catalog_product->getProduct($product_id);
 	            $this->ppCacheSet($key, $product_info);
 	        }
-		        if ($product_info !== false && (!array_key_exists('base_price', $product_info) || !array_key_exists('pak', $product_info) || !array_key_exists('vpc', $product_info) || !array_key_exists('jm', $product_info) || !array_key_exists('pakkol', $product_info))) {
+		        if ($product_info !== false && (trim((string)$product_info['name']) === '' || !array_key_exists('base_price', $product_info) || !array_key_exists('pak', $product_info) || !array_key_exists('vpc', $product_info) || !array_key_exists('jm', $product_info) || !array_key_exists('pakkol', $product_info))) {
 		            $product_info = $this->model_catalog_product->getProduct($product_id);
 		            $this->ppCacheSet($key, $product_info);
 		        }
@@ -1125,6 +1125,10 @@ class ControllerProductProduct extends Controller {
 			$data['footer'] = $this->load->controller('common/footer');
 			$data['header'] = $this->load->controller('common/header');
 
+			$visible_heading = html_entity_decode(strip_tags(isset($data['heading_title']) ? (string)$data['heading_title'] : ''), ENT_QUOTES, 'UTF-8');
+			if (preg_replace('/[\s\x{00a0}\x{200b}]+/u', '', $visible_heading) === '') {
+				$data['heading_title'] = (string)$product_info['name'];
+			}
 			$this->response->setOutput($this->load->view('product/product', $data));
 		} else {
 			$url = '';

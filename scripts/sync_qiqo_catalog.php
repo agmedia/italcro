@@ -57,6 +57,11 @@ try {
     $registry = new Registry();
     $registry->set('db', $db);
     $registry->set('config', $config);
+    if ($apply) {
+        require_once DIR_SYSTEM . 'library/cache.php';
+        require_once DIR_SYSTEM . 'library/cache/file.php';
+        $registry->set('cache', new Cache('file'));
+    }
     $model = new ModelExtensionModuleQiqo($registry);
     $result = $model->reconcileCatalog($apply, $since, $options);
     echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;

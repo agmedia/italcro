@@ -7,8 +7,9 @@ define('DIR_STORAGE', __DIR__ . '/../storage/');
 define('DIR_SYSTEM', __DIR__ . '/../upload/system/');
 define('DB_PREFIX', 'test_');
 class Log {
+    public static $messages = [];
     public function __construct($file) {}
-    public function write($message) {}
+    public function write($message) { self::$messages[] = $message; }
 }
 function agconf($key, $default = null) {
     return $key === 'qiqo.categories' ? [10 => 'Test category'] : $default;
@@ -33,6 +34,15 @@ class CatalogFeedStub {
 class CatalogTestModel extends ModelExtensionModuleQiqo {
     public $feed;
     protected function createCatalogConnection() { return $this->feed; }
+}
+
+class CatalogCacheSpy {
+    public $deleted = [];
+    public $fail = false;
+    public function delete($prefix) {
+        if ($this->fail) throw new RuntimeException('Injected cache failure.');
+        $this->deleted[] = $prefix;
+    }
 }
 
 class CatalogDbStub {
@@ -138,6 +148,7 @@ function catalogFixture($article, $groups, $partners, $local, $unreturned) {
     $registry = new Registry();
     $registry->set('db', $db);
     $registry->set('config', new Config());
+    $registry->set('cache', new CatalogCacheSpy());
     $model = new CatalogTestModel($registry);
     $model->feed = new CatalogFeedStub();
     $model->feed->articles = [$article];
@@ -146,10 +157,11 @@ function catalogFixture($article, $groups, $partners, $local, $unreturned) {
     return [$model, $db, $registry];
 }
 
-list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+list($model, $db, $registry) = catalogFixture($article, $groups, $partners, $local, $unreturned);
 $preview = $model->reconcileCatalog();
 catalogAssert($preview['success'] && $preview['updated'] === 1 && $preview['disabled'] === 1, 'Dry run must report an existing SKU update and deactivation.');
 catalogAssert(!$db->mutationQueries(), 'Dry run must not change data or schema.');
+catalogAssert(!$registry->get('cache')->deleted, 'Dry run must not invalidate any cache.');
 $result = $model->reconcileCatalog(true);
 catalogAssert($result['success'] && $result['updated'] === 1 && $result['added'] === 0, 'Repeated import must update the existing product, not recreate it.');
 catalogAssert($db->rows[5965]['name'] === 'Novi naziv' && $db->rows[5965]['name_add'] === 'novi model', 'Existing names and details must refresh.');
@@ -157,9 +169,18 @@ catalogAssert((int)$db->rows[5965]['status'] === 0 && (float)$db->rows[5965]['qu
 catalogAssert($db->rows[5965]['date_added'] === $local['date_added'] && $db->rows[5965]['qiqo_introduced_at'] === $local['qiqo_introduced_at'], 'Reimport must preserve both local creation and ERP introduction dates.');
 catalogAssert($db->rows[5965]['image'] === $local['image'] && $db->rows[5965]['manufacturer_id'] === 15, 'Local photos and brands must be preserved.');
 catalogAssert($db->rows[22] === $unreturned, 'A product absent from a delta must remain untouched.');
+catalogAssert($registry->get('cache')->deleted === ['product', 'megamenu'], 'Applied imports must invalidate only the product and menu cache prefixes.');
 $db->queries = [];
 $second = $model->reconcileCatalog(true);
 catalogAssert($second['success'] && $second['unchanged'] === 1 && !$db->mutationQueries(), 'An identical repeated import must be idempotent.');
+catalogAssert($registry->get('cache')->deleted === ['product', 'megamenu', 'product', 'megamenu'], 'An applied unchanged catalog may refresh existing stale caches.');
+
+list($model, $db, $registry) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$registry->get('cache')->fail = true;
+Log::$messages = [];
+$result = $model->reconcileCatalog(true);
+catalogAssert($result['success'] && !$result['partial'] && (int)$db->rows[5965]['status'] === 0, 'A cache failure must preserve the successful applied database result.');
+catalogAssert((bool)array_filter(Log::$messages, function ($message) { return strpos($message, 'WARN catalog applied') !== false; }), 'A cache failure must emit a warning.');
 
 foreach (['zaliha', 'sortkatalog', 'aktivan', 'cijena'] as $missing) {
     list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);

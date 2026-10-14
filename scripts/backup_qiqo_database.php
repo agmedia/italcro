@@ -6,11 +6,13 @@ if (PHP_SAPI !== 'cli') {
 }
 
 function qiqoBackupHelp() {
-	echo "Usage: php scripts/backup_qiqo_database.php --output-dir=/absolute/private/directory [--apply]\n";
+	echo "Usage: php scripts/backup_qiqo_database.php --output-dir=/absolute/private/directory [--apply] [--table-locks]\n";
 	echo "Without --apply, performs a read-only preflight and creates no files.\n";
 	echo "--apply requires OpenCart maintenance mode to already be enabled.\n";
 	echo "Creates a full SQL database dump with a global read lock (including MyISAM),\n";
 	echo "checks the dump completion marker, and writes a SHA-256 checksum.\n";
+	echo "--table-locks explicitly holds READ locks on every base table in this database\n";
+	echo "using a dedicated connection, instead of requiring a global read lock.\n";
 	echo "The output directory must be outside the web document root and private (0700).\n";
 	echo "Credentials are read from upload/config.php, never from command arguments.\n";
 }
@@ -87,16 +89,55 @@ function qiqoBackupWritePrivateFile($path, $contents) {
 	}
 }
 
+function qiqoBackupConfirmedEmptyObjects($db, $type) {
+	$schema = $db->real_escape_string(DB_DATABASE);
+	$sql = $type === 'routines'
+		? "SELECT COUNT(*) AS total FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = '" . $schema . "'"
+		: "SELECT COUNT(*) AS total FROM information_schema.EVENTS WHERE EVENT_SCHEMA = '" . $schema . "'";
+	$result = $db->query($sql);
+	if ($result === false || (int)$result->fetch_assoc()['total'] !== 0) {
+		return false;
+	}
+	// Empty metadata alone is insufficient: privilege filtering can hide objects.
+	$grants = $db->query('SHOW GRANTS FOR CURRENT_USER()');
+	if ($grants === false) {
+		return false;
+	}
+	while ($grant = $grants->fetch_row()) {
+		if (!preg_match('/^GRANT (.+) ON (.+?) TO /i', $grant[0], $match)) {
+			continue;
+		}
+		$scope = str_replace(array('`', '\\_', '\\%'), array('', '_', '%'), $match[2]);
+		if ($scope !== '*.*' && $scope !== DB_DATABASE . '.*') {
+			continue;
+		}
+		$privileges = array_map('trim', explode(',', strtoupper($match[1])));
+		if (in_array('ALL PRIVILEGES', $privileges, true)
+			|| ($type === 'events' && in_array('EVENT', $privileges, true))
+			|| ($type === 'routines' && (in_array('EXECUTE', $privileges, true) || in_array('ALTER ROUTINE', $privileges, true) || in_array('CREATE ROUTINE', $privileges, true) || ($scope === '*.*' && in_array('SHOW_ROUTINE', $privileges, true))))) {
+			return true;
+		}
+	}
+	return false;
+}
+
 $secretDirectory = null;
 $optionPath = null;
 $process = null;
 $partialPath = null;
 $completedPath = null;
-$cleanup = function () use (&$secretDirectory, &$optionPath, &$process) {
+$lockDb = null;
+$lockConnectionId = null;
+$cleanup = function () use (&$secretDirectory, &$optionPath, &$process, &$lockDb) {
 	if (is_resource($process)) {
 		@proc_terminate($process);
 		@proc_close($process);
 		$process = null;
+	}
+	if ($lockDb instanceof mysqli) {
+		@$lockDb->query('UNLOCK TABLES');
+		@$lockDb->close();
+		$lockDb = null;
 	}
 	if ($optionPath !== null && is_file($optionPath)) {
 		@unlink($optionPath);
@@ -124,6 +165,7 @@ if (function_exists('pcntl_async_signals') && function_exists('pcntl_signal')) {
 try {
 	$outputArgument = null;
 	$apply = false;
+	$tableLocks = false;
 	for ($i = 1; $i < $argc; $i++) {
 		$argument = $argv[$i];
 		if ($argument === '--help' || $argument === '-h') {
@@ -131,6 +173,8 @@ try {
 			exit(0);
 		} elseif ($argument === '--apply') {
 			$apply = true;
+		} elseif ($argument === '--table-locks') {
+			$tableLocks = true;
 		} elseif ($argument === '--output-dir' && isset($argv[$i + 1])) {
 			if ($outputArgument !== null) {
 				throw new RuntimeException('Specify --output-dir only once.');
@@ -192,16 +236,38 @@ try {
 			$nontransactionalCount += (int)$engine['total'];
 		}
 	}
-	$db->close();
+	$skipRoutines = qiqoBackupConfirmedEmptyObjects($db, 'routines');
+	$skipEvents = qiqoBackupConfirmedEmptyObjects($db, 'events');
 
 	if (!$apply) {
 		echo "Read-only preflight passed: " . $tableCount . " tables (" . $nontransactionalCount . " non-InnoDB); maintenance " . ($maintenance ? 'enabled' : 'disabled') . ".\n";
 		echo "Output directory: " . $outputDirectory . "\n";
+		echo 'Lock mode: ' . ($tableLocks ? 'dedicated database table READ locks' : 'global read lock') . ".\n";
+		echo 'Routine/event objects: ' . ($skipRoutines ? 'no routines confirmed' : 'routines included') . '; ' . ($skipEvents ? 'no events confirmed' : 'events included') . ".\n";
+		$db->close();
 		echo "No files created. Use --apply after enabling maintenance mode to create the locked database backup.\n";
 		exit(0);
 	}
 	if (!$maintenance) {
 		throw new RuntimeException('OpenCart maintenance mode must already be enabled before --apply.');
+	}
+	if ($tableLocks) {
+		$tablesResult = $db->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . $db->real_escape_string(DB_DATABASE) . "' AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME");
+		if ($tablesResult === false || $tablesResult->num_rows !== $tableCount) {
+			throw new RuntimeException('Cannot enumerate every base table for the explicit database READ locks.');
+		}
+		$lockNames = array();
+		while ($table = $tablesResult->fetch_assoc()) {
+			$lockNames[] = '`' . str_replace('`', '``', DB_DATABASE) . '`.`' . str_replace('`', '``', $table['TABLE_NAME']) . '` READ';
+		}
+		$lockDb = $db;
+		$lockConnectionId = (int)$db->thread_id;
+		if (!$lockNames || !$lockDb->query('LOCK TABLES ' . implode(', ', $lockNames))) {
+			throw new RuntimeException('Cannot acquire READ locks on every database base table. Check database LOCK TABLES and SELECT privileges.');
+		}
+		echo 'Holding READ locks on ' . count($lockNames) . " base tables until the dump process finishes.\n";
+	} else {
+		$db->close();
 	}
 
 	umask(0077);
@@ -230,7 +296,14 @@ try {
 	if ($dump === false || !chmod($partialPath, 0600)) {
 		throw new RuntimeException('Cannot create the protected SQL output file.');
 	}
-	$command = array($executable, '--defaults-extra-file=' . $optionPath, '--quick', '--skip-single-transaction', '--skip-force', '--lock-all-tables', '--routines', '--events', '--triggers', '--hex-blob', '--no-tablespaces', '--default-character-set=utf8mb4', '--comments', '--dump-date', '--databases', DB_DATABASE);
+	$command = array($executable, '--defaults-extra-file=' . $optionPath, '--quick', '--skip-single-transaction', '--skip-force');
+	$command[] = $tableLocks ? '--skip-lock-all-tables' : '--lock-all-tables';
+	if ($tableLocks) {
+		$command[] = '--skip-lock-tables';
+	}
+	$command[] = $skipRoutines ? '--skip-routines' : '--routines';
+	$command[] = $skipEvents ? '--skip-events' : '--events';
+	$command = array_merge($command, array('--triggers', '--hex-blob', '--no-tablespaces', '--default-character-set=utf8mb4', '--comments', '--dump-date', '--databases', DB_DATABASE));
 	$descriptors = array(0 => array('pipe', 'r'), 1 => $dump, 2 => array('pipe', 'w'));
 	$process = @proc_open($command, $descriptors, $pipes, null, null, array('bypass_shell' => true));
 	if (!is_resource($process)) {
@@ -253,6 +326,12 @@ try {
 	$process = null;
 	$flushed = fflush($dump);
 	fclose($dump);
+	if ($tableLocks) {
+		$connectionCheck = $lockDb->query('SELECT CONNECTION_ID() AS id');
+		if ($connectionCheck === false || (int)$connectionCheck->fetch_assoc()['id'] !== $lockConnectionId) {
+			throw new RuntimeException('The dedicated table-lock connection was lost; the SQL dump remains partial.');
+		}
+	}
 	if (!$cleanup()) {
 		throw new RuntimeException('Cannot remove protected temporary database options; backup remains partial.');
 	}

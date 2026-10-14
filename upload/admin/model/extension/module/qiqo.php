@@ -239,6 +239,7 @@ class ModelExtensionModuleQiqo extends Model
             $result['fetched'] = count($normalized['rows']);
             if (!$normalized['rows']) {
                 $result['success'] = true;
+                if ($apply) $this->invalidateCatalogCache();
                 return $result;
             }
             // Runtime DDL would implicitly commit a transaction. Missing
@@ -314,6 +315,7 @@ class ModelExtensionModuleQiqo extends Model
             $result['transactional'] = $transactional;
             if (!$apply || !$plan) {
                 $result['success'] = true;
+                if ($apply) $this->invalidateCatalogCache();
                 return $result;
             }
             if (!$transactional && !$this->hasCatalogMaintenanceBackup($options, $result)) {
@@ -339,6 +341,7 @@ class ModelExtensionModuleQiqo extends Model
                 $transaction = false;
             }
             $result['success'] = true;
+            $this->invalidateCatalogCache();
             $this->log('Catalog', 'END reconciliation added=' . $result['added'] . ' updated=' . $result['updated']
                 . ' unchanged=' . $result['unchanged'] . ' disabled=' . $result['disabled']);
             return $result;
@@ -360,6 +363,25 @@ class ModelExtensionModuleQiqo extends Model
                 $this->log('Catalog', 'ABORT reason=' . $result['error']);
             }
             $this->releaseQiqoWriteLock($lockName);
+        }
+    }
+
+    private function invalidateCatalogCache(): void
+    {
+        try {
+            $cache = $this->registry->get('cache');
+            if (!$cache) {
+                throw new \RuntimeException('Catalog cache is unavailable.');
+            }
+            $cache->delete('product');
+            $cache->delete('megamenu');
+        } catch (\Throwable $error) {
+            // A cache failure cannot undo an already committed catalog update.
+            try {
+                $this->log('Catalog', 'WARN catalog applied, but product/menu cache invalidation failed.');
+            } catch (\Throwable $logError) {
+                // Preserve the successful database result even if logging fails.
+            }
         }
     }
 

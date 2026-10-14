@@ -470,6 +470,8 @@ MyISAM nema transakcijski rollback. CLI zato traži maintenance i čitljiv, nepr
 
 Nakon uspješnog importa ponovno pokrenuti isti pregled: očekuje se `added=0`, `updated=0` dok ERP nije promijenjen. Provjeriti artikle 509431, 440700, 405054, traženje nepostojeće šifre 405015, Akcije, Novo, listu želja i mobilne količine. Povijest narudžbi čita spremljene stavke narudžbe (`order_product`), pa deaktivacija artikla ne uklanja povijesne stavke.
 
+Primijenjeni uvoz automatski čisti cache prefikse `product` i `megamenu` u webu i CLI-ju. Pregled ne čisti cache. Greška čišćenja zapisuje upozorenje u QIQO log, uz očuvan rezultat uspješnog upisa podataka.
+
 ### Početni rabati i datum novih artikala
 
 Pravilo cijene ostaje: partner–artikl rabat ima prednost, uključujući eksplicitnih 0%; ako zapisa nema, koristi se rabat partnera. Prazan cache nije dokaz da ERP nema posebne rabate.

@@ -135,6 +135,35 @@ catalogAssert($expected['status'] === 0 && $expected['quantity'] === 0.0, 'ERP f
 catalogAssert($expected['sort_order'] === 7 && $expected['minimum'] === 13, 'sortkatalog and decimal packaging must be normalized.');
 catalogAssert(abs($expected['price'] - 0.106) < 0.00000001, 'C-100 price precision must survive the catalog import.');
 
+$legacyPack = QiqoSyncGuard::normalizeArticleStockRows([array_merge($article,
+    ['id' => '502287', 'pak' => '12', 'pakkol' => '12', 'jm' => 'KOM', 'sortkatalog' => '6', 'aktivan' => 'true'])]);
+catalogAssert($legacyPack['valid'] && $legacyPack['rows'][0]['pak'] === 12 && $legacyPack['rows'][0]['minimum'] === 1,
+    'Legacy numeric pak values must remain intact without enabling a different purchase constraint.');
+foreach (['-1', '1.2', '128', '12oops', ''] as $badPak) {
+    catalogAssert(!QiqoSyncGuard::normalizeArticleStockRows([array_merge($article, ['pak' => $badPak])])['valid'],
+        'Malformed or out-of-range pak values must fail closed: ' . $badPak);
+}
+
+$residue = QiqoSyncGuard::normalizeArticleStockRows([array_merge($article,
+    ['id' => '402577', 'zaliha' => '2.6645352591003757E-15', 'pak' => '1', 'pakkol' => '2.7',
+        'jm' => 'MET', 'sortkatalog' => '3', 'aktivan' => 'true'])]);
+catalogAssert($residue['valid'] && $residue['rows'][0]['quantity'] === 0.0,
+    'The observed ERP scientific floating stock residue must normalize to zero.');
+foreach (['-2.6645352591003757E-15', '1E-7', '-0.00000001'] as $tinyQuantity) {
+    $stock = QiqoSyncGuard::normalizeArticleStockRows([array_merge($article, ['zaliha' => $tinyQuantity])]);
+    catalogAssert($stock['valid'] && $stock['rows'][0]['quantity'] === 0.0, 'Tiny stock residue must normalize to zero.');
+}
+foreach (['2.7E1' => 27.0, '2E-7' => 0.0000002, '-1.5e2' => -150.0] as $rawQuantity => $quantity) {
+    $stock = QiqoSyncGuard::normalizeArticleStockRows([array_merge($article, ['zaliha' => $rawQuantity])]);
+    catalogAssert($stock['valid'] && $stock['rows'][0]['quantity'] === $quantity, 'Finite scientific quantities outside the residue threshold must remain intact.');
+}
+foreach (['2.6E', 'NaN', 'INF', '1E9999', '1E10', 'zero'] as $badQuantity) {
+    $stock = QiqoSyncGuard::normalizeArticleStockRows([$article, array_merge($article, ['id' => 'BAD-STOCK', 'zaliha' => $badQuantity])]);
+    catalogAssert(!$stock['valid'], 'Malformed, non-finite or out-of-range scientific stock must reject the batch: ' . $badQuantity);
+}
+catalogAssert(!QiqoSyncGuard::normalizeArticlePriceRows([['id' => 'PRICE', 'cijena' => '2.7E1']])['valid'],
+    'Stock double compatibility must not relax the catalog price parser.');
+
 $local = array_merge($expected, ['product_id' => 5965, 'partner' => 20, 'description_product_id' => 5965,
     'name' => '', 'name_add' => '', 'description' => 'stari opis', 'description_add' => '',
     'meta_title' => '', 'status' => 1, 'quantity' => 2, 'sort_order' => 999,

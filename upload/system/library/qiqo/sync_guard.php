@@ -252,17 +252,20 @@ final class QiqoSyncGuard
                     continue 2;
                 }
             }
-            $quantity = self::parseDecimal((string)$row['zaliha']);
+            $quantity = self::parseStockQuantity((string)$row['zaliha']);
             $pack = self::parseDecimal((string)$row['pakkol']);
             $sort = self::parseDecimal((string)$row['sortkatalog']);
             $pak = is_bool($row['pak']) ? ($row['pak'] ? '1' : '0') : strtolower(trim((string)$row['pak']));
+            $pakNumber = in_array($pak, ['false', 'true'], true)
+                ? ($pak === 'true' ? 1.0 : 0.0)
+                : ($pak !== '' ? self::parseDecimal($pak) : null);
             $active = is_bool($row['aktivan']) ? ($row['aktivan'] ? '1' : '0') : strtolower(trim((string)$row['aktivan']));
             $unit = trim((string)$row['jm']);
             if ($sku === '' || strlen($sku) > 64 || preg_match('/[\x00-\x1F\x7F]/', $sku)
                 || $quantity === null || abs($quantity) > 2147483647
                 || $pack === null || $pack < 0 || $pack > 2147483647
                 || $sort === null || $sort != (int)$sort || abs($sort) > 2147483647
-                || !in_array($pak, ['0', '1', 'false', 'true'], true)
+                || $pakNumber === null || $pakNumber < 0 || $pakNumber > 127 || $pakNumber != (int)$pakNumber
                 || !in_array($active, ['0', '1', 'false', 'true'], true)
                 || strlen($unit) > 14) {
                 $invalidRows++;
@@ -271,14 +274,16 @@ final class QiqoSyncGuard
             $item = [
                 'sku' => $sku,
                 'quantity' => $quantity,
-                'pak' => in_array($pak, ['1', 'true'], true) ? 1 : 0,
+                'pak' => (int)$pakNumber,
                 'pakkol' => $pack,
                 'jm' => $unit,
                 'ean' => $unit,
                 'sort_order' => (int)$sort,
                 'status' => in_array($active, ['1', 'true'], true) ? 1 : 0,
             ];
-            $item['minimum'] = $item['pak'] ? (int)ceil($pack > 0 ? $pack : 1) : 1;
+            // Legacy ERP rows can contain a numeric pak value such as 12.
+            // Preserve it; only the established flag value 1 enables packs.
+            $item['minimum'] = $item['pak'] === 1 ? (int)ceil($pack > 0 ? $pack : 1) : 1;
             $key = 'sku:' . strtolower($sku);
             if (isset($normalized[$key]) && $normalized[$key] !== $item) {
                 $invalidRows++;
@@ -363,6 +368,20 @@ final class QiqoSyncGuard
     private static function textLength(string $value): int
     {
         return function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
+    }
+
+    private static function parseStockQuantity(string $value): ?float
+    {
+        $quantity = self::parseDecimal($value);
+        if ($quantity === null && preg_match('/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)[eE][+-]?\d+$/D', trim($value))) {
+            // qArtikliWeb can serialize floating stock residues as XML doubles.
+            // Keep this compatibility specific to stock, never catalog prices.
+            $quantity = (float)trim($value);
+        }
+        if ($quantity === null || !is_finite($quantity)) {
+            return null;
+        }
+        return abs($quantity) <= 0.0000001 ? 0.0 : $quantity;
     }
 
     /**

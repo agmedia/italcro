@@ -58,8 +58,12 @@
                     <div class="tab-pane {{ active_tab == 'sync' ? 'active' : '' }}" id="tab-sync">
                         <form action="{{ action }}" method="post">
                             <button type="submit" name="action" value="import" class="btn btn-primary">
-                                <i class="fa fa-download"></i> Pokreni import artikala
+                                <i class="fa fa-download"></i> Ponovno uvezi katalog iz ERP-a
                             </button>
+                            <button type="submit" name="action" value="preview_catalog" class="btn btn-default">
+                                <i class="fa fa-search"></i> Pregled promjena prije uvoza
+                            </button>
+                            <p class="help-block">Uvoz osvježava nazive, opise, zalihe, cijene, pakiranja, redoslijed i aktivnost postojećih artikala te dodaje nove.</p>
 
                             <hr>
 

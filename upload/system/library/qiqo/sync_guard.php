@@ -230,6 +230,142 @@ final class QiqoSyncGuard
     }
 
     /**
+     * A repeated catalog import owns the ERP fields below, but never infers
+     * deletions from absent rows. Validate the complete response before any
+     * product is changed, including the fields used by the stock-only button.
+     */
+    public static function normalizeArticleStockRows(array $rows): array
+    {
+        $normalized = [];
+        $invalidRows = 0;
+        foreach ($rows as $source) {
+            if (!is_array($source)) {
+                $invalidRows++;
+                continue;
+            }
+            $row = array_change_key_case($source, CASE_LOWER);
+            $sku = trim((string)($row['id'] ?? ''));
+            $required = ['zaliha', 'pak', 'pakkol', 'jm', 'sortkatalog', 'aktivan'];
+            foreach ($required as $field) {
+                if (!array_key_exists($field, $row)) {
+                    $invalidRows++;
+                    continue 2;
+                }
+            }
+            $quantity = self::parseDecimal((string)$row['zaliha']);
+            $pack = self::parseDecimal((string)$row['pakkol']);
+            $sort = self::parseDecimal((string)$row['sortkatalog']);
+            $pak = is_bool($row['pak']) ? ($row['pak'] ? '1' : '0') : strtolower(trim((string)$row['pak']));
+            $active = is_bool($row['aktivan']) ? ($row['aktivan'] ? '1' : '0') : strtolower(trim((string)$row['aktivan']));
+            $unit = trim((string)$row['jm']);
+            if ($sku === '' || strlen($sku) > 64 || preg_match('/[\x00-\x1F\x7F]/', $sku)
+                || $quantity === null || abs($quantity) > 2147483647
+                || $pack === null || $pack < 0 || $pack > 2147483647
+                || $sort === null || $sort != (int)$sort || abs($sort) > 2147483647
+                || !in_array($pak, ['0', '1', 'false', 'true'], true)
+                || !in_array($active, ['0', '1', 'false', 'true'], true)
+                || strlen($unit) > 14) {
+                $invalidRows++;
+                continue;
+            }
+            $item = [
+                'sku' => $sku,
+                'quantity' => $quantity,
+                'pak' => in_array($pak, ['1', 'true'], true) ? 1 : 0,
+                'pakkol' => $pack,
+                'jm' => $unit,
+                'ean' => $unit,
+                'sort_order' => (int)$sort,
+                'status' => in_array($active, ['1', 'true'], true) ? 1 : 0,
+            ];
+            $item['minimum'] = $item['pak'] ? (int)ceil($pack > 0 ? $pack : 1) : 1;
+            $key = 'sku:' . strtolower($sku);
+            if (isset($normalized[$key]) && $normalized[$key] !== $item) {
+                $invalidRows++;
+                continue;
+            }
+            $normalized[$key] = $item;
+        }
+        return ['valid' => $invalidRows === 0, 'rows' => array_values($normalized), 'invalid_rows' => $invalidRows];
+    }
+
+    public static function normalizeCatalogRows(array $articles, array $groups, array $partners): array
+    {
+        $prices = self::normalizeArticlePriceRows($articles);
+        $stock = self::normalizeArticleStockRows($articles);
+        if (!$prices['valid'] || !$stock['valid']) {
+            return ['valid' => false, 'rows' => [], 'error' => 'invalid_article_rows'];
+        }
+        $groupMap = [];
+        foreach ($groups as $source) {
+            $row = array_change_key_case((array)$source, CASE_LOWER);
+            $id = trim((string)($row['id'] ?? ''));
+            $name = trim((string)($row['naziv'] ?? ''));
+            if ($id === '' || $name === '' || self::textLength($name) > 255
+                || (isset($groupMap[$id]) && $groupMap[$id] !== $row)) {
+                return ['valid' => false, 'rows' => [], 'error' => 'invalid_group_rows'];
+            }
+            $groupMap[$id] = $row;
+        }
+        $partnerMap = [];
+        foreach ($partners as $source) {
+            $row = array_change_key_case((array)$source, CASE_LOWER);
+            $id = trim((string)($row['id'] ?? ''));
+            if ($id === '' || (isset($partnerMap[$id]) && $partnerMap[$id] !== $row)) {
+                return ['valid' => false, 'rows' => [], 'error' => 'invalid_partner_rows'];
+            }
+            $partnerMap[$id] = $row;
+        }
+        $stockMap = [];
+        foreach ($stock['rows'] as $item) {
+            $stockMap[$item['sku']] = $item;
+        }
+        $rows = [];
+        foreach ($prices['rows'] as $price) {
+            $row = array_change_key_case($price['source'], CASE_LOWER);
+            foreach (['kataloggrupa', 'gid', 'partner', 'barcode'] as $field) {
+                if (!array_key_exists($field, $row)) {
+                    return ['valid' => false, 'rows' => [], 'error' => 'missing_article_fields'];
+                }
+            }
+            $groupId = trim((string)$row['kataloggrupa']);
+            $partnerId = trim((string)$row['partner']);
+            $gid = trim((string)$row['gid']);
+            if (!isset($groupMap[$groupId], $partnerMap[$partnerId], $stockMap[$price['sku']])
+                || !preg_match('/^[0-9]+$/D', $gid) || (float)$gid > 2147483647
+                || !preg_match('/^[0-9]+$/D', $partnerId) || (float)$partnerId > 2147483647
+                || strlen($groupId) > 64 || self::textLength((string)$row['barcode']) > 64) {
+                return ['valid' => false, 'rows' => [], 'error' => 'invalid_article_reference'];
+            }
+            $group = $groupMap[$groupId];
+            $nameAdd = trim((string)($row['dimmodel'] ?? ''));
+            if (self::textLength($nameAdd) > 255) {
+                return ['valid' => false, 'rows' => [], 'error' => 'invalid_article_name'];
+            }
+            $rows[] = array_merge($stockMap[$price['sku']], [
+                'model' => trim((string)$row['barcode']),
+                'partner_id' => (int)$partnerId,
+                'gid' => (int)$gid,
+                'mpn' => $groupId,
+                'vpc' => $price['vpc'],
+                'price' => $price['price'],
+                'cent' => $price['cent'],
+                'name' => trim((string)$group['naziv']),
+                'name_add' => $nameAdd,
+                'description' => trim((string)($group['opis'] ?? '')),
+                'description_add' => trim((string)($row['opiskatalog'] ?? '')),
+                'image' => trim((string)($group['picpath'] ?? '')),
+            ]);
+        }
+        return ['valid' => true, 'rows' => $rows, 'error' => ''];
+    }
+
+    private static function textLength(string $value): int
+    {
+        return function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
+    }
+
+    /**
      * A destructive status reconciliation needs both a successful transport /
      * parse result and a validated, non-empty full article snapshot.
      */

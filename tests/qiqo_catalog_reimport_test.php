@@ -1,0 +1,208 @@
+<?php
+
+require_once __DIR__ . '/../upload/system/engine/registry.php';
+require_once __DIR__ . '/../upload/system/engine/model.php';
+require_once __DIR__ . '/../upload/system/library/config.php';
+define('DIR_STORAGE', __DIR__ . '/../storage/');
+define('DIR_SYSTEM', __DIR__ . '/../upload/system/');
+define('DB_PREFIX', 'test_');
+class Log {
+    public function __construct($file) {}
+    public function write($message) {}
+}
+function agconf($key, $default = null) {
+    return $key === 'qiqo.categories' ? [10 => 'Test category'] : $default;
+}
+require_once __DIR__ . '/../upload/admin/model/extension/module/qiqo.php';
+
+function catalogAssert($condition, $message) {
+    if (!$condition) throw new RuntimeException($message);
+}
+
+class CatalogFeedStub {
+    public $articles;
+    public $groups;
+    public $partners;
+    public $success = true;
+    public function getArticles($since = '-2 years') { return $this->articles; }
+    public function getGroups($since = '-2 years') { return $this->groups; }
+    public function getPartners($since = '-2 years') { return $this->partners; }
+    public function getLastFetchResult() { return ['success' => $this->success]; }
+}
+
+class CatalogTestModel extends ModelExtensionModuleQiqo {
+    public $feed;
+    protected function createCatalogConnection() { return $this->feed; }
+}
+
+class CatalogDbStub {
+    public $rows = [];
+    public $queries = [];
+    public $engine = 'InnoDB';
+    public $duplicates = false;
+    public $failDescription = false;
+    public $busy = false;
+    private $snapshot;
+    private $lastId = 100;
+    public function escape($value) { return addslashes((string)$value); }
+    public function getLastId() { return $this->lastId; }
+    private function result(array $rows) {
+        return (object)['num_rows' => count($rows), 'row' => $rows ? reset($rows) : [], 'rows' => array_values($rows)];
+    }
+    private function assignments($sql) {
+        preg_match_all('/`?([a-z_]+)`?\s*=\s*\'((?:\\\\.|[^\'])*)\'/i', $sql, $matches, PREG_SET_ORDER);
+        $values = [];
+        foreach ($matches as $match) $values[$match[1]] = stripslashes($match[2]);
+        return $values;
+    }
+    public function query($sql) {
+        $this->queries[] = $sql;
+        if (strpos($sql, 'GET_LOCK(') !== false) return $this->result([['acquired' => $this->busy ? 0 : 1]]);
+        if (strpos($sql, 'RELEASE_LOCK(') !== false) return $this->result([['released' => 1]]);
+        if (strpos($sql, 'SHOW COLUMNS') === 0) return $this->result([['Field' => 'present']]);
+        if (strpos($sql, 'SHOW TABLE STATUS') === 0) {
+            preg_match_all("/'(test_[a-z_]+)'/", $sql, $matches);
+            $rows = [];
+            foreach ($matches[1] as $name) $rows[] = ['Name' => $name, 'Engine' => $this->engine];
+            return $this->result($rows);
+        }
+        if (strpos($sql, 'SELECT language_id') === 0) return $this->result([['language_id' => 3]]);
+        if (strpos($sql, 'GROUP BY sku') !== false) return $this->result($this->duplicates ? [['sku' => '440700']] : []);
+        if (strpos($sql, 'SELECT p.*') === 0) return $this->result($this->rows);
+        if (strpos($sql, 'SELECT category_id') === 0) return $this->result([['category_id' => 20]]);
+        if ($sql === 'START TRANSACTION') { $this->snapshot = $this->rows; return true; }
+        if ($sql === 'ROLLBACK') { $this->rows = $this->snapshot; return true; }
+        if ($sql === 'COMMIT') { $this->snapshot = null; return true; }
+        if (preg_match('/^UPDATE `test_product` SET/', $sql)) {
+            $values = $this->assignments($sql);
+            $id = (int)$values['product_id'];
+            unset($values['product_id']);
+            $this->rows[$id] = array_merge($this->rows[$id], $values);
+            return true;
+        }
+        if (preg_match('/^(UPDATE|INSERT INTO) `test_product_description`/', $sql)) {
+            if ($this->failDescription) throw new RuntimeException('Injected description write failure.');
+            $values = $this->assignments($sql);
+            $id = (int)$values['product_id'];
+            $values['description_product_id'] = $id;
+            $this->rows[$id] = array_merge($this->rows[$id], $values);
+            return true;
+        }
+        if (strpos($sql, 'INSERT INTO test_product SET') === 0) {
+            $values = $this->assignments($sql);
+            $id = ++$this->lastId;
+            $this->rows[$id] = array_merge($values, ['product_id' => $id, 'description_product_id' => null]);
+            return true;
+        }
+        if (strpos($sql, 'INSERT INTO test_product_description SET') === 0) {
+            $values = $this->assignments($sql);
+            $id = (int)$values['product_id'];
+            $values['description_product_id'] = $id;
+            $this->rows[$id] = array_merge($this->rows[$id], $values);
+            return true;
+        }
+        if (strpos($sql, 'INSERT INTO test_product_to_') === 0) return true;
+        throw new RuntimeException('Unexpected SQL in catalog test: ' . $sql);
+    }
+    public function mutationQueries() {
+        return array_values(array_filter($this->queries, function ($sql) {
+            return preg_match('/^(INSERT|UPDATE|DELETE|TRUNCATE|ALTER|CREATE|DROP)\b/', $sql);
+        }));
+    }
+}
+
+$article = ['id' => '440700', 'cijena' => '10.60', 'cent' => 'C-100',
+    'kataloggrupa' => '10', 'gid' => '10', 'partner' => '20', 'barcode' => '123',
+    'aktivan' => 'false', 'zaliha' => '0', 'pak' => '1', 'pakkol' => '12,5',
+    'jm' => 'KOM', 'sortid' => '999', 'sortkatalog' => '7', 'dimmodel' => 'novi model',
+    'opiskatalog' => "Opis 'artikla'"];
+$groups = [['id' => '10', 'naziv' => 'Novi naziv', 'opis' => 'Opis grupe']];
+$partners = [['id' => '20', 'naziv' => 'Partner']];
+$normalized = QiqoSyncGuard::normalizeCatalogRows([$article], $groups, $partners);
+catalogAssert($normalized['valid'], 'A complete ERP catalog row must be accepted.');
+$expected = $normalized['rows'][0];
+catalogAssert($expected['status'] === 0 && $expected['quantity'] === 0.0, 'ERP false and zero stock must remain authoritative.');
+catalogAssert($expected['sort_order'] === 7 && $expected['minimum'] === 13, 'sortkatalog and decimal packaging must be normalized.');
+catalogAssert(abs($expected['price'] - 0.106) < 0.00000001, 'C-100 price precision must survive the catalog import.');
+
+$local = array_merge($expected, ['product_id' => 5965, 'partner' => 20, 'description_product_id' => 5965,
+    'name' => '', 'name_add' => '', 'description' => 'stari opis', 'description_add' => '',
+    'meta_title' => '', 'status' => 1, 'quantity' => 2, 'sort_order' => 999,
+    'date_added' => '2020-01-01 00:00:00', 'qiqo_introduced_at' => '2019-11-02',
+    'image' => 'catalog/local-photo.jpg', 'manufacturer_id' => 15]);
+$unreturned = array_merge($local, ['product_id' => 22, 'sku' => 'NOT-IN-DELTA', 'status' => 1]);
+
+function catalogFixture($article, $groups, $partners, $local, $unreturned) {
+    $db = new CatalogDbStub();
+    $db->rows = [5965 => $local, 22 => $unreturned];
+    $registry = new Registry();
+    $registry->set('db', $db);
+    $registry->set('config', new Config());
+    $model = new CatalogTestModel($registry);
+    $model->feed = new CatalogFeedStub();
+    $model->feed->articles = [$article];
+    $model->feed->groups = $groups;
+    $model->feed->partners = $partners;
+    return [$model, $db, $registry];
+}
+
+list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$preview = $model->reconcileCatalog();
+catalogAssert($preview['success'] && $preview['updated'] === 1 && $preview['disabled'] === 1, 'Dry run must report an existing SKU update and deactivation.');
+catalogAssert(!$db->mutationQueries(), 'Dry run must not change data or schema.');
+$result = $model->reconcileCatalog(true);
+catalogAssert($result['success'] && $result['updated'] === 1 && $result['added'] === 0, 'Repeated import must update the existing product, not recreate it.');
+catalogAssert($db->rows[5965]['name'] === 'Novi naziv' && $db->rows[5965]['name_add'] === 'novi model', 'Existing names and details must refresh.');
+catalogAssert((int)$db->rows[5965]['status'] === 0 && (float)$db->rows[5965]['quantity'] === 0.0 && (int)$db->rows[5965]['sort_order'] === 7, 'Status, stock and ERP catalog order must refresh together.');
+catalogAssert($db->rows[5965]['date_added'] === $local['date_added'] && $db->rows[5965]['qiqo_introduced_at'] === $local['qiqo_introduced_at'], 'Reimport must preserve both local creation and ERP introduction dates.');
+catalogAssert($db->rows[5965]['image'] === $local['image'] && $db->rows[5965]['manufacturer_id'] === 15, 'Local photos and brands must be preserved.');
+catalogAssert($db->rows[22] === $unreturned, 'A product absent from a delta must remain untouched.');
+$db->queries = [];
+$second = $model->reconcileCatalog(true);
+catalogAssert($second['success'] && $second['unchanged'] === 1 && !$db->mutationQueries(), 'An identical repeated import must be idempotent.');
+
+foreach (['zaliha', 'sortkatalog', 'aktivan', 'cijena'] as $missing) {
+    list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+    $badTail = array_merge($article, ['id' => 'BAD-TAIL']);
+    unset($badTail[$missing]);
+    $model->feed->articles[] = $badTail;
+    $result = $model->reconcileCatalog(true);
+    catalogAssert(!$result['success'] && !$db->mutationQueries(), 'A malformed tail row must prevent all catalog writes: ' . $missing);
+}
+list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$model->feed->success = false;
+catalogAssert(!$model->reconcileCatalog(true)['success'] && !$db->mutationQueries(), 'Failed transport must never mutate products.');
+list($model, $db) = catalogFixture($article, [], $partners, $local, $unreturned);
+catalogAssert(!$model->reconcileCatalog(true)['success'] && !$db->mutationQueries(), 'Missing group references must fail before writes.');
+list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$db->duplicates = true;
+catalogAssert(!$model->reconcileCatalog(true)['success'] && !$db->mutationQueries(), 'Ambiguous local SKUs must not be updated arbitrarily.');
+list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$db->busy = true;
+catalogAssert($model->reconcileCatalog(true)['error'] === 'sync_busy' && !$db->mutationQueries(), 'Concurrent catalog writers must be blocked.');
+list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$db->failDescription = true;
+$result = $model->reconcileCatalog(true);
+catalogAssert(!$result['success'] && !$result['partial'] && $db->rows[5965] === $local, 'An InnoDB write failure must roll back stock/status as well as details.');
+
+list($model, $db, $registry) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$db->engine = 'MyISAM';
+catalogAssert($model->reconcileCatalog(true)['error'] === 'maintenance_backup_required' && !$db->mutationQueries(), 'MyISAM writes require explicit maintenance and backup.');
+$backup = tempnam(sys_get_temp_dir(), 'qiqo-catalog-backup-test-');
+file_put_contents($backup, '-- private test backup');
+try {
+    $options = ['allow_nontransactional' => true, 'backup_path' => $backup];
+    catalogAssert(!$model->reconcileCatalog(true, '-2 years', $options)['success'], 'A backup cannot substitute for maintenance mode.');
+    $registry->get('config')->set('config_maintenance', '1');
+    $result = $model->reconcileCatalog(true, '-2 years', $options);
+    catalogAssert($result['success'] && $result['backup_sha256'] === hash_file('sha256', $backup), 'Explicit backed-up maintenance apply must report its backup digest.');
+} finally {
+    unlink($backup);
+}
+
+list($model, $db) = catalogFixture(array_merge($article, ['id' => 'NEW-SKU', 'aktivan' => 'true']), $groups, $partners, $local, $unreturned);
+$result = $model->reconcileCatalog(true);
+catalogAssert($result['success'] && $result['added'] === 1 && isset($db->rows[101]), 'A new SKU must be added without changing existing product IDs.');
+catalogAssert($db->rows[101]['name'] === 'Novi naziv' && $db->rows[101]['mpn'] === '10', 'New products must receive their group title and grouping reference.');
+
+echo "QIQO catalog reimport tests passed.\n";

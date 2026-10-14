@@ -5634,6 +5634,7 @@ a.button-circle {
 }
 .grid .single-product .caption .row.gray .col-md-12 {
 	display: flex;
+	flex-wrap: wrap;
 	justify-content: space-between;
 	align-items: center;
 	gap: 8px;
@@ -5654,8 +5655,9 @@ a.button-circle {
 	margin-left: 0;
 }
 .grid .single-product .caption .row.gray .col-md-6 {
-	flex: 0 0 50%;
-	max-width: 50%;
+	flex: 1 1 150px;
+	max-width: 100%;
+	min-width: 0;
 }
 .grid .single-product .caption .row.gray .col-md-6:first-child {
 	display: flex;
@@ -5667,6 +5669,15 @@ a.button-circle {
 }
 .grid .single-product .caption .row.gray .input-group.addtocart {
 	margin-left: auto;
+	display: flex;
+	width: 160px;
+	max-width: 100%;
+	float: none;
+}
+.grid .single-product .caption .row.gray .input-group.addtocart .input-group-btn {
+	display: flex;
+	flex: 0 0 auto;
+	width: auto;
 }
 .grid .single-product .caption .row.gray .price {
 	margin-bottom: 0;
@@ -5681,7 +5692,12 @@ a.button-circle {
 	padding: 6px 8px;
 }
 .grid .single-product .caption .row.gray .input-group.addtocart .input-number {
-	min-width: 48px;
+	flex: 1 1 48px;
+	width: 0;
+	min-width: 0;
+	float: none;
+	padding-left: 4px;
+	padding-right: 4px;
 }
 .grid .single-product .caption .input-group.addtocart {
 	margin-top: 6px;
@@ -6691,6 +6707,24 @@ hr {
 }
 .form-group.buy .btn.details {
 	margin-left:5px;
+}
+@media (max-width: 767px) {
+	#product .form-group.quantity.buy {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+		max-width: 100%;
+	}
+	#product .form-group.quantity.buy #button-cart {
+		flex: 1 1 170px;
+		max-width: 100%;
+		padding-left: 12px;
+		padding-right: 12px;
+		white-space: normal;
+		height: auto;
+		min-height: 44px;
+	}
 }
 .product-info .table-cell.right p.info {
 	margin-bottom:12px;

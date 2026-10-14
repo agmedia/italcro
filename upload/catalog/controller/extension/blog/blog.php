@@ -325,7 +325,7 @@ class ControllerExtensionBlogBlog extends Controller {
 				} else {
 					$rating = false;
 				}
-				if (strtotime($result['date_available']) > strtotime('-' . $this->config->get('newlabel_status') . ' day')) {
+				if (!empty($result['qiqo_is_new'])) {
 					$is_new = true;
 					} else {
 						$is_new = false;

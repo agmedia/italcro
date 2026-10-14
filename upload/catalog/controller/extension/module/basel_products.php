@@ -99,6 +99,11 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						break;
 				}
 				
+                // An empty ERP-new list must not render an empty or misleading carousel.
+                if (isset($results) && !$results && $tab['data_source'] === 'PG' && $tab['product_group'] === 'LA') {
+                    continue;
+                }
+
 				if (isset($results)) {
 				$qiqo_price_map = array();
 				$qiqo_action_article_map = array();
@@ -241,7 +246,7 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						$image2 = false;
 					}
 
-					if (strtotime($result['date_available']) > strtotime('-' . $this->config->get('newlabel_status') . ' day')) {
+					if (!empty($result['qiqo_is_new'])) {
 						$is_new = true;
 					} else {
 						$is_new = false;
@@ -344,6 +349,10 @@ class ControllerExtensionModuleBaselProducts extends Controller {
     	$data['button_cart'] = $this->language->get('button_cart');
 		
 		$data['module'] = $module++;
+
+		if (!$data['tabs']) {
+			return '';
+		}
 
 		if ($this->config->get('theme_default_directory') == 'basel')
 		return $this->load->view('extension/module/basel_products', $data);

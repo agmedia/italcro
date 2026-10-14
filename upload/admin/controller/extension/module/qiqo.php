@@ -21,17 +21,28 @@ class ControllerExtensionModuleQiqo extends Controller
 
             switch ($this->request->post['action']) {
                 case 'import':
-                    $count = $this->model_extension_module_qiqo->importArticles();
-                    if ($count < 0) {
-                        $this->session->data['error'] = 'Import je sigurnosno prekinut. Podaci nisu mijenjani; provjeri QIQO log i konfiguraciju.';
+                case 'preview_catalog':
+                    $preview = $this->request->post['action'] === 'preview_catalog';
+                    $stats = $this->model_extension_module_qiqo->reconcileCatalog(!$preview);
+                    if (!$stats['success']) {
+                        if ($stats['error'] === 'maintenance_backup_required') {
+                            $this->session->data['error'] = 'Pregled je pripremljen, ali uvoz ove baze zahtijeva kontrolirani postupak uz sigurnosnu kopiju i način održavanja. Koristi CLI uvoz kataloga.';
+                        } elseif ($stats['partial']) {
+                            $this->session->data['error'] = 'Uvoz je prekinut nakon dijela upisa. Provjeri QIQO log i sigurnosnu kopiju prije ponavljanja.';
+                        } else {
+                            $this->session->data['error'] = 'Uvoz je sigurnosno prekinut prije promjene kataloga. Provjeri QIQO log i ERP podatke.';
+                        }
                     } else {
-                        $this->session->data['success'] = "Import završen. Uvezeno {$count} novih artikala.";
+                        $prefix = $preview ? 'Pregled uvoza' : 'Uvoz završen';
+                        $this->session->data['success'] = "{$prefix}: novih {$stats['added']}, ažuriranih {$stats['updated']}, bez promjene {$stats['unchanged']}, deaktiviranih {$stats['disabled']}, ponovno aktiviranih {$stats['reactivated']}.";
                     }
                     break;
 
                 case 'update_qty':
                     $count = $this->model_extension_module_qiqo->updateQuantities();
-                    $this->session->data['success'] = "Ažurirano količina: {$count} artikala.";
+                    $this->session->data[$count < 0 ? 'error' : 'success'] = $count < 0
+                        ? 'Ažuriranje količina je prekinuto. Provjeri QIQO log i ERP podatke.'
+                        : "Ažurirano količina: {$count} artikala.";
                     break;
 
                 case 'update_price':

@@ -191,138 +191,237 @@ class ModelExtensionModuleQiqo extends Model
 
     public function importArticles(): int
     {
+        $result = $this->reconcileCatalog(true);
+        return $result['success'] ? $result['added'] + $result['updated'] : -1;
+    }
+
+    protected function createCatalogConnection()
+    {
+        return new \Agmedia\Api\Connection\Soap\Qiqo();
+    }
+
+    /**
+     * Reconcile only rows actually returned by ERP. IDs, introduction dates,
+     * local images, brands, category links and absent products are preserved.
+     * A dry run never creates schema, categories or products.
+     */
+    public function reconcileCatalog(bool $apply = false, string $since = '-2 years', array $options = []): array
+    {
+        @set_time_limit(0);
+        $result = ['success' => false, 'dry_run' => !$apply, 'fetched' => 0, 'added' => 0,
+            'updated' => 0, 'unchanged' => 0, 'disabled' => 0, 'reactivated' => 0,
+            'transactional' => false, 'partial' => false, 'error' => '', 'since' => $since];
         $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
         if (!$this->acquireQiqoWriteLock($lockName)) {
-            $this->log('Import', 'BUSY product catalog reconciliation/import is already running; no articles imported.');
-            return -1;
+            $result['error'] = 'sync_busy';
+            return $result;
         }
 
+        $transaction = false;
+        $writesStarted = false;
         try {
-            return $this->importArticlesLocked();
+            $qiqo = $this->createCatalogConnection();
+            $groupRows = $qiqo->getGroups($since);
+            $groupFetch = $qiqo->getLastFetchResult();
+            $articleRows = $qiqo->getArticles($since);
+            $articleFetch = $qiqo->getLastFetchResult();
+            $partnerRows = $qiqo->getPartners($since);
+            $partnerFetch = $qiqo->getLastFetchResult();
+            if (empty($groupFetch['success']) || empty($articleFetch['success']) || empty($partnerFetch['success'])) {
+                $result['error'] = 'erp_fetch_failed';
+                return $result;
+            }
+            $normalized = QiqoSyncGuard::normalizeCatalogRows($articleRows, $groupRows, $partnerRows);
+            if (!$normalized['valid']) {
+                $result['error'] = $normalized['error'];
+                return $result;
+            }
+            $result['fetched'] = count($normalized['rows']);
+            if (!$normalized['rows']) {
+                $result['success'] = true;
+                return $result;
+            }
+            // Runtime DDL would implicitly commit a transaction. Missing
+            // prerequisites are reported before changing any product.
+            foreach (['partner', 'pak', 'jm', 'pakkol', 'vpc', 'cent', 'mpn'] as $column) {
+                if (!$this->tableColumnExists('product', $column)) {
+                    $result['error'] = 'missing_product_column_' . $column;
+                    return $result;
+                }
+            }
+            foreach (['name_add', 'description_add'] as $column) {
+                if (!$this->tableColumnExists('product_description', $column)) {
+                    $result['error'] = 'missing_description_column_' . $column;
+                    return $result;
+                }
+            }
+            $language = $this->db->query("SELECT language_id FROM `" . DB_PREFIX . "language` WHERE code = 'hr-hr' LIMIT 1");
+            if (!$language->num_rows) {
+                $result['error'] = 'catalog_language_missing';
+                return $result;
+            }
+            $languageId = (int)$language->row['language_id'];
+            $duplicates = $this->db->query("SELECT sku FROM `" . DB_PREFIX . "product` WHERE sku <> '' GROUP BY sku HAVING COUNT(*) > 1 LIMIT 1");
+            if ($duplicates->num_rows) {
+                $result['error'] = 'duplicate_local_sku';
+                return $result;
+            }
+            $existing = [];
+            $localRows = $this->db->query("SELECT p.*, pd.product_id AS description_product_id,
+                pd.name, pd.name_add, pd.description, pd.description_add, pd.meta_title
+                FROM `" . DB_PREFIX . "product` p
+                LEFT JOIN `" . DB_PREFIX . "product_description` pd ON pd.product_id = p.product_id AND pd.language_id = '" . $languageId . "'
+                WHERE p.sku <> ''");
+            foreach ($localRows->rows as $local) {
+                $key = 'sku:' . strtolower(trim((string)$local['sku']));
+                if (isset($existing[$key])) {
+                    $result['error'] = 'duplicate_local_sku';
+                    return $result;
+                }
+                $existing[$key] = $local;
+            }
+            $plan = [];
+            foreach ($normalized['rows'] as $data) {
+                $data['language_id'] = $languageId;
+                $key = 'sku:' . strtolower($data['sku']);
+                $local = $existing[$key] ?? null;
+                if (!$local) {
+                    $result['added']++;
+                } elseif ($this->catalogProductMatches($local, $data)) {
+                    $result['unchanged']++;
+                    continue;
+                } else {
+                    $result['updated']++;
+                    if ((int)$local['status'] !== $data['status']) {
+                        $result[$data['status'] ? 'reactivated' : 'disabled']++;
+                    }
+                }
+                $plan[] = ['local' => $local, 'data' => $data];
+            }
+            $tables = ['product', 'product_description'];
+            if ($result['added']) {
+                $tables = array_merge($tables, ['product_to_category', 'product_to_store', 'category', 'category_description', 'category_to_store']);
+            }
+            $tableNames = [];
+            foreach ($tables as $table) {
+                $tableNames[] = "'" . $this->db->escape(DB_PREFIX . $table) . "'";
+            }
+            $engines = $this->db->query('SHOW TABLE STATUS WHERE Name IN (' . implode(',', $tableNames) . ')');
+            $transactional = $engines->num_rows === count($tables);
+            foreach ($engines->rows as $table) {
+                $transactional = $transactional && strcasecmp((string)$table['Engine'], 'InnoDB') === 0;
+            }
+            $result['transactional'] = $transactional;
+            if (!$apply || !$plan) {
+                $result['success'] = true;
+                return $result;
+            }
+            if (!$transactional && !$this->hasCatalogMaintenanceBackup($options, $result)) {
+                $result['error'] = 'maintenance_backup_required';
+                return $result;
+            }
+            if ($transactional) {
+                $this->db->query('START TRANSACTION');
+                $transaction = true;
+            }
+            foreach ($plan as $item) {
+                $writesStarted = true;
+                if ($item['local']) {
+                    $this->updateCatalogProduct($item['local'], $item['data']);
+                } else {
+                    $data = $item['data'];
+                    $data['category_id'] = $this->resolveOrCreateCategory($data['gid']);
+                    $this->createProduct($data);
+                }
+            }
+            if ($transaction) {
+                $this->db->query('COMMIT');
+                $transaction = false;
+            }
+            $result['success'] = true;
+            $this->log('Catalog', 'END reconciliation added=' . $result['added'] . ' updated=' . $result['updated']
+                . ' unchanged=' . $result['unchanged'] . ' disabled=' . $result['disabled']);
+            return $result;
         } catch (\Throwable $error) {
-            $this->log('Import', 'ABORT article import failed; no success reported.');
-            return -1;
+            if ($transaction) {
+                try {
+                    $this->db->query('ROLLBACK');
+                    $writesStarted = false;
+                } catch (\Throwable $rollbackError) {
+                    // Report a possibly partial run; never claim rollback.
+                }
+            }
+            $result['partial'] = $writesStarted;
+            $result['error'] = 'catalog_sync_failed';
+            $this->log('Catalog', 'ABORT reconciliation; partial=' . ($writesStarted ? '1' : '0'));
+            return $result;
         } finally {
+            if (!$result['success'] && $result['error'] !== '') {
+                $this->log('Catalog', 'ABORT reason=' . $result['error']);
+            }
             $this->releaseQiqoWriteLock($lockName);
         }
     }
 
-    private function importArticlesLocked(): int
+    private function catalogProductMatches(array $local, array $data): bool
     {
-        try {
-            $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
-            $groupRows = $qiqo->getGroups();
-            $groupFetch = $qiqo->getLastFetchResult();
-            $articleRows = $qiqo->getArticles();
-            $articleFetch = $qiqo->getLastFetchResult();
-            $partnerRows = $qiqo->getPartners();
-            $partnerFetch = $qiqo->getLastFetchResult();
-        } catch (\Throwable $error) {
-            $this->log('Import', 'ABORT QIQO transport/configuration failure; no articles imported.');
-            return -1;
+        if (empty($local['description_product_id'])) {
+            return false;
         }
-
-        $normalizedArticles = QiqoSyncGuard::normalizeArticlePriceRows((array)$articleRows);
-        if (empty($groupFetch['success']) || empty($articleFetch['success']) || empty($partnerFetch['success'])
-            || !$normalizedArticles['valid'] || !QiqoSyncGuard::validateArticleImportSchema($normalizedArticles)) {
-            $this->log('Import', 'ABORT QIQO feed/schema validation failed; no articles imported.');
-            return -1;
-        }
-
-        if (!$normalizedArticles['rows']) {
-            $this->log('Import', 'EMPTY qArtikliWeb returned no rows; no articles imported.');
-            return 0;
-        }
-
-        $groups = collect((array)$groupRows);
-        $partners = collect((array)$partnerRows);
-        foreach ($normalizedArticles['rows'] as $item) {
-            $source = $item['source'];
-            if (!$groups->firstWhere('id', $source['kataloggrupa']) || !$partners->firstWhere('id', $source['partner'])) {
-                $this->log('Import', 'ABORT QIQO article references a missing group/partner row; no articles imported.');
-                return -1;
+        foreach (['model', 'cent', 'jm', 'ean', 'mpn', 'name', 'name_add', 'description', 'description_add'] as $field) {
+            if ((string)($local[$field] ?? '') !== (string)$data[$field]) {
+                return false;
             }
         }
-
-        // Runtime compatibility checks happen only after the entire upstream
-        // batch has validated, so malformed feeds cannot trigger product writes.
-        $this->ensureProductPartnerColumn();
-        $this->ensureProductPakColumn();
-        $this->ensureProductJmColumn();
-        $this->ensureProductPakkolColumn();
-        $this->ensureProductVpcColumn();
-
-        $imported = 0;
-
-        foreach ($normalizedArticles['rows'] as $item) {
-            $a = $item['source'];
-            $a['id'] = $item['sku'];
-            // ⚙️ Provjera postoji li već proizvod (po SKU)
-            $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '" . $this->db->escape($a['id']) . "' LIMIT 1");
-
-            if ($exists->num_rows) {
-                continue; // preskoči ako postoji
-            }
-
-            // ⚙️ Nađi grupu
-            $group = $groups->firstWhere('id', $a['kataloggrupa']);
-
-            $partner = $partners->firstWhere('id', $a['partner']);
-
-            // ⚙️ Nađi ili kreiraj kategoriju
-            $category_id = $this->resolveOrCreateCategory((int) $a['gid']);
-
-            $name = trim((string) ($group['naziv'] ?? 'Artikl ' . $a['id']));
-            $dimmodel = trim((string)($a['dimmodel'] ?? ''));
-            $opiskatalog  = trim((string)($a['opiskatalog'] ?? ''));
-            $vpc = (float)$item['vpc'];
-            $price = (float)$item['price'];
-            $cent = $item['cent'] !== '' ? $item['cent'] : null;
-            $sortid = (int)($a['sortid'] ?? 0);
-
-            /*if ($dimmodel != '' || $dimmodel != '-') {
-                $name = $name . ' ' . $dimmodel;
-            }*/
-
-            $jm = trim((string)($a['jm'] ?? ''));
-            $pakkol = (float)($a['pakkol'] ?? 0);
-            $minimum = 1;
-
-            if (!empty($a['pak']) && (int)$a['pak'] === 1) {
-                $minimum = (int)ceil($pakkol > 0 ? $pakkol : 1);
-            }
-
-            $data = [
-                'model'       => $a['barcode'],
-                'sku'         => $a['id'],
-                'partner_id'  => (int)($a['partner'] ?? 0),
-                'ean'         => $jm,
-                'jm'          => $jm,
-                'pakkol'      => $pakkol,
-                'quantity'    => (float) ($a['zaliha'] ?? 0),
-                'price'       => $price,
-                'vpc'         => $vpc,
-                'cent'        => $cent,
-                'pak'         => (int)($a['pak'] ?? 0),
-                'minimum'     => $minimum,
-                'sort_order'  => $sortid,
-                'status'      => in_array(strtolower(trim((string)$a['aktivan'])), ['1', 'true'], true) ? 1 : 0,
-                'image'       => $group['picpath'] ?? '',
-                'category_id' => $category_id,
-                'name'        => $name,
-                'name_add'    => $dimmodel,
-                'isbn' => trim($partner['naziv'] ?? ''),
-                'description' => trim($group['opis'] ?? ''),
-                'description_add' => $opiskatalog
-            ];
-
-            $this->createProduct($data);
-            $imported++;
+        if ((string)($local['meta_title'] ?? '') !== $data['name']) {
+            return false;
         }
+        foreach (['quantity', 'price', 'vpc', 'pak', 'pakkol', 'minimum', 'sort_order', 'status'] as $field) {
+            if (abs((float)$local[$field] - (float)$data[$field]) > 0.00000005) {
+                return false;
+            }
+        }
+        return (int)$local['partner'] === $data['partner_id'];
+    }
 
-        $this->log('Import', "{$imported} novih artikala uvezeno.");
+    private function updateCatalogProduct(array $local, array $data): void
+    {
+        $productId = (int)$local['product_id'];
+        $assignments = [];
+        foreach (['model', 'ean', 'jm', 'cent', 'mpn', 'quantity', 'price', 'vpc', 'pak', 'pakkol', 'minimum', 'sort_order', 'status'] as $field) {
+            $assignments[] = '`' . $field . "` = '" . $this->db->escape((string)$data[$field]) . "'";
+        }
+        $assignments[] = "partner = '" . (int)$data['partner_id'] . "'";
+        $assignments[] = 'date_modified = NOW()';
+        $this->db->query("UPDATE `" . DB_PREFIX . "product` SET " . implode(', ', $assignments) . " WHERE product_id = '" . $productId . "'");
+        $descriptionAssignments = [];
+        foreach (['name', 'name_add', 'description', 'description_add'] as $field) {
+            $descriptionAssignments[] = '`' . $field . "` = '" . $this->db->escape($data[$field]) . "'";
+        }
+        $descriptionAssignments[] = "meta_title = '" . $this->db->escape($data['name']) . "'";
+        if (empty($local['description_product_id'])) {
+            $this->db->query("INSERT INTO `" . DB_PREFIX . "product_description` SET product_id = '" . $productId
+                . "', language_id = '" . (int)$data['language_id'] . "', " . implode(', ', $descriptionAssignments));
+        } else {
+            $this->db->query("UPDATE `" . DB_PREFIX . "product_description` SET " . implode(', ', $descriptionAssignments)
+                . " WHERE product_id = '" . $productId . "' AND language_id = '" . (int)$data['language_id'] . "'");
+        }
+    }
 
-        return $imported;
+    private function hasCatalogMaintenanceBackup(array $options, array &$result): bool
+    {
+        if (PHP_SAPI !== 'cli' || empty($options['allow_nontransactional'])
+            || (string)$this->config->get('config_maintenance') !== '1') {
+            return false;
+        }
+        $path = realpath((string)($options['backup_path'] ?? ''));
+        $webRoot = realpath(dirname(rtrim(DIR_SYSTEM, '/\\')));
+        if (!$path || !$webRoot || !is_file($path) || !is_readable($path) || filesize($path) <= 0
+            || $path === $webRoot || strpos($path, $webRoot . DIRECTORY_SEPARATOR) === 0) {
+            return false;
+        }
+        $result['backup_sha256'] = hash_file('sha256', $path);
+        return (bool)$result['backup_sha256'];
     }
 
     public function updateArticlePartners(): array
@@ -404,46 +503,47 @@ class ModelExtensionModuleQiqo extends Model
 
     public function updateQuantities(): int
     {
-        $qiqo     = new \Agmedia\Api\Connection\Soap\Qiqo();
-        $hasPakColumn = $this->ensureProductPakColumn();
-        $hasJmColumn = $this->ensureProductJmColumn();
-        $hasPakkolColumn = $this->ensureProductPakkolColumn();
-        $articles = collect($qiqo->getArticles());
-        $updated  = 0;
-
-        $this->log('Quantities', '=== START UPDATE QUANTITIES (with pak/pakkol) ===');
-
-        foreach ($articles as $a) {
-            $sku = $this->db->escape($a['id']);
-            $exists = $this->db->query("SELECT product_id, quantity, minimum FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
-
-            if (! $exists->num_rows) continue;
-
-            $product_id = (int)$exists->row['product_id'];
-            $quantity   = (float)($a['zaliha'] ?? 0);
-            $pak        = (int)($a['pak'] ?? 0);
-            $pakkol     = (float)($a['pakkol'] ?? 0);
-            $jm         = trim((string)($a['jm'] ?? ''));
-            $sortid     = (int)($a['sortid'] ?? 0);
-            $pakSql     = $hasPakColumn ? "pak = '{$pak}', " : "";
-            $jmSql      = $hasJmColumn ? "jm = '" . $this->db->escape($jm) . "', " : "";
-            $pakkolSql  = $hasPakkolColumn ? "pakkol = '" . (float)$pakkol . "', " : "";
-            $minimum    = $pak === 1 ? (int)ceil($pakkol > 0 ? $pakkol : 1) : 1;
-
-            $this->db->query("UPDATE " . DB_PREFIX . "product
-                              SET quantity = '{$quantity}',
-                                  {$pakSql}{$jmSql}{$pakkolSql}
-                                  minimum = '{$minimum}',
-                                  ean = '" . $this->db->escape($jm) . "',
-                                  sort_order = '{$sortid}',
-                                  date_modified = NOW()
-                              WHERE product_id = '{$product_id}'");
-
-            $updated++;
+        $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
+        if (!$this->acquireQiqoWriteLock($lockName)) {
+            return -1;
         }
-
-        $this->log('Quantities', "=== END UPDATE | Ažurirano {$updated} proizvoda ===");
-        return $updated;
+        try {
+            $qiqo = $this->createCatalogConnection();
+            $rows = $qiqo->getArticles();
+            $fetchResult = $qiqo->getLastFetchResult();
+            $normalized = QiqoSyncGuard::normalizeArticleStockRows($rows);
+            if (empty($fetchResult['success']) || !$normalized['valid']) {
+                $this->log('Quantities', 'ABORT invalid ERP stock batch; existing stock preserved.');
+                return -1;
+            }
+            if (!$normalized['rows']) {
+                return 0;
+            }
+            $hasPakColumn = $this->ensureProductPakColumn();
+            $hasJmColumn = $this->ensureProductJmColumn();
+            $hasPakkolColumn = $this->ensureProductPakkolColumn();
+            $updated = 0;
+            foreach ($normalized['rows'] as $a) {
+                $sku = $this->db->escape($a['sku']);
+                $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
+                if (!$exists->num_rows) continue;
+                $productId = (int)$exists->row['product_id'];
+                $assignments = ["quantity = '" . $a['quantity'] . "'", "minimum = '" . $a['minimum'] . "'",
+                    "ean = '" . $this->db->escape($a['ean']) . "'", "sort_order = '" . $a['sort_order'] . "'", 'date_modified = NOW()'];
+                if ($hasPakColumn) $assignments[] = "pak = '" . $a['pak'] . "'";
+                if ($hasJmColumn) $assignments[] = "jm = '" . $this->db->escape($a['jm']) . "'";
+                if ($hasPakkolColumn) $assignments[] = "pakkol = '" . $a['pakkol'] . "'";
+                $this->db->query("UPDATE " . DB_PREFIX . "product SET " . implode(', ', $assignments) . " WHERE product_id = '" . $productId . "'");
+                $updated++;
+            }
+            $this->log('Quantities', "END stock update rows={$updated}");
+            return $updated;
+        } catch (\Throwable $error) {
+            $this->log('Quantities', 'ABORT stock update failed; check catalog sync log.');
+            return -1;
+        } finally {
+            $this->releaseQiqoWriteLock($lockName);
+        }
     }
 
 
@@ -1934,6 +2034,7 @@ class ModelExtensionModuleQiqo extends Model
         $this->db->query("INSERT INTO " . DB_PREFIX . "product SET
         model = '" . $this->db->escape($data['model']) . "',
         sku = '" . $this->db->escape($data['sku']) . "',
+        mpn = '" . $this->db->escape($data['mpn'] ?? '') . "',
         " . $partnerSql . "
         quantity = '" . (float) $data['quantity'] . "',
         price = '" . (float) $data['price'] . "',
@@ -1946,7 +2047,7 @@ class ModelExtensionModuleQiqo extends Model
         sort_order = '" . (int) $data['sort_order'] . "',
         status = '" . (int) $data['status'] . "',
         image = '" . $this->db->escape($image_path) . "',
-        upc = '" . $data['image'] . "',
+        upc = '" . $this->db->escape($data['image']) . "',
          ean = '" . $this->db->escape($data['ean']) . "',
         date_added = NOW(),
         date_modified = NOW()");
@@ -1956,7 +2057,7 @@ class ModelExtensionModuleQiqo extends Model
         // 🔹 Opis
         $this->db->query("INSERT INTO " . DB_PREFIX . "product_description SET
         product_id = '" . (int) $product_id . "',
-        language_id = 3,
+        language_id = '" . (int)($data['language_id'] ?? 3) . "',
         name = '" . $this->db->escape($data['name']) . "',
         name_add = '" . $this->db->escape($data['name_add']) . "',
         description = '" . $this->db->escape($data['description']) . "',

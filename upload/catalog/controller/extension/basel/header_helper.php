@@ -119,6 +119,9 @@
 	if ($this->config->get('primary_menu') > 0) {
 		$data['primary_menu_desktop'] = $this->model_extension_basel_basel_megamenu->getMenu($this->config->get('primary_menu'), $mobile = false);
 		$data['primary_menu_mobile'] = $this->model_extension_basel_basel_megamenu->getMenu($this->config->get('primary_menu'), $mobile = true);
+        require_once(DIR_SYSTEM . 'library/qiqo/primary_menu.php');
+        $data['primary_menu_desktop'] = QiqoPrimaryMenu::normalize($data['primary_menu_desktop'], (int)$lang_id, $this->url->link('product/new_product'));
+        $data['primary_menu_mobile'] = QiqoPrimaryMenu::normalize($data['primary_menu_mobile'], (int)$lang_id, $this->url->link('product/new_product'));
 	}
 	if ($this->config->get('secondary_menu') > 0) {
 		$data['secondary_menu_desktop'] = $this->model_extension_basel_basel_megamenu->getMenu($this->config->get('secondary_menu'), $mobile = false);
@@ -148,7 +151,7 @@
 	$route = (string)$this->request->get['route'];
 	if (isset($this->request->get['product_id'])) {
 		$data['basel_body_class'] .= ' ' . $this->config->get('basel_titles_product');
-	} elseif (isset($this->request->get['path']) || isset($this->request->get['manufacturer_id']) || ($route == 'product/search') || ($route == 'product/special')) {
+	} elseif (isset($this->request->get['path']) || isset($this->request->get['manufacturer_id']) || ($route == 'product/search') || ($route == 'product/special') || ($route == 'product/new_product')) {
 		$data['basel_body_class'] .= ' ' . $this->config->get('basel_titles_listings');
 	} elseif (preg_match('(affiliate|account)', $route) === 1) {
 		$data['basel_body_class'] .= ' ' . $this->config->get('basel_titles_account');

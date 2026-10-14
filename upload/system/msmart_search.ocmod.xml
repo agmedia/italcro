@@ -31,7 +31,7 @@
 					$results = Msmart_Search::make( $this )->getProducts();
 				
 					$recommended_data = $this->config->get( 'msmart_search_recommended' );
-					if ($product_total == 0 && !empty($recommended_data['recommended_in_search_page'])) {
+					if ($product_total == 0 && !QiqoCatalogSearch::isArticleCode(isset($filter_data['filter_name']) ? $filter_data['filter_name'] : '') && !empty($recommended_data['recommended_in_search_page'])) {
 						
 						foreach($recommended_data['recommended_products'] as $product_id) {
 							$product_info = $this->model_catalog_product->getProduct($product_id);

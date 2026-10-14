@@ -173,7 +173,7 @@ class ModelExtensionBaselBaselMegamenu extends Model {
 			
 			$date_end = false;
 			$is_single_article = !$product || empty($product['mpn']) || !isset($product['mpn_count']) || (int)$product['mpn_count'] <= 1;
-			if (!empty($product['date_available']) && strtotime($product['date_available']) > strtotime('-' . $this->config->get('newlabel_status') . ' day')) {
+			if (!empty($product['qiqo_is_new'])) {
 				$is_new = true;
 			} else {
 				$is_new = false;

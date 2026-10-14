@@ -1,6 +1,6 @@
 # Italcro Revizija 3.0/3.1 — deploy i redoslijed ažuriranja
 
-Zadnje ažuriranje: 2026-10-06
+Zadnje ažuriranje: 2026-10-14
 
 Ovo je runbook za produkcijski deploy promjena Revizije 3.0 i 3.1, sigurnog QIQO synca i pripreme `NarudzbaSend` outboxa. Vanjsko slanje narudžbi, početno partner–artikl punjenje i destruktivni FULL syncovi namjerno su ugašeni dok se ne ispune niže navedeni uvjeti.
 
@@ -433,3 +433,67 @@ Nikada ne vraćati stare javne debug/feed skripte ni kompromitirane vjerodajnice
 - [ ] outbox reconciliation dry-run = 0
 - [ ] maintenance isključen tek nakon smokea
 - [ ] FULL sync i NarudzbaSend nisu uključeni bez zasebne potvrde
+
+## 7. Revizija 3.2 — ponovni uvoz i ispravci kataloga
+
+Ponovni uvoz sada osvježava i postojeće SKU-ove: naziv/opis, grupu, cijene, količine, pakiranje, `sortkatalog` i `aktivan`. `aktivan=false` deaktivira artikl bez brisanja. ID artikla, povijesne narudžbe, lokalne slike, brendovi, kategorije i datumi uvođenja ostaju sačuvani. Artikli izostavljeni iz inkrementalnog odgovora ne deaktiviraju se.
+
+Numeričke šifre u standardnoj, Mega Smart, autocomplete i brzoj pretrazi uspoređuju se s punim SKU-om ili barkodom. Lista želja označava kada treba odabrati varijantu/opcije; mobilne kontrole količine prelamaju se unutar kartice. Glavni meni sadrži redom Brza narudžba, Novo, Akcije, Blog, Brandovi i Letak.
+
+### Postavljanje i kontrolirani ponovni uvoz
+
+Primjenjuju se backup i maintenance koraci iz prethodnih odjeljaka. Prije bilo kakvog produkcijskog upisa sačuvati kod, lokalne razlike i postojeći OCMOD. Produkcija može imati lokalne promjene `php.ini`, `robots.txt` i generiranih slika; ne resetirati checkout.
+
+Nakon postavljanja koda, uz uključen maintenance, napraviti provjeren puni dump izvan web direktorija. Skripta bez `--apply` samo provjerava uvjete:
+
+```bash
+php scripts/backup_qiqo_database.php --output-dir=/home/amds/private-backups/italcro
+php scripts/backup_qiqo_database.php --output-dir=/home/amds/private-backups/italcro --apply
+php scripts/run_sql_migration.php upload/migration/2026-10-14_qiqo_product_introduction_date.sql
+php scripts/sync_rev32_modifications.php
+php scripts/sync_rev32_modifications.php --apply
+php scripts/refresh_opencart_modifications.php
+php scripts/sync_qiqo_catalog.php
+```
+
+`sync_rev32_modifications.php` mijenja samo postojeći Baselov uvjet za oznaku Novo, čuvajući instalirane prilagodbe. Mega Smart Search učitava se iz `system/msmart_search.ocmod.xml` pri standardnom osvježavanju; ne dodavati duplu DB modifikaciju.
+
+Pregled kataloga ispisuje broj novih, promijenjenih, nepromijenjenih, deaktiviranih i ponovno aktiviranih artikala. Cijeli ERP odgovor, reference i lokalni SKU-ovi validiraju se prije upisa. Ako postojeća shema nema obavezne stupce, postupak staje; ne zaobilaziti provjeru. Zadani ERP interval je posljednje dvije godine; za drukčiji dogovoreni početak koristiti eksplicitni `--since=YYYY-MM-DD`.
+
+Za produkcijske MyISAM tablice primijeniti pregledani plan uz stvarni upravo napravljeni dump:
+
+```bash
+php scripts/sync_qiqo_catalog.php --apply --allow-nontransactional --backup=/home/amds/private-backups/italcro/STVARNI-BACKUP.sql
+```
+
+MyISAM nema transakcijski rollback. CLI zato traži maintenance i čitljiv, neprazan backup izvan weba te ispisuje njegov SHA-256. Ako prijavi `partial=true`, ostaviti maintenance i provjeriti zahvaćene podatke/backup prije nastavka. Na InnoDB tablicama koristi transakciju. FULL zastavice i slanje narudžbi ovim se postupkom ne uključuju.
+
+Nakon uspješnog importa ponovno pokrenuti isti pregled: očekuje se `added=0`, `updated=0` dok ERP nije promijenjen. Provjeriti artikle 509431, 440700, 405054, traženje nepostojeće šifre 405015, Akcije, Novo, listu želja i mobilne količine. Povijest narudžbi čita spremljene stavke narudžbe (`order_product`), pa deaktivacija artikla ne uklanja povijesne stavke.
+
+### Početni rabati i datum novih artikala
+
+Pravilo cijene ostaje: partner–artikl rabat ima prednost, uključujući eksplicitnih 0%; ako zapisa nema, koristi se rabat partnera. Prazan cache nije dokaz da ERP nema posebne rabate.
+
+Za provjereni početni CSV/XML izvoz, opcionalno gzip, dodan je importer koji obrađuje redove postupno i puni privremeni staging. Potreban je ERP manifest: točan broj redaka, SHA-256, početni datum i watermark izvoza. Ne izmišljati te vrijednosti iz procjene od dva milijuna redaka.
+
+```bash
+php scripts/import_qiqo_partner_discounts.php --source=/home/amds/private-exports/rabati.xml.gz --expected-count=ERP_BROJ --sha256=ERP_SHA256 --since='2026-08-01 00:00:00' --watermark='ERP_DATUM_I_VRIJEME'
+```
+
+Tek nakon prolaska provjere ponoviti isti poziv s `--apply`. Importer provjerava cjelovitost gzipa/XML-a/CSV-a, broj i hash, konfliktne duplikate i vremenski interval. Ne briše stare rabate. Cache i watermark upisuje u jednoj InnoDB transakciji, a `initial_complete=1` objavljuje nakon uspješnog commita. Postojeća MyISAM `setting` tablica ne mora se konvertirati. Neuspjela objava readiness zastavice ostavlja potrebu za provjerom; nije razlog za ručno otključavanje browser importa.
+
+`qiqo_introduced_at` je nullable datum za pravilo tri kalendarska mjeseca. ERP još mora potvrditi naziv i značenje izvornog API polja. Ne puni se iz `date_added`, `date_available` ni datuma reimporta. Dok nema potvrđenih datuma, Novo prikazuje prazno stanje, a prazan „Novo u ponudi” carousel se ne prikazuje. Novo pravilo dostave također ostaje na čekanju dogovorenih poslovnih detalja.
+
+### Lokalna provjera Revizije 3.2
+
+Uz postojeće pricing/sync/cart provjere prolaze novi catalog, discount reader i Novo testovi. Testove s prefiksom `local_` pokretati samo nad lokalnom kopijom: koriste privremene/izolirane fixture tablice ili postojeće lokalne smoke račune.
+
+```bash
+herd php tests/qiqo_catalog_reimport_test.php
+herd php tests/qiqo_discount_import_test.php
+herd php tests/qiqo_new_product_test.php
+herd php tests/local_qiqo_discount_import_test.php
+herd php tests/local_qiqo_new_product_test.php
+herd php tests/local_rev32_search_test.php
+herd php tests/local_rev32_http_test.php
+```

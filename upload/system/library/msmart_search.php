@@ -1,4 +1,5 @@
 <?php
+require_once(DIR_SYSTEM . 'library/qiqo/catalog_search.php');
 
 class Msmart_Search {
 	
@@ -149,7 +150,7 @@ class Msmart_Search {
 			$this->_ctrl->model_extension_module_msmart_search->addToDatabase( $phrase );
 		}
 		
-		if( isset( $this->_data['filter_name'] ) ) {
+		if( isset( $this->_data['filter_name'] ) && !QiqoCatalogSearch::isArticleCode($this->_data['filter_name']) ) {
 			$this->_ctrl->load->model('extension/module/msmart_search');
 			
 			if(($replacedPhrase = $this->_ctrl->model_extension_module_msmart_search->checkPhrase($this->_data['filter_name'])) !== false){
@@ -157,7 +158,7 @@ class Msmart_Search {
 			}
 		}
 		
-		if( isset( $this->_data['filter_tag'] ) ) {
+		if( isset( $this->_data['filter_tag'] ) && !QiqoCatalogSearch::isArticleCode($this->_data['filter_tag']) ) {
 			$this->_ctrl->load->model('extension/module/msmart_search');
 			
 			if(($replacedPhrase = $this->_ctrl->model_extension_module_msmart_search->checkPhrase($this->_data['filter_tag'])) !== false){
@@ -192,9 +193,8 @@ class Msmart_Search {
 			} else {
 				$sql = preg_replace( '/\s+LIMIT\s+[0-9]+(,\s*[0-9]+)?$/i', '', trim( $sql ) );
                 $count += $this->cacheQuery(
-                    "SELECT COUNT(DISTINCT mpn) AS total 
-     FROM (" . $sql . ") AS tmp 
-     WHERE mpn IS NOT NULL AND mpn <> ''"
+                    "SELECT COUNT(DISTINCT CASE WHEN mpn IS NULL OR mpn = '' THEN CONCAT('product:', product_id) ELSE CONCAT('mpn:', mpn) END) AS total
+     FROM (" . $sql . ") AS tmp"
                 )->row['total'];
 			}
 		}
@@ -877,6 +877,13 @@ class Msmart_Search {
 	
 	private function findResults( $groups, $sql, $columns, $originalConditions ) {
 		if( $this->_results !== null ) return;
+
+		if (isset($this->_data['filter_name']) && QiqoCatalogSearch::isArticleCode($this->_data['filter_name'])) {
+			$conditions = $originalConditions;
+			$conditions[] = QiqoCatalogSearch::articleCodeCondition($this->db, $this->_data['filter_name']);
+			$this->query($columns, $conditions, $sql);
+			return;
+		}
 		
 		if( ! empty( $this->_data['filter_name'] ) ) {
 			/* @var $word_groups array */

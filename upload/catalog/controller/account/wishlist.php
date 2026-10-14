@@ -120,6 +120,26 @@ class ControllerAccountWishList extends Controller {
 			$minimum_step = $this->qiqoMinimumStep($product_info['cent'], $pak, $minimum);
 			$sku = trim((string)$product_info['sku']);
 			$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
+			$selection_label = 'Odaberi artikl';
+			$selection_hint = 'Odaberite točnu varijantu artikla prije dodavanja u košaricu.';
+			$can_add_to_cart = $is_single_article;
+
+			if ($is_single_article) {
+				foreach ($this->model_catalog_product->getProductOptions($product_info['product_id']) as $option) {
+					if (!empty($option['required'])) {
+						$can_add_to_cart = false;
+						$selection_label = 'Odaberi opcije';
+						$selection_hint = 'Odaberite obavezne opcije artikla prije dodavanja u košaricu.';
+						break;
+					}
+				}
+
+				if ($can_add_to_cart && $this->model_catalog_product->getProfiles($product_info['product_id'])) {
+					$can_add_to_cart = false;
+					$selection_label = 'Odaberi plan';
+					$selection_hint = 'Odaberite plan plaćanja prije dodavanja u košaricu.';
+				}
+			}
 
 			if ($is_single_article && $this->qiqoIsC100($product_info['cent'])) {
 				$data['wishlist_has_c100'] = true;
@@ -171,6 +191,9 @@ class ControllerAccountWishList extends Controller {
 				'minimumifc100' => $minimum_step,
 				'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($product_info),
 				'is_single_article' => $is_single_article,
+				'can_add_to_cart' => $can_add_to_cart,
+				'selection_label' => $selection_label,
+				'selection_hint' => $selection_hint,
 				'qiqo_discount_percent' => $discount_percent,
 				'qiqo_action' => !empty($action_conditions),
 				'qiqo_action_conditions' => $action_conditions,

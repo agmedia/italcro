@@ -1,5 +1,7 @@
 <?php
 require_once(DIR_SYSTEM . 'library/qiqo/pricing_resolver.php');
+require_once(DIR_SYSTEM . 'library/qiqo/new_product.php');
+require_once(DIR_SYSTEM . 'library/qiqo/catalog_search.php');
 
 class ModelCatalogProduct extends Model {
 	private $qiqo_base_tables_ready = null;
@@ -120,6 +122,8 @@ class ModelCatalogProduct extends Model {
 				'points'           => $query->row['points'],
 				'tax_class_id'     => $query->row['tax_class_id'],
 				'date_available'   => $query->row['date_available'],
+				'qiqo_introduced_at' => $query->row['qiqo_introduced_at'] ?? null,
+				'qiqo_is_new'      => QiqoNewProduct::isNew($query->row),
 				'weight'           => $query->row['weight'],
 				'weight_class_id'  => $query->row['weight_class_id'],
 				'length'           => $query->row['length'],
@@ -182,7 +186,9 @@ class ModelCatalogProduct extends Model {
             }
         }
 
-        if (!empty($data['filter_name']) || !empty($data['filter_tag'])) {
+        if (isset($data['filter_name']) && QiqoCatalogSearch::isArticleCode($data['filter_name'])) {
+            $sql .= " AND " . QiqoCatalogSearch::articleCodeCondition($this->db, $data['filter_name']);
+        } elseif (!empty($data['filter_name']) || !empty($data['filter_tag'])) {
             $sql .= " AND (";
 
             if (!empty($data['filter_name'])) {
@@ -407,65 +413,9 @@ class ModelCatalogProduct extends Model {
 	}
 
     public function getLatestProducts($limit) {
-        $cache_key = 'product.latest.'
-            . (int)$this->config->get('config_language_id') . '.'
-            . (int)$this->config->get('config_store_id') . '.'
-            . $this->config->get('config_customer_group_id') . '.'
-            . (int)$limit;
-
-        $product_data = $this->cache->get($cache_key);
-
-        if (!$product_data) {
-
-            // PRVO: uzmi sve proizvode
-            $query = $this->db->query("
-            SELECT p.product_id, p.mpn 
-            FROM " . DB_PREFIX . "product p 
-            LEFT JOIN " . DB_PREFIX . "product_to_store p2s 
-                ON (p.product_id = p2s.product_id) 
-            WHERE 
-                p.status = '1' 
-                AND p.date_available <= NOW() 
-                AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'
-            ORDER BY p.date_added DESC
-            LIMIT " . (int)$limit
-            );
-
-            // DRUGO: grupiraj po MPN
-            $grouped = [];
-
-            foreach ($query->rows as $row) {
-
-                // ključevi bez MPN-a da se ne spoje krivi proizvodi
-                $mpn_key = ($row['mpn'] !== '') ? $row['mpn'] : ('no_mpn_' . $row['product_id']);
-
-                if (!isset($grouped[$mpn_key])) {
-                    $grouped[$mpn_key] = [
-                        'product_id' => $row['product_id'],
-                        'mpn'        => $row['mpn'],
-                        'mpn_count'  => 1
-                    ];
-                } else {
-                    $grouped[$mpn_key]['mpn_count']++;
-                }
-            }
-
-            // TREĆE: spremi finalne proizvode
-            $product_data = [];
-
-            foreach ($grouped as $g) {
-                $product = $this->getProduct($g['product_id']);
-
-                // ubaci mpn_count u product array
-             //   $product['mpn_count'] = $g['mpn_count'];
-
-                $product_data[$g['product_id']] = $product;
-            }
-
-            $this->cache->set($cache_key, $product_data);
-        }
-
-        return $product_data;
+        // Newness comes from the ERP introduction date, never a local reimport.
+        $this->load->model('catalog/new_product');
+        return $this->model_catalog_new_product->getProducts(array('limit' => $limit));
     }
 
 
@@ -668,7 +618,9 @@ class ModelCatalogProduct extends Model {
 			}
 		}
 
-		if (!empty($data['filter_name']) || !empty($data['filter_tag'])) {
+		if (isset($data['filter_name']) && QiqoCatalogSearch::isArticleCode($data['filter_name'])) {
+			$sql .= " AND " . QiqoCatalogSearch::articleCodeCondition($this->db, $data['filter_name']);
+		} elseif (!empty($data['filter_name']) || !empty($data['filter_tag'])) {
 			$sql .= " AND (";
 
 			if (!empty($data['filter_name'])) {

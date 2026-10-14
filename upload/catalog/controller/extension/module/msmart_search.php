@@ -267,12 +267,12 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 					}
 				}
 				
-				if( $mode == 'tabs' ) {
+				if( $mode == 'tabs' && !QiqoCatalogSearch::isArticleCode($phrase) ) {
 					$extra_phrases = $this->generateExtraPhrases( $products, $phrase, $config );
 				}
 				
 				/* recommended products if no search results */
-				if(empty($response['results'])){
+				if(empty($response['results']) && !QiqoCatalogSearch::isArticleCode($phrase)){
 					$recommended_data = $this->config->get( 'msmart_search_recommended' );
 					if(!empty($recommended_data['recommended_in_live_search'])){
 						$this->load->model('catalog/product');
@@ -298,7 +298,7 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 				}
 			}
 					
-			if( $mode == 'tabs' ) {
+			if( $mode == 'tabs' && !QiqoCatalogSearch::isArticleCode($phrase) ) {
 				$this->load->model('extension/module/msmart_search');
 
 				if( ( $replacedPhrase = $this->model_extension_module_msmart_search->checkPhrase( $phrase ) ) == false ){
@@ -326,7 +326,7 @@ class ControllerExtensionModuleMsmartSearch extends Controller {
 				}
 			}
 
-			if( $mode == 'standard' && ! empty( $config['enabled_categories'] ) ) {
+			if( $mode == 'standard' && !QiqoCatalogSearch::isArticleCode($phrase) && ! empty( $config['enabled_categories'] ) ) {
 				$this->load->model('extension/module/msmart_search');
 						
 				if( ( $replacedPhrase = $this->model_extension_module_msmart_search->checkPhrase( $phrase ) ) == false ){

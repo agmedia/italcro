@@ -1,4 +1,5 @@
 <?php
+require_once(DIR_SYSTEM . 'library/qiqo/catalog_search.php');
 class ControllerExtensionModuleQuickOrder extends Controller {
 
     /* ========= AUTH HELPERS ========= */
@@ -83,12 +84,9 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
 
 
-        $sql = "SELECT p.product_id, p.cent
-        FROM " . DB_PREFIX . "product p 
-        JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
-        WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'
-          AND p.status = 1
-          AND (
+        $search_condition = QiqoCatalogSearch::isArticleCode($term_normalized)
+            ? QiqoCatalogSearch::articleCodeCondition($this->db, $term_normalized)
+            : "(
                 pd.name LIKE '%" . $term_esc . "%'
              OR pd.name_add LIKE '%" . $term_esc . "%'
              OR CONCAT(pd.name, ' ', pd.name_add) LIKE '%" . $term_esc . "%'
@@ -97,7 +95,14 @@ class ControllerExtensionModuleQuickOrder extends Controller {
 
              /* IGNORIRAJ RAZMAKE u kombiniranom nazivu (name + name_add) */
              OR REPLACE(LOWER(CONCAT(pd.name, ' ', pd.name_add)), ' ', '') LIKE '%" . $term_nospace_esc . "%'
-          )
+          )";
+
+        $sql = "SELECT p.product_id, p.cent
+        FROM " . DB_PREFIX . "product p
+        JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id)
+        WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'
+          AND p.status = 1
+          AND " . $search_condition . "
         ORDER BY pd.name ASC
         LIMIT 30";
 

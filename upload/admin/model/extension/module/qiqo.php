@@ -210,6 +210,7 @@ class ModelExtensionModuleQiqo extends Model
         @set_time_limit(0);
         $result = ['success' => false, 'dry_run' => !$apply, 'fetched' => 0, 'added' => 0,
             'updated' => 0, 'unchanged' => 0, 'disabled' => 0, 'reactivated' => 0,
+            'missing_erp_names' => 0, 'unresolved_names' => 0, 'retained_local_names' => 0,
             'transactional' => false, 'partial' => false, 'error' => '', 'since' => $since];
         $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
         if (!$this->acquireQiqoWriteLock($lockName)) {
@@ -256,6 +257,7 @@ class ModelExtensionModuleQiqo extends Model
                     return $result;
                 }
             }
+            $quantityType = $this->getCatalogQuantityType();
             $language = $this->db->query("SELECT language_id FROM `" . DB_PREFIX . "language` WHERE code = 'hr-hr' LIMIT 1");
             if (!$language->num_rows) {
                 $result['error'] = 'catalog_language_missing';
@@ -281,8 +283,35 @@ class ModelExtensionModuleQiqo extends Model
                 }
                 $existing[$key] = $local;
             }
+            // Resolve every missing ERP label before planning any write. An
+            // existing SKU may still receive stock/status updates without a
+            // supplied title; a new SKU must never be created without a name.
+            foreach ($normalized['rows'] as &$data) {
+                $data['meta_title'] = $data['name'];
+                if ($data['name'] !== '') {
+                    continue;
+                }
+                $result['missing_erp_names']++;
+                $local = $existing['sku:' . strtolower($data['sku'])] ?? null;
+                if (!$local) {
+                    $result['error'] = 'missing_catalog_name';
+                    $result['missing_name_sku'] = $data['sku'];
+                    return $result;
+                }
+                $savedName = (string)($local['name'] ?? '');
+                $savedMetaTitle = (string)($local['meta_title'] ?? '');
+                $data['name'] = trim($savedName) !== '' ? $savedName : (trim($savedMetaTitle) !== '' ? $savedMetaTitle : $savedName);
+                $data['meta_title'] = $savedMetaTitle;
+                if (trim($data['name']) === '') {
+                    $result['unresolved_names']++;
+                } else {
+                    $result['retained_local_names']++;
+                }
+            }
+            unset($data);
             $plan = [];
             foreach ($normalized['rows'] as $data) {
+                $data = $this->normalizeCatalogStorageRow($data, $quantityType);
                 $data['language_id'] = $languageId;
                 $key = 'sku:' . strtolower($data['sku']);
                 $local = $existing[$key] ?? null;
@@ -343,7 +372,8 @@ class ModelExtensionModuleQiqo extends Model
             $result['success'] = true;
             $this->invalidateCatalogCache();
             $this->log('Catalog', 'END reconciliation added=' . $result['added'] . ' updated=' . $result['updated']
-                . ' unchanged=' . $result['unchanged'] . ' disabled=' . $result['disabled']);
+                . ' unchanged=' . $result['unchanged'] . ' disabled=' . $result['disabled']
+                . ' missing_erp_names=' . $result['missing_erp_names'] . ' unresolved_names=' . $result['unresolved_names']);
             return $result;
         } catch (\Throwable $error) {
             if ($transaction) {
@@ -385,6 +415,28 @@ class ModelExtensionModuleQiqo extends Model
         }
     }
 
+    private function getCatalogQuantityType(): string
+    {
+        $column = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "product` LIKE 'quantity'");
+        $type = strtolower(trim((string)($column->row['Type'] ?? '')));
+        if (!preg_match('/^(?:tinyint|smallint|mediumint|int|integer|bigint|decimal|numeric|float|double|real)\b/', $type)) {
+            throw new \UnexpectedValueException('Unsupported product quantity storage.');
+        }
+        return $type;
+    }
+
+    private function normalizeCatalogStorageRow(array $data, string $quantityType): array
+    {
+        if (preg_match('/^(?:tinyint|smallint|mediumint|int|integer|bigint)\b/', $quantityType)) {
+            // Match the legacy import's MySQL INT assignment, including ties.
+            $data['quantity'] = round($data['quantity'], 0, PHP_ROUND_HALF_UP);
+        } elseif (preg_match('/^(?:decimal|numeric)\(\d+,\s*(\d+)\)/', $quantityType, $matches)) {
+            $data['quantity'] = round($data['quantity'], (int)$matches[1], PHP_ROUND_HALF_UP);
+        }
+        $data['pakkol'] = round($data['pakkol'], 4, PHP_ROUND_HALF_UP);
+        return $data;
+    }
+
     private function catalogProductMatches(array $local, array $data): bool
     {
         if (empty($local['description_product_id'])) {
@@ -395,7 +447,7 @@ class ModelExtensionModuleQiqo extends Model
                 return false;
             }
         }
-        if ((string)($local['meta_title'] ?? '') !== $data['name']) {
+        if ((string)($local['meta_title'] ?? '') !== ($data['meta_title'] ?? $data['name'])) {
             return false;
         }
         foreach (['quantity', 'price', 'vpc', 'pak', 'pakkol', 'minimum', 'sort_order', 'status'] as $field) {
@@ -420,7 +472,7 @@ class ModelExtensionModuleQiqo extends Model
         foreach (['name', 'name_add', 'description', 'description_add'] as $field) {
             $descriptionAssignments[] = '`' . $field . "` = '" . $this->db->escape($data[$field]) . "'";
         }
-        $descriptionAssignments[] = "meta_title = '" . $this->db->escape($data['name']) . "'";
+        $descriptionAssignments[] = "meta_title = '" . $this->db->escape($data['meta_title'] ?? $data['name']) . "'";
         if (empty($local['description_product_id'])) {
             $this->db->query("INSERT INTO `" . DB_PREFIX . "product_description` SET product_id = '" . $productId
                 . "', language_id = '" . (int)$data['language_id'] . "', " . implode(', ', $descriptionAssignments));
@@ -541,11 +593,13 @@ class ModelExtensionModuleQiqo extends Model
             if (!$normalized['rows']) {
                 return 0;
             }
+            $quantityType = $this->getCatalogQuantityType();
             $hasPakColumn = $this->ensureProductPakColumn();
             $hasJmColumn = $this->ensureProductJmColumn();
             $hasPakkolColumn = $this->ensureProductPakkolColumn();
             $updated = 0;
             foreach ($normalized['rows'] as $a) {
+                $a = $this->normalizeCatalogStorageRow($a, $quantityType);
                 $sku = $this->db->escape($a['sku']);
                 $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
                 if (!$exists->num_rows) continue;

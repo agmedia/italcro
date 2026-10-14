@@ -306,7 +306,9 @@ final class QiqoSyncGuard
             $row = array_change_key_case((array)$source, CASE_LOWER);
             $id = trim((string)($row['id'] ?? ''));
             $name = trim((string)($row['naziv'] ?? ''));
-            if ($id === '' || $name === '' || self::textLength($name) > 255
+            // Empty ERP group labels are deferred to per-SKU reconciliation;
+            // unused unlabeled groups must not reject an otherwise valid feed.
+            if ($id === '' || strlen($id) > 64 || preg_match('/[\x00-\x1F\x7F]/', $id) || self::textLength($name) > 255
                 || (isset($groupMap[$id]) && $groupMap[$id] !== $row)) {
                 return ['valid' => false, 'rows' => [], 'error' => 'invalid_group_rows'];
             }
@@ -355,7 +357,7 @@ final class QiqoSyncGuard
                 'vpc' => $price['vpc'],
                 'price' => $price['price'],
                 'cent' => $price['cent'],
-                'name' => trim((string)$group['naziv']),
+                'name' => trim((string)($group['naziv'] ?? '')),
                 'name_add' => $nameAdd,
                 'description' => trim((string)($group['opis'] ?? '')),
                 'description_add' => trim((string)($row['opiskatalog'] ?? '')),

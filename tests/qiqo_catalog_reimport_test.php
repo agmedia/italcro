@@ -49,6 +49,7 @@ class CatalogDbStub {
     public $rows = [];
     public $queries = [];
     public $engine = 'InnoDB';
+    public $quantityType = 'int(11)';
     public $duplicates = false;
     public $failDescription = false;
     public $busy = false;
@@ -69,7 +70,9 @@ class CatalogDbStub {
         $this->queries[] = $sql;
         if (strpos($sql, 'GET_LOCK(') !== false) return $this->result([['acquired' => $this->busy ? 0 : 1]]);
         if (strpos($sql, 'RELEASE_LOCK(') !== false) return $this->result([['released' => 1]]);
-        if (strpos($sql, 'SHOW COLUMNS') === 0) return $this->result([['Field' => 'present']]);
+        if (strpos($sql, 'SHOW COLUMNS') === 0) {
+            return $this->result([['Field' => 'present', 'Type' => strpos($sql, "LIKE 'quantity'") !== false ? $this->quantityType : 'varchar(64)']]);
+        }
         if (strpos($sql, 'SHOW TABLE STATUS') === 0) {
             preg_match_all("/'(test_[a-z_]+)'/", $sql, $matches);
             $rows = [];
@@ -254,5 +257,20 @@ list($model, $db) = catalogFixture(array_merge($article, ['id' => 'NEW-SKU', 'ak
 $result = $model->reconcileCatalog(true);
 catalogAssert($result['success'] && $result['added'] === 1 && isset($db->rows[101]), 'A new SKU must be added without changing existing product IDs.');
 catalogAssert($db->rows[101]['name'] === 'Novi naziv' && $db->rows[101]['mpn'] === '10', 'New products must receive their group title and grouping reference.');
+
+foreach (['2.5' => 3.0, '-2.5' => -3.0, '2.7' => 3.0] as $rawStock => $storedStock) {
+    list($model, $db) = catalogFixture(array_merge($article, ['zaliha' => $rawStock, 'pakkol' => '12.34565']), $groups, $partners, $local, $unreturned);
+    $result = $model->reconcileCatalog(true);
+    catalogAssert($result['success'] && (float)$db->rows[5965]['quantity'] === $storedStock && (float)$db->rows[5965]['pakkol'] === 12.3457,
+        'Applied values must match existing INT stock and four-decimal packaging storage.');
+    $preview = $model->reconcileCatalog();
+    catalogAssert($preview['success'] && $preview['updated'] === 0 && $preview['unchanged'] === 1,
+        'Database rounding must not cause a perpetual catalog update.');
+}
+list($model, $db) = catalogFixture(array_merge($article, ['zaliha' => '2.71236']), $groups, $partners, $local, $unreturned);
+$db->quantityType = 'decimal(15,4)';
+catalogAssert($model->reconcileCatalog(true)['success'] && (float)$db->rows[5965]['quantity'] === 2.7124,
+    'A decimal stock schema must retain its declared fractional precision.');
+catalogAssert($model->reconcileCatalog()['updated'] === 0, 'Decimal stock rounding must also be idempotent.');
 
 echo "QIQO catalog reimport tests passed.\n";

@@ -460,6 +460,8 @@ php scripts/sync_qiqo_catalog.php
 
 Pregled kataloga ispisuje broj novih, promijenjenih, nepromijenjenih, deaktiviranih i ponovno aktiviranih artikala. Cijeli ERP odgovor, reference i lokalni SKU-ovi validiraju se prije upisa. Ako postojeća shema nema obavezne stupce, postupak staje; ne zaobilaziti provjeru. Zadani ERP interval je posljednje dvije godine; za drukčiji dogovoreni početak koristiti eksplicitni `--since=YYYY-MM-DD`.
 
+ERP grupa `0` označava nedodijeljenu grupu i sprema se kao prazan MPN. Postojeći SKU zadržava svoj lokalni naziv kada ERP nema naziv grupe. Novi SKU bez naziva zadano prekida cijeli uvoz; eksplicitni `--skip-unnamed-new` preskače samo takve nove SKU-ove i vraća `skipped_missing_names` i `skipped_skus`. Koristiti isti flag u pregledu i primjeni te navesti izostavljene artikle u izvještaju. Valjan numerički partner artikla sprema se i kada ga partner feed ne vraća, uz brojač `missing_partner_refs`; to ne mijenja autorizacije kupaca. Nedostajuće pozitivne grupe i neispravni obavezni podaci i dalje prekidaju cijeli batch.
+
 Za produkcijske MyISAM tablice primijeniti pregledani plan uz stvarni upravo napravljeni dump:
 
 ```bash

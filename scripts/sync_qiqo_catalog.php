@@ -15,6 +15,8 @@ foreach (array_slice($argv, 1) as $argument) {
         $apply = true;
     } elseif ($argument === '--allow-nontransactional') {
         $options['allow_nontransactional'] = true;
+    } elseif ($argument === '--skip-unnamed-new') {
+        $options['skip_unnamed_new'] = true;
     } elseif (strpos($argument, '--backup=') === 0) {
         $options['backup_path'] = substr($argument, strlen('--backup='));
     } elseif (strpos($argument, '--since=') === 0) {
@@ -25,7 +27,8 @@ foreach (array_slice($argv, 1) as $argument) {
             exit(2);
         }
     } elseif ($argument === '--help') {
-        echo "Usage: php scripts/sync_qiqo_catalog.php [--since=YYYY-MM-DD] [--apply]\n";
+        echo "Usage: php scripts/sync_qiqo_catalog.php [--since=YYYY-MM-DD] [--skip-unnamed-new] [--apply]\n";
+        echo "--skip-unnamed-new skips and reports only new SKUs without an ERP title; all critical feed validation remains mandatory.\n";
         echo "MyISAM apply additionally requires maintenance mode, --allow-nontransactional and --backup=/private/path/backup.sql.gz.\n";
         exit(0);
     } else {

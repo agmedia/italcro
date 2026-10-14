@@ -328,6 +328,7 @@ final class QiqoSyncGuard
             $stockMap[$item['sku']] = $item;
         }
         $rows = [];
+        $missingPartnerRefs = 0;
         foreach ($prices['rows'] as $price) {
             $row = array_change_key_case($price['source'], CASE_LOWER);
             foreach (['kataloggrupa', 'gid', 'partner', 'barcode'] as $field) {
@@ -338,13 +339,20 @@ final class QiqoSyncGuard
             $groupId = trim((string)$row['kataloggrupa']);
             $partnerId = trim((string)$row['partner']);
             $gid = trim((string)$row['gid']);
-            if (!isset($groupMap[$groupId], $partnerMap[$partnerId], $stockMap[$price['sku']])
+            $unassignedGroup = preg_match('/^0+$/D', $groupId) === 1;
+            if ((!$unassignedGroup && !isset($groupMap[$groupId])) || !isset($stockMap[$price['sku']])
                 || !preg_match('/^[0-9]+$/D', $gid) || (float)$gid > 2147483647
                 || !preg_match('/^[0-9]+$/D', $partnerId) || (float)$partnerId > 2147483647
                 || strlen($groupId) > 64 || self::textLength((string)$row['barcode']) > 64) {
                 return ['valid' => false, 'rows' => [], 'error' => 'invalid_article_reference'];
             }
-            $group = $groupMap[$groupId];
+            // Group zero is an ERP sentinel, never a shared product family.
+            $group = $unassignedGroup ? [] : $groupMap[$groupId];
+            // The article's numeric partner ID is not a customer authorization
+            // or pricing-cache relation. Retain valid IDs excluded by the feed.
+            if ((int)$partnerId > 0 && !isset($partnerMap[$partnerId])) {
+                $missingPartnerRefs++;
+            }
             $nameAdd = trim((string)($row['dimmodel'] ?? ''));
             if (self::textLength($nameAdd) > 255) {
                 return ['valid' => false, 'rows' => [], 'error' => 'invalid_article_name'];
@@ -353,7 +361,7 @@ final class QiqoSyncGuard
                 'model' => trim((string)$row['barcode']),
                 'partner_id' => (int)$partnerId,
                 'gid' => (int)$gid,
-                'mpn' => $groupId,
+                'mpn' => $unassignedGroup ? '' : $groupId,
                 'vpc' => $price['vpc'],
                 'price' => $price['price'],
                 'cent' => $price['cent'],
@@ -364,7 +372,7 @@ final class QiqoSyncGuard
                 'image' => trim((string)($group['picpath'] ?? '')),
             ]);
         }
-        return ['valid' => true, 'rows' => $rows, 'error' => ''];
+        return ['valid' => true, 'rows' => $rows, 'error' => '', 'missing_partner_refs' => $missingPartnerRefs];
     }
 
     private static function textLength(string $value): int

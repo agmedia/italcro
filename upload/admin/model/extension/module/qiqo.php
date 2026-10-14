@@ -211,6 +211,7 @@ class ModelExtensionModuleQiqo extends Model
         $result = ['success' => false, 'dry_run' => !$apply, 'fetched' => 0, 'added' => 0,
             'updated' => 0, 'unchanged' => 0, 'disabled' => 0, 'reactivated' => 0,
             'missing_erp_names' => 0, 'unresolved_names' => 0, 'retained_local_names' => 0,
+            'missing_partner_refs' => 0, 'skipped_missing_names' => 0, 'skipped_skus' => [],
             'transactional' => false, 'partial' => false, 'error' => '', 'since' => $since];
         $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
         if (!$this->acquireQiqoWriteLock($lockName)) {
@@ -238,6 +239,7 @@ class ModelExtensionModuleQiqo extends Model
                 return $result;
             }
             $result['fetched'] = count($normalized['rows']);
+            $result['missing_partner_refs'] = $normalized['missing_partner_refs'];
             if (!$normalized['rows']) {
                 $result['success'] = true;
                 if ($apply) $this->invalidateCatalogCache();
@@ -294,6 +296,12 @@ class ModelExtensionModuleQiqo extends Model
                 $result['missing_erp_names']++;
                 $local = $existing['sku:' . strtolower($data['sku'])] ?? null;
                 if (!$local) {
+                    if (!empty($options['skip_unnamed_new'])) {
+                        $data['skip_missing_name'] = true;
+                        $result['skipped_missing_names']++;
+                        $result['skipped_skus'][] = $data['sku'];
+                        continue;
+                    }
                     $result['error'] = 'missing_catalog_name';
                     $result['missing_name_sku'] = $data['sku'];
                     return $result;
@@ -311,6 +319,7 @@ class ModelExtensionModuleQiqo extends Model
             unset($data);
             $plan = [];
             foreach ($normalized['rows'] as $data) {
+                if (!empty($data['skip_missing_name'])) continue;
                 $data = $this->normalizeCatalogStorageRow($data, $quantityType);
                 $data['language_id'] = $languageId;
                 $key = 'sku:' . strtolower($data['sku']);
@@ -373,7 +382,8 @@ class ModelExtensionModuleQiqo extends Model
             $this->invalidateCatalogCache();
             $this->log('Catalog', 'END reconciliation added=' . $result['added'] . ' updated=' . $result['updated']
                 . ' unchanged=' . $result['unchanged'] . ' disabled=' . $result['disabled']
-                . ' missing_erp_names=' . $result['missing_erp_names'] . ' unresolved_names=' . $result['unresolved_names']);
+                . ' missing_erp_names=' . $result['missing_erp_names'] . ' unresolved_names=' . $result['unresolved_names']
+                . ' skipped_missing_names=' . $result['skipped_missing_names'] . ' missing_partner_refs=' . $result['missing_partner_refs']);
             return $result;
         } catch (\Throwable $error) {
             if ($transaction) {
@@ -2156,48 +2166,85 @@ class ModelExtensionModuleQiqo extends Model
 
     private function downloadImage(string $picpath): string
     {
-        // Ako picpath izgleda kao "Slike/9KucnePotrepstine/09000407720.jpg"
-        // pokušaj ga dohvatiti s osnovnim URL-om servera (ako postoji)
-        $base_url      = agconf('qiqo.image_base_url', 'http://www.qiqo.hr/'); // možeš definirati u env.php
-        $relative_path = ltrim($picpath, '/');
-        $filename      = basename($relative_path);
-        $save_dir      = DIR_IMAGE . 'catalog/qiqo/';
-
-        if ( ! is_dir($save_dir)) {
-            mkdir($save_dir, 0755, true);
+        $relative_path = str_replace('\\', '/', rawurldecode(trim($picpath)));
+        if ($relative_path === '' || preg_match('#^[a-z][a-z0-9+.-]*:|^//#i', $relative_path)
+            || preg_match('/[\x00-\x1F\x7F]/', $relative_path)) {
+            return '';
         }
-
-        $save_path = $save_dir . $filename;
-        $db_path   = 'catalog/qiqo/' . $filename;
-
-        // Ako već postoji, ne preuzimaj ponovo
-        if (file_exists($save_path)) {
-            return $db_path;
+        $relative_path = ltrim(preg_replace('#/+#', '/', $relative_path), '/');
+        if ($relative_path === '' || preg_match('#(?:^|/)\.\.?(?:/|$)#', $relative_path)) {
+            return '';
         }
-
-        $url = $base_url . $relative_path;
+        $image_root = realpath(DIR_IMAGE);
+        if ($image_root === false) {
+            return '';
+        }
+        $image_root = rtrim($image_root, '/\\') . DIRECTORY_SEPARATOR;
+        $local_path = realpath($image_root . $relative_path);
+        if ($local_path !== false) {
+            return strpos($local_path, $image_root) === 0 && is_file($local_path) && is_readable($local_path) && @getimagesize($local_path) !== false
+                ? $relative_path : '';
+        }
+        $filename = basename($relative_path);
+        $db_path = 'catalog/qiqo/' . $filename;
+        $save_path = $image_root . $db_path;
+        if (file_exists($save_path) || is_link($save_path)) {
+            $existing_path = realpath($save_path);
+            return $existing_path !== false && strpos($existing_path, $image_root) === 0 && is_file($existing_path) && @getimagesize($existing_path) !== false
+                ? $db_path : '';
+        }
+        // agconf() replaces a configured value whenever a default is passed.
+        // An absent image host must never trigger a guessed external request.
+        $configured_base = agconf('qiqo.image_base_url');
+        $base_url = is_string($configured_base) ? trim($configured_base) : '';
+        $base_parts = $base_url !== '' ? parse_url($base_url) : false;
+        if (!$base_parts || !filter_var($base_url, FILTER_VALIDATE_URL)
+            || !in_array(strtolower($base_parts['scheme'] ?? ''), ['http', 'https'], true)
+            || empty($base_parts['host']) || isset($base_parts['user']) || isset($base_parts['pass'])
+            || isset($base_parts['query']) || isset($base_parts['fragment']) || !function_exists('curl_init')) {
+            return '';
+        }
+        $save_dir = dirname($save_path);
+        if (!is_dir($save_dir) && !@mkdir($save_dir, 0755, true)) {
+            return '';
+        }
+        $resolved_dir = realpath($save_dir);
+        if ($resolved_dir === false || strpos($resolved_dir . DIRECTORY_SEPARATOR, $image_root) !== 0) {
+            return '';
+        }
+        $url = rtrim($base_url, '/') . '/' . implode('/', array_map('rawurlencode', explode('/', $relative_path)));
 
         try {
             $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            if ($ch === false) return '';
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 10, CURLOPT_MAXREDIRS => 3,
+                CURLOPT_SSL_VERIFYPEER => true, CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+                CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS]);
             $imageData = curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            if ($httpCode == 200 && $imageData) {
-                file_put_contents($save_path, $imageData);
+            if ($httpCode == 200 && is_string($imageData) && @getimagesizefromstring($imageData) !== false) {
+                // Exclusive creation preserves an image written by another sync.
+                $file = @fopen($save_path, 'xb');
+                if ($file === false) return '';
+                $written = fwrite($file, $imageData);
+                fclose($file);
+                if ($written !== strlen($imageData)) {
+                    @unlink($save_path);
+                    return '';
+                }
                 $this->log('Image', "Preuzeta slika: {$url}");
-
-                // Ako preuzimanje nije uspjelo, vrati default dummy sliku.
-                return $db_path ?: 'catalog/qiqo/no_image_qiqo.jpg';
+                return $db_path;
             } else {
                 $this->log('Image', "⚠️ Neuspješno preuzimanje slike: {$url}");
 
                 return '';
             }
-        } catch (Exception $e) {
-            $this->log('Image', "❌ Greška prilikom preuzimanja slike {$url}: " . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->log('Image', 'Greška prilikom preuzimanja slike iz konfiguriranog izvora.');
 
             return '';
         }

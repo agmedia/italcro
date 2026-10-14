@@ -273,4 +273,42 @@ catalogAssert($model->reconcileCatalog(true)['success'] && (float)$db->rows[5965
     'A decimal stock schema must retain its declared fractional precision.');
 catalogAssert($model->reconcileCatalog()['updated'] === 0, 'Decimal stock rounding must also be idempotent.');
 
+$unassigned = array_merge($article, ['kataloggrupa' => '0', 'partner' => '1615']);
+$sentinel = QiqoSyncGuard::normalizeCatalogRows([$unassigned], $groups, $partners);
+catalogAssert($sentinel['valid'] && $sentinel['rows'][0]['mpn'] === '' && $sentinel['rows'][0]['name'] === ''
+    && $sentinel['rows'][0]['partner_id'] === 1615 && $sentinel['missing_partner_refs'] === 1,
+    'Unassigned group zero must not group unrelated products; a valid missing ERP partner ID must be retained and reported.');
+foreach (['-1', '1615x', '2147483648'] as $invalidPartner) {
+    catalogAssert(!QiqoSyncGuard::normalizeCatalogRows([array_merge($unassigned, ['partner' => $invalidPartner])], $groups, $partners)['valid'],
+        'Missing-partner compatibility must not accept malformed or out-of-range IDs.');
+}
+$savedTitle = array_merge($local, ['name' => 'Postojeći naziv', 'meta_title' => 'Postojeći SEO naziv']);
+list($model, $db) = catalogFixture($unassigned, $groups, $partners, $savedTitle, $unreturned);
+$result = $model->reconcileCatalog(true);
+catalogAssert($result['success'] && $result['retained_local_names'] === 1 && $result['missing_partner_refs'] === 1
+    && $db->rows[5965]['mpn'] === '' && (int)$db->rows[5965]['partner'] === 1615
+    && $db->rows[5965]['name'] === $savedTitle['name'] && $db->rows[5965]['meta_title'] === $savedTitle['meta_title'],
+    'Existing unassigned SKUs must retain their exact local title and receive validated stock/status/partner updates.');
+$newUnassigned = array_merge($unassigned, ['id' => 'NEW-UNNAMED']);
+list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$model->feed->articles[] = $newUnassigned;
+$result = $model->reconcileCatalog(true);
+catalogAssert(!$result['success'] && $result['error'] === 'missing_catalog_name' && !$db->mutationQueries(),
+    'Unnamed new SKUs must still reject all writes by default.');
+$skipOptions = ['skip_unnamed_new' => true];
+$result = $model->reconcileCatalog(true, '-2 years', $skipOptions);
+catalogAssert($result['success'] && $result['updated'] === 1 && $result['added'] === 0 && $result['skipped_missing_names'] === 1
+    && $result['skipped_skus'] === ['NEW-UNNAMED'] && count($db->rows) === 2,
+    'An explicit skip may update valid existing SKUs while reporting, never creating, unnamed new ones.');
+$again = $model->reconcileCatalog(false, '-2 years', $skipOptions);
+catalogAssert($again['success'] && $again['updated'] === 0 && $again['skipped_missing_names'] === 1,
+    'An explicitly partial named-catalog import must remain idempotent and keep reporting skipped SKUs.');
+foreach ([['zaliha' => 'NaN'], ['kataloggrupa' => '999']] as $invalid) {
+    list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+    $model->feed->articles[] = array_merge($newUnassigned, $invalid);
+    $result = $model->reconcileCatalog(true, '-2 years', $skipOptions);
+    catalogAssert(!$result['success'] && !$db->mutationQueries(),
+        'Skipping unnamed new SKUs must never bypass stock or positive-group validation.');
+}
+
 echo "QIQO catalog reimport tests passed.\n";

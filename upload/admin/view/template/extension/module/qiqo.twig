@@ -32,7 +32,7 @@
                 <ul class="nav nav-tabs">
                     <li class="{{ active_tab == 'sync' ? 'active' : '' }}">
                         <a href="#tab-sync" data-toggle="tab">
-                            <i class="fa fa-refresh"></i> Sync kataloga
+                            <i class="fa fa-refresh"></i> Ažuriranje podataka
                         </a>
                     </li>
                     <li class="{{ active_tab == 'assets' ? 'active' : '' }}">
@@ -54,105 +54,210 @@
 
                 <div class="tab-content" style="margin-top:15px;">
 
-                    {# TAB 1: SYNC ARTIKALA #}
+                    {# TAB 1: AŽURIRANJE PODATAKA #}
                     <div class="tab-pane {{ active_tab == 'sync' ? 'active' : '' }}" id="tab-sync">
+                        <style>
+                            #tab-sync .qiqo-actions .btn { white-space: normal; margin-bottom: 8px; }
+                            #tab-sync .qiqo-section-toggle { display: block; }
+                            #tab-sync .qiqo-section-toggle .fa-chevron-down { margin-top: 2px; }
+                        </style>
+                        <p class="text-muted">Odaberite što se promijenilo u ERP-u. Za cjelovito osvježavanje prvo ažurirajte katalog, zatim podatke kupaca i rabate.</p>
+
                         <form action="{{ action }}" method="post">
-                            <button type="submit" name="action" value="import" class="btn btn-primary">
-                                <i class="fa fa-download"></i> Ponovno uvezi katalog iz ERP-a
-                            </button>
-                            <button type="submit" name="action" value="preview_catalog" class="btn btn-default">
-                                <i class="fa fa-search"></i> Pregled promjena prije uvoza
-                            </button>
-                            <p class="help-block">Uvoz osvježava nazive, opise, zalihe, cijene, pakiranja, redoslijed i aktivnost postojećih artikala te dodaje nove.</p>
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title"><i class="fa fa-refresh"></i> Redovno ažuriranje</h3>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-sm-8">
+                                            <h4>1. Katalog artikala</h4>
+                                            <p>Za nove artikle ili promjene naziva, opisa, zaliha, cijena, pakiranja, dobavljača, redoslijeda i aktivnosti.</p>
+                                            <p class="help-block">Najprije pogledajte promjene, zatim pokrenite uvoz. Nakon uvoza nije potrebno zasebno ažurirati količine, cijene ni dobavljače.</p>
+                                        </div>
+                                        <div class="col-sm-4 qiqo-actions">
+                                            <button type="submit" name="action" value="preview_catalog" class="btn btn-default btn-block">
+                                                <i class="fa fa-search"></i> Pregled promjena prije uvoza
+                                            </button>
+                                            <button type="submit" name="action" value="import" class="btn btn-primary btn-block">
+                                                <i class="fa fa-download"></i> Ažuriraj katalog iz ERP-a
+                                            </button>
+                                        </div>
+                                    </div>
 
-                            <hr>
+                                    <hr>
 
-                            <button type="submit" name="action" value="update_qty" class="btn btn-secondary">
-                                <i class="fa fa-cubes"></i> Ažuriraj količine artikala
-                            </button>
-                            <hr>
-                            <button type="submit" name="action" value="update_price" class="btn btn-secondary">
-                                <i class="fa fa-euro"></i> Ažuriraj cijene artikala
-                            </button>
+                                    <div class="row">
+                                        <div class="col-sm-8">
+                                            <h4>2. Kupci i uvjeti prodaje</h4>
+                                            <p>Za promjene podataka kupaca, njihovih općih rabata, mjesta isporuke, komercijalista i akcijskog cjenika.</p>
+                                            <p class="help-block">Posebne rabate za pojedini artikl ažurirajte u sljedećem koraku.</p>
+                                        </div>
+                                        <div class="col-sm-4 qiqo-actions">
+                                            <button type="submit" name="action" value="sync_partner_base" class="btn btn-primary btn-block">
+                                                <i class="fa fa-users"></i> Ažuriraj podatke kupaca i cjenike
+                                            </button>
+                                        </div>
+                                    </div>
 
-                            <hr>
+                                    <hr>
 
-                            <button type="submit" name="action" value="import_brands" class="btn btn-warning">
-                                <i class="fa fa-registered"></i> Kreiraj proizvođače (brendove)
-                            </button>
+                                    <div class="row">
+                                        <div class="col-sm-8">
+                                            <h4>3. Rabati kupac–artikl</h4>
+                                            <p>Za poseban rabat dogovoren s kupcem za određeni artikl, primjerice 18% umjesto općeg rabata kupca od 15%.</p>
+                                            {% if partner_discount_incremental_ready %}
+                                                <p class="help-block">Preuzima promjene od zadnje uspješne sinkronizacije i čuva postojeće rabate.</p>
+                                            {% else %}
+                                                <div class="alert alert-warning" style="margin-bottom:0;">
+                                                    <i class="fa fa-exclamation-triangle"></i> <strong>Potrebno je početno punjenje rabata.</strong>
+                                                    Održavanje prvo treba uvesti cijeli skup od približno 2 milijuna zapisa na serveru. Nakon toga ovdje će biti dostupno redovno ažuriranje promjena. Postojeći rabati ostaju sačuvani.
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-sm-4 qiqo-actions">
+                                            <button type="submit" name="action" value="sync_partner_discounts" class="btn btn-primary btn-block"{% if not partner_discount_incremental_ready %} disabled title="Dostupno nakon početnog punjenja rabata na serveru"{% endif %}>
+                                                <i class="fa fa-percent"></i> Ažuriraj rabate kupac–artikl
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <p class="help-block"><i class="fa fa-check-circle"></i> <strong>Nakon ažuriranja:</strong> provjerite poruku pri vrhu i karticu <a href="{{ action }}&amp;tab=log">Log</a>. Kod provjere cijene otvorite artikl kao odgovarajući kupac. Slike i dokumenti ažuriraju se zasebno u svojoj kartici.</p>
 
-                            <button type="submit" name="action" value="link_related_group" class="btn btn-warning">
-                                <i class="fa fa-registered"></i> Linkaj grupe
-                            </button>
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title">
+                                        <a class="qiqo-section-toggle collapsed" data-toggle="collapse" href="#qiqo-quick-updates" role="button" aria-expanded="false" aria-controls="qiqo-quick-updates">
+                                            <i class="fa fa-chevron-down pull-right"></i>
+                                            <i class="fa fa-bolt"></i> Pojedinačna ažuriranja — kada ne trebate cijeli uvoz
+                                        </a>
+                                    </h3>
+                                </div>
+                                <div class="panel-collapse collapse" id="qiqo-quick-updates">
+                                    <div class="panel-body">
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Količine artikala</h4>
+                                                <p class="help-block">Kada želite osvježiti zalihe postojećih artikala bez cijelog kataloga. Osvježava i podatke o minimalnoj količini i pakiranju.</p>
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="update_qty" class="btn btn-default btn-block"><i class="fa fa-cubes"></i> Ažuriraj količine artikala</button>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Osnovne cijene artikala</h4>
+                                                <p class="help-block">Kada su promijenjene redovne cijene u ERP-u. Za rabate pojedinog kupca koristite korake 2 i 3 iznad.</p>
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="update_price" class="btn btn-default btn-block"><i class="fa fa-euro"></i> Ažuriraj cijene artikala</button>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Dobavljači na artiklima</h4>
+                                                <p class="help-block">Osvježava vezu artikla s dobavljačem iz ERP-a. Rabat kupca ažurira se kroz „Rabati kupac–artikl”.</p>
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="update_article_partners" class="btn btn-default btn-block"><i class="fa fa-link"></i> Ažuriraj dobavljače na artiklima</button>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Komercijalisti ili akcijski cjenik</h4>
+                                                <p class="help-block">Za promjene samo tih podataka. Oboje je već uključeno u korak 2.</p>
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="sync_sales_reps" class="btn btn-default btn-block"><i class="fa fa-user"></i> Ažuriraj komercijaliste</button>
+                                                <button type="submit" name="action" value="sync_action_prices" class="btn btn-default btn-block"><i class="fa fa-tags"></i> Ažuriraj akcijski cjenik</button>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Svi podaci kupaca u jednom koraku</h4>
+                                                <p class="help-block">Zajedno izvršava korake 2 i 3: kupci, opći rabati, mjesta isporuke, komercijalisti, akcijski cjenik i rabati kupac–artikl.</p>
+                                                {% if not partner_discount_incremental_ready %}
+                                                    <p class="text-warning">Dostupno nakon početnog punjenja rabata. Do tada možete zasebno pokrenuti korak 2.</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="sync_partner_all" class="btn btn-primary btn-block"{% if not partner_discount_incremental_ready %} disabled title="Dostupno nakon početnog punjenja rabata na serveru"{% endif %}><i class="fa fa-refresh"></i> Ažuriraj sve podatke kupaca</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <hr>
-
-                            <button type="submit" name="action" value="link_brands" class="btn btn-warning">
-                                <i class="fa fa-registered"></i> Linkaj brandove
-                            </button>
-
-                            <hr>
-
-                            <button type="submit" name="action" value="disable_missing" class="btn btn-danger"{% if not disable_missing_enabled %} disabled title="Blokirano bez potvrđenog potpunog snapshota i transakcijske product tablice"{% endif %}>
-                                <i class="fa fa-ban"></i> Onemogući artikle kojih nema u ERP-u
-                            </button>
-                            {% if not disable_missing_enabled %}
-                                <p class="help-block text-danger">Sigurnosno blokirano: qArtikliWeb mora biti potvrđen kao potpuni ERP katalog, a product tablica mora podržavati transakcijski rollback.</p>
-                            {% endif %}
-
-                            <hr>
-
-                            <button type="submit" name="action" value="sync_sales_reps" class="btn btn-info">
-                                <i class="fa fa-user"></i> Sync komercijalista (inkrementalno)
-                            </button>
-
-                            <button type="submit" name="action" value="sync_sales_reps_full" class="btn btn-info">
-                                <i class="fa fa-history"></i> Sync komercijalista (FULL - prvi put)
-                            </button>
-
-                            <hr>
-
-                            <button type="submit" name="action" value="sync_partner_base" class="btn btn-info">
-                                <i class="fa fa-users"></i> Sync partnera i komercijalista (inkrementalno)
-                            </button>
-
-                            <button type="submit" name="action" value="sync_partner_base_full" class="btn btn-info"{% if not full_snapshot_enabled %} disabled{% endif %}>
-                                <i class="fa fa-history"></i> Sync partnera i komercijalista (FULL)
-                            </button>
-
-                            <button type="submit" name="action" value="sync_action_prices" class="btn btn-info">
-                                <i class="fa fa-tags"></i> Sync akcijskog cjenika
-                            </button>
-
-                            <button type="submit" name="action" value="sync_action_prices_full" class="btn btn-info"{% if not full_snapshot_enabled %} disabled{% endif %}>
-                                <i class="fa fa-history"></i> Sync akcijskog cjenika (FULL)
-                            </button>
-
-                            <button type="submit" name="action" value="sync_partner_discounts" class="btn btn-warning"{% if not partner_discount_incremental_ready %} disabled{% endif %}>
-                                <i class="fa fa-percent"></i> Sync partner-artikl rabata (inkrementalno)
-                            </button>
-
-                            <button type="submit" name="action" value="sync_partner_all" class="btn btn-primary"{% if not partner_discount_incremental_ready %} disabled{% endif %}>
-                                <i class="fa fa-refresh"></i> Sync svih partner podataka
-                            </button>
-
-                            {% if not partner_discount_incremental_ready %}
-                                <p class="help-block text-warning">qPartnerArtikalRabatWeb je inkrementalni feed. Početno punjenje od približno 2 milijuna slogova mora se odraditi kontroliranim importom, izvan preglednika; postojeći rabati se ne brišu.</p>
-                            {% endif %}
-
-                            {% if not full_snapshot_enabled %}
-                                <p class="help-block text-warning">Destruktivne FULL zamjene su blokirane (<code>qiqo_full_snapshot_confirmed=0</code>). Inkrementalni sync ostaje dostupan.</p>
-                            {% endif %}
-
-                            <button type="submit" name="action" value="update_article_partners" class="btn btn-info">
-                                <i class="fa fa-link"></i> Ažuriraj partnere na artiklima
-                            </button>
-
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title">
+                                        <a class="qiqo-section-toggle collapsed" data-toggle="collapse" href="#qiqo-maintenance" role="button" aria-expanded="false" aria-controls="qiqo-maintenance">
+                                            <i class="fa fa-chevron-down pull-right"></i>
+                                            <i class="fa fa-wrench"></i> Početno postavljanje i održavanje
+                                        </a>
+                                    </h3>
+                                </div>
+                                <div class="panel-collapse collapse" id="qiqo-maintenance">
+                                    <div class="panel-body">
+                                        <p class="text-muted">Ove radnje koristite kod početnog postavljanja ili ciljane obnove podataka.</p>
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Proizvođači i ERP grupe</h4>
+                                                <p class="help-block">Kreirajte brendove iz pripremljenih logotipa, zatim povežite artikle s brendovima. Povezivanje ERP grupa zasebno osvježava grupiranje, nazive i opise artikala.</p>
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="import_brands" class="btn btn-default btn-block"><i class="fa fa-registered"></i> Kreiraj proizvođače (brendove)</button>
+                                                <button type="submit" name="action" value="link_brands" class="btn btn-default btn-block"><i class="fa fa-link"></i> Poveži artikle s brendovima</button>
+                                                <button type="submit" name="action" value="link_related_group" class="btn btn-default btn-block"><i class="fa fa-link"></i> Poveži ERP grupe</button>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Početni dohvat komercijalista</h4>
+                                                <p class="help-block">Za prvo punjenje ili obnovu komercijalista: dohvaća podatke za zadnje dvije godine. Za redovne promjene koristite pojedinačno ažuriranje iznad.</p>
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="sync_sales_reps_full" class="btn btn-default btn-block"><i class="fa fa-history"></i> Početni dohvat komercijalista</button>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Potpuna obnova podataka (FULL)</h4>
+                                                <p class="help-block">Obnova podataka kupaca uključuje mjesta isporuke, komercijaliste i zamjenu akcijskog cjenika. Posebni rabati kupac–artikl uvoze se zasebno.</p>
+                                                {% if not full_snapshot_enabled %}
+                                                    <p class="text-warning"><i class="fa fa-lock"></i> Zaključano dok održavanje ne potvrdi da ERP vraća potpune podatke i ne pripremi početni datum. Redovno ažuriranje iznad ostaje dostupno.</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="sync_partner_base_full" class="btn btn-warning btn-block"{% if not full_snapshot_enabled %} disabled title="Potrebna je potvrda potpunosti ERP podataka i početni datum"{% endif %}><i class="fa fa-history"></i> Obnovi podatke kupaca (FULL)</button>
+                                                <button type="submit" name="action" value="sync_action_prices_full" class="btn btn-warning btn-block"{% if not full_snapshot_enabled %} disabled title="Potrebna je potvrda potpunosti ERP podataka i početni datum"{% endif %}><i class="fa fa-history"></i> Zamijeni akcijski cjenik (FULL)</button>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-sm-8">
+                                                <h4>Artikli kojih nema u ERP-u</h4>
+                                                <p class="help-block">Zasebno isključuje artikle koji nedostaju u potvrđenom potpunom ERP katalogu.</p>
+                                                {% if not disable_missing_enabled %}
+                                                    <p class="text-warning"><i class="fa fa-lock"></i> Zaključano dok održavanje ne provjeri potpunost ERP kataloga i mogućnost sigurnog povrata promjena.</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-sm-4 qiqo-actions">
+                                                <button type="submit" name="action" value="disable_missing" class="btn btn-danger btn-block"{% if not disable_missing_enabled %} disabled title="Potrebna je provjera potpunog ERP kataloga i sigurnog povrata promjena"{% endif %}><i class="fa fa-ban"></i> Onemogući artikle kojih nema u ERP-u</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </form>
-
-                        <hr>
-                        {# Ovdje možeš po želji vratiti i zakomentirane akcije (update_names, link_related_group, link_brands_erp...) #}
                     </div>
 
                     {# TAB 2: SLIKE & DOKUMENTI #}

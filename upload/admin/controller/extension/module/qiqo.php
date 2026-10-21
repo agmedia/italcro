@@ -175,8 +175,12 @@ class ControllerExtensionModuleQiqo extends Controller
                     break;
 
                 case 'update_article_partners':
-                    $stats = $this->model_extension_module_qiqo->updateArticlePartners();
-                    $this->session->data['success'] = "Partner update artikala: ažurirano {$stats['updated']}, bez promjene {$stats['unchanged']}, bez proizvoda {$stats['missing_product']}, bez partnera u API {$stats['missing_partner']}, preskočeno (schema) {$stats['skipped_schema']}.";
+                    try {
+                        $stats = $this->model_extension_module_qiqo->updateArticlePartners();
+                        $this->session->data['success'] = "Partner update artikala: ažurirano {$stats['updated']}, bez promjene {$stats['unchanged']}, bez proizvoda {$stats['missing_product']}, bez partnera u API {$stats['missing_partner']}, preskočeno (schema) {$stats['skipped_schema']}.";
+                    } catch (\Throwable $e) {
+                        $this->session->data['error'] = 'Ažuriranje dobavljača na artiklima nije uspjelo. Provjeri QIQO vezu i konfiguraciju u upload/env.php (QIQO_SOAP_URL, QIQO_USERNAME, QIQO_PASSWORD). Rabati kupac–artikl ažuriraju se zasebnom sinkronizacijom.';
+                    }
                     break;
 
                 case 'clear_log':

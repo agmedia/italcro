@@ -510,8 +510,12 @@ class ModelExtensionModuleQiqo extends Model
 
     public function updateArticlePartners(): array
     {
-        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $qiqo = $this->createCatalogConnection();
         $articles = $qiqo->getArticles();
+        $fetch = $qiqo->getLastFetchResult();
+        if (empty($fetch['success'])) {
+            throw new \RuntimeException('QIQO article partner feed failed.');
+        }
 
         $hasPartnerColumn = $this->ensureProductPartnerColumn();
 
@@ -534,6 +538,16 @@ class ModelExtensionModuleQiqo extends Model
             ];
         }
 
+        // Read the catalog once: legacy product tables have no SKU index.
+        $productsBySku = [];
+        $products = $this->db->query("SELECT product_id, sku, partner FROM `" . DB_PREFIX . "product`");
+        foreach ($products->rows as $product) {
+            $sku = (string)$product['sku'];
+            if (!isset($productsBySku[$sku])) {
+                $productsBySku[$sku] = $product;
+            }
+        }
+
         foreach ((array)$articles as $a) {
             $sku = trim((string)($a['id'] ?? ''));
             $partnerId = (int)($a['partner'] ?? 0);
@@ -547,18 +561,14 @@ class ModelExtensionModuleQiqo extends Model
                 continue;
             }
 
-            $product = $this->db->query("SELECT product_id, partner
-                FROM `" . DB_PREFIX . "product`
-                WHERE sku = '" . $this->db->escape($sku) . "'
-                LIMIT 1");
-
-            if (!$product->num_rows) {
+            if (!isset($productsBySku[$sku])) {
                 $missingProduct++;
                 continue;
             }
 
-            $productId = (int)$product->row['product_id'];
-            $currentPartner = isset($product->row['partner']) ? (int)$product->row['partner'] : 0;
+            $product = $productsBySku[$sku];
+            $productId = (int)$product['product_id'];
+            $currentPartner = (int)$product['partner'];
 
             if ($currentPartner === $partnerId) {
                 $unchanged++;
@@ -570,6 +580,7 @@ class ModelExtensionModuleQiqo extends Model
                     date_modified = NOW()
                 WHERE product_id = '" . (int)$productId . "'");
 
+            $productsBySku[$sku]['partner'] = $partnerId;
             $updated++;
         }
 

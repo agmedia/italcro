@@ -82,11 +82,16 @@ class CatalogDbStub {
         if (strpos($sql, 'SELECT language_id') === 0) return $this->result([['language_id' => 3]]);
         if (strpos($sql, 'GROUP BY sku') !== false) return $this->result($this->duplicates ? [['sku' => '440700']] : []);
         if (strpos($sql, 'SELECT p.*') === 0) return $this->result($this->rows);
+        if (preg_match('/^SELECT product_id, sku, partner\s+FROM `test_product`$/', $sql)) {
+            return $this->result(array_map(static function ($row) {
+                return array_intersect_key($row, array_flip(['product_id', 'sku', 'partner']));
+            }, $this->rows));
+        }
         if (strpos($sql, 'SELECT category_id') === 0) return $this->result([['category_id' => 20]]);
         if ($sql === 'START TRANSACTION') { $this->snapshot = $this->rows; return true; }
         if ($sql === 'ROLLBACK') { $this->rows = $this->snapshot; return true; }
         if ($sql === 'COMMIT') { $this->snapshot = null; return true; }
-        if (preg_match('/^UPDATE `test_product` SET/', $sql)) {
+        if (preg_match('/^UPDATE `test_product`\s+SET/', $sql)) {
             $values = $this->assignments($sql);
             $id = (int)$values['product_id'];
             unset($values['product_id']);
@@ -310,5 +315,44 @@ foreach ([['zaliha' => 'NaN'], ['kataloggrupa' => '999']] as $invalid) {
     catalogAssert(!$result['success'] && !$db->mutationQueries(),
         'Skipping unnamed new SKUs must never bypass stock or positive-group validation.');
 }
+
+list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$model->feed->success = false;
+try {
+    $model->updateArticlePartners();
+    throw new LogicException('Failed article feed was accepted.');
+} catch (RuntimeException $e) {
+    catalogAssert($e->getMessage() === 'QIQO article partner feed failed.', 'Failed feed must be reported.');
+}
+catalogAssert(!$db->queries, 'Failed partner feed must not perform schema changes or product writes.');
+
+list($model, $db) = catalogFixture($article, $groups, $partners, $local, $unreturned);
+$model->feed->articles = [
+    ['id' => '440700', 'partner' => '21'],
+    ['id' => '440700', 'partner' => '21'],
+    ['id' => 'NOT-IN-DELTA', 'partner' => '20'],
+    ['id' => 'MISSING-SKU', 'partner' => '20'],
+    ['id' => 'NO-SUPPLIER', 'partner' => '0'],
+    ['id' => '', 'partner' => '21'],
+];
+$result = $model->updateArticlePartners();
+catalogAssert($result === ['updated' => 1, 'unchanged' => 2, 'missing_product' => 1,
+    'missing_partner' => 1, 'skipped_schema' => 0],
+    'Supplier prefetch must preserve counters and avoid rewriting a repeated feed mapping.');
+catalogAssert((int)$db->rows[5965]['partner'] === 21 && $db->rows[22] === $unreturned,
+    'Supplier update must change only the matching product and retain absent or unchanged products.');
+catalogAssert(array_diff_assoc($db->rows[5965], $local) === ['partner' => '21'],
+    'Supplier update must preserve product pricing, stock, status, descriptions and metadata.');
+catalogAssert(count($db->mutationQueries()) === 1, 'One changed supplier must cause exactly one product update.');
+$productReads = array_values(array_filter($db->queries, static function ($sql) {
+    return preg_match('/^SELECT product_id,\s*(?:sku,\s*)?partner\b/', $sql);
+}));
+catalogAssert(count($productReads) === 1
+    && preg_match('/^SELECT product_id, sku, partner\s+FROM `test_product`$/', $productReads[0]),
+    'Supplier sync must load products once, without a per-article product lookup.');
+$db->queries = [];
+$repeat = $model->updateArticlePartners();
+catalogAssert($repeat['updated'] === 0 && $repeat['unchanged'] === 3 && !$db->mutationQueries(),
+    'An unchanged supplier sync must never write products.');
 
 echo "QIQO catalog reimport tests passed.\n";

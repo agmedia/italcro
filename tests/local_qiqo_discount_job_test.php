@@ -63,6 +63,23 @@ try {
     jobIntegrationAssert($exit !== 0 && $job['error'] === 'initial_empty' && $count() === 1 && $ready() === '0' && !$watermark(), 'Empty initial response must preserve cache, state and readiness.');
     [$exit, $job] = $run(jobIntegrationSoap(jobIntegrationRow(104, 'A', 25)), 500);
     jobIntegrationAssert($exit !== 0 && $job['error'] === 'transport_error' && $count() === 1 && !$watermark(), 'HTTP failures must preserve live data and watermark.');
+    $diagnostics = $job['transport'];
+    jobIntegrationAssert($diagnostics['curl_errno'] === 0 && $diagnostics['http_status'] === 500
+        && $diagnostics['downloaded_bytes'] > 0 && is_numeric($diagnostics['total_seconds'])
+        && is_numeric($diagnostics['connect_seconds']) && is_numeric($diagnostics['start_transfer_seconds']),
+        'HTTP failures must preserve safe numeric transport diagnostics.');
+    foreach ($diagnostics as $value) { jobIntegrationAssert(is_int($value) || is_float($value), 'Transport diagnostics must contain only numeric values.'); }
+    jobIntegrationAssert(strpos(json_encode($job), 'PRIVATE') === false && strpos(json_encode($job), $address) === false,
+        'Private credentials and endpoint must never enter job diagnostics or status.');
+    $unused = stream_socket_server('tcp://127.0.0.1:0', $errno, $error);
+    jobIntegrationAssert((bool)$unused, 'Cannot reserve failed-connection fixture port.');
+    $unusedAddress = stream_socket_get_name($unused, false); fclose($unused);
+    file_put_contents($directory . '/upload/config.php', str_replace('http://' . $address . '/soap', 'http://' . $unusedAddress . '/soap', $config));
+    [$exit, $job] = $run(jobIntegrationSoap(jobIntegrationRow(104, 'A', 25)));
+    file_put_contents($directory . '/upload/config.php', $config);
+    jobIntegrationAssert($exit !== 0 && $job['error'] === 'transport_error' && $job['transport']['curl_errno'] === CURLE_COULDNT_CONNECT
+        && $job['transport']['http_status'] === 0 && $job['transport']['downloaded_bytes'] === 0,
+        'Failed connections must expose an integer cURL code and zero HTTP/body metrics without private strings.');
     $valid = jobIntegrationSoap(jobIntegrationRow(104, 'A', 25));
     [$exit, $job] = $run(substr($valid, 0, -20));
     jobIntegrationAssert($exit !== 0 && $job['error'] === 'invalid_response' && $count() === 1 && !$watermark(), 'Truncated responses must never apply a partial stage.');

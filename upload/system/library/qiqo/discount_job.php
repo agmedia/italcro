@@ -148,7 +148,8 @@ final class QiqoDiscountJob
             $since = $initial ? $initialSince : max($initialSince, date('Y-m-d H:i:s', strtotime($previousWatermark) - 60));
             $update(['mode' => $initial ? 'initial' : 'incremental', 'since' => $since, 'watermark' => $runStartedAt,
                 'phase' => 'downloading', 'message' => 'Preuzimam posebne rabate iz ERP-a. Prozor možete zatvoriti.']);
-            self::download($source, $since, static function ($bytes) use ($update) { $update(['bytes' => $bytes], false); });
+            self::download($source, $since, static function ($bytes) use ($update) { $update(['bytes' => $bytes], false); },
+                static function (array $diagnostics) use ($update) { $update(['transport' => $diagnostics]); });
             $update(['phase' => 'validating', 'message' => 'Provjeravam cijeli ERP odgovor prije izmjene rabata.']);
             $db->query('CREATE TEMPORARY TABLE qiqo_admin_discount_stage LIKE `' . $live . '`');
             $db->query('ALTER TABLE qiqo_admin_discount_stage ADD COLUMN conflict TINYINT NOT NULL DEFAULT 0');
@@ -281,7 +282,7 @@ final class QiqoDiscountJob
         }
     }
 
-    private static function download(string $path, string $since, callable $progress): void
+    private static function download(string $path, string $since, callable $progress, callable $diagnostics): void
     {
         $url = self::config(['QIQO_SOAP_URL', 'QIQO_URL'], 'qiqo.url');
         $username = self::config(['QIQO_USERNAME'], 'qiqo.username');
@@ -314,6 +315,17 @@ final class QiqoDiscountJob
                 }]);
             $ok = curl_exec($curl);
             $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            // Only numeric transport facts are persisted. Raw cURL messages may
+            // contain URLs, account details or snippets of an upstream response.
+            $diagnostics([
+                'curl_errno' => curl_errno($curl),
+                'http_status' => $status,
+                'total_seconds' => round((float)curl_getinfo($curl, CURLINFO_TOTAL_TIME), 3),
+                'name_lookup_seconds' => round((float)curl_getinfo($curl, CURLINFO_NAMELOOKUP_TIME), 3),
+                'connect_seconds' => round((float)curl_getinfo($curl, CURLINFO_CONNECT_TIME), 3),
+                'start_transfer_seconds' => round((float)curl_getinfo($curl, CURLINFO_STARTTRANSFER_TIME), 3),
+                'downloaded_bytes' => $bytes
+            ]);
             if ($limit) { throw self::error('response_limit'); }
             if ($writeFailed) { throw self::error('private_storage'); }
             if ($ok === false || $status < 200 || $status >= 300 || $bytes === 0) { throw self::error('transport_error'); }

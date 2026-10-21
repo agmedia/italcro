@@ -9377,7 +9377,7 @@ ul.sitemap > li > ul > li > ul > li > a {margin-left:28px;opacity:0.8;}
 }
 .header6.italcro-header .italcro-header-row {
 	display:grid;
-	grid-template-columns:220px minmax(0, 1fr) auto;
+	grid-template-columns:250px minmax(0, 1fr) auto;
 	align-items:center;
 	gap:16px;
 	min-height:82px;
@@ -9399,7 +9399,7 @@ ul.sitemap > li > ul > li > ul > li > a {margin-left:28px;opacity:0.8;}
 }
 .header6.italcro-header #logo img {
 	display:block;
-	width:220px;
+	width:250px;
 	max-width:100%!important;
 	max-height:54px;
 	height:auto;
@@ -9558,8 +9558,8 @@ ul.sitemap > li > ul > li > ul > li > a {margin-left:28px;opacity:0.8;}
 	.header6.italcro-header .italcro-primary-nav > ul > li > a {padding:0 12px;}
 }
 @media (min-width:1200px) and (max-width:1439px) {
-	.header6.italcro-header .italcro-header-row {grid-template-columns:180px minmax(0, 1fr) auto;gap:12px;}
-	.header6.italcro-header #logo img {width:180px;}
+	.header6.italcro-header .italcro-header-row {grid-template-columns:200px minmax(0, 1fr) auto;gap:12px;}
+	.header6.italcro-header #logo img {width:200px;}
 	.header6.italcro-header .italcro-primary-nav > ul > li > a {padding:0 6px;}
 	.header6.italcro-header .account-shortcut {max-width:36px;gap:0;}
 	.header6.italcro-header .account-label,

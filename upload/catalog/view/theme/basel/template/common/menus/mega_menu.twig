@@ -18,6 +18,9 @@
 {% if row.class_menu %}
 {% set class = class~row.class_menu %}
 {% endif %}
+{% if row.qiqo_active %}
+{% set class = class~' is-current' %}
+{% endif %}
 
 {% if row.submenu is iterable and row.submenu %}
 {% set caret = "<i class='fa fa-angle-down'></i>" %}
@@ -45,7 +48,7 @@ background-position:{{ row.position }};
 
 <!-- Top level items -->
 <li class="{{ class }}">
-<a {% if row.link %}href="{{ row.link }}"{% elseif disabled_leaf %}aria-disabled="true" tabindex="-1" title="Sadržaj u pripremi" onclick="return false;"{% endif %} class="{{ class_link }} {{ target }}{% if disabled_leaf %} menu-link-disabled{% endif %}">
+<a {% if row.link %}href="{{ row.link }}"{% elseif disabled_leaf %}aria-disabled="true" tabindex="-1" title="Sadržaj u pripremi" onclick="return false;"{% else %}role="button" tabindex="0"{% endif %}{% if row.qiqo_active %} aria-current="page"{% endif %} class="{{ class_link }} {{ target }}{% if disabled_leaf %} menu-link-disabled{% endif %}">
 {{ icon_font }}<span class="top">{{ row.name[lang_id] }}</span>{% if disabled_leaf %}<span class="sr-only"> (sadržaj u pripremi)</span>{% endif %}{{ row.description }}{{ caret }}
 </a>
 {% if row.submenu is iterable and row.submenu %}

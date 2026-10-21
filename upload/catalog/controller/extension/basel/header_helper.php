@@ -120,8 +120,11 @@
 		$data['primary_menu_desktop'] = $this->model_extension_basel_basel_megamenu->getMenu($this->config->get('primary_menu'), $mobile = false);
 		$data['primary_menu_mobile'] = $this->model_extension_basel_basel_megamenu->getMenu($this->config->get('primary_menu'), $mobile = true);
         require_once(DIR_SYSTEM . 'library/qiqo/primary_menu.php');
-        $data['primary_menu_desktop'] = QiqoPrimaryMenu::normalize($data['primary_menu_desktop'], (int)$lang_id, $this->url->link('product/new_product'));
-        $data['primary_menu_mobile'] = QiqoPrimaryMenu::normalize($data['primary_menu_mobile'], (int)$lang_id, $this->url->link('product/new_product'));
+        $currentMenuRequest = $this->request->get;
+        $currentMenuRequest['_request_uri'] = $this->request->server['REQUEST_URI'] ?? '';
+        $currentMenuRequest['_host'] = $this->request->server['HTTP_HOST'] ?? '';
+        $data['primary_menu_desktop'] = QiqoPrimaryMenu::normalize($data['primary_menu_desktop'], (int)$lang_id, $this->url->link('product/new_product'), $this->url->link('information/leaflet'), $currentMenuRequest);
+        $data['primary_menu_mobile'] = QiqoPrimaryMenu::normalize($data['primary_menu_mobile'], (int)$lang_id, $this->url->link('product/new_product'), $this->url->link('information/leaflet'), $currentMenuRequest);
 	}
 	if ($this->config->get('secondary_menu') > 0) {
 		$data['secondary_menu_desktop'] = $this->model_extension_basel_basel_megamenu->getMenu($this->config->get('secondary_menu'), $mobile = false);

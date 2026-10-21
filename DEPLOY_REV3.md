@@ -528,3 +528,32 @@ herd php tests/local_qiqo_new_product_test.php
 herd php tests/local_rev32_search_test.php
 herd php tests/local_rev32_http_test.php
 ```
+
+## 8. Letci — PDF i naslovnice
+
+Nakon backupa baze i koda postaviti nove datoteke te pokrenuti:
+
+```bash
+php scripts/run_sql_migration.php upload/migration/2026-10-21_leaflets.sql
+php scripts/refresh_opencart_modifications.php
+```
+
+U **Sustav → Korisnici → Grupe korisnika** postojećoj administratorskoj grupi dodati `catalog/leaflet` u **Pristup** i **Izmjena**. Sačuvati sva postojeća dopuštenja. U katalogu se zatim pojavljuje stavka **Letci**.
+
+Za objavu otvoriti **Katalog → Letci → Dodaj**, unijeti naslov i datum, prenijeti PDF te spremiti. Limit aplikacije je **30 MB**; PHP/server može imati manji limit. Naslovnica se pokušava izraditi iz prve stranice. Ako server nema podržan pretvarač ili PDF nije moguće prikazati, PDF se ipak sprema uz upozorenje: urediti letak, odabrati **Ručno odabrana slika** i izabrati naslovnicu kroz upravitelj slika. Poveznica za preuzimanje automatski se pojavljuje u spremljenom obrascu.
+
+Javna stranica je `information/leaflet`, a preuzimanje `information/leaflet/download&leaflet_id=ID`. Javno se prikazuju samo uključeni letci čiji je datum objave nastupio. Isključeni i budući letci ostaju dostupni administratoru. Letci nisu artikli i ne pojavljuju se u kategorijama proizvoda.
+
+PDF-ovi se spremaju pod nasumičnim nazivima u privatni `DIR_DOWNLOAD/leaflets/`, izvan web direktorija; mapa mora biti dostupna PHP korisniku. Naslovnice su u `image/catalog/leaflets/`. Automatska izrada koristi Imagick ako dopušta PDF, zatim `pdftoppm`, odnosno Ghostscript (`/usr/bin/gs`) s `-dSAFER`, samo prvom stranicom i ograničenjem procesa od 20 sekundi. Ne isključivati ImageMagickova sigurnosna pravila. Prilagođeni `pdftoppm` može se eksplicitno zadati konstantom `LEAFLET_PDFTOPPM_BINARY`.
+
+Backup mora uključiti tablicu `oc_leaflet`, privatnu mapu PDF-ova i mapu naslovnica. Zamjena ili uklanjanje zapisa ne briše izvorne datoteke; prije promjene sprema se privatni `archive-*.json` sa starim metapodacima za oporavak. Izbrisani zapis više nije javno dostupan.
+
+Provjere pokrenuti PHP-om 7.4. HTTP test koristi isključivo lokalni webshop i privremeni QA račun; ne pokretati ga na produkciji niti objavljivati testni PDF:
+
+```bash
+php74 tests/leaflet_files_test.php
+php74 tests/leaflet_public_test.php
+php74 tests/local_leaflet_http_test.php
+```
+
+Za provjeru prvog lista kroz poseban lokalni `pdftoppm` test podržava `--renderer=/stvarna/putanja/pdftoppm`. Nakon postavljanja na server provjeriti objavljeni i budući/isključeni letak, stvarno preuzimanje PDF-a, automatsku naslovnicu i ručni odabir slike.

@@ -1,49 +1,41 @@
-<div class="main-menu-wrapper hidden-md hidden-lg">
-
-
-    <div class="closemenu">
-        <div class="icon-element mnu">
-
-            <a class="shortcut-wrapper menu-closer hidden-md hidden-lg" title="Navigacija">
-                <i class="icon-line-cross icon"></i>
-            </a>
-
-        </div>
+<nav class="main-menu-wrapper italcro-mobile-nav hidden-md hidden-lg" id="italcro-mobile-navigation" aria-label="Mobilna navigacija" aria-hidden="true" inert>
+    <div class="mobile-menu-heading">
+        <strong>Izbornik</strong>
+        <button type="button" class="shortcut-wrapper menu-closer" title="Zatvori izbornik" aria-label="Zatvori izbornik">
+            <i class="icon-line-cross icon" aria-hidden="true"></i>
+        </button>
     </div>
 
-<ul class="mobile-top lang">
-     <li class="mobile-lang-curr "></li>
+    {% if primary_menu %}
+    <ul class="categories mobile-primary-links" aria-label="Glavni izbornik">
+        {% if primary_menu == 'oc' %}
+            {{ default_menu }}
+        {% else %}
+            {% for key, row in primary_menu_mobile %}
+                {% include 'basel/template/common/menus/mega_menu.twig' %}
+            {% endfor %}
+        {% endif %}
     </ul>
-
-{% if secondary_menu %}
-<ul class="categories">
-    {% if secondary_menu == 'oc' %}
-        <!-- Default menu -->
-        {{ default_menu }}
-    {% elseif secondary_menu is defined %}
-        <!-- Mega menu -->
-        {% for key, row in secondary_menu_mobile %}
-            {% include 'basel/template/common/menus/mega_menu.twig' %}
-        {% endfor %}
     {% endif %}
-</ul>
-{% endif %}
-<ul class="categories">
-    {% include 'basel/template/common/static_links.twig' %}
-</ul>
 
-{% if primary_menu %}
-<ul class="categories">
-{% if primary_menu == 'oc' %}
-<!-- Default menu -->
-{{ default_menu }}
-{% elseif primary_menu is defined %}
-<!-- Mega menu -->
-{% for key, row in primary_menu_mobile %}
-{% include 'basel/template/common/menus/mega_menu.twig' %}
-{% endfor %}
-{% endif %}
-</ul>
-{% endif %}
-</div>
+    {% if secondary_menu %}
+    <p class="mobile-menu-section">{{ basel_text_category }}</p>
+    <ul class="categories mobile-category-links">
+        {% if secondary_menu == 'oc' %}
+            {{ default_menu }}
+        {% else %}
+            {% for key, row in secondary_menu_mobile %}
+                {% include 'basel/template/common/menus/mega_menu.twig' %}
+            {% endfor %}
+        {% endif %}
+    </ul>
+    {% endif %}
+
+    <p class="mobile-menu-section">Moj račun</p>
+    <ul class="categories mobile-account-links">
+        {% include 'basel/template/common/static_links.twig' %}
+        {% if logged %}<li><a href="{{ logout }}">Odjava</a></li>{% endif %}
+    </ul>
+    <ul class="mobile-top lang"><li class="mobile-lang-curr"></li></ul>
+</nav>
 <span class="body-cover menu-closer"></span>

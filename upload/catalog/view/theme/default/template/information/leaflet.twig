@@ -1,0 +1,53 @@
+{{ header }}
+<div id="information-leaflet" class="container leaflet-page">
+  <ul class="breadcrumb">
+    {% for breadcrumb in breadcrumbs %}
+      <li><a href="{{ breadcrumb.href|e }}">{{ breadcrumb.text|e }}</a></li>
+    {% endfor %}
+  </ul>
+  <div class="row">{{ column_left }}
+    {% if column_left and column_right %}
+      {% set class = 'col-sm-6' %}
+    {% elseif column_left or column_right %}
+      {% set class = 'col-sm-9' %}
+    {% else %}
+      {% set class = 'col-sm-12' %}
+    {% endif %}
+    <div id="content" class="{{ class }}">
+      {{ content_top }}
+      <div class="leaflet-intro">
+        <h1 id="page-title">{{ heading_title|e }}</h1>
+        <p>{{ text_intro|e }}</p>
+      </div>
+      {% if leaflets %}
+        <div class="leaflet-grid">
+          {% for leaflet in leaflets %}
+            <article class="leaflet-card">
+              <a class="leaflet-cover" href="{{ leaflet.view|e }}" target="_blank" rel="noopener" aria-label="{{ button_view|e }}: {{ leaflet.title|e }}">
+                {% if leaflet.thumbnail %}
+                  <img src="{{ leaflet.thumbnail|e }}" alt="{{ leaflet.title|e }}" loading="lazy">
+                {% else %}
+                  <span class="leaflet-cover-placeholder" aria-hidden="true"><span>PDF</span></span>
+                {% endif %}
+              </a>
+              <div class="leaflet-card-content">
+                <p class="leaflet-meta">{{ text_published|e }} <time datetime="{{ leaflet.published_at|e }}">{{ leaflet.date|e }}</time></p>
+                <h2><a href="{{ leaflet.view|e }}" target="_blank" rel="noopener">{{ leaflet.title|e }}</a></h2>
+                <p class="leaflet-format">{{ text_pdf|e }}{% if leaflet.size %} · {{ leaflet.size|e }}{% endif %}</p>
+                <div class="leaflet-card-actions">
+                  <a href="{{ leaflet.view|e }}" class="btn btn-default" target="_blank" rel="noopener">{{ button_view|e }}</a>
+                  <a href="{{ leaflet.download|e }}" class="btn btn-primary">{{ button_download|e }}</a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="leaflet-empty"><span class="leaflet-empty-icon" aria-hidden="true">PDF</span><p>{{ text_empty|e }}</p></div>
+      {% endif %}
+      {{ content_bottom }}
+    </div>
+    {{ column_right }}
+  </div>
+</div>
+{{ footer }}

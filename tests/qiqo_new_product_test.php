@@ -47,11 +47,21 @@ $original = [menuRow('Naslovnica', '/'), menuRow('Brza narudžba', 'brza-narudzb
 $menu = QiqoPrimaryMenu::normalize($original, 3, 'index.php?route=product/new_product');
 newProductAssert(array_column(array_column($menu, 'name'), 3) === ['Naslovnica', 'Brza narudžba', 'Novo', 'Akcije', 'Blog', 'Brandovi', 'Letak', 'Rasprodaja', 'Usluge i ponuda'], 'Requested menu sequence must be stable while retaining unrelated links.');
 newProductAssert($menu[2]['link'] === 'index.php?route=product/new_product', 'Novo must point to the filtered page.');
-newProductAssert($menu[6]['link'] === '', 'The pending Letak URL must remain unset.');
+newProductAssert($menu[6]['link'] === 'index.php?route=information/leaflet', 'Letak must always open the internal leaflet page.');
 newProductAssert(QiqoPrimaryMenu::normalize($menu, 3, 'index.php?route=product/new_product') === $menu, 'Menu normalization must be idempotent.');
 $withoutNew = [menuRow('Brza narudžba', 'brza-narudzba'), menuRow('Akcije', 'akcije')];
-newProductAssert(count(QiqoPrimaryMenu::normalize($withoutNew, 3, 'novo')) === 3, 'Missing Novo links must be added.');
+newProductAssert(count(QiqoPrimaryMenu::normalize($withoutNew, 3, 'novo')) === 4, 'Missing Novo and Letak links must be added.');
 $unrelated = [menuRow('Kontakt', 'kontakt')];
 newProductAssert(QiqoPrimaryMenu::normalize($unrelated, 3, 'novo') === $unrelated, 'Unrelated menus must be preserved.');
+
+$activeMenu = QiqoPrimaryMenu::normalize($original, 3, 'novo', 'letak', ['route' => 'information/leaflet']);
+newProductAssert($activeMenu[6]['link'] === 'letak' && $activeMenu[6]['qiqo_active'], 'Letak must use the generated internal URL and mark the current route.');
+newProductAssert(count(array_filter($activeMenu, static function ($row) { return $row['qiqo_active']; })) === 1, 'Only the matching primary destination may be current.');
+$activeMenu = QiqoPrimaryMenu::normalize($original, 3, 'novo', 'letak', ['route' => 'product/new_product', 'page' => 2, 'sort' => 'p.price']);
+newProductAssert($activeMenu[2]['qiqo_active'], 'Pagination and sorting must retain the Novo active state.');
+$activeMenu = QiqoPrimaryMenu::normalize($original, 3, 'novo', 'letak', ['route' => 'information/information', '_request_uri' => '/brza-narudzba?sort=name']);
+newProductAssert($activeMenu[1]['qiqo_active'], 'SEO links must retain their active state with listing query parameters.');
+$activeMenu = QiqoPrimaryMenu::normalize($original, 3, 'novo', 'letak', ['route' => 'product/special', 'page' => 3]);
+newProductAssert($activeMenu[3]['qiqo_active'], 'Akcije must remain current when opened through its route rather than its SEO link.');
 
 echo "QIQO new-product date and navigation tests passed.\n";

@@ -1,4 +1,5 @@
 <?php
+$_['text_leaflet'] = 'Leaflets';
 // Text
 $_['text_api']                  = 'API';
 $_['text_attribute']            = 'Attributes';

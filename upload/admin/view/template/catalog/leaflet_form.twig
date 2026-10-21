@@ -1,0 +1,27 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header"><div class="container-fluid">
+    <div class="pull-right"><button type="submit" form="form-leaflet" class="btn btn-primary" title="{{ button_save }}"><i class="fa fa-save"></i></button> <a href="{{ cancel }}" class="btn btn-default" title="{{ button_cancel }}"><i class="fa fa-reply"></i></a></div>
+    <h1>{{ heading_title }}</h1><ul class="breadcrumb">{% for breadcrumb in breadcrumbs %}<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>{% endfor %}</ul>
+  </div></div>
+  <div class="container-fluid">
+    {% if error_warning %}<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_warning|escape }}</div>{% endif %}
+    <div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_form }}</h3></div><div class="panel-body">
+      <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-leaflet" class="form-horizontal">
+        <input type="hidden" name="csrf" value="{{ csrf|escape }}" />
+        <div class="form-group required"><label class="col-sm-2 control-label" for="input-title">{{ entry_title }}</label><div class="col-sm-10"><input type="text" name="title" id="input-title" value="{{ title|escape }}" maxlength="255" class="form-control" />{% if error_title %}<div class="text-danger">{{ error_title }}</div>{% endif %}</div></div>
+        <div class="form-group required"><label class="col-sm-2 control-label" for="input-date">{{ entry_date }}</label><div class="col-sm-10"><input type="date" name="published_at" id="input-date" value="{{ published_at|escape }}" class="form-control" />{% if error_published_at %}<div class="text-danger">{{ error_published_at }}</div>{% endif %}<p class="help-block">{{ text_publish_help }}</p></div></div>
+        <div class="form-group required"><label class="col-sm-2 control-label" for="input-pdf">{{ entry_pdf }}</label><div class="col-sm-10">
+          {% if pdf_name %}<p>{{ text_pdf_current }}: <a href="{{ pdf_download }}">{{ pdf_name|escape }}</a></p>{% endif %}
+          <input type="file" name="pdf" id="input-pdf" accept="application/pdf,.pdf" /><p class="help-block">{{ text_pdf_help }} {{ text_pdf_keep }}</p>{% if error_pdf %}<div class="text-danger">{{ error_pdf }}</div>{% endif %}
+        </div></div>
+        <div class="form-group"><label class="col-sm-2 control-label" for="input-cover-mode">{{ entry_cover_mode }}</label><div class="col-sm-10"><select name="cover_mode" id="input-cover-mode" class="form-control"><option value="auto"{% if cover_mode == 'auto' %} selected{% endif %}>{{ text_cover_auto }}</option><option value="manual"{% if cover_mode == 'manual' %} selected{% endif %}>{{ text_cover_manual }}</option></select><p class="help-block">{{ text_cover_help }}</p></div></div>
+        <div class="form-group"><label class="col-sm-2 control-label">{{ entry_thumbnail }}</label><div class="col-sm-10"><a href="" id="thumb-image" data-toggle="image" class="img-thumbnail"><img src="{{ thumb|escape }}" alt="" title="" data-placeholder="{{ placeholder|escape }}" /></a><input type="hidden" name="thumbnail" value="{{ thumbnail|escape }}" id="input-image" />{% if error_thumbnail %}<div class="text-danger">{{ error_thumbnail }}</div>{% endif %}</div></div>
+        <div class="form-group"><label class="col-sm-2 control-label" for="input-status">{{ entry_status }}</label><div class="col-sm-10"><select name="status" id="input-status" class="form-control"><option value="1"{% if status %} selected{% endif %}>{{ text_enabled }}</option><option value="0"{% if not status %} selected{% endif %}>{{ text_disabled }}</option></select></div></div>
+        <div class="form-group"><label class="col-sm-2 control-label" for="input-sort">{{ entry_sort_order }}</label><div class="col-sm-10"><input type="number" name="sort_order" id="input-sort" value="{{ sort_order|escape }}" class="form-control" /></div></div>
+        {% if public_download %}<div class="form-group"><label class="col-sm-2 control-label" for="input-download">{{ entry_download }}</label><div class="col-sm-10"><input id="input-download" type="text" readonly value="{{ public_download|escape }}" class="form-control" onclick="this.select();" /><p class="help-block">{{ text_link_help }}</p></div></div>{% endif %}
+      </form>
+    </div></div>
+  </div>
+</div>
+{{ footer }}

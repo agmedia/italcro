@@ -1,0 +1,25 @@
+.leaflet-page .leaflet-intro { margin: 12px 0 30px; max-width: 700px; }
+.leaflet-page .leaflet-intro h1 { margin: 0 0 12px; }
+.leaflet-page .leaflet-intro p { color: #666; font-size: 15px; line-height: 1.7; }
+.leaflet-page .leaflet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 26px; margin-bottom: 45px; }
+.leaflet-page .leaflet-card { min-width: 0; max-width: 430px; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+.leaflet-page .leaflet-cover { aspect-ratio: 210 / 260; background: #f4f4f4; display: flex; align-items: center; justify-content: center; padding: 20px; overflow: hidden; }
+.leaflet-page .leaflet-cover img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; box-shadow: 0 3px 15px rgba(0, 0, 0, .09); }
+.leaflet-page .leaflet-cover-placeholder { display: flex; align-items: center; justify-content: center; width: 52%; height: 76%; background: #fff; color: #777; font-size: 24px; font-weight: 700; letter-spacing: 2px; box-shadow: 0 3px 15px rgba(0, 0, 0, .06); border-top: 4px solid #e4e4e4; }
+.leaflet-page .leaflet-card-content { padding: 23px; display: flex; flex-direction: column; flex-grow: 1; }
+.leaflet-page .leaflet-meta { color: #777; font-size: 12px; margin: 0 0 9px; }
+.leaflet-page .leaflet-card h2 { font-size: 20px; line-height: 1.35; font-weight: 600; margin: 0 0 9px; overflow-wrap: anywhere; }
+.leaflet-page .leaflet-card h2 a { color: inherit; }
+.leaflet-page .leaflet-format { color: #777; font-size: 12px; margin-bottom: 22px; }
+.leaflet-page .leaflet-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.leaflet-page .leaflet-card-actions .btn { white-space: normal; }
+.leaflet-page .leaflet-empty { display: flex; align-items: center; gap: 20px; background: #f7f7f7; border: 1px solid #eee; padding: 30px; margin-bottom: 40px; border-radius: 6px; }
+.leaflet-page .leaflet-empty p { color: #666; margin: 0; line-height: 1.7; }
+.leaflet-page .leaflet-empty-icon { color: #888; background: #fff; border: 1px solid #e4e4e4; padding: 14px 9px; font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+@media (max-width: 575px) {
+  .leaflet-page .leaflet-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .leaflet-page .leaflet-card { max-width: none; }
+  .leaflet-page .leaflet-cover { aspect-ratio: 210 / 230; }
+  .leaflet-page .leaflet-card-content { padding: 20px; }
+  .leaflet-page .leaflet-empty { padding: 23px; gap: 16px; }
+}

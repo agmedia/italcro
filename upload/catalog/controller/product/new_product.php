@@ -4,6 +4,8 @@ require_once(modification(DIR_APPLICATION . 'controller/product/special.php'));
 class ControllerProductNewProduct extends ControllerProductSpecial {
     protected $listing_route = 'product/new_product';
     protected $listing_language = 'product/new_product';
+    protected $default_sort = 'p.date_added';
+    protected $default_order = 'DESC';
 
     protected function getListingTotal() {
         $this->load->model('catalog/new_product');

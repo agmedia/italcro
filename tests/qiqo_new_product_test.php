@@ -9,15 +9,36 @@ function newProductAssert($condition, $message) {
     }
 }
 
-foreach ([null, '', '0000-00-00', '2026-02-30', '2026-10-15', '2026-07-13'] as $date) {
-    newProductAssert(!QiqoNewProduct::isNew(['qiqo_introduced_at' => $date, 'date_added' => '2026-10-14', 'date_available' => '2026-10-14'], '2026-10-14'), 'Only a valid ERP date within the window may mark a product new: ' . var_export($date, true));
+$previousTimezone = date_default_timezone_get();
+date_default_timezone_set('Europe/Zagreb');
+try {
+    $now = '2026-10-21 12:34:56';
+    newProductAssert(QiqoNewProduct::dateWindow(60, $now) === ['2026-08-22 12:34:56', $now], 'The configured 60 days must produce a rolling SQL datetime window.');
+    foreach ([null, '', '0000-00-00', '0000-00-00 00:00:00', '2026-02-30 12:00:00', '2026-10-21 25:00:00',
+        '2026-10-21 12:34:57', '2026-10-22', '2026-08-22 12:34:55'] as $date) {
+        newProductAssert(!QiqoNewProduct::isNew(['date_added' => $date, 'qiqo_introduced_at' => '2026-10-21', 'date_available' => '2026-10-21'], 60, $now),
+            'Only a valid product.date_added inside the configured window may establish newness: ' . var_export($date, true));
+    }
+    foreach (['2026-08-22 12:34:56', '2026-09-01 01:02:03', '2026-10-21 12:34:56', '2026-10-21'] as $date) {
+        newProductAssert(QiqoNewProduct::isNew(['date_added' => $date, 'qiqo_introduced_at' => '2000-01-01'], 60, $now), 'The rolling bounds are inclusive and SQL DATE values mean midnight.');
+    }
+    newProductAssert(!QiqoNewProduct::isNew(['qiqo_introduced_at' => '2026-10-21', 'date_available' => '2026-10-21'], 60, $now), 'ERP introduction and availability dates must never substitute for missing product.date_added.');
+    newProductAssert(!QiqoNewProduct::isNew(['date_added' => '2000-01-01', 'qiqo_introduced_at' => '2026-10-21'], 60, $now), 'A recent ERP introduction must not override an old catalog creation date.');
+    foreach ([0, -1, -60] as $days) {
+        newProductAssert(!QiqoNewProduct::isNew(['date_added' => $now], $days, $now), 'Zero or negative label periods must disable newness.');
+        $rejected = false;
+        try { QiqoNewProduct::dateWindow($days, $now); } catch (InvalidArgumentException $error) { $rejected = true; }
+        newProductAssert($rejected, 'A disabled period cannot produce a usable listing window.');
+    }
+    newProductAssert(!QiqoNewProduct::isNew(['date_added' => '2026-09-01 00:00:00'], 30, $now)
+        && QiqoNewProduct::isNew(['date_added' => '2026-09-01 00:00:00'], 60, $now), 'Changing the configured label period must change list/badge eligibility.');
+    newProductAssert(QiqoNewProduct::dateWindow(1, '2024-03-01 10:11:12') === ['2024-02-29 10:11:12', '2024-03-01 10:11:12'], 'Calendar-day subtraction must honor a leap day.');
+    newProductAssert(QiqoNewProduct::dateWindow(1, '2023-03-01 10:11:12') === ['2023-02-28 10:11:12', '2023-03-01 10:11:12'], 'Calendar-day subtraction must honor a non-leap February.');
+    newProductAssert(QiqoNewProduct::dateWindow(1, '2026-10-25 12:00:00') === ['2026-10-24 12:00:00', '2026-10-25 12:00:00'], 'Store-local calendar days must retain wall-clock time across a daylight-saving change.');
+    newProductAssert(QiqoNewProduct::dateWindow(1, '2026-03-29 12:00:00') === ['2026-03-28 12:00:00', '2026-03-29 12:00:00'], 'The spring daylight-saving boundary must retain store-local time too.');
+} finally {
+    date_default_timezone_set($previousTimezone);
 }
-foreach (['2026-07-14', '2026-09-01', '2026-10-14'] as $date) {
-    newProductAssert(QiqoNewProduct::isNew(['qiqo_introduced_at' => $date], '2026-10-14'), 'ERP dates within three calendar months are new.');
-}
-newProductAssert(!QiqoNewProduct::isNew(['date_added' => '2026-10-14'], '2026-10-14'), 'Reimport creation dates cannot imply newness.');
-newProductAssert(QiqoNewProduct::dateWindow('2026-05-31') === ['2026-02-28', '2026-05-31'], 'Calendar subtraction must clamp a short month.');
-newProductAssert(QiqoNewProduct::dateWindow('2024-05-31') === ['2024-02-29', '2024-05-31'], 'Calendar subtraction must handle leap years.');
 
 function menuRow($name, $link = '') {
     return ['name' => [3 => $name], 'link' => $link, 'submenu' => []];

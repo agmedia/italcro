@@ -99,7 +99,7 @@ class ControllerExtensionModuleBaselProducts extends Controller {
 						break;
 				}
 				
-                // An empty ERP-new list must not render an empty or misleading carousel.
+                // An empty new-products list must not render an empty or misleading carousel.
                 if (isset($results) && !$results && $tab['data_source'] === 'PG' && $tab['product_group'] === 'LA') {
                     continue;
                 }

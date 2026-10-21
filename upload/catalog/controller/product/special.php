@@ -2,6 +2,8 @@
 class ControllerProductSpecial extends Controller {
 	protected $listing_route = 'product/special';
 	protected $listing_language = 'product/special';
+	protected $default_sort = 'p.sort_order';
+	protected $default_order = 'ASC';
 	public function index() {
 		$this->load->language($this->listing_language);
 
@@ -12,7 +14,7 @@ class ControllerProductSpecial extends Controller {
 		if (isset($this->request->get['sort'])) {
 			$sort = $this->request->get['sort'];
 		} else {
-			$sort = 'p.sort_order';
+			$sort = $this->default_sort;
 		}
 
 		if (in_array($sort, ['p.price', 'ps.price'], true)) {
@@ -22,7 +24,7 @@ class ControllerProductSpecial extends Controller {
 		if (isset($this->request->get['order'])) {
 			$order = $this->request->get['order'];
 		} else {
-			$order = 'ASC';
+			$order = $this->default_order;
 		}
 
 		if (isset($this->request->get['page'])) {
@@ -304,8 +306,8 @@ class ControllerProductSpecial extends Controller {
 
 		$data['sorts'][] = array(
 			'text'  => $this->language->get('text_default'),
-			'value' => 'p.sort_order-ASC',
-			'href'  => $this->url->link($this->listing_route, 'sort=p.sort_order&order=ASC' . $url)
+			'value' => $this->default_sort . '-' . $this->default_order,
+			'href'  => $this->url->link($this->listing_route, 'sort=' . $this->default_sort . '&order=' . $this->default_order . $url)
 		);
 
 		$data['sorts'][] = array(

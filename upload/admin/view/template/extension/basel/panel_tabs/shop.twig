@@ -34,9 +34,10 @@
 
 
 <div class="form-group">
-    <label class="col-sm-2 control-label"><span data-toggle="tooltip" title="Set how many days to show the new-label on new products. Set it as 0 to disable">New label period</span></label>
+    <label class="col-sm-2 control-label"><span data-toggle="tooltip" title="Broj dana od dodavanja artikla u webshop. Vrijedi za stranicu Novo i oznaku Novo; 0 isključuje oboje.">New label period</span></label>
     <div class="col-sm-10">
     <input class="form-control" name="settings[basel][newlabel_status]" value="{{ newlabel_status ? newlabel_status : '0' }}" />
+    <p class="help-block">Broj dana od datuma dodavanja artikla u webshop. Ista vrijednost vrijedi za stranicu Novo i oznaku Novo na artiklima. Vrijednost 0 isključuje oba prikaza.</p>
     </div>                   
 </div>
 

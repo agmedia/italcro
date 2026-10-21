@@ -22,7 +22,7 @@ try {
     $row = $rows->fetch_assoc();
     $oldCount = substr_count($row['xml'], $old);
     $newCount = substr_count($row['xml'], $new);
-    if ($oldCount === 0 && $newCount === 1) { echo "Basel ERP date badge condition already applied.\n"; exit(0); }
+    if ($oldCount === 0 && $newCount === 1) { echo "Basel shared new-label condition already applied.\n"; exit(0); }
     if ($oldCount !== 1 || $newCount !== 0) { throw new RuntimeException('Installed badge code differs; review before changing it.'); }
     $xml = str_replace($old, $new, $row['xml']);
     if (simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NONET) === false) {
@@ -32,7 +32,7 @@ try {
     $db->query("UPDATE `" . $table . "` SET xml='" . $db->real_escape_string($xml) . "' WHERE modification_id=" . (int)$row['modification_id']
         . " AND SHA2(xml,256)='" . hash('sha256', $row['xml']) . "'");
     if ($db->affected_rows !== 1) { throw new RuntimeException('Modification changed concurrently; no patch applied.'); }
-    echo "Applied Basel ERP date badge condition; refresh modifications next.\n";
+    echo "Applied Basel shared new-label condition; refresh modifications next.\n";
 } catch (Throwable $error) {
     fwrite(STDERR, ($error instanceof mysqli_sql_exception ? 'Modification database operation failed.' : $error->getMessage()) . PHP_EOL);
     exit(1);

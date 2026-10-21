@@ -131,7 +131,7 @@ class ModelCatalogProduct extends Model {
 				'tax_class_id'     => $query->row['tax_class_id'],
 				'date_available'   => $query->row['date_available'],
 				'qiqo_introduced_at' => $query->row['qiqo_introduced_at'] ?? null,
-				'qiqo_is_new'      => QiqoNewProduct::isNew($query->row),
+				'qiqo_is_new'      => QiqoNewProduct::isNew($query->row, (int)$this->config->get('newlabel_status')),
 				'weight'           => $query->row['weight'],
 				'weight_class_id'  => $query->row['weight_class_id'],
 				'length'           => $query->row['length'],
@@ -421,7 +421,7 @@ class ModelCatalogProduct extends Model {
 	}
 
     public function getLatestProducts($limit) {
-        // Newness comes from the ERP introduction date, never a local reimport.
+        // Share the configured webshop creation-date window with the Novo page.
         $this->load->model('catalog/new_product');
         return $this->model_catalog_new_product->getProducts(array('limit' => $limit));
     }

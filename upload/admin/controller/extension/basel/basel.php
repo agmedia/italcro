@@ -151,6 +151,8 @@ class ControllerExtensionBaselBasel extends Controller {
             $this->cache->delete('basel_mandatory_css_store_' . $data['store_id']);
             $this->cache->delete('basel_styles_cache_store_' . $data['store_id']);
             $this->cache->delete('basel_fonts_cache_store_' . $data['store_id']);
+            $this->cache->delete('product');
+            $this->cache->delete('megamenu');
 
             $this->response->redirect($this->url->link('extension/basel/basel', $token_prefix . '=' . $this->session->data[$token_prefix] . '&store_id=' . (int) $data['store_id'], true));
         }

@@ -498,7 +498,11 @@ php scripts/import_qiqo_partner_discounts.php --source=/home/amds/private-export
 
 Tek nakon prolaska provjere ponoviti isti poziv s `--apply`. Importer provjerava cjelovitost gzipa/XML-a/CSV-a, broj i hash, konfliktne duplikate i vremenski interval. Ne briše stare rabate. Cache i watermark upisuje u jednoj InnoDB transakciji, a `initial_complete=1` objavljuje nakon uspješnog commita. Postojeća MyISAM `setting` tablica ne mora se konvertirati. Neuspjela objava readiness zastavice ostavlja potrebu za provjerom; nije razlog za ručno otključavanje stare sinkrone akcije.
 
-`qiqo_introduced_at` je nullable datum za pravilo tri kalendarska mjeseca. ERP još mora potvrditi naziv i značenje izvornog API polja. Ne puni se iz `date_added`, `date_available` ni datuma reimporta. Dok nema potvrđenih datuma, Novo prikazuje prazno stanje, a prazan „Novo u ponudi” carousel se ne prikazuje. Novo pravilo dostave također ostaje na čekanju dogovorenih poslovnih detalja.
+Stranica **Novo**, „Novo u ponudi” carousel i oznaka **Novo** koriste `product.date_added` te zajednički broj dana iz Basel postavke **New label period** (`newlabel_status`). Postojeća vrijednost 60 dana ostaje sačuvana; promijeniti je samo kroz tu postavku. Vrijednost 0 isključuje prikaz novih artikala i oznake. Prazan carousel ne prikazuje se.
+
+Ponovni uvoz postojećeg artikla čuva izvorni `date_added`, pa ne pokreće novo razdoblje prikaza. Novi artikl dobiva datum dodavanja u webshop pri prvom uvozu. ERP datum uvođenja i postojeći nullable stupac `qiqo_introduced_at` više nisu preduvjet za prikaz na stranici Novo niti određuju oznaku Novo.
+
+Novo pravilo dostave zasebno ostaje na čekanju dogovorenih poslovnih detalja.
 
 ### Lokalna provjera Revizije 3.2
 

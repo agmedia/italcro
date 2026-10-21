@@ -602,6 +602,7 @@ class ModelExtensionModuleQiqo extends Model
         if (!$this->acquireQiqoWriteLock($lockName)) {
             return -1;
         }
+        $updated = 0;
         try {
             $qiqo = $this->createCatalogConnection();
             $rows = $qiqo->getArticles();
@@ -618,19 +619,43 @@ class ModelExtensionModuleQiqo extends Model
             $hasPakColumn = $this->ensureProductPakColumn();
             $hasJmColumn = $this->ensureProductJmColumn();
             $hasPakkolColumn = $this->ensureProductPakkolColumn();
-            $updated = 0;
+            $fields = ['product_id', 'sku', 'quantity', 'minimum', 'ean', 'sort_order'];
+            if ($hasPakColumn) $fields[] = 'pak';
+            if ($hasJmColumn) $fields[] = 'jm';
+            if ($hasPakkolColumn) $fields[] = 'pakkol';
+            $products = $this->db->query('SELECT ' . implode(', ', $fields) . ' FROM `' . DB_PREFIX . 'product`');
+            $productsBySku = [];
+            foreach ($products->rows as $product) {
+                $key = 'sku:' . strtolower(trim((string)$product['sku']));
+                if (!isset($productsBySku[$key])) $productsBySku[$key] = $product;
+            }
             foreach ($normalized['rows'] as $a) {
                 $a = $this->normalizeCatalogStorageRow($a, $quantityType);
-                $sku = $this->db->escape($a['sku']);
-                $exists = $this->db->query("SELECT product_id FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
-                if (!$exists->num_rows) continue;
-                $productId = (int)$exists->row['product_id'];
-                $assignments = ["quantity = '" . $a['quantity'] . "'", "minimum = '" . $a['minimum'] . "'",
-                    "ean = '" . $this->db->escape($a['ean']) . "'", "sort_order = '" . $a['sort_order'] . "'", 'date_modified = NOW()'];
-                if ($hasPakColumn) $assignments[] = "pak = '" . $a['pak'] . "'";
-                if ($hasJmColumn) $assignments[] = "jm = '" . $this->db->escape($a['jm']) . "'";
-                if ($hasPakkolColumn) $assignments[] = "pakkol = '" . $a['pakkol'] . "'";
-                $this->db->query("UPDATE " . DB_PREFIX . "product SET " . implode(', ', $assignments) . " WHERE product_id = '" . $productId . "'");
+                $key = 'sku:' . strtolower($a['sku']);
+                if (!isset($productsBySku[$key])) continue;
+                $product = $productsBySku[$key];
+                $values = ['quantity' => $a['quantity'], 'minimum' => $a['minimum'],
+                    'ean' => $a['ean'], 'sort_order' => $a['sort_order']];
+                if ($hasPakColumn) $values['pak'] = $a['pak'];
+                if ($hasJmColumn) $values['jm'] = $a['jm'];
+                if ($hasPakkolColumn) $values['pakkol'] = $a['pakkol'];
+                $changed = false;
+                foreach ($values as $field => $value) {
+                    if (in_array($field, ['ean', 'jm'], true)) {
+                        $changed = $changed || (string)$product[$field] !== (string)$value;
+                    } else {
+                        $changed = $changed || (float)$product[$field] !== (float)$value;
+                    }
+                }
+                if (!$changed) continue;
+                $assignments = [];
+                foreach ($values as $field => $value) {
+                    $assignments[] = '`' . $field . "` = '" . $this->db->escape((string)$value) . "'";
+                }
+                $assignments[] = 'date_modified = NOW()';
+                $this->db->query("UPDATE `" . DB_PREFIX . "product` SET " . implode(', ', $assignments)
+                    . " WHERE product_id = '" . (int)$product['product_id'] . "'");
+                $productsBySku[$key] = array_merge($product, $values);
                 $updated++;
             }
             $this->log('Quantities', "END stock update rows={$updated}");
@@ -639,6 +664,7 @@ class ModelExtensionModuleQiqo extends Model
             $this->log('Quantities', 'ABORT stock update failed; check catalog sync log.');
             return -1;
         } finally {
+            if ($updated > 0) $this->invalidateCatalogCache();
             $this->releaseQiqoWriteLock($lockName);
         }
     }
@@ -655,7 +681,7 @@ class ModelExtensionModuleQiqo extends Model
         try {
             return $this->updatePricesLocked();
         } catch (\Throwable $error) {
-            $this->log('Prices', 'ABORT price update failed; prices preserved.');
+            $this->log('Prices', 'ABORT price update did not finish; review possible partial updates before retry.');
             return -1;
         } finally {
             $this->releaseQiqoWriteLock($lockName);
@@ -665,7 +691,7 @@ class ModelExtensionModuleQiqo extends Model
     private function updatePricesLocked(): int
     {
         try {
-            $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+            $qiqo = $this->createCatalogConnection();
             $articleRows = $qiqo->getArticles();
             $fetchResult = $qiqo->getLastFetchResult();
         } catch (\Throwable $error) {
@@ -686,25 +712,40 @@ class ModelExtensionModuleQiqo extends Model
 
         $hasVpcColumn = $this->ensureProductVpcColumn();
         $updated  = 0;
+        $fields = ['product_id', 'sku', 'price', 'cent'];
+        if ($hasVpcColumn) $fields[] = 'vpc';
+        $products = $this->db->query('SELECT ' . implode(', ', $fields) . ' FROM `' . DB_PREFIX . 'product`');
+        $productsBySku = [];
+        foreach ($products->rows as $product) {
+            $key = 'sku:' . strtolower(trim((string)$product['sku']));
+            if (!isset($productsBySku[$key])) $productsBySku[$key] = $product;
+        }
 
         $this->log('Prices', '=== START UPDATE PRICES (with cent factor) ===');
 
-        foreach ($articles['rows'] as $a) {
-            $sku = $this->db->escape($a['sku']);
-            $exists = $this->db->query("SELECT product_id, price FROM " . DB_PREFIX . "product WHERE sku = '{$sku}' LIMIT 1");
-            if (!$exists->num_rows) continue;
-
-            $product_id = (int)$exists->row['product_id'];
-            $vpc = (float)$a['vpc'];
-            $price = (float)$a['price'];
-            $cent = $a['cent'] !== '' ? $a['cent'] : null;
-            $vpcSql = $hasVpcColumn ? "vpc = '{$vpc}', " : "";
-
-            $this->db->query("UPDATE " . DB_PREFIX . "product 
-	                          SET price = '{$price}', {$vpcSql}cent = '{$cent}', date_modified = NOW()
-	                          WHERE product_id = '{$product_id}'");
-
-            $updated++;
+        try {
+            foreach ($articles['rows'] as $a) {
+                $key = 'sku:' . strtolower($a['sku']);
+                if (!isset($productsBySku[$key])) continue;
+                $product = $productsBySku[$key];
+                $values = ['price' => number_format((float)$a['price'], 7, '.', ''), 'cent' => $a['cent']];
+                if ($hasVpcColumn) $values['vpc'] = number_format((float)$a['vpc'], 7, '.', '');
+                $changed = (string)$product['cent'] !== $a['cent']
+                    || abs((float)$product['price'] - $a['price']) > 0.00000005
+                    || ($hasVpcColumn && abs((float)$product['vpc'] - $a['vpc']) > 0.00000005);
+                if (!$changed) continue;
+                $assignments = [];
+                foreach ($values as $field => $value) {
+                    $assignments[] = '`' . $field . "` = '" . $this->db->escape((string)$value) . "'";
+                }
+                $assignments[] = 'date_modified = NOW()';
+                $this->db->query("UPDATE `" . DB_PREFIX . "product` SET " . implode(', ', $assignments)
+                    . " WHERE product_id = '" . (int)$product['product_id'] . "'");
+                $productsBySku[$key] = array_merge($product, $values);
+                $updated++;
+            }
+        } finally {
+            if ($updated > 0) $this->invalidateCatalogCache();
         }
 
         $this->log('Prices', "=== END UPDATE | Ažurirano {$updated} proizvoda ===");

@@ -1,6 +1,16 @@
 # Italcro Revizija 3.0/3.1 — deploy i redoslijed ažuriranja
 
-Zadnje ažuriranje: 2026-10-14
+Zadnje ažuriranje: 2026-10-21
+
+### Ažuriranje iz administracije — 2026-10-21
+
+QIQO Importer sada izravno prikazuje ažuriranje količina, osnovnih cijena i dobavljača postojećih artikala. Ti postupci ne dodaju nove artikle; učitavaju lokalne podatke jednom i spremaju samo promjene.
+
+Gumb **Uvezi rabate iz ERP-a** pokreće zaseban PHP CLI posao u pozadini. Početni dohvat koristi spremljeni `qiqo_partner_article_initial_since`; nakon uspješnog uvoza gumb postaje **Ažuriraj rabate kupac–artikl** i preuzima promjene od zadnjeg uspješnog početka uvoza uz preklapanje od minute. Administrator vidi fazu, broj redaka, preuzete megabajte i rezultat te može zatvoriti i ponovno otvoriti stranicu.
+
+Odgovor se preuzima u privatnu datoteku, provjerava strukturno i po svakom retku te priprema u privremenoj InnoDB tablici. Tek nakon uspješne provjere i privatne sigurnosne kopije slijedi transakcijski upis rabata i watermarka. Odsutni rabati ne brišu se. Početna oznaka dovršenosti objavljuje se nakon commita. Prekinut/neispravan odgovor i konfliktni duplikati ne objavljuju djelomične podatke.
+
+Poslovi i sigurnosne kopije su u `.qiqo-private/discount-jobs/` izvan `upload/` web korijena i izvan Gita. Pokretanje/status zahtijevaju administratorsku sesiju; pokretanje dodatno traži modify dopuštenje i CSRF token. Server mora dopuštati PHP CLI i `exec`. Vanjski CSV/XML importer s ERP manifestom i dalje je dostupan kao alternativni kanal; nije preduvjet za izravni SOAP uvoz kroz novi gumb.
 
 Ovo je runbook za produkcijski deploy promjena Revizije 3.0 i 3.1, sigurnog QIQO synca i pripreme `NarudzbaSend` outboxa. Vanjsko slanje narudžbi, početno partner–artikl punjenje i destruktivni FULL syncovi namjerno su ugašeni dok se ne ispune niže navedeni uvjeti.
 
@@ -298,7 +308,7 @@ Prvo potvrdi da novi QIQO credential i transport rade. Zatim u QIQO Importeru ko
 6. **Sync akcijskog cjenika** — inkrementalni gumb, bez oznake FULL
 7. **Ažuriraj partnere na artiklima**
 
-**Sync partner–artikl rabata (inkrementalno)** ostaje onemogućen dok kontrolirani početni import ne završi i dok se ne potvrde broj slogova, integritet cachea i watermark. Stari watermark bez stvarno popunjene tablice nije dovoljan i namjerno ne otključava gumb.
+Stara sinkrona partner–artikl akcija ostaje onemogućena do početnog punjenja. Za početno punjenje i kasnije promjene koristite novi pozadinski gumb opisan na početku dokumenta. Stari watermark bez stvarno popunjene tablice ne otključava sinkronu akciju.
 
 Svaki feed sada validira transport i cijeli batch prije pisanja. Prazan, neispravan ili konfliktan feed mora završiti greškom/no-opom, a ne brisanjem ili nuliranjem podataka.
 
@@ -307,11 +317,11 @@ Brend/grupa gumbi nisu dio rutinskog updatea:
 - **Kreiraj proizvođače**, **Linkaj grupe** i **Linkaj brandove** koristiti samo u kontroliranom maintenance zahvatu;
 - force linkanje ne pokretati bez svježeg backupa i prethodne provjere broja pogođenih artikala.
 
-### B. Početni partner–artikl import i FULL update — trenutno NE pokretati
+### B. Početni partner–artikl import i FULL update
 
 Italcro je potvrdio da `qPartnerArtikalRabatWeb` vraća samo promjene nakon `datum`, a prazan uspješan odgovor znači da promjena nije bilo. Zato se taj feed nikada ne koristi kao destruktivna FULL zamjena.
 
-Za početnih približno 2 milijuna slogova od `2026-08-01 00:00:00` treba dogovoriti jedan od sljedećih kontroliranih kanala:
+Početni dohvat od spremljenog datuma `2026-08-01 00:00:00` sada se može pokrenuti novim pozadinskim gumbom. Za alternativni vanjski izvoz ili odgovor koji prelazi ograničenje pozadinskog radnika dostupni su sljedeći kanali:
 
 - paginirani API;
 - paketirani/streamani poziv;

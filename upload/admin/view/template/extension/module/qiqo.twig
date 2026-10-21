@@ -61,7 +61,7 @@
                             #tab-sync .qiqo-section-toggle { display: block; }
                             #tab-sync .qiqo-section-toggle .fa-chevron-down { margin-top: 2px; }
                         </style>
-                        <p class="text-muted">Odaberite što se promijenilo u ERP-u. Za cjelovito osvježavanje prvo ažurirajte katalog, zatim podatke kupaca i rabate.</p>
+                        <p class="text-muted">Ažurirajte artikle, podatke kupaca i njihove rabate iz ERP-a. Svaku radnju pokrećete zasebno, prema tome što se promijenilo.</p>
 
                         <form action="{{ action }}" method="post">
                             <div class="panel panel-default">
@@ -71,16 +71,19 @@
                                 <div class="panel-body">
                                     <div class="row">
                                         <div class="col-sm-8">
-                                            <h4>1. Katalog artikala</h4>
-                                            <p>Za nove artikle ili promjene naziva, opisa, zaliha, cijena, pakiranja, dobavljača, redoslijeda i aktivnosti.</p>
-                                            <p class="help-block">Najprije pogledajte promjene, zatim pokrenite uvoz. Nakon uvoza nije potrebno zasebno ažurirati količine, cijene ni dobavljače.</p>
+                                            <h4>1. Postojeći artikli</h4>
+                                            <p>Osvježite zalihe, redovne cijene ili dobavljače postojećih artikala prema promjenama u ERP-u.</p>
+                                            <p class="help-block">Za nove artikle te promjene naziva, opisa i ostalih podataka otvorite potpuni uvoz kataloga u dodatnim opcijama ispod.</p>
                                         </div>
                                         <div class="col-sm-4 qiqo-actions">
-                                            <button type="submit" name="action" value="preview_catalog" class="btn btn-default btn-block">
-                                                <i class="fa fa-search"></i> Pregled promjena prije uvoza
+                                            <button type="submit" name="action" value="update_qty" class="btn btn-primary btn-block">
+                                                <i class="fa fa-cubes"></i> Ažuriraj količine artikala
                                             </button>
-                                            <button type="submit" name="action" value="import" class="btn btn-primary btn-block">
-                                                <i class="fa fa-download"></i> Ažuriraj katalog iz ERP-a
+                                            <button type="submit" name="action" value="update_price" class="btn btn-primary btn-block">
+                                                <i class="fa fa-euro"></i> Ažuriraj cijene artikala
+                                            </button>
+                                            <button type="submit" name="action" value="update_article_partners" class="btn btn-default btn-block">
+                                                <i class="fa fa-link"></i> Ažuriraj dobavljače na artiklima
                                             </button>
                                         </div>
                                     </div>
@@ -105,22 +108,32 @@
                                     <div class="row">
                                         <div class="col-sm-8">
                                             <h4>3. Rabati kupac–artikl</h4>
-                                            <p>Za poseban rabat dogovoren s kupcem za određeni artikl, primjerice 18% umjesto općeg rabata kupca od 15%.</p>
-                                            {% if partner_discount_incremental_ready %}
-                                                <p class="help-block">Preuzima promjene od zadnje uspješne sinkronizacije i čuva postojeće rabate.</p>
-                                            {% else %}
-                                                <div class="alert alert-warning" style="margin-bottom:0;">
-                                                    <i class="fa fa-exclamation-triangle"></i> <strong>Potrebno je početno punjenje rabata.</strong>
-                                                    Održavanje prvo treba uvesti cijeli skup od približno 2 milijuna zapisa na serveru. Nakon toga ovdje će biti dostupno redovno ažuriranje promjena. Postojeći rabati ostaju sačuvani.
-                                                </div>
-                                            {% endif %}
+                                            <p>Preuzima posebne rabate dogovorene s kupcem za određeni artikl, primjerice 18% umjesto općeg rabata kupca od 15%.</p>
+                                            <p class="help-block">Uvoz radi u pozadini na serveru. Napredak pratite ovdje, a praćenje se nastavlja i nakon osvježavanja stranice.</p>
                                         </div>
                                         <div class="col-sm-4 qiqo-actions">
-                                            <button type="submit" name="action" value="sync_partner_discounts" class="btn btn-primary btn-block"{% if not partner_discount_incremental_ready %} disabled title="Dostupno nakon početnog punjenja rabata na serveru"{% endif %}>
-                                                <i class="fa fa-percent"></i> Ažuriraj rabate kupac–artikl
+                                            <button type="button" name="action" value="sync_partner_discounts" id="qiqo-discount-start" class="btn btn-primary btn-block">
+                                                <i class="fa fa-percent"></i> <span>{% if partner_discount_incremental_ready %}Ažuriraj rabate kupac–artikl{% else %}Uvezi rabate iz ERP-a{% endif %}</span>
                                             </button>
                                         </div>
                                     </div>
+                                    {% if not partner_discount_incremental_ready %}
+                                        <div class="alert alert-info" id="qiqo-discount-initial-note" style="margin-bottom:0;">
+                                            <i class="fa fa-info-circle"></i> Prvi uvoz preuzima cijeli skup rabata i može trajati dulje. Pokrenite ga ovim gumbom. Nakon prvog uvoza ažuriraju se samo promjene; postojeći rabati ostaju dostupni dok se novi podaci pripremaju.
+                                        </div>
+                                    {% endif %}
+                                    <div id="qiqo-discount-progress" class="alert alert-info" style="display:none; margin-top:15px; margin-bottom:0;" role="status" aria-live="polite" aria-atomic="true">
+                                        <p><i id="qiqo-discount-progress-icon" class="fa fa-refresh fa-spin"></i> <strong id="qiqo-discount-progress-title"></strong></p>
+                                        <p id="qiqo-discount-message"></p>
+                                        <p class="small" id="qiqo-discount-details">
+                                            <span id="qiqo-discount-phase"></span>
+                                            <span> · Obrađeni zapisi: <strong id="qiqo-discount-rows">0</strong></span>
+                                            <span> · Preuzeto: <strong id="qiqo-discount-bytes">0 MB</strong></span>
+                                        </p>
+                                        <p class="small" id="qiqo-discount-updated"></p>
+                                        <p id="qiqo-discount-refresh" style="display:none;"><a href="{{ action }}">Osvježi ostale opcije nakon uvoza</a></p>
+                                    </div>
+                                    <noscript><p class="text-danger">Za pokretanje i praćenje uvoza rabata omogućite JavaScript u pregledniku.</p></noscript>
                                 </div>
                             </div>
 
@@ -131,7 +144,7 @@
                                     <h3 class="panel-title">
                                         <a class="qiqo-section-toggle collapsed" data-toggle="collapse" href="#qiqo-quick-updates" role="button" aria-expanded="false" aria-controls="qiqo-quick-updates">
                                             <i class="fa fa-chevron-down pull-right"></i>
-                                            <i class="fa fa-bolt"></i> Pojedinačna ažuriranja — kada ne trebate cijeli uvoz
+                                            <i class="fa fa-bolt"></i> Dodatna ažuriranja i potpuni katalog
                                         </a>
                                     </h3>
                                 </div>
@@ -139,31 +152,13 @@
                                     <div class="panel-body">
                                         <div class="row">
                                             <div class="col-sm-8">
-                                                <h4>Količine artikala</h4>
-                                                <p class="help-block">Kada želite osvježiti zalihe postojećih artikala bez cijelog kataloga. Osvježava i podatke o minimalnoj količini i pakiranju.</p>
+                                                <h4>Potpuni uvoz kataloga</h4>
+                                                <p>Za nove artikle ili promjene naziva, opisa, zaliha, cijena, pakiranja, dobavljača, redoslijeda i aktivnosti.</p>
+                                                <p class="help-block">Najprije pogledajte promjene, zatim pokrenite uvoz. Nakon uvoza nije potrebno zasebno ažurirati količine, cijene ni dobavljače.</p>
                                             </div>
                                             <div class="col-sm-4 qiqo-actions">
-                                                <button type="submit" name="action" value="update_qty" class="btn btn-default btn-block"><i class="fa fa-cubes"></i> Ažuriraj količine artikala</button>
-                                            </div>
-                                        </div>
-                                        <hr>
-                                        <div class="row">
-                                            <div class="col-sm-8">
-                                                <h4>Osnovne cijene artikala</h4>
-                                                <p class="help-block">Kada su promijenjene redovne cijene u ERP-u. Za rabate pojedinog kupca koristite korake 2 i 3 iznad.</p>
-                                            </div>
-                                            <div class="col-sm-4 qiqo-actions">
-                                                <button type="submit" name="action" value="update_price" class="btn btn-default btn-block"><i class="fa fa-euro"></i> Ažuriraj cijene artikala</button>
-                                            </div>
-                                        </div>
-                                        <hr>
-                                        <div class="row">
-                                            <div class="col-sm-8">
-                                                <h4>Dobavljači na artiklima</h4>
-                                                <p class="help-block">Osvježava vezu artikla s dobavljačem iz ERP-a. Rabat kupca ažurira se kroz „Rabati kupac–artikl”.</p>
-                                            </div>
-                                            <div class="col-sm-4 qiqo-actions">
-                                                <button type="submit" name="action" value="update_article_partners" class="btn btn-default btn-block"><i class="fa fa-link"></i> Ažuriraj dobavljače na artiklima</button>
+                                                <button type="submit" name="action" value="preview_catalog" class="btn btn-default btn-block"><i class="fa fa-search"></i> Pregled promjena prije uvoza</button>
+                                                <button type="submit" name="action" value="import" class="btn btn-primary btn-block"><i class="fa fa-download"></i> Ažuriraj katalog iz ERP-a</button>
                                             </div>
                                         </div>
                                         <hr>
@@ -258,6 +253,215 @@
                                 </div>
                             </div>
                         </form>
+                        <script>
+                        (function ($) {
+                            'use strict';
+
+                            $(function () {
+                                var $button = $('#qiqo-discount-start');
+                                var $progress = $('#qiqo-discount-progress');
+                                var startUrl = '{{ discount_job_start|default('')|escape('js') }}'.replace(/&amp;/g, '&');
+                                var statusUrl = '{{ discount_job_status|default('')|escape('js') }}'.replace(/&amp;/g, '&');
+                                var csrf = '{{ discount_job_csrf|default('')|escape('js') }}';
+                                var storageKey = 'qiqo-discount-job:' + '{{ action|escape('js') }}';
+                                var ready = {{ partner_discount_incremental_ready ? 'true' : 'false' }};
+                                var activeJobId = null;
+                                var pollTimer = null;
+                                var initialJob = null;
+                                var phaseLabels = {
+                                    queued: 'Čeka pokretanje',
+                                    starting: 'Pokretanje',
+                                    connecting: 'Povezivanje s ERP-om',
+                                    download: 'Preuzimanje iz ERP-a',
+                                    downloading: 'Preuzimanje iz ERP-a',
+                                    parse: 'Čitanje podataka',
+                                    parsing: 'Čitanje podataka',
+                                    staging: 'Priprema podataka',
+                                    validate: 'Provjera podataka',
+                                    validating: 'Provjera podataka',
+                                    import: 'Uvoz podataka',
+                                    importing: 'Uvoz podataka',
+                                    applying: 'Primjena rabata',
+                                    publishing: 'Primjena rabata',
+                                    completed: 'Završeno',
+                                    failed: 'Prekinuto'
+                                };
+
+                                function storedJob(value) {
+                                    try {
+                                        if (arguments.length) {
+                                            if (value) {
+                                                window.sessionStorage.setItem(storageKey, value);
+                                            } else {
+                                                window.sessionStorage.removeItem(storageKey);
+                                            }
+                                        } else {
+                                            return window.sessionStorage.getItem(storageKey);
+                                        }
+                                    } catch (error) {
+                                        // The server still tracks the job when browser storage is unavailable.
+                                    }
+                                    return null;
+                                }
+
+                                function stateOf(job) {
+                                    var state = job ? (job.state || job.status) : '';
+                                    return state === 'complete' ? 'completed' : state;
+                                }
+
+                                function validJob(job) {
+                                    return job && typeof job.id === 'string' && job.id.length > 0 &&
+                                        ['queued', 'running', 'completed', 'failed'].indexOf(stateOf(job)) !== -1;
+                                }
+
+                                function setBusy(busy, starting) {
+                                    $button.prop('disabled', busy);
+                                    $button.find('i').attr('class', busy ? 'fa fa-refresh fa-spin' : 'fa fa-percent');
+                                    $button.find('span').text(busy
+                                        ? (starting ? 'Pokretanje uvoza…' : 'Uvoz je u tijeku…')
+                                        : (ready ? 'Ažuriraj rabate kupac–artikl' : 'Uvezi rabate iz ERP-a'));
+                                }
+
+                                function showProblem(message, keepRunning) {
+                                    $progress.removeClass('alert-info alert-success alert-warning alert-danger')
+                                        .addClass(keepRunning ? 'alert-warning' : 'alert-danger').show();
+                                    $('#qiqo-discount-progress-icon').attr('class', 'fa fa-exclamation-triangle');
+                                    $('#qiqo-discount-progress-title').text(keepRunning
+                                        ? 'Praćenje privremeno nije dostupno' : 'Uvoz nije potvrđen');
+                                    $('#qiqo-discount-message').text(message);
+                                    if (!keepRunning) {
+                                        clearTimeout(pollTimer);
+                                        activeJobId = null;
+                                        storedJob(null);
+                                        setBusy(false);
+                                    }
+                                }
+
+                                function renderJob(job) {
+                                    var state = stateOf(job);
+                                    var running = state === 'queued' || state === 'running';
+                                    var rows = Number(job.rows);
+                                    var bytes = Number(job.bytes);
+                                    var updatedAt = job.updated_at ? new Date(job.updated_at) : null;
+                                    activeJobId = running ? job.id : null;
+                                    storedJob(running ? job.id : null);
+                                    if (state === 'completed') {
+                                        ready = true;
+                                        $('#qiqo-discount-initial-note').hide();
+                                    }
+                                    setBusy(running);
+                                    $progress.removeClass('alert-info alert-success alert-warning alert-danger')
+                                        .addClass(state === 'completed' ? 'alert-success' : (state === 'failed' ? 'alert-danger' : 'alert-info')).show();
+                                    $('#qiqo-discount-progress-icon').attr('class', running
+                                        ? 'fa fa-refresh fa-spin' : (state === 'completed' ? 'fa fa-check-circle' : 'fa fa-exclamation-triangle'));
+                                    $('#qiqo-discount-progress-title').text(state === 'completed'
+                                        ? 'Rabati su ažurirani' : (state === 'failed' ? 'Uvoz nije dovršen' : 'Uvoz rabata je u tijeku'));
+                                    $('#qiqo-discount-message').text(job.message || (state === 'completed'
+                                        ? 'Novi rabati su dostupni kupcima.' : (state === 'failed'
+                                            ? 'Provjerite zapisnik i ponovno pokrenite uvoz.' : 'Uvoz se izvršava na serveru.')));
+                                    $('#qiqo-discount-phase').text(phaseLabels[job.phase] || (running ? 'Obrada podataka' : phaseLabels[state]));
+                                    $('#qiqo-discount-rows').text((isFinite(rows) && rows >= 0 ? rows : 0).toLocaleString('hr-HR'));
+                                    $('#qiqo-discount-bytes').text(((isFinite(bytes) && bytes >= 0 ? bytes : 0) / 1048576).toLocaleString('hr-HR', { maximumFractionDigits: 1 }) + ' MB');
+                                    $('#qiqo-discount-updated').text(job.updated_at ? 'Zadnja promjena: ' + (updatedAt && !isNaN(updatedAt.getTime())
+                                        ? updatedAt.toLocaleString('hr-HR', { timeZone: 'Europe/Zagreb' }) : String(job.updated_at)) : '');
+                                    $('#qiqo-discount-details').show();
+                                    $('#qiqo-discount-refresh').toggle(state === 'completed');
+                                    if (!running) {
+                                        clearTimeout(pollTimer);
+                                    }
+                                    return running;
+                                }
+
+                                function schedulePoll(jobId, delay) {
+                                    clearTimeout(pollTimer);
+                                    pollTimer = setTimeout(function () { poll(jobId); }, delay);
+                                }
+
+                                function poll(jobId) {
+                                    if (activeJobId !== jobId) {
+                                        return;
+                                    }
+                                    $.ajax({
+                                        url: statusUrl,
+                                        type: 'GET',
+                                        dataType: 'json',
+                                        cache: false,
+                                        timeout: 20000,
+                                        data: { job_id: jobId }
+                                    }).done(function (result) {
+                                        if (activeJobId !== jobId) {
+                                            return;
+                                        }
+                                        if (!result || !result.success || !validJob(result.job)) {
+                                            showProblem(result && result.error ? result.error : 'Status uvoza nije dostupan. Osvježite stranicu i provjerite prijavu.', false);
+                                            return;
+                                        }
+                                        if (renderJob(result.job)) {
+                                            schedulePoll(result.job.id, 2500);
+                                        }
+                                    }).fail(function (xhr, textStatus) {
+                                        if (activeJobId !== jobId) {
+                                            return;
+                                        }
+                                        if (xhr.status === 401 || xhr.status === 403 || textStatus === 'parsererror') {
+                                            showProblem('Prijava više nije aktivna ili server nije vratio status. Osvježite stranicu i provjerite prijavu.', false);
+                                            return;
+                                        }
+                                        showProblem('Veza sa serverom je privremeno prekinuta. Ponovno provjeravamo status; uvoz se nastavlja na serveru.', true);
+                                        schedulePoll(jobId, 5000);
+                                    });
+                                }
+
+                                $button.on('click', function () {
+                                    if ($button.prop('disabled')) {
+                                        return;
+                                    }
+                                    if (!startUrl || !statusUrl) {
+                                        showProblem('Pokretanje uvoza trenutno nije dostupno. Osvježite stranicu.', false);
+                                        return;
+                                    }
+                                    clearTimeout(pollTimer);
+                                    setBusy(true, true);
+                                    $('#qiqo-discount-refresh').hide();
+                                    $.ajax({
+                                        url: startUrl,
+                                        type: 'POST',
+                                        dataType: 'json',
+                                        timeout: 30000,
+                                        data: { csrf: csrf }
+                                    }).done(function (result) {
+                                        if (!result || !result.success || !validJob(result.job)) {
+                                            showProblem(result && result.error ? result.error : 'Server nije potvrdio pokretanje uvoza. Osvježite stranicu i provjerite status.', false);
+                                            return;
+                                        }
+                                        if (renderJob(result.job)) {
+                                            schedulePoll(result.job.id, 1000);
+                                        }
+                                    }).fail(function () {
+                                        showProblem('Server nije potvrdio pokretanje uvoza. Osvježite stranicu prije ponovnog pokušaja; uvoz je možda već pokrenut.', false);
+                                    });
+                                });
+
+                                try {
+                                    initialJob = JSON.parse('{{ discount_job_json|default('null')|escape('js') }}');
+                                } catch (error) {
+                                    initialJob = null;
+                                }
+                                if (validJob(initialJob)) {
+                                    if (renderJob(initialJob)) {
+                                        schedulePoll(initialJob.id, 500);
+                                    }
+                                } else {
+                                    var previousJobId = storedJob();
+                                    if (previousJobId && statusUrl) {
+                                        activeJobId = previousJobId;
+                                        setBusy(true);
+                                        schedulePoll(previousJobId, 100);
+                                    }
+                                }
+                            });
+                        }(jQuery));
+                        </script>
                     </div>
 
                     {# TAB 2: SLIKE & DOKUMENTI #}

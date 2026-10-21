@@ -48,7 +48,7 @@ class ControllerExtensionModuleQiqo extends Controller
                 case 'update_price':
                     $count = $this->model_extension_module_qiqo->updatePrices();
                     if ($count < 0) {
-                        $this->session->data['error'] = 'Ažuriranje cijena je sigurnosno prekinuto. Cijene nisu namjerno mijenjane; provjeri QIQO log i konfiguraciju.';
+                        $this->session->data['error'] = 'Ažuriranje cijena nije dovršeno. Provjerite QIQO log prije ponavljanja; dio cijena možda je već osvježen.';
                     } else {
                         $this->session->data['success'] = "Ažurirano cijena: {$count} artikala.";
                     }
@@ -212,6 +212,23 @@ class ControllerExtensionModuleQiqo extends Controller
         $data['disable_missing_enabled'] = $this->model_extension_module_qiqo->isDisableMissingArticlesEnabled();
         $data['full_snapshot_enabled'] = $this->model_extension_module_qiqo->isFullSnapshotReplacementEnabled();
         $data['partner_discount_incremental_ready'] = $this->model_extension_module_qiqo->hasPartnerArticleDiscountWatermark();
+        if (empty($this->session->data['qiqo_discount_job_csrf'])) {
+            $this->session->data['qiqo_discount_job_csrf'] = bin2hex(random_bytes(24));
+        }
+        $data['discount_job_csrf'] = $this->session->data['qiqo_discount_job_csrf'];
+        $data['discount_job_start'] = $this->url->link('extension/module/qiqo/discountJobStart', 'user_token=' . $this->session->data['user_token'], true);
+        $data['discount_job_status'] = $this->url->link('extension/module/qiqo/discountJobStatus', 'user_token=' . $this->session->data['user_token'], true);
+        $job = null;
+        if (!empty($this->session->data['qiqo_discount_job_id'])) {
+            try {
+                require_once DIR_SYSTEM . 'library/qiqo/discount_job.php';
+                $job = QiqoDiscountJob::status($this->qiqoJobRoot(), (string)$this->session->data['qiqo_discount_job_id']);
+                if (!$job || (int)($job['user_id'] ?? 0) !== (int)$this->user->getId()) $job = null;
+            } catch (\Throwable $error) {
+                $job = null;
+            }
+        }
+        $data['discount_job_json'] = json_encode($job, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
         $data['upload_action'] = $this->url->link('extension/module/qiqo/uploadLogos', 'user_token=' . $this->session->data['user_token'], true);
 
         // --- FILTERI ZA oc_product_asset_sync ---
@@ -530,6 +547,104 @@ class ControllerExtensionModuleQiqo extends Controller
 
         $this->session->data['success'] = 'Obrađeno proizvoda: ' . $processed_products;
         $this->response->redirect($this->url->link('extension/module/qiqo', 'user_token=' . $this->session->data['user_token'], true));
+    }
+
+    public function discountJobStart()
+    {
+        if (!$this->user->hasPermission('modify', 'extension/module/qiqo')) {
+            $this->qiqoJobJson(['success' => false, 'error' => 'Nemate dopuštenje za ažuriranje rabata.'], 403);
+            return;
+        }
+        $expected = (string)($this->session->data['qiqo_discount_job_csrf'] ?? '');
+        $supplied = (string)($this->request->post['csrf'] ?? '');
+        if (($this->request->server['REQUEST_METHOD'] ?? '') !== 'POST' || $expected === '' || !hash_equals($expected, $supplied)) {
+            $this->qiqoJobJson(['success' => false, 'error' => 'Sesija je istekla. Osvježite stranicu i pokušajte ponovno.'], 403);
+            return;
+        }
+        $job = null;
+        try {
+            require_once DIR_SYSTEM . 'library/qiqo/discount_job.php';
+            $root = $this->qiqoJobRoot();
+            $job = QiqoDiscountJob::create($root, (int)$this->user->getId());
+            if ((int)($job['user_id'] ?? 0) !== (int)$this->user->getId()) {
+                $this->qiqoJobJson(['success' => false, 'error' => 'Drugi administrator već je pokrenuo uvoz rabata. Pričekajte završetak.'], 409);
+                return;
+            }
+            $this->session->data['qiqo_discount_job_id'] = $job['id'];
+            if (!empty($job['existing'])) {
+                $this->qiqoJobJson(['success' => true, 'job' => $job]);
+                return;
+            }
+            if (!$this->launchDiscountJob($root, $job['id'])) {
+                QiqoDiscountJob::fail($root, $job['id'], 'launch_failed');
+                $this->qiqoJobJson(['success' => false, 'error' => 'Server nije uspio pokrenuti uvoz u pozadini. Postojeći rabati su sačuvani.'], 500);
+                return;
+            }
+            $this->qiqoJobJson(['success' => true, 'job' => $job]);
+        } catch (\Throwable $error) {
+            if ($job && empty($job['existing'])) {
+                try { QiqoDiscountJob::fail($this->qiqoJobRoot(), $job['id'], 'launch_failed'); } catch (\Throwable $ignored) {}
+            }
+            $this->qiqoJobJson(['success' => false, 'error' => 'Uvoz rabata nije pokrenut. Provjerite je li drugi uvoz već u tijeku i pokušajte ponovno.'], 409);
+        }
+    }
+
+    public function discountJobStatus()
+    {
+        if (!$this->user->hasPermission('access', 'extension/module/qiqo')) {
+            $this->qiqoJobJson(['success' => false, 'error' => 'Nemate dopuštenje za pregled uvoza.'], 403);
+            return;
+        }
+        $id = (string)($this->request->get['job_id'] ?? '');
+        if (!preg_match('/^[a-f0-9]{32}$/D', $id)) {
+            $this->qiqoJobJson(['success' => false, 'error' => 'Uvoz nije pronađen.'], 404);
+            return;
+        }
+        try {
+            require_once DIR_SYSTEM . 'library/qiqo/discount_job.php';
+            $job = QiqoDiscountJob::status($this->qiqoJobRoot(), $id);
+            if (!$job || (int)($job['user_id'] ?? 0) !== (int)$this->user->getId()) {
+                $this->qiqoJobJson(['success' => false, 'error' => 'Uvoz nije pronađen za ovaj korisnički račun.'], 404);
+                return;
+            }
+            $this->qiqoJobJson(['success' => true, 'job' => $job]);
+        } catch (\Throwable $error) {
+            $this->qiqoJobJson(['success' => false, 'error' => 'Status uvoza trenutačno nije dostupan.'], 500);
+        }
+    }
+
+    private function qiqoJobRoot(): string
+    {
+        return dirname(rtrim(DIR_SYSTEM, '/\\'), 2);
+    }
+
+    protected function launchDiscountJob(string $root, string $id): bool
+    {
+        $disabled = array_map('trim', explode(',', (string)ini_get('disable_functions')));
+        if (!function_exists('exec') || in_array('exec', $disabled, true)) return false;
+        $php = null;
+        $matchingCli = preg_replace('/-fpm$/', '', PHP_BINARY);
+        foreach ([$matchingCli, PHP_BINDIR . '/php', '/usr/local/bin/php', '/usr/bin/php'] as $candidate) {
+            if (preg_match('/^php(?:[0-9.]+)?$/', basename($candidate)) && is_file($candidate) && is_executable($candidate)) { $php = $candidate; break; }
+        }
+        if ($php === null || !is_file($root . '/scripts/run_qiqo_discount_job.php')) return false;
+        $log = QiqoDiscountJob::directory($root) . '/' . $id . '.worker.log';
+        $command = 'nohup ' . escapeshellarg($php) . ' ' . escapeshellarg($root . '/scripts/run_qiqo_discount_job.php')
+            . ' ' . escapeshellarg('--job=' . $id) . ' > ' . escapeshellarg($log) . ' 2>&1 < /dev/null & echo $!';
+        $output = [];
+        exec($command, $output, $exit);
+        return $exit === 0 && isset($output[0]) && preg_match('/^[1-9][0-9]*$/D', trim($output[0]));
+    }
+
+    private function qiqoJobJson(array $value, int $status = 200): void
+    {
+        if ($status !== 200) {
+            $labels = [403 => 'Forbidden', 404 => 'Not Found', 409 => 'Conflict', 500 => 'Internal Server Error'];
+            $this->response->addHeader('HTTP/1.1 ' . $status . ' ' . ($labels[$status] ?? 'Error'));
+        }
+        $this->response->addHeader('Content-Type: application/json; charset=utf-8');
+        $this->response->addHeader('Cache-Control: no-store');
+        $this->response->setOutput(json_encode($value, JSON_UNESCAPED_UNICODE));
     }
 
     /**

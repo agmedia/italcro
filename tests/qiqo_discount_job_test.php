@@ -23,6 +23,23 @@ $reject = static function (string $content, bool $allowEmpty = false) use ($read
     throw new RuntimeException('An invalid ERP response was accepted.');
 };
 try {
+    $setup = new ReflectionMethod(QiqoDiscountJob::class, 'setCurlOptions');
+    $setup->setAccessible(true);
+    $attempts = []; $diagnostics = [];
+    $setupRejected = false;
+    try {
+        $setup->invoke(null, null, [
+            'CURLOPT_WRITEFUNCTION' => [CURLOPT_WRITEFUNCTION, static function () {}],
+            'CURLOPT_PROGRESSFUNCTION' => [CURLOPT_PROGRESSFUNCTION, static function () {}],
+            'CURLOPT_PROTOCOLS' => [CURLOPT_PROTOCOLS, 'PRIVATE OPTION VALUE'],
+            'CURLOPT_HTTPHEADER' => [CURLOPT_HTTPHEADER, ['PRIVATE HEADER']]
+        ], static function ($value) use (&$diagnostics) { $diagnostics = $value; },
+        static function ($handle, $option, $value) use (&$attempts) { $attempts[] = $option; return $option !== CURLOPT_PROTOCOLS; });
+    } catch (QiqoDiscountJobError $error) { $setupRejected = $error->getMessage() === 'transport_configuration'; }
+    discountJobAssert($setupRejected && $attempts === [CURLOPT_WRITEFUNCTION, CURLOPT_PROGRESSFUNCTION, CURLOPT_PROTOCOLS]
+        && $diagnostics === ['setup_failed_option' => 'CURLOPT_PROTOCOLS'],
+        'A failed cURL option must stop configuration before execution and report only the safe option name.');
+    discountJobAssert(strpos(json_encode($diagnostics), 'PRIVATE') === false, 'Failed option values must never reach diagnostics.');
     $valid = discountJobEnvelope('<NewDataSet xmlns="">' . discountJobRow(103, '0405054', '18') . discountJobRow(104, '405056', '0') . '</NewDataSet>');
     $rows = $read($valid);
     discountJobAssert(count($rows) === 2 && $rows[0]['article'] === '0405054' && $rows[0]['discount'] === '18.0000' && $rows[1]['discount'] === '0.0000', 'Strict reader must preserve SKU, article zero rebate and all rows.');

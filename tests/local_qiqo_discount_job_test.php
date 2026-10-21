@@ -54,6 +54,7 @@ try {
         fclose($pipes[0]); $output = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]);
         $exit = proc_close($process);
         jobIntegrationAssert(strpos($output, 'PRIVATE') === false, 'Worker output leaked private details.');
+        jobIntegrationAssert(strpos($output, '<') === false, 'A streamed SOAP response must never be printed to worker output.');
         return [$exit, QiqoDiscountJob::status($directory, $job['id']), $output];
     };
     $count = static function () use ($db, $prefix): int { return (int)$db->query('SELECT COUNT(*) n FROM `' . $prefix . 'qiqo_partner_article_discount`')->fetch_assoc()['n']; };

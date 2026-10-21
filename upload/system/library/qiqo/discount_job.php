@@ -299,20 +299,32 @@ final class QiqoDiscountJob
         $bytes = 0; $limit = false; $writeFailed = false;
         $curl = curl_init($url);
         try {
-            curl_setopt_array($curl, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => false,
-                CURLOPT_CONNECTTIMEOUT => 15, CURLOPT_TIMEOUT => 1200, CURLOPT_LOW_SPEED_LIMIT => 256, CURLOPT_LOW_SPEED_TIME => 120,
-                CURLOPT_FOLLOWLOCATION => false, CURLOPT_MAXREDIRS => 0, CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
-                CURLOPT_HTTPHEADER => ['Content-Type: text/xml; charset=utf-8', 'SOAPAction: "' . self::QIQO . 'qPartnerArtikalRabatWeb"'],
-                CURLOPT_NOPROGRESS => false,
-                CURLOPT_XFERINFOFUNCTION => static function ($handle, $total, $downloaded, $uploadTotal, $uploaded) use ($progress, &$bytes) { $progress($bytes); return 0; },
-                CURLOPT_WRITEFUNCTION => static function ($handle, $chunk) use ($file, &$bytes, &$limit, &$writeFailed) {
+            // Never execute a partially configured request. Setting RETURNTRANSFER
+            // after WRITEFUNCTION would also reset PHP's streaming callback.
+            self::setCurlOptions($curl, [
+                'CURLOPT_WRITEFUNCTION' => [CURLOPT_WRITEFUNCTION, static function ($handle, $chunk) use ($file, &$bytes, &$limit, &$writeFailed) {
                     $length = strlen($chunk);
                     if ($bytes + $length > self::MAX_BYTES) { $limit = true; return 0; }
                     $written = fwrite($file, $chunk);
                     if ($written !== $length) { $writeFailed = true; return 0; }
                     $bytes += $written;
                     return $written;
-                }]);
+                }],
+                // cPanel's libcurl 7.61 may expose XFERINFOFUNCTION in PHP while
+                // rejecting it. The older progress callback has the same data.
+                'CURLOPT_PROGRESSFUNCTION' => [CURLOPT_PROGRESSFUNCTION, static function ($handle, $total, $downloaded, $uploadTotal, $uploaded) use ($progress, &$bytes) { $progress($bytes); return 0; }],
+                'CURLOPT_NOPROGRESS' => [CURLOPT_NOPROGRESS, false],
+                'CURLOPT_POST' => [CURLOPT_POST, true],
+                'CURLOPT_POSTFIELDS' => [CURLOPT_POSTFIELDS, $body],
+                'CURLOPT_CONNECTTIMEOUT' => [CURLOPT_CONNECTTIMEOUT, 15],
+                'CURLOPT_TIMEOUT' => [CURLOPT_TIMEOUT, 1200],
+                'CURLOPT_LOW_SPEED_LIMIT' => [CURLOPT_LOW_SPEED_LIMIT, 256],
+                'CURLOPT_LOW_SPEED_TIME' => [CURLOPT_LOW_SPEED_TIME, 120],
+                'CURLOPT_FOLLOWLOCATION' => [CURLOPT_FOLLOWLOCATION, false],
+                'CURLOPT_MAXREDIRS' => [CURLOPT_MAXREDIRS, 0],
+                'CURLOPT_PROTOCOLS' => [CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS],
+                'CURLOPT_HTTPHEADER' => [CURLOPT_HTTPHEADER, ['Content-Type: text/xml; charset=utf-8', 'SOAPAction: "' . self::QIQO . 'qPartnerArtikalRabatWeb"']]
+            ], $diagnostics);
             $ok = curl_exec($curl);
             $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
             // Only numeric transport facts are persisted. Raw cURL messages may
@@ -332,6 +344,19 @@ final class QiqoDiscountJob
             if (!fflush($file)) { throw self::error('private_storage'); }
             $progress($bytes);
         } finally { curl_close($curl); fclose($file); }
+    }
+
+    private static function setCurlOptions($curl, array $options, callable $diagnostics, ?callable $setter = null): void
+    {
+        $setter = $setter ?: static function ($handle, $option, $value) { return @curl_setopt($handle, $option, $value); };
+        foreach ($options as $name => $option) {
+            $ok = false;
+            try { $ok = $setter($curl, $option[0], $option[1]); } catch (Throwable $ignored) {}
+            if ($ok !== true) {
+                $diagnostics(['setup_failed_option' => $name]);
+                throw self::error('transport_configuration');
+            }
+        }
     }
 
     private static function config(array $names, string $key): string
@@ -426,6 +451,7 @@ final class QiqoDiscountJob
             'transaction_required' => 'Tablice rabata moraju podržavati sigurno spremanje s povratom u slučaju greške.',
             'watermark_invalid' => 'Datum zadnjeg ažuriranja rabata nije valjan. Održavanje treba provjeriti stanje sinkronizacije.',
             'transport_error' => 'ERP nije vratio potpun i uspješan odgovor. Rabati nisu promijenjeni. Pokušajte ponovno.',
+            'transport_configuration' => 'Server nije prihvatio postavke ERP veze. Rabati nisu promijenjeni; održavanje treba provjeriti cURL podršku.',
             'response_limit' => 'ERP odgovor premašuje dopuštenu veličinu. Rabati nisu promijenjeni; kontaktirajte održavanje.',
             'private_storage' => 'Nema dovoljno privatnog prostora za ERP odgovor. Rabati nisu promijenjeni.',
             'invalid_response' => 'ERP odgovor je nepotpun ili sadrži neispravan rabat. Rabati nisu promijenjeni.',

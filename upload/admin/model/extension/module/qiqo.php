@@ -2,6 +2,7 @@
 
 require_once DIR_STORAGE . 'vendor/agmedia/api/src/Connection/Soap/Qiqo.php';
 require_once DIR_SYSTEM . 'library/qiqo/sync_guard.php';
+require_once DIR_SYSTEM . 'library/qiqo/catalog_image.php';
 
 class ModelExtensionModuleQiqo extends Model
 {
@@ -465,7 +466,45 @@ class ModelExtensionModuleQiqo extends Model
                 return false;
             }
         }
-        return (int)$local['partner'] === $data['partner_id'];
+        return (int)$local['partner'] === $data['partner_id']
+            && $this->catalogImageReplacement($local, $data) === '';
+    }
+
+    /** Repair only an unusable main image from the exact locally available ERP source. */
+    private function catalogImageReplacement(array $local, array $data): string
+    {
+        if (!defined('DIR_IMAGE')) {
+            return '';
+        }
+        $root = realpath(DIR_IMAGE);
+        if ($root === false) {
+            return '';
+        }
+        $prefix = rtrim($root, '/\\') . DIRECTORY_SEPARATOR;
+        $current = (string)($local['image'] ?? '');
+        $file = $current !== '' ? realpath($prefix . $current) : false;
+        if ($file !== false && strpos($file, $prefix) === 0 && is_file($file)
+            && is_readable($file) && @getimagesize($file) !== false) {
+            return '';
+        }
+        return $this->resolveLocalCatalogImage((string)($data['image'] ?? ''));
+    }
+
+    private function resolveLocalCatalogImage(string $source): string
+    {
+        if (!defined('DIR_IMAGE')) {
+            return '';
+        }
+        $root = realpath(DIR_IMAGE);
+        if ($root === false) {
+            return '';
+        }
+        $prefix = rtrim($root, '/\\') . DIRECTORY_SEPARATOR;
+        $resolved = QiqoCatalogImage::resolve($source, [DIR_IMAGE, $prefix . 'Portals/0']);
+        if (!$resolved || strpos($resolved['path'], $prefix) !== 0) {
+            return '';
+        }
+        return str_replace(DIRECTORY_SEPARATOR, '/', substr($resolved['path'], strlen($prefix)));
     }
 
     private function updateCatalogProduct(array $local, array $data): void
@@ -476,6 +515,16 @@ class ModelExtensionModuleQiqo extends Model
             $assignments[] = '`' . $field . "` = '" . $this->db->escape((string)$data[$field]) . "'";
         }
         $assignments[] = "partner = '" . (int)$data['partner_id'] . "'";
+        $image = $this->catalogImageReplacement($local, $data);
+        if ($image !== '') {
+            $assignments[] = "image = '" . $this->db->escape($image) . "'";
+            if ($this->tableColumnExists('product', 'image_hash')) {
+                $hash = @sha1_file(rtrim(DIR_IMAGE, '/\\') . '/' . $image);
+                if ($hash !== false) {
+                    $assignments[] = "image_hash = '" . $this->db->escape($hash) . "'";
+                }
+            }
+        }
         $assignments[] = 'date_modified = NOW()';
         $this->db->query("UPDATE `" . DB_PREFIX . "product` SET " . implode(', ', $assignments) . " WHERE product_id = '" . $productId . "'");
         $descriptionAssignments = [];
@@ -2218,25 +2267,23 @@ class ModelExtensionModuleQiqo extends Model
 
     private function downloadImage(string $picpath): string
     {
-        $relative_path = str_replace('\\', '/', rawurldecode(trim($picpath)));
-        if ($relative_path === '' || preg_match('#^[a-z][a-z0-9+.-]*:|^//#i', $relative_path)
-            || preg_match('/[\x00-\x1F\x7F]/', $relative_path)) {
+        if (!defined('DIR_IMAGE')) {
             return '';
         }
-        $relative_path = ltrim(preg_replace('#/+#', '/', $relative_path), '/');
-        if ($relative_path === '' || preg_match('#(?:^|/)\.\.?(?:/|$)#', $relative_path)) {
+        $paths = QiqoCatalogImage::paths($picpath);
+        if (!$paths) {
             return '';
         }
+        $local = $this->resolveLocalCatalogImage($picpath);
+        if ($local !== '') {
+            return $local;
+        }
+        $relative_path = $paths[0];
         $image_root = realpath(DIR_IMAGE);
         if ($image_root === false) {
             return '';
         }
         $image_root = rtrim($image_root, '/\\') . DIRECTORY_SEPARATOR;
-        $local_path = realpath($image_root . $relative_path);
-        if ($local_path !== false) {
-            return strpos($local_path, $image_root) === 0 && is_file($local_path) && is_readable($local_path) && @getimagesize($local_path) !== false
-                ? $relative_path : '';
-        }
         $filename = basename($relative_path);
         $db_path = 'catalog/qiqo/' . $filename;
         $save_path = $image_root . $db_path;

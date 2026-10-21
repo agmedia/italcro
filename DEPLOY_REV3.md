@@ -502,6 +502,17 @@ Stranica **Novo**, „Novo u ponudi” carousel i oznaka **Novo** koriste `produ
 
 Ponovni uvoz postojećeg artikla čuva izvorni `date_added`, pa ne pokreće novo razdoblje prikaza. Novi artikl dobiva datum dodavanja u webshop pri prvom uvozu. ERP datum uvođenja i postojeći nullable stupac `qiqo_introduced_at` više nisu preduvjet za prikaz na stranici Novo niti određuju oznaku Novo.
 
+Fotografije se povezuju iz točne ERP putanje. Poznati Windows izvor `\\SRV-TS01\Svasta\Italcro\Photo\...` (uključujući spremljeni prefiks `Slike//`) prevodi se u lokalne `Slike/...` ili `Portals/0/Photo/...` putanje. Redovni uvoz kataloga dopunjava praznu/nevaljanu glavnu sliku kada odgovarajuća datoteka postoji lokalno; valjane slike ostaju sačuvane. Uspješan uvoz artikla ne potvrđuje da je njegova fotografija dostupna. Vanjski izvor slika mora imati izričito konfiguriran puni HTTP/HTTPS URL; goli naziv hosta nije dovoljna konfiguracija.
+
+Za zasebno povezivanje dostupnih slika trenutačnih artikala na stranici Novo koristiti donji pregled, zatim primjenu s novom privatnom putanjom izvještaja. Postupak ne preuzima ni prepisuje datoteke, ne mijenja cijene, rabate, dokumente ni datume artikala. Izvještaj sadrži stare/nove vrijednosti i popis neriješenih SKU-ova s izvornim putanjama. Ako datoteke nedostaju, prvo prenijeti ažurirani ERP Photo direktorij uz očuvanu strukturu u `upload/image/Portals/0/Photo/`, pa ponoviti pregled.
+
+```bash
+php scripts/repair_qiqo_product_images.php
+php scripts/repair_qiqo_product_images.php --apply --report=/home/amds/private-backups/italcro/images-NOVI-DATUM.json
+```
+
+Paginacija kataloga koristi raspoloživu širinu za brojeve i strelice; prikaz broja rezultata prelazi u vlastiti red kada nema dovoljno mjesta. Na uskim zaslonima kontrole se centriraju i uredno prelamaju.
+
 Novo pravilo dostave zasebno ostaje na čekanju dogovorenih poslovnih detalja.
 
 ### Lokalna provjera Revizije 3.2

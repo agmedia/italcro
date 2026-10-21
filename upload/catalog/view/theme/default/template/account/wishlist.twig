@@ -36,17 +36,25 @@
           <tbody>
           
           {% for product in products %}
+          {% set article_code = product.code is defined ? product.code : product.model %}
+          {% set article_label = product.name ~ (product.name_add ? ' – ' ~ product.name_add : '') ~ ' (' ~ article_code ~ ')' %}
           <tr>
             <td class="text-center">{% if product.thumb %}<a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" /></a>{% endif %}</td>
-            <td class="text-left"><a href="{{ product.href }}">{{ product.name }}</a></td>
-            <td class="text-left">{{ product.model }}</td>
+            <td class="text-left"><a href="{{ product.href }}">{{ product.name }}</a>{% if product.name_add %}<br><small>{{ product.name_add }}</small>{% endif %}</td>
+            <td class="text-left">{{ article_code }}</td>
             <td class="text-right">{{ product.stock }}</td>
             <td class="text-right">{% if product.price %}
               <div class="price"> {% if not product.special %}
                 {{ product.price }}
                 {% else %} <b>{{ product.special }}</b> <s>{{ product.price }}</s> {% endif %} </div>
               {% endif %}</td>
-            <td class="text-right">{% if product.is_single_article is not defined or product.is_single_article %}<button type="button" onclick="cart.add('{{ product.product_id }}');" data-toggle="tooltip" title="{{ button_cart }}" class="btn btn-primary"><i class="fa fa-shopping-cart"></i></button>{% endif %}
+            <td class="text-right">
+              {% set can_add_to_cart = product.can_add_to_cart is not defined or product.can_add_to_cart %}
+              {% if can_add_to_cart %}
+              <button type="button" onclick="cart.add('{{ product.product_id }}', '{{ product.minimumifc100 is defined ? product.minimumifc100 : (product.minimum is defined ? product.minimum : 1) }}', false, true);" data-toggle="tooltip" title="{{ button_cart|escape('html_attr') }} – {{ article_label|escape('html_attr') }}" aria-label="{{ button_cart|escape('html_attr') }} – {{ article_label|escape('html_attr') }}" class="btn btn-primary"><i class="fa fa-shopping-cart"></i></button>
+              {% else %}
+              <a href="{{ product.href }}" class="btn btn-default" title="{{ product.selection_hint }}" aria-label="{{ product.selection_label|escape('html_attr') }} – {{ article_label|escape('html_attr') }}">{{ product.selection_label }}</a>
+              {% endif %}
               <a href="{{ product.remove }}" data-toggle="tooltip" title="{{ button_remove }}" class="btn btn-danger"><i class="fa fa-times"></i></a></td>
           </tr>
           {% endfor %}

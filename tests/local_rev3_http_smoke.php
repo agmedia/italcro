@@ -210,7 +210,7 @@ try {
 
 		$db->query("INSERT IGNORE INTO oc_customer_wishlist VALUES ('" . $customerId . "', '" . $groupedId . "', NOW())");
 		$groupedWishlist = smokeRequest($cookieFile, $baseUrl . 'index.php?route=account/wishlist');
-		smokeAssert(strpos($groupedWishlist['body'], "cart.add('" . $groupedId . "'") === false, 'Grouped wishlist row still exposes representative add-to-cart.');
+		smokeAssert(strpos($groupedWishlist['body'], "cart.add('" . $groupedId . "'") !== false, 'Saved exact wishlist variant must expose direct add-to-cart.');
 
 		smokeRequest($cookieFile, $baseUrl . 'index.php?route=product/compare/add', array('product_id' => $groupedId));
 		$groupedCompare = smokeRequest($cookieFile, $baseUrl . 'index.php?route=product/compare');

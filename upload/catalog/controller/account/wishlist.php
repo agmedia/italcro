@@ -66,8 +66,7 @@ class ControllerAccountWishList extends Controller {
 				$wishlist_products[] = $product_info;
 
 				$sku = trim((string)$product_info['sku']);
-				$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
-				if ($is_single_article && $sku !== '') {
+				if ($sku !== '') {
 					$wishlist_skus[] = $sku;
 				}
 			} else {
@@ -84,9 +83,8 @@ class ControllerAccountWishList extends Controller {
 
 			foreach ($wishlist_products as $product_info) {
 				$sku = trim((string)$product_info['sku']);
-				$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
 
-				if (!$is_single_article || $sku === '') {
+				if ($sku === '') {
 					continue;
 				}
 
@@ -119,12 +117,12 @@ class ControllerAccountWishList extends Controller {
 			$pak = isset($product_info['pak']) ? (int)$product_info['pak'] : 0;
 			$minimum_step = $this->qiqoMinimumStep($product_info['cent'], $pak, $minimum);
 			$sku = trim((string)$product_info['sku']);
-			$is_single_article = empty($product_info['mpn']) || !isset($product_info['mpn_count']) || (int)$product_info['mpn_count'] <= 1;
+			$has_article = $sku !== ''; // A saved product_id identifies the selected SKU, including grouped variants.
 			$selection_label = 'Odaberi artikl';
 			$selection_hint = 'Odaberite točnu varijantu artikla prije dodavanja u košaricu.';
-			$can_add_to_cart = $is_single_article;
+			$can_add_to_cart = $has_article;
 
-			if ($is_single_article) {
+			if ($has_article) {
 				foreach ($this->model_catalog_product->getProductOptions($product_info['product_id']) as $option) {
 					if (!empty($option['required'])) {
 						$can_add_to_cart = false;
@@ -141,7 +139,7 @@ class ControllerAccountWishList extends Controller {
 				}
 			}
 
-			if ($is_single_article && $this->qiqoIsC100($product_info['cent'])) {
+			if ($has_article && $this->qiqoIsC100($product_info['cent'])) {
 				$data['wishlist_has_c100'] = true;
 			}
 
@@ -150,7 +148,7 @@ class ControllerAccountWishList extends Controller {
 			$discount_percent = 0.0;
 			$row_pricing = array();
 
-			if ($is_single_article && $sku !== '' && isset($qiqo_price_map[$sku])) {
+			if ($has_article && isset($qiqo_price_map[$sku])) {
 				$row_pricing = $qiqo_price_map[$sku];
 				$vpc_unit_raw = isset($row_pricing['base_unit_price']) ? (float)$row_pricing['base_unit_price'] : $vpc_unit_raw;
 				$price_unit_raw = isset($row_pricing['final_unit_price']) ? (float)$row_pricing['final_unit_price'] : $vpc_unit_raw;
@@ -166,7 +164,7 @@ class ControllerAccountWishList extends Controller {
 				$price_display_raw = $vpc_display_raw * (1 - ($discount_percent / 100));
 			}
 
-			$action_conditions = ($is_single_article && $sku !== '' && isset($qiqo_action_details_map[$sku]))
+			$action_conditions = ($has_article && isset($qiqo_action_details_map[$sku]))
 				? $this->formatQiqoActionConditions($qiqo_action_details_map[$sku])
 				: array();
 			$thumb = !empty($product_info['image'])
@@ -190,16 +188,16 @@ class ControllerAccountWishList extends Controller {
 				'packaging'  => $this->formatQiqoPackaging($this->qiqoJm($product_info), $minimum, $pak),
 				'minimumifc100' => $minimum_step,
 				'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($product_info),
-				'is_single_article' => $is_single_article,
+				'is_selected_article' => $has_article,
 				'can_add_to_cart' => $can_add_to_cart,
 				'selection_label' => $selection_label,
 				'selection_hint' => $selection_hint,
 				'qiqo_discount_percent' => $discount_percent,
 				'qiqo_action' => !empty($action_conditions),
 				'qiqo_action_conditions' => $action_conditions,
-				'vpc'        => ($data['show_prices'] && $is_single_article) ? $this->currency->format($vpc_display_raw, $this->session->data['currency']) : false,
-				'final_price' => ($data['show_prices'] && $is_single_article) ? $this->currency->format($price_display_raw, $this->session->data['currency']) : false,
-				'price'      => ($data['show_prices'] && $is_single_article) ? $this->currency->format($price_display_raw, $this->session->data['currency']) : false,
+				'vpc'        => ($data['show_prices'] && $has_article) ? $this->currency->format($vpc_display_raw, $this->session->data['currency']) : false,
+				'final_price' => ($data['show_prices'] && $has_article) ? $this->currency->format($price_display_raw, $this->session->data['currency']) : false,
+				'price'      => ($data['show_prices'] && $has_article) ? $this->currency->format($price_display_raw, $this->session->data['currency']) : false,
 				'href'       => $this->url->link('product/product', 'product_id=' . $product_info['product_id']),
 				'remove'     => $this->url->link('account/wishlist', 'remove=' . $product_info['product_id'])
 			);

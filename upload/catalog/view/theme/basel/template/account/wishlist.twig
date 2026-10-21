@@ -83,7 +83,7 @@
       <h1 id="page-title">{{ heading_title }}</h1>
       
       {% if products %}
-        <p>Artikle možete dodati izravno u košaricu. Ako artikl ima više varijanti ili obavezne opcije, prvo odaberite željenu varijantu ili opcije.</p>
+        <p>Odaberite količinu i dodajte spremljenu varijantu artikla u košaricu.</p>
         {% set wishlist_colspan = show_prices ? (wishlist_has_c100 ? 14 : 13) : 7 %}
         <div class="mpn-variants wishlist-variants table-responsive">
           <table class="table table-bordered table-striped">
@@ -111,6 +111,7 @@
             </thead>
             <tbody>
               {% for product in products %}
+              {% set article_label = product.name ~ (product.name_add ? ' – ' ~ product.name_add : '') ~ ' (' ~ product.code ~ ')' %}
               <tr>
                 <td class="remove-cell">
                   <a href="{{ product.remove }}"
@@ -158,6 +159,8 @@
                       <button type="button"
                               class="btn btn-default btn-number"
                               data-type="minus"
+                              title="Smanji količinu"
+                              aria-label="Smanji količinu: {{ article_label|escape('html_attr') }}"
                               onclick="descrement($(this).closest('.addtocart')); ">
                         <span class="glyphicon glyphicon-minus"></span>
                       </button>
@@ -173,11 +176,13 @@
                            data-id="{{ product.product_id }}"
                            inputmode="{{ product.decimal_quantity is defined and product.decimal_quantity ? 'decimal' : 'numeric' }}"
                            maxlength="8"
-                           aria-label="Količina">
+                           aria-label="Količina: {{ article_label|escape('html_attr') }}">
                     <span class="input-group-btn">
                       <button type="button"
                               class="btn btn-default btn-number"
                               data-type="plus"
+                              title="Povećaj količinu"
+                              aria-label="Povećaj količinu: {{ article_label|escape('html_attr') }}"
                               onclick="increment($(this).closest('.addtocart')); ">
                         <span class="glyphicon glyphicon-plus"></span>
                       </button>
@@ -185,13 +190,15 @@
                     <span class="input-group-btn">
                       <button type="button"
                               class="btn btn-neutral"
-                              onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ product.product_id }}', window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : quantityInput.val());">
+                              title="{{ button_cart|escape('html_attr') }} – {{ article_label|escape('html_attr') }}"
+                              aria-label="{{ button_cart|escape('html_attr') }} – {{ article_label|escape('html_attr') }}"
+                              onclick="var quantityInput = $(this).closest('.addtocart').find('.input-number'); cart.add('{{ product.product_id }}', window.qiqoPrepareQuantityInput ? qiqoPrepareQuantityInput(quantityInput, true) : quantityInput.val(), false, false, true);">
                         <span class="global-cart"></span>
                       </button>
                     </span>
                   </div>
                   {% else %}
-                    <a href="{{ product.href }}" class="btn btn-default btn-sm" title="{{ product.selection_hint }}">{{ product.selection_label }}</a>
+                    <a href="{{ product.href }}" class="btn btn-default btn-sm" title="{{ product.selection_hint }}" aria-label="{{ product.selection_label|escape('html_attr') }} – {{ article_label|escape('html_attr') }}">{{ product.selection_label }}</a>
                   {% endif %}
                 </td>
                 <td>

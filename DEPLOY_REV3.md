@@ -12,9 +12,15 @@ Odgovor se preuzima u privatnu datoteku, provjerava strukturno i po svakom retku
 
 Poslovi i sigurnosne kopije su u `.qiqo-private/discount-jobs/` izvan `upload/` web korijena i izvan Gita. Pokretanje/status zahtijevaju administratorsku sesiju; pokretanje dodatno traži modify dopuštenje i CSRF token. Server mora dopuštati PHP CLI i `exec`. Vanjski CSV/XML importer s ERP manifestom i dalje je dostupan kao alternativni kanal; nije preduvjet za izravni SOAP uvoz kroz novi gumb.
 
-Ovo je runbook za produkcijski deploy promjena Revizije 3.0 i 3.1, sigurnog QIQO synca i pripreme `NarudzbaSend` outboxa. Vanjsko slanje narudžbi, početno partner–artikl punjenje i destruktivni FULL syncovi namjerno su ugašeni dok se ne ispune niže navedeni uvjeti.
+Na ovom cPanel serveru (PHP 7.4.33, libcurl 7.61.0) koristi se podržani `CURLOPT_PROGRESSFUNCTION`: izloženi `CURLOPT_XFERINFOFUNCTION` pri produkcijskoj provjeri nije prihvaćen. Radnik provjerava rezultat svake cURL opcije prije slanja; neuspjela postavka prekida posao i sprema samo naziv opcije u privatnu dijagnostiku. `CURLOPT_WRITEFUNCTION` ostaje aktivan za pisanje odgovora u datoteku; nakon njega se ne postavlja `CURLOPT_RETURNTRANSFER`, koji bi poništio streaming callback.
 
-## 0. Trenutno provjereno lokalno
+Produkcijska provjera 2026-10-21: administratorsko ažuriranje količina obradilo je 3316 promijenjenih artikala, a ažuriranje osnovnih cijena 208. Početni posao pokrenut iz admina završen je u 09:01:54 (Europe/Zagreb): HTTP 200, 282274415 bajtova, 2080148 provjerenih redaka i jednako toliko jedinstvenih parova u live tablici. Privatna sigurnosna kopija je potvrđena. `qiqo_partner_article_initial_complete=1`; watermark je početak posla `2026-10-21 08:58:43`, početni datum ostaje `2026-08-01 00:00:00`. Za kupca 103 (ERP partner 1020054) ERP je potvrdio 18% za sva četiri SKU-a 405052, 405054, 405056 i 405058. Nakon osvježavanja stranice kao Denis Bakša sva četiri retka TIPLA MS prikazuju 18%: cijene su redom 18,49 EUR, 26,36 EUR, 39,75 EUR i 81,40 EUR. Gumb je nakon završetka prešao na redovno inkrementalno ažuriranje.
+
+Ovo je runbook za produkcijski deploy promjena Revizije 3.0–3.2, sigurnog QIQO synca i pripreme `NarudzbaSend` outboxa. Vanjsko slanje narudžbi i destruktivni FULL syncovi ostaju isključeni dok se ne ispune niže navedeni uvjeti. Početni partner–artikl uvoz dostupan je kroz novi administratorski gumb koji zakazuje zaseban posao na serveru.
+
+## 0. Ranije lokalne provjere
+
+Sljedeće točke opisuju lokalne provjere prije uvođenja novog pozadinskog uvoza. Nisu izvještaj o trenutačnom sadržaju produkcijske baze; njega provjeriti prema statusu posla i read-only upitima nakon uvoza.
 
 - Projekt radi na PHP-u **7.4.33**. Za ovaj OpenCart ne koristiti PHP 8.x.
 - Produkcijski dump je uvezen lokalno.
@@ -28,7 +34,7 @@ Ovo je runbook za produkcijski deploy promjena Revizije 3.0 i 3.1, sigurnog QIQO
 
 Poznate poslovne stavke koje nisu deploy blocker, ali traže podatak/odluku:
 
-- tablica partner–artikl rabata je prazna; potvrđeno je da je endpoint inkrementalan, a početnih približno 2 milijuna slogova čeka paketirani/paginirani kontrolirani import;
+- u izvornoj lokalnoj provjeri partner–artikl cache bio je prazan; endpoint je inkrementalan, a početno punjenje sada se obavlja novim pozadinskim uvozom. Procjena od približno 2 milijuna slogova nije potvrđen rezultat uvoza;
 - jedna postojeća autorizacija nema aktivno mapiranog komercijalista i zato je ispravno blokirana za ERP narudžbu;
 - Letak nema odobren URL/PDF pa je vidljiv, ali onemogućen;
 - Blog ruta radi, ali produkcijski dump nema blog sadržaj;
@@ -50,7 +56,7 @@ Poznate poslovne stavke koje nisu deploy blocker, ali traže podatak/odluku:
    - `QIQO_ALLOW_INSECURE_HTTP=0`
    - `QIQO_ORDER_USERNAME`
    - `QIQO_ORDER_PASSWORD`
-5. Obični HTTP za QIQO ne uključivati osim ako je promet iza odobrenog VPN/private tunnela i IP allowliste. Preferirati HTTPS.
+5. Preferirati HTTPS ili odobreni VPN/private tunnel. Za postojeći QIQO read servis korisnik je 2026-10-21 izričito odobrio nastavak HTTP veze; samo za taj postojeći pristup koristi se neversionirani `QIQO_ALLOW_INSECURE_HTTP=1`. To odobrenje ne uključuje slanje narudžbi ni promjenu order gateova.
 6. Ne kopirati s lokalnog računala:
    - `upload/config.php`, `upload/admin/config.php` ni `upload/env.php`;
    - `storage/session`, `storage/upload`, `storage/download` i logove;
@@ -63,7 +69,7 @@ Preflight na produkciji:
 
 ```bash
 php -r 'echo PHP_VERSION, PHP_EOL;'
-php -m | grep -Ei 'curl|dom|json|mbstring|mysqli|openssl|simplexml'
+php -m | grep -Ei 'curl|dom|json|mbstring|mysqli|openssl|simplexml|xmlreader'
 git status --short
 ```
 
@@ -186,7 +192,7 @@ WHERE `key` IN (
 ORDER BY `key`;
 ```
 
-Očekivano odmah nakon deploya:
+Očekivano pri prvom postavljanju, prije početnog uvoza rabata:
 
 - `quickcheckout_minimum_order = 0`
 - `qiqo_full_snapshot_confirmed = 0`
@@ -198,6 +204,8 @@ Očekivano odmah nakon deploya:
 - `qiqo_order_delivery_shipping_codes = xshippingpro.xshippingpro1`
 - `qiqo_partner_article_initial_since = 2026-08-01 00:00:00`
 - `qiqo_partner_article_initial_complete = 0`
+
+Nakon uspješnog početnog uvoza `qiqo_partner_article_initial_complete = 1` očekivano je stanje. Ne vraćati ga na 0 pri redovnom deployu; usporediti ga s dovršenim poslom i stvarnim watermarkom.
 
 Dodatna outbox provjera prije i poslije migracije:
 
@@ -240,7 +248,7 @@ SELECT COUNT(*) AS outbox_rows FROM `oc_qiqo_order_outbox`;
 SELECT COUNT(*) AS partner_article_discounts FROM `oc_qiqo_partner_article_discount`;
 ```
 
-`auth_orphans` mora biti 0. `missing_active_sales_rep` treba ručno mapirati prije ERP slanja. Prazan partner–artikl cache ne puniti iz preglednika; čekati kontrolirani početni import i njegovu provjeru.
+`auth_orphans` mora biti 0. `missing_active_sales_rep` treba ručno mapirati prije ERP slanja. Početno punjenje partner–artikl cachea pokrenuti gumbom **Uvezi rabate iz ERP-a**, koji posao izvršava u zasebnom CLI procesu; završetak potvrditi statusom i ovim upitima. Stara sinkrona akcija nije kanal za početni uvoz.
 
 ### Korak 6 — produkcijski smoke dok je maintenance uključen
 
@@ -275,7 +283,7 @@ U browseru provjeriti:
 5. checkout narudžbe ispod 150 EUR više nije blokiran;
 6. wishlist X uklanja samo odabrani artikl;
 7. Blog je u meniju; Letak je vidljiv, ali onemogućen dok nema URL;
-8. admin QIQO FULL gumbi su onemogućeni i prikazuju upozorenje;
+8. admin QIQO FULL gumbi su onemogućeni i prikazuju upozorenje; gumbi za ažuriranje artikala i pozadinski uvoz rabata dostupni su, a aktivan posao prikazuje fazu i stvarne brojače;
 9. `https://.../upload` i stare debug/feed skripte vraćaju 404;
 10. stranica ne ispisuje `Deprecated`, `Warning` ni `Fatal error`.
 11. proizvod `product_id=1058` prikazuje SKU 514048, 514049 i 501112, svaki s VPC-om, rabatom 15% i konačnom cijenom;
@@ -298,17 +306,15 @@ Tek kada su baza, OCMOD i smoke provjere uredni, vrati `config_maintenance` na v
 
 ### A. Rutinski, nedestruktivni update
 
-Prvo potvrdi da novi QIQO credential i transport rade. Zatim u QIQO Importeru koristi ovaj redoslijed, jedan po jedan gumb, uz pregled poruke i loga nakon svakog koraka:
+Prvo potvrdi da QIQO vjerodajnice i transport rade. U glavnom dijelu QIQO Importera redoslijed je:
 
-1. **Sync komercijalista (inkrementalno)**
-2. **Sync partnera i komercijalista (inkrementalno)**
-3. **Pokreni import artikala** — samo ako treba dodati nove artikle
-4. **Ažuriraj količine artikala**
-5. **Ažuriraj cijene artikala**
-6. **Sync akcijskog cjenika** — inkrementalni gumb, bez oznake FULL
-7. **Ažuriraj partnere na artiklima**
+1. **Postojeći artikli** — prema potrebi pokrenuti **Ažuriraj količine artikala**, **Ažuriraj cijene artikala** ili **Ažuriraj dobavljače na artiklima**. Količine osvježavaju i podatke o pakiranju/minimalnoj količini. Dobavljač artikla nije rabat kupca.
+2. **Ažuriraj podatke kupaca i cjenike** — u jednom prolazu preuzima partnere i njihove opće rabate, mjesta isporuke, komercijaliste i akcijski cjenik. Nakon toga nije potrebno zasebno ponavljati komercijaliste i akcijski cjenik ako nije bilo novih promjena.
+3. **Uvezi rabate iz ERP-a**, odnosno nakon prvog uspješnog punjenja **Ažuriraj rabate kupac–artikl** — pokreće pozadinski posao za posebne rabate. Pratiti fazu, obrađene zapise i završnu poruku; zatvaranje stranice ne prekida posao.
 
-Stara sinkrona partner–artikl akcija ostaje onemogućena do početnog punjenja. Za početno punjenje i kasnije promjene koristite novi pozadinski gumb opisan na početku dokumenta. Stari watermark bez stvarno popunjene tablice ne otključava sinkronu akciju.
+Za nove artikle i promjene naziva/opisa otvoriti **Dodatna ažuriranja i potpuni katalog**: prvo **Pregled promjena prije uvoza**, zatim odobreni uvoz. Cjeloviti katalog već osvježava količine, cijene i dobavljače, pa ih nakon njega ne treba ponavljati. Na produkcijskim MyISAM tablicama potpuni upis i dalje zahtijeva kontrolirani CLI postupak s backupom i maintenanceom iz odjeljka 7; gumb za pregled ostaje dostupan.
+
+Stara sinkrona partner–artikl akcija i **Ažuriraj sve podatke kupaca** ostaju zaključani dok prvo punjenje, readiness oznaka i watermark nisu provjereni. To ne blokira novi pozadinski gumb ni zasebne artikle/osnovne podatke kupaca. Nakon završetka uvoza osvježiti stranicu za ponovno učitavanje ostalih opcija. Stari watermark bez stvarno popunjene tablice ne otključava sinkronu akciju; za veće skupove i kasnije promjene koristiti pozadinski gumb.
 
 Svaki feed sada validira transport i cijeli batch prije pisanja. Prazan, neispravan ili konfliktan feed mora završiti greškom/no-opom, a ne brisanjem ili nuliranjem podataka.
 
@@ -321,19 +327,15 @@ Brend/grupa gumbi nisu dio rutinskog updatea:
 
 Italcro je potvrdio da `qPartnerArtikalRabatWeb` vraća samo promjene nakon `datum`, a prazan uspješan odgovor znači da promjena nije bilo. Zato se taj feed nikada ne koristi kao destruktivna FULL zamjena.
 
-Početni dohvat od spremljenog datuma `2026-08-01 00:00:00` sada se može pokrenuti novim pozadinskim gumbom. Za alternativni vanjski izvoz ili odgovor koji prelazi ograničenje pozadinskog radnika dostupni su sljedeći kanali:
+Početni dohvat od spremljenog datuma `2026-08-01 00:00:00` sada se može pokrenuti novim pozadinskim gumbom, koji odgovor čita i zapisuje postupno. Alternativa za vanjski izvoz ili odgovor koji prelazi ograničenje radnika jest CSV/XML izvoz, opcionalno gzip, s ERP manifestom: očekivani broj slogova, kontrolni zbroj i vremenski interval. Za taj kanal koristi se importer iz odjeljka 7.
 
-- paginirani API;
-- paketirani/streamani poziv;
-- komprimirani CSV/XML izvoz s očekivanim brojem slogova i kontrolnim zbrojem.
-
-Početni import ne pokretati iz administratorskog HTTP zahtjeva. Do dovršetka ostaviti:
+Administratorski HTTP zahtjev samo zakazuje posao; preuzimanje i uvoz izvršava zaseban PHP CLI radnik. Cijeli početni skup ne obrađivati starom sinkronom akcijom unutar HTTP zahtjeva. Do potvrđenog dovršetka ostaviti:
 
 ```text
 qiqo_partner_article_initial_complete = 0
 ```
 
-Tek poseban importer, nakon provjere cijelog skupa, smije postaviti `qiqo_partner_article_initial_complete = 1` i točan watermark. Nakon toga prazan inkrementalni odgovor samo pomiče watermark; nikada ne briše postojeći cache.
+Pozadinski radnik ili alternativni importer smije objaviti `qiqo_partner_article_initial_complete = 1` tek nakon provjere cijelog skupa i commita rabata zajedno s točnim watermarkom. Ne otključavati ga ručno tijekom preuzimanja ili pripreme podataka. Nakon toga prazan uspješan inkrementalni odgovor samo pomiče watermark; nikada ne briše postojeći cache.
 
 Za ostale destruktivne FULL zamjene i dalje ostaviti:
 
@@ -358,7 +360,7 @@ Nakon potvrde Italcra:
    - akcijski cjenik FULL;
 5. vratiti `qiqo_full_snapshot_confirmed = 0` nakon kontroliranog zahvata.
 
-Ne koristiti **Sync svih partner podataka** u istom zahvatu ako su tri pojedinačna FULL koraka već pokrenuta; to bi samo ponovilo dio posla i otežalo audit.
+**Ažuriraj sve podatke kupaca** je kombinirani inkrementalni postupak za osnovne podatke i posebne rabate; nije dodatni FULL korak. Ne ponavljati njime već provedene pojedinačne radnje u istom zahvatu bez novih ERP promjena.
 
 ### C. “Onemogući artikle kojih nema u ERP-u”
 
@@ -432,13 +434,13 @@ Nikada ne vraćati stare javne debug/feed skripte ni kompromitirane vjerodajnice
 - [ ] kod postavljen bez lokalnih config/storage podataka
 - [ ] sedam migracija prošlo redoslijedom, uključujući `2026-10-06_rev31_api_contract.sql`
 - [ ] OCMOD regeneriran i ključni runtime marker provjeren
-- [ ] sigurnosni gateovi ostali na 0
+- [ ] gateovi za FULL zamjene i slanje narudžbi ostali na 0; readiness rabata odgovara stvarnom dovršenju uvoza
 - [ ] auth orphan count = 0
 - [ ] pricing SKU 300970 provjeren u katalogu i košarici
 - [ ] grupirani proizvod 1058 prikazuje sva tri artikla, rabat i konačne cijene
 - [ ] XShippingPro i checkout ispod 150 EUR provjereni
 - [ ] promjena načina plaćanja ne ostavlja zastarjeli shipping quote
-- [ ] `qiqo_partner_article_initial_complete = 0` dok početnih ~2 milijuna slogova nije provjereno uvezeno
+- [ ] `qiqo_partner_article_initial_complete = 0` do potvrđenog završetka prvog uvoza; nakon završetka provjereni broj zapisa, watermark, readiness=1 i primjer rabata na webu
 - [ ] debug/legacy price feedovi vraćaju 404
 - [ ] outbox reconciliation dry-run = 0
 - [ ] maintenance isključen tek nakon smokea
@@ -494,7 +496,7 @@ Za provjereni početni CSV/XML izvoz, opcionalno gzip, dodan je importer koji ob
 php scripts/import_qiqo_partner_discounts.php --source=/home/amds/private-exports/rabati.xml.gz --expected-count=ERP_BROJ --sha256=ERP_SHA256 --since='2026-08-01 00:00:00' --watermark='ERP_DATUM_I_VRIJEME'
 ```
 
-Tek nakon prolaska provjere ponoviti isti poziv s `--apply`. Importer provjerava cjelovitost gzipa/XML-a/CSV-a, broj i hash, konfliktne duplikate i vremenski interval. Ne briše stare rabate. Cache i watermark upisuje u jednoj InnoDB transakciji, a `initial_complete=1` objavljuje nakon uspješnog commita. Postojeća MyISAM `setting` tablica ne mora se konvertirati. Neuspjela objava readiness zastavice ostavlja potrebu za provjerom; nije razlog za ručno otključavanje browser importa.
+Tek nakon prolaska provjere ponoviti isti poziv s `--apply`. Importer provjerava cjelovitost gzipa/XML-a/CSV-a, broj i hash, konfliktne duplikate i vremenski interval. Ne briše stare rabate. Cache i watermark upisuje u jednoj InnoDB transakciji, a `initial_complete=1` objavljuje nakon uspješnog commita. Postojeća MyISAM `setting` tablica ne mora se konvertirati. Neuspjela objava readiness zastavice ostavlja potrebu za provjerom; nije razlog za ručno otključavanje stare sinkrone akcije.
 
 `qiqo_introduced_at` je nullable datum za pravilo tri kalendarska mjeseca. ERP još mora potvrditi naziv i značenje izvornog API polja. Ne puni se iz `date_added`, `date_available` ni datuma reimporta. Dok nema potvrđenih datuma, Novo prikazuje prazno stanje, a prazan „Novo u ponudi” carousel se ne prikazuje. Novo pravilo dostave također ostaje na čekanju dogovorenih poslovnih detalja.
 

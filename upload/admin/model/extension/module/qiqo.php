@@ -668,7 +668,7 @@ class ModelExtensionModuleQiqo extends Model
             $hasPakColumn = $this->ensureProductPakColumn();
             $hasJmColumn = $this->ensureProductJmColumn();
             $hasPakkolColumn = $this->ensureProductPakkolColumn();
-            $fields = ['product_id', 'sku', 'quantity', 'minimum', 'ean', 'sort_order'];
+            $fields = ['product_id', 'sku', 'quantity', 'minimum', 'ean', 'sort_order', 'status'];
             if ($hasPakColumn) $fields[] = 'pak';
             if ($hasJmColumn) $fields[] = 'jm';
             if ($hasPakkolColumn) $fields[] = 'pakkol';
@@ -684,7 +684,7 @@ class ModelExtensionModuleQiqo extends Model
                 if (!isset($productsBySku[$key])) continue;
                 $product = $productsBySku[$key];
                 $values = ['quantity' => $a['quantity'], 'minimum' => $a['minimum'],
-                    'ean' => $a['ean'], 'sort_order' => $a['sort_order']];
+                    'ean' => $a['ean'], 'sort_order' => $a['sort_order'], 'status' => $a['status']];
                 if ($hasPakColumn) $values['pak'] = $a['pak'];
                 if ($hasJmColumn) $values['jm'] = $a['jm'];
                 if ($hasPakkolColumn) $values['pakkol'] = $a['pakkol'];
@@ -707,7 +707,7 @@ class ModelExtensionModuleQiqo extends Model
                 $productsBySku[$key] = array_merge($product, $values);
                 $updated++;
             }
-            $this->log('Quantities', "END stock update rows={$updated}");
+            $this->log('Quantities', "END stock/status update rows={$updated}");
             return $updated;
         } catch (\Throwable $error) {
             $this->log('Quantities', 'ABORT stock update failed; check catalog sync log.');

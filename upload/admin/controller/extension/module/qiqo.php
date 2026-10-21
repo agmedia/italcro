@@ -41,8 +41,8 @@ class ControllerExtensionModuleQiqo extends Controller
                 case 'update_qty':
                     $count = $this->model_extension_module_qiqo->updateQuantities();
                     $this->session->data[$count < 0 ? 'error' : 'success'] = $count < 0
-                        ? 'Ažuriranje količina je prekinuto. Provjeri QIQO log i ERP podatke.'
-                        : "Ažurirano količina: {$count} artikala.";
+                        ? 'Ažuriranje količina i statusa je prekinuto. Provjeri QIQO log i ERP podatke.'
+                        : "Ažurirane količine i status za {$count} artikala.";
                     break;
 
                 case 'update_price':

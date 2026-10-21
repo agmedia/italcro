@@ -4,7 +4,7 @@ Zadnje ažuriranje: 2026-10-21
 
 ### Ažuriranje iz administracije — 2026-10-21
 
-QIQO Importer sada izravno prikazuje ažuriranje količina, osnovnih cijena i dobavljača postojećih artikala. Ti postupci ne dodaju nove artikle; učitavaju lokalne podatke jednom i spremaju samo promjene.
+QIQO Importer sada izravno prikazuje ažuriranje količina i statusa, osnovnih cijena i dobavljača postojećih artikala. Ti postupci ne dodaju nove artikle; učitavaju lokalne podatke jednom i spremaju samo promjene. Gumb za količine preuzima i ERP polje `aktivan`: `false` skriva postojeći artikl, a `true` ga ponovno aktivira na webshopu.
 
 Gumb **Uvezi rabate iz ERP-a** pokreće zaseban PHP CLI posao u pozadini. Početni dohvat koristi spremljeni `qiqo_partner_article_initial_since`; nakon uspješnog uvoza gumb postaje **Ažuriraj rabate kupac–artikl** i preuzima promjene od zadnjeg uspješnog početka uvoza uz preklapanje od minute. Administrator vidi fazu, broj redaka, preuzete megabajte i rezultat te može zatvoriti i ponovno otvoriti stranicu.
 
@@ -308,7 +308,7 @@ Tek kada su baza, OCMOD i smoke provjere uredni, vrati `config_maintenance` na v
 
 Prvo potvrdi da QIQO vjerodajnice i transport rade. U glavnom dijelu QIQO Importera redoslijed je:
 
-1. **Postojeći artikli** — prema potrebi pokrenuti **Ažuriraj količine artikala**, **Ažuriraj cijene artikala** ili **Ažuriraj dobavljače na artiklima**. Količine osvježavaju i podatke o pakiranju/minimalnoj količini. Dobavljač artikla nije rabat kupca.
+1. **Postojeći artikli** — prema potrebi pokrenuti **Ažuriraj količine i status**, **Ažuriraj cijene artikala** ili **Ažuriraj dobavljače na artiklima**. Količine osvježavaju i podatke o pakiranju/minimalnoj količini te status iz ERP polja `aktivan`: `false` skriva postojeći SKU, a `true` ga ponovno aktivira. Dobavljač artikla nije rabat kupca.
 2. **Ažuriraj podatke kupaca i cjenike** — u jednom prolazu preuzima partnere i njihove opće rabate, mjesta isporuke, komercijaliste i akcijski cjenik. Nakon toga nije potrebno zasebno ponavljati komercijaliste i akcijski cjenik ako nije bilo novih promjena.
 3. **Uvezi rabate iz ERP-a**, odnosno nakon prvog uspješnog punjenja **Ažuriraj rabate kupac–artikl** — pokreće pozadinski posao za posebne rabate. Pratiti fazu, obrađene zapise i završnu poruku; zatvaranje stranice ne prekida posao.
 

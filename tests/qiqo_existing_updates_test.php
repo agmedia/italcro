@@ -120,7 +120,7 @@ existingUpdateAssert((int)$db->rows[2]['pak'] === 12 && (int)$db->rows[2]['minim
     'Legacy numeric pak values must not become a pack flag.');
 existingUpdateAssert(count($db->rows) === 3 && $db->rows[3] === $before[3],
     'Stock must not add unknown SKUs or alter products absent from the feed.');
-foreach (['price', 'vpc', 'cent', 'partner', 'status', 'image', 'date_added', 'qiqo_introduced_at'] as $field) {
+foreach (['price', 'vpc', 'cent', 'partner', 'image', 'date_added', 'qiqo_introduced_at'] as $field) {
     existingUpdateAssert($db->rows[1][$field] === $before[1][$field], 'Stock must preserve unrelated field ' . $field);
 }
 existingUpdateAssert($cache->deleted === ['product', 'megamenu'], 'Changed stock must invalidate catalog caches.');
@@ -128,6 +128,38 @@ $db->queries = [];
 existingUpdateAssert($model->updateQuantities() === 0 && !$db->mutations() && count($db->productReads()) === 1,
     'Repeated stock sync must not rewrite products or their modification date.');
 existingUpdateAssert($cache->deleted === ['product', 'megamenu'], 'Unchanged stock need not invalidate caches.');
+
+foreach (['false', false, '0', 0] as $inactive) {
+    list($model, $db, $cache) = existingUpdateFixture([$stock]);
+    $model->updateQuantities();
+    $before = $db->rows;
+    $db->queries = [];
+    $cache->deleted = [];
+    $model->feed->rows = [array_merge($stock, ['aktivan' => $inactive])];
+    existingUpdateAssert($model->updateQuantities() === 1 && (int)$db->rows[1]['status'] === 0,
+        'ERP inactive must hide an existing article even when stock and packaging are unchanged.');
+    existingUpdateAssert(array_diff_assoc($db->rows[1], $before[1]) === ['status' => '0']
+        && $db->rows[2] === $before[2] && $db->rows[3] === $before[3],
+        'A status-only change must preserve stock, prices, images, dates and products absent from the feed.');
+    existingUpdateAssert($cache->deleted === ['product', 'megamenu'], 'A status-only change must clear storefront caches.');
+    $db->queries = [];
+    existingUpdateAssert($model->updateQuantities() === 0 && !$db->mutations(), 'Repeated inactive status must not rewrite an article.');
+    $model->feed->rows = [array_merge($stock, ['aktivan' => 'true'])];
+    existingUpdateAssert($model->updateQuantities() === 1 && (int)$db->rows[1]['status'] === 1,
+        'ERP active must reactivate the existing article when stock is unchanged.');
+    $db->queries = [];
+    existingUpdateAssert($model->updateQuantities() === 0 && !$db->mutations(), 'Repeated active status must not rewrite an article.');
+}
+foreach (['invalid', 'missing', 'conflicting'] as $invalidStatus) {
+    $bad = array_merge($stock, ['id' => 'LEGACY', 'aktivan' => 'unknown']);
+    if ($invalidStatus === 'missing') unset($bad['aktivan']);
+    if ($invalidStatus === 'conflicting') $bad = array_merge($stock, ['aktivan' => 'false']);
+    list($model, $db, $cache) = existingUpdateFixture([$stock, $bad]);
+    $before = $db->rows;
+    existingUpdateAssert($model->updateQuantities() === -1 && !$db->mutations()
+        && $db->rows === $before && !$cache->deleted,
+        'An invalid, absent or conflicting activity flag must reject the whole stock/status batch.');
+}
 
 list($model, $db) = existingUpdateFixture([array_merge($stock, ['zaliha' => '2.71236'])]);
 $db->quantityType = 'decimal(15,4)';

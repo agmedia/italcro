@@ -34,9 +34,11 @@ final class ClearanceActionsProductModel extends ModelCatalogProduct {
 }
 $db = new ClearanceActionsDb();
 $p = DB_PREFIX;
-$db->query("CREATE TEMPORARY TABLE `{$p}qiqo_article_classification` (article_code VARCHAR(64) PRIMARY KEY, classification INT)");
-$db->query("CREATE TEMPORARY TABLE `{$p}qiqo_action_price` (article_code VARCHAR(64), indicator CHAR(1), quantity DECIMAL(12,4), price DECIMAL(12,7), discount DECIMAL(9,4))");
-$db->query("CREATE TEMPORARY TABLE `{$p}product` (product_id INT PRIMARY KEY, sku VARCHAR(64), mpn VARCHAR(64), status INT, date_available DATE, price DECIMAL(12,7), sort_order INT)");
+// Existing production tables can use different utf8mb4 collations. Joining
+// their implicit string columns must not cause MySQL error 1267.
+$db->query("CREATE TEMPORARY TABLE `{$p}qiqo_article_classification` (article_code VARCHAR(64) PRIMARY KEY, classification INT) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+$db->query("CREATE TEMPORARY TABLE `{$p}qiqo_action_price` (article_code VARCHAR(64), indicator CHAR(1), quantity DECIMAL(12,4), price DECIMAL(12,7), discount DECIMAL(9,4)) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+$db->query("CREATE TEMPORARY TABLE `{$p}product` (product_id INT PRIMARY KEY, sku VARCHAR(64), mpn VARCHAR(64), status INT, date_available DATE, price DECIMAL(12,7), sort_order INT) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 $db->query("CREATE TEMPORARY TABLE `{$p}product_to_store` (product_id INT, store_id INT)");
 $db->query("CREATE TEMPORARY TABLE `{$p}product_description` (product_id INT, language_id INT, name VARCHAR(64))");
 $db->query("CREATE TEMPORARY TABLE `{$p}review` (product_id INT, status INT, rating INT)");
@@ -56,6 +58,9 @@ $registry->set('db', $db);
 $registry->set('config', $config);
 $model = new ClearanceActionsProductModel($registry);
 $skus = ['513056', 'REG-A', 'FUT801', 'ZERO', 'XONLY'];
+clearanceActionsAssert($model->getQiqoClearanceMap([
+    ['product_id' => 1, 'sku' => '513056'], ['product_id' => 2, 'sku' => 'REG-A'], ['product_id' => 3, 'sku' => 'FUT801'],
+]) === [1 => true, 3 => true], 'Clearance R classification joins must tolerate mixed table collations.');
 clearanceActionsAssert($model->getQiqoActionArticleMap($skus) === ['REG-A' => true], 'Clearance, zero and X-only rows must have no A badge.');
 $details = $model->getQiqoActionDetailsMap($skus);
 clearanceActionsAssert(array_keys($details) === ['REG-A'] && $details['REG-A'][0]['discount'] === 25.0, 'Only applicable non-clearance action conditions may be displayed.');

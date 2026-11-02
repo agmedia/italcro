@@ -577,7 +577,7 @@ class ModelExtensionMazaTfProduct extends Model {
                     $this->qiqo_classification_table_ready = (bool)$ready->num_rows;
                 }
                 return $this->qiqo_classification_table_ready
-                    ? " AND NOT EXISTS (SELECT 1 FROM `" . DB_PREFIX . "qiqo_article_classification` qac WHERE qac.article_code=qap.article_code AND qac.classification IN (800,801))"
+                    ? " AND NOT EXISTS (SELECT 1 FROM `" . DB_PREFIX . "qiqo_article_classification` qac WHERE qac.article_code COLLATE utf8mb4_unicode_ci=qap.article_code COLLATE utf8mb4_unicode_ci AND qac.classification IN (800,801))"
                     : '';
         }
 

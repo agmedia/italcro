@@ -29,8 +29,9 @@ final class QiqoSyncGuard
     /**
      * Validate and normalize the complete qAkcijskiCjenikWeb response before
      * any live-table write. Blank numeric cells are legitimate zeroes in the
-     * ERP feed; malformed, out-of-range or conflicting duplicate rows reject
-     * the entire batch.
+     * ERP feed. Same-threshold pure P discounts retain the resolver's maximum;
+     * positive absolute C prices retain its minimum, with warnings for both.
+     * Malformed, out-of-range, mixed or other conflicting rows reject the batch.
      *
      * @return array{valid:bool,rows:array<int,array<string,mixed>>,invalid_rows:int,warnings:array<int,array<string,mixed>>}
      */
@@ -39,6 +40,8 @@ final class QiqoSyncGuard
         $normalized = [];
         $invalidRows = 0;
         $netPrices = [];
+        $percentRates = [];
+        $invalidKeys = [];
 
         foreach ($rows as $row) {
             if (!is_array($row)) {
@@ -62,6 +65,10 @@ final class QiqoSyncGuard
                 || $price < 0 || $price > 99999999.9999999
                 || $discount < 0 || $discount > 100) {
                 $invalidRows++;
+                if ($article !== '' && strlen($article) <= 64 && in_array($indicator, ['C', 'P', 'X'], true)
+                    && $quantity !== null && $quantity >= 0 && $quantity <= 99999999999.9999) {
+                    $invalidKeys[$article . '|' . $indicator . '|' . number_format(round($quantity, 4), 4, '.', '')] = true;
+                }
                 continue;
             }
 
@@ -76,19 +83,30 @@ final class QiqoSyncGuard
             if ($indicator === 'C' && $item['price'] > 0 && $item['discount'] == 0) {
                 $netPrices[$key][number_format($item['price'], 7, '.', '')] = $item['price'];
             }
+            if ($indicator === 'P' && $item['price'] == 0) {
+                $percentRates[$key][number_format($item['discount'], 4, '.', '')] = $item['discount'];
+            }
 
             if (isset($normalized[$key])) {
                 $existing = $normalized[$key];
                 // Several absolute C prices use the resolver's existing lowest-net
-                // rule. Percentage conflicts and mixed zero/net rows stay invalid.
+                // rule. C percentage conflicts and mixed zero/net rows stay invalid.
                 if ($indicator === 'C' && $existing['price'] > 0 && $item['price'] > 0
                     && $existing['discount'] == 0 && $item['discount'] == 0) {
                     $normalized[$key]['price'] = min($existing['price'], $item['price']);
                     continue;
                 }
+                // resolveAction() already takes the highest P discount at an
+                // identical quantity threshold. Preserve that exact result;
+                // only pure percentage rows (zero absolute price) qualify.
+                if ($indicator === 'P' && $existing['price'] == 0 && $item['price'] == 0) {
+                    $normalized[$key]['discount'] = max($existing['discount'], $item['discount']);
+                    continue;
+                }
                 if (abs($existing['price'] - $item['price']) > 0.0000001
                     || abs($existing['discount'] - $item['discount']) > 0.0001) {
                     $invalidRows++;
+                    $invalidKeys[$key] = true;
                 }
                 continue;
             }
@@ -99,7 +117,7 @@ final class QiqoSyncGuard
         $warnings = [];
         ksort($netPrices, SORT_STRING);
         foreach ($netPrices as $key => $values) {
-            if (count($values) < 2) continue;
+            if (count($values) < 2 || isset($invalidKeys[$key])) continue;
             $prices = array_values($values);
             sort($prices, SORT_NUMERIC);
             $warnings[] = [
@@ -109,6 +127,20 @@ final class QiqoSyncGuard
                 'quantity' => $normalized[$key]['quantity'],
                 'prices' => $prices,
                 'selected_price' => $prices[0],
+            ];
+        }
+        ksort($percentRates, SORT_STRING);
+        foreach ($percentRates as $key => $values) {
+            if (count($values) < 2 || isset($invalidKeys[$key])) continue;
+            $discounts = array_values($values);
+            sort($discounts, SORT_NUMERIC);
+            $warnings[] = [
+                'code' => 'duplicate_action_percent',
+                'article' => $normalized[$key]['article'],
+                'indicator' => 'P',
+                'quantity' => $normalized[$key]['quantity'],
+                'discounts' => $discounts,
+                'selected_discount' => $discounts[count($discounts) - 1],
             ];
         }
 

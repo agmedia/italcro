@@ -49,8 +49,8 @@ if ($malformedAction['valid'] || $malformedAction['invalid_rows'] !== 1) {
 }
 
 $conflictingAction = QiqoSyncGuard::normalizeActionRows([
-    ['artikal' => '300970', 'indikator' => 'P', 'kolicina' => '24', 'rabat' => '25'],
-    ['artikal' => '300970', 'indikator' => 'P', 'kolicina' => '24', 'rabat' => '30'],
+    ['artikal' => '300970', 'indikator' => 'C', 'kolicina' => '24', 'rabat' => '25'],
+    ['artikal' => '300970', 'indikator' => 'C', 'kolicina' => '24', 'rabat' => '30'],
 ]);
 if ($conflictingAction['valid']) {
     throw new RuntimeException('Conflicting duplicate action keys must reject the complete full feed.');

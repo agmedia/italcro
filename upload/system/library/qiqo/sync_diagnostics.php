@@ -111,7 +111,7 @@ final class QiqoSyncDiagnostics
         foreach (($result['warnings'] ?? []) as $warning) {
             if (!is_array($warning)) continue;
             $code = $warning['code'] ?? '';
-            if (!in_array($code, ['duplicate_action_net_price', 'deferred_catalog_name'], true)) continue;
+            if (!in_array($code, ['duplicate_action_net_price', 'duplicate_action_percent', 'deferred_catalog_name'], true)) continue;
             $article = trim((string)($warning['article'] ?? ''));
             if ($article === '' || strlen($article) > 64 || preg_match('/[\x00-\x1F\x7F]/', $article)) continue;
             if ($code === 'deferred_catalog_name') {
@@ -120,9 +120,27 @@ final class QiqoSyncDiagnostics
                 continue;
             }
             $quantity = $warning['quantity'] ?? null;
-            $prices = $warning['prices'] ?? null;
             if (!is_numeric($quantity) || !is_finite((float)$quantity) || (float)$quantity < 0
-                || (float)$quantity > 99999999999.9999 || !is_array($prices)) continue;
+                || (float)$quantity > 99999999999.9999) continue;
+            if ($code === 'duplicate_action_percent') {
+                $discounts = $warning['discounts'] ?? null;
+                if (!is_array($discounts)) continue;
+                $rates = [];
+                foreach ($discounts as $discount) {
+                    if (!is_numeric($discount) || !is_finite((float)$discount) || $discount < 0 || $discount > 100) continue;
+                    $rates[number_format((float)$discount, 4, '.', '')] = round((float)$discount, 4);
+                }
+                $rates = array_values($rates);
+                sort($rates, SORT_NUMERIC);
+                if (count($rates) < 2) continue;
+                $id = 'action_percent:' . hash('sha256', $article . '|' . number_format((float)$quantity, 4, '.', ''));
+                $incidents[$id] = ['code' => $code, 'article' => $article, 'indicator' => 'P',
+                    'quantity' => round((float)$quantity, 4), 'discounts' => $rates,
+                    'selected_discount' => $rates[count($rates) - 1]];
+                continue;
+            }
+            $prices = $warning['prices'] ?? null;
+            if (!is_array($prices)) continue;
             $values = [];
             foreach ($prices as $price) {
                 if (!is_numeric($price) || !is_finite((float)$price) || $price <= 0 || $price > 99999999.9999999) continue;
@@ -158,6 +176,12 @@ final class QiqoSyncDiagnostics
             } elseif ($incident['code'] === 'deferred_catalog_name') {
                 $lines[] = 'Artikl ' . $incident['article'] . ': novi aktivni artikl privremeno je izuzet iz uvoza jer ERP ne šalje naziv.'
                     . ' Dopunite naziv artikla ili pripadajuće kataloške grupe u ERP-u, zatim ponovno pokrenite ažuriranje kataloga.';
+            } elseif ($incident['code'] === 'duplicate_action_percent') {
+                $format = static function ($value) { return rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.'); };
+                $lines[] = 'Artikl ' . $incident['article'] . ', P, količina ' . $format($incident['quantity'])
+                    . ': ERP vraća različite rabate ' . implode('%, ', array_map($format, $incident['discounts']))
+                    . '%. Prema postojećem pravilu za isti količinski prag odabran je veći rabat '
+                    . $format($incident['selected_discount']) . '%. Provjerite duple zapise u ERP-u.';
             }
         }
         $lines[] = '';

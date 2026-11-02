@@ -6,6 +6,7 @@
      <div class="image-area" id="gallery" style="position:relative;">
             
         {% if thumb %}
+        {% if qiqo_clearance is defined and qiqo_clearance %}<span class="clearance_mark" title="Rasprodaja" aria-label="Rasprodaja">R</span>{% endif %}
         <div class="main-image qv_image carousel" style="width:{{ img_w }}px;">
         <img src="{{ thumb }}" title="{{ heading_title }}" alt="{{ heading_title }}" />
         

@@ -150,3 +150,29 @@ if (QiqoSyncGuard::validateArticleImportSchema($invalidImportSchema)) {
 }
 
 echo "Qiqo full-sync guard tests passed.\n";
+
+$netRows = [
+    ['artikal'=>'330470','indikator'=>'C','kolicina'=>'0','cijena'=>'4.07','rabat'=>'0'],
+    ['artikal'=>'330470','indikator'=>'C','kolicina'=>'0','cijena'=>'4.06','rabat'=>'0'],
+];
+foreach ([$netRows,array_reverse($netRows)] as $rows) {
+    $net = QiqoSyncGuard::normalizeActionRows($rows);
+    if (!$net['valid'] || count($net['rows'])!==1 || abs($net['rows'][0]['price']-4.06)>0.0000001) {
+        throw new RuntimeException('Duplicate absolute C prices must retain the resolver lowest-net rule in either order.');
+    }
+    if ($net['warnings'] !== [['code' => 'duplicate_action_net_price', 'article' => '330470',
+        'indicator' => 'C', 'quantity' => 0.0, 'prices' => [4.06, 4.07], 'selected_price' => 4.06]]) {
+        throw new RuntimeException('Differing C net prices must emit a stable, structured warning in either order.');
+    }
+}
+$netRows[] = $netRows[0];
+if (count(QiqoSyncGuard::normalizeActionRows($netRows)['warnings']) !== 1) {
+    throw new RuntimeException('Repeated duplicate source rows must not create repeated warnings.');
+}
+$equalNetRows = [$netRows[0], $netRows[0]];
+if (QiqoSyncGuard::normalizeActionRows($equalNetRows)['warnings']) {
+    throw new RuntimeException('Identical C net prices must not generate anomaly warnings.');
+}
+$netRows[1]['cijena']='0';
+if(QiqoSyncGuard::normalizeActionRows($netRows)['valid']) throw new RuntimeException('Mixed zero/net conflicts must remain blocked.');
+echo "Rev3.3 absolute C price duplicates passed.\n";

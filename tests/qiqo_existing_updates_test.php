@@ -32,7 +32,12 @@ class ExistingUpdateFeed {
 }
 class ExistingUpdateModel extends ModelExtensionModuleQiqo {
     public $feed;
+    public $classificationCalls = 0;
     protected function createCatalogConnection() { return $this->feed; }
+    public function syncArticleClassifications(array $rows): int {
+        $this->classificationCalls++;
+        return parent::syncArticleClassifications($rows);
+    }
 }
 class ExistingUpdateCache {
     public $deleted = [];
@@ -45,6 +50,7 @@ class ExistingUpdateDb {
     public $busy = false;
     public $updates = 0;
     public $failUpdate = 0;
+    public $missingColumns = [];
     public function escape($value) { return addslashes((string)$value); }
     private function result($rows) {
         return (object)['num_rows' => count($rows), 'row' => $rows ? reset($rows) : [], 'rows' => array_values($rows)];
@@ -54,6 +60,9 @@ class ExistingUpdateDb {
         if (strpos($sql, 'GET_LOCK(') !== false) return $this->result([['acquired' => $this->busy ? 0 : 1]]);
         if (strpos($sql, 'RELEASE_LOCK(') !== false) return $this->result([['released' => 1]]);
         if (strpos($sql, 'SHOW COLUMNS') === 0) {
+            foreach ($this->missingColumns as $column) {
+                if (strpos($sql, "LIKE '" . $column . "'") !== false) return $this->result([]);
+            }
             return $this->result([['Field' => 'present', 'Type' => $this->quantityType]]);
         }
         if (preg_match('/^SELECT ([a-z_, ]+) FROM `test_product`$/', $sql, $matches)) {
@@ -242,6 +251,29 @@ foreach (['updateQuantities' => [$stock, $legacy], 'updatePrices' => [$c100, $ze
         'Any writes persisted before a failure must also invalidate stale caches: ' . $method);
     existingUpdateAssert(strpos(end($db->queries), 'RELEASE_LOCK(') !== false,
         'The catalog lock must be released after a write failure: ' . $method);
+
+    // Even inactive duplicates must not be reactivated or repriced arbitrarily
+    // when their SKU reappears in the ERP feed. A valid earlier row must not
+    // have been written before discovering an ambiguous later article.
+    foreach (['exact', 'normalized', 'both_inactive'] as $shape) {
+        list($model, $db, $cache) = existingUpdateFixture($validRows);
+        $db->rows[4] = array_merge($db->rows[2], ['product_id' => 4]);
+        if ($shape === 'normalized') $db->rows[4]['sku'] = ' legacy ';
+        if ($shape === 'both_inactive') $db->rows[2]['status'] = $db->rows[4]['status'] = 0;
+        $before = $db->rows;
+        $db->missingColumns = ['pak', 'jm', 'pakkol', 'vpc'];
+        existingUpdateAssert($model->$method() === -1 && $db->rows === $before && !$db->mutations()
+            && !$cache->deleted && $model->classificationCalls === 0,
+            'A returned local duplicate must reject the whole batch before schema, classification or product writes: ' . $method . '/' . $shape);
+        existingUpdateAssert(strpos(end($db->queries), 'RELEASE_LOCK(') !== false,
+            'A duplicate rejection must release the catalog lock: ' . $method);
+    }
+    list($model, $db) = existingUpdateFixture([$validRows[0]]);
+    $db->rows[2]['status'] = 0;
+    $db->rows[4] = array_merge($db->rows[2], ['product_id' => 4]);
+    $untouched = [$db->rows[2], $db->rows[4]];
+    existingUpdateAssert($model->$method() === 1 && [$db->rows[2], $db->rows[4]] === $untouched,
+        'Duplicate legacy SKUs absent from this feed must remain untouched without blocking unrelated updates: ' . $method);
 }
 
 echo "QIQO existing-product stock and price update tests passed.\n";

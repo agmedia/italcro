@@ -10,8 +10,13 @@ final class QiqoPricingResolver
         $quantity,
         $includeAction,
         $isProforma,
-        $cent = ''
+        $cent = '',
+        $classification = null
     ): array {
+        if (in_array((string)$classification, ['800', '801'], true)) {
+            $baseDiscount = 0;
+            $actionRows = [];
+        }
         $baseUnit = max(0.0, (float)$baseUnit);
         $baseDiscount = self::clampDiscount($baseDiscount);
         $quantity = max(0.0, (float)$quantity);
@@ -88,6 +93,15 @@ final class QiqoPricingResolver
             'action_applied' => $actionApplied,
             'has_action' => !empty($actionRows),
         ];
+    }
+
+    public static function baseDiscount($partner, $article): array
+    {
+        $partner = self::clampDiscount($partner);
+        $article = $article === null ? null : self::clampDiscount($article);
+        return $article !== null && $article > $partner
+            ? ['discount' => $article, 'source' => 'article']
+            : ['discount' => $partner, 'source' => 'partner'];
     }
 
     public static function resolveAction(array $rows, $quantity, $isProforma, $cent = ''): array

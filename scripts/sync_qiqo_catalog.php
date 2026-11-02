@@ -1,7 +1,8 @@
 <?php
 
 // Repeatable catalog reconciliation. Dry run is the default; this command
-// never enables FULL snapshots or disables products absent from a feed.
+// never enables FULL snapshots. --complete-snapshot is a separately gated,
+// historical reconciliation that hides (never deletes) false/missing products.
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit(1);
@@ -10,9 +11,13 @@ if (PHP_SAPI !== 'cli') {
 $apply = false;
 $since = '-2 years';
 $options = [];
+$completeSnapshot = false;
+$explicitSince = false;
 foreach (array_slice($argv, 1) as $argument) {
     if ($argument === '--apply') {
         $apply = true;
+    } elseif ($argument === '--complete-snapshot') {
+        $completeSnapshot = true;
     } elseif ($argument === '--allow-nontransactional') {
         $options['allow_nontransactional'] = true;
     } elseif ($argument === '--skip-unnamed-new') {
@@ -21,14 +26,18 @@ foreach (array_slice($argv, 1) as $argument) {
         $options['backup_path'] = substr($argument, strlen('--backup='));
     } elseif (strpos($argument, '--since=') === 0) {
         $since = substr($argument, strlen('--since='));
+        $explicitSince = true;
         $date = DateTime::createFromFormat('!Y-m-d', $since);
         if (!$date || $date->format('Y-m-d') !== $since) {
             fwrite(STDERR, "--since must be a valid YYYY-MM-DD date.\n");
             exit(2);
         }
     } elseif ($argument === '--help') {
-        echo "Usage: php scripts/sync_qiqo_catalog.php [--since=YYYY-MM-DD] [--skip-unnamed-new] [--apply]\n";
+        echo "Usage: php scripts/sync_qiqo_catalog.php [--complete-snapshot] [--since=YYYY-MM-DD] [--skip-unnamed-new] [--apply]\n";
         echo "--skip-unnamed-new skips and reports only new SKUs without an ERP title; all critical feed validation remains mandatory.\n";
+        echo "--complete-snapshot previews adds/reactivations and false/missing deactivations from an explicit historical date.\n";
+        echo "Complete apply requires qiqo_catalog_snapshot_confirmed=1 and the same configured qiqo_catalog_snapshot_since date.\n";
+        echo "Count/active-deactivation limits remain enforced. Active SKUs without names cannot be skipped in complete mode.\n";
         echo "MyISAM apply additionally requires maintenance mode, --allow-nontransactional and --backup=/private/path/backup.sql.gz.\n";
         exit(0);
     } else {
@@ -66,7 +75,12 @@ try {
         $registry->set('cache', new Cache('file'));
     }
     $model = new ModelExtensionModuleQiqo($registry);
-    $result = $model->reconcileCatalog($apply, $since, $options);
+    if ($completeSnapshot) {
+        if ($explicitSince) $options['snapshot_since'] = $since;
+        $result = $model->reconcileCompleteCatalog($apply, $options);
+    } else {
+        $result = $model->reconcileCatalog($apply, $since, $options);
+    }
     echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
     exit($result['success'] ? 0 : 1);
 } catch (Throwable $error) {

@@ -8,8 +8,14 @@ define('DIR_SYSTEM', __DIR__ . '/../upload/system/');
 define('DB_PREFIX', 'test_');
 class Log {
     public static $messages = [];
+    public static $failCatalogEnd = false;
     public function __construct($file) {}
-    public function write($message) { self::$messages[] = $message; }
+    public function write($message) {
+        if (self::$failCatalogEnd && strpos($message, '[Catalog] END reconciliation') === 0) {
+            throw new RuntimeException('Injected final catalog log failure.');
+        }
+        self::$messages[] = $message;
+    }
 }
 function agconf($key, $default = null) {
     return $key === 'qiqo.categories' ? [10 => 'Test category'] : $default;
@@ -33,6 +39,9 @@ class CatalogFeedStub {
 
 class CatalogTestModel extends ModelExtensionModuleQiqo {
     public $feed;
+    public $classificationSyncCalls = 0;
+    // Classification persistence is covered with real temporary tables in Rev3.3 tests.
+    public function syncArticleClassifications(array $articles): int { $this->classificationSyncCalls++; return count($articles); }
     protected function createCatalogConnection() { return $this->feed; }
 }
 
@@ -210,6 +219,7 @@ catalogAssert($registry->get('cache')->deleted === ['product', 'megamenu'], 'App
 $db->queries = [];
 $second = $model->reconcileCatalog(true);
 catalogAssert($second['success'] && $second['unchanged'] === 1 && !$db->mutationQueries(), 'An identical repeated import must be idempotent.');
+catalogAssert($model->classificationSyncCalls === 2, 'Apply must reconcile categories even when product fields are unchanged.');
 catalogAssert($registry->get('cache')->deleted === ['product', 'megamenu', 'product', 'megamenu'], 'An applied unchanged catalog may refresh existing stale caches.');
 
 list($model, $db, $registry) = catalogFixture($article, $groups, $partners, $local, $unreturned);

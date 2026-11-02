@@ -184,12 +184,15 @@ class ControllerProductProduct extends Controller {
 
 					$data['qiqo_discount_percent'] = 0;
 					$data['qiqo_action'] = false;
+					$data['qiqo_clearance'] = false;
 					$data['mpn_count'] = ($product_info && isset($product_info['mpn_count'])) ? (int)$product_info['mpn_count'] : 1;
 					$data['is_single_article'] = !$product_info || empty($product_info['mpn']) || $data['mpn_count'] <= 1;
 					// A grouped product intentionally has no single representative price, but
 					// every variant still needs its own price columns for an authorised buyer.
 					$data['show_variant_prices'] = $this->customer->isLogged() || !$this->config->get('config_customer_price');
 					if ($product_info) {
+						$main_clearance_map = $this->model_catalog_product->getQiqoClearanceMap(array($product_info));
+						$data['qiqo_clearance'] = !empty($main_clearance_map[(int)$product_info['product_id']]);
 						// Product pages are catalog surfaces: legacy OpenCart special /
 						// discount rows must never leak action pricing here.
 						$product_info['price'] = isset($product_info['base_price']) ? (float)$product_info['base_price'] : (float)$product_info['price'];
@@ -651,6 +654,7 @@ class ControllerProductProduct extends Controller {
 	                $this->ppCacheSet($key, $results);
 	            }
 
+				$related_clearance_map = $this->model_catalog_product->getQiqoClearanceMap($results);
 				$related_qiqo_price_map = array();
 				$related_qiqo_action_article_map = array();
 				$related_qiqo_action_mpn_map = array();
@@ -862,6 +866,7 @@ class ControllerProductProduct extends Controller {
 	                    'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($result),
 	                    'qiqo_discount_percent' => $qiqo_discount_percent,
 	                    'qiqo_action' => $qiqo_action,
+	                    'qiqo_clearance' => !empty($related_clearance_map[(int)$result['product_id']]),
 						'tax'         => $tax,
 					'minimum'     => $minimum,
 					'rating'      => $rating,
@@ -912,6 +917,7 @@ class ControllerProductProduct extends Controller {
 	                    return (int)$a['sort_order'] <=> (int)$b['sort_order'];
 	                });
 
+	                $mpn_clearance_map = $this->model_catalog_product->getQiqoClearanceMap($mpn_products);
 	                $mpn_qiqo_price_map = array();
 	                $mpn_action_details_map = array();
 	                $mpn_action_skus = array();
@@ -1014,6 +1020,7 @@ class ControllerProductProduct extends Controller {
 	                        'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($result),
 	                        'qiqo_discount_percent' => $row_qiqo_discount_percent,
 	                        'qiqo_action' => !empty($action_conditions),
+	                        'qiqo_clearance' => !empty($mpn_clearance_map[(int)$result['product_id']]),
 	                        'qiqo_action_conditions' => $action_conditions,
 	                        'vpc'        => $this->currency->format($vpc_display_raw, $this->session->data['currency']),
 	                        'final_price' => $this->currency->format($price_display_raw, $this->session->data['currency']),
@@ -1101,6 +1108,7 @@ class ControllerProductProduct extends Controller {
 	                    'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($product_info),
 	                    'qiqo_discount_percent' => $single_qiqo_discount_percent,
 	                    'qiqo_action' => !empty($single_action_conditions),
+	                    'qiqo_clearance' => $data['qiqo_clearance'],
 	                    'qiqo_action_conditions' => $single_action_conditions,
 	                    'vpc'        => $this->currency->format($single_vpc_display_raw, $this->session->data['currency']),
 	                    'final_price' => $this->currency->format($single_price_display_raw, $this->session->data['currency']),

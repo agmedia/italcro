@@ -32,12 +32,13 @@ final class QiqoSyncGuard
      * ERP feed; malformed, out-of-range or conflicting duplicate rows reject
      * the entire batch.
      *
-     * @return array{valid:bool,rows:array<int,array<string,mixed>>,invalid_rows:int}
+     * @return array{valid:bool,rows:array<int,array<string,mixed>>,invalid_rows:int,warnings:array<int,array<string,mixed>>}
      */
     public static function normalizeActionRows(array $rows): array
     {
         $normalized = [];
         $invalidRows = 0;
+        $netPrices = [];
 
         foreach ($rows as $row) {
             if (!is_array($row)) {
@@ -72,9 +73,19 @@ final class QiqoSyncGuard
                 'discount' => round($discount, 4),
             ];
             $key = $article . '|' . $indicator . '|' . number_format($item['quantity'], 4, '.', '');
+            if ($indicator === 'C' && $item['price'] > 0 && $item['discount'] == 0) {
+                $netPrices[$key][number_format($item['price'], 7, '.', '')] = $item['price'];
+            }
 
             if (isset($normalized[$key])) {
                 $existing = $normalized[$key];
+                // Several absolute C prices use the resolver's existing lowest-net
+                // rule. Percentage conflicts and mixed zero/net rows stay invalid.
+                if ($indicator === 'C' && $existing['price'] > 0 && $item['price'] > 0
+                    && $existing['discount'] == 0 && $item['discount'] == 0) {
+                    $normalized[$key]['price'] = min($existing['price'], $item['price']);
+                    continue;
+                }
                 if (abs($existing['price'] - $item['price']) > 0.0000001
                     || abs($existing['discount'] - $item['discount']) > 0.0001) {
                     $invalidRows++;
@@ -85,10 +96,27 @@ final class QiqoSyncGuard
             $normalized[$key] = $item;
         }
 
+        $warnings = [];
+        ksort($netPrices, SORT_STRING);
+        foreach ($netPrices as $key => $values) {
+            if (count($values) < 2) continue;
+            $prices = array_values($values);
+            sort($prices, SORT_NUMERIC);
+            $warnings[] = [
+                'code' => 'duplicate_action_net_price',
+                'article' => $normalized[$key]['article'],
+                'indicator' => 'C',
+                'quantity' => $normalized[$key]['quantity'],
+                'prices' => $prices,
+                'selected_price' => $prices[0],
+            ];
+        }
+
         return [
             'valid' => $invalidRows === 0,
             'rows' => array_values($normalized),
             'invalid_rows' => $invalidRows,
+            'warnings' => $warnings,
         ];
     }
 

@@ -3,10 +3,26 @@
 require_once DIR_STORAGE . 'vendor/agmedia/api/src/Connection/Soap/Qiqo.php';
 require_once DIR_SYSTEM . 'library/qiqo/sync_guard.php';
 require_once DIR_SYSTEM . 'library/qiqo/catalog_image.php';
+require_once DIR_SYSTEM . 'library/qiqo/catalog_sync.php';
+require_once DIR_SYSTEM . 'library/qiqo/catalog_backup.php';
 
 class ModelExtensionModuleQiqo extends Model
 {
     private $columnExistsCache = [];
+    private $syncWarnings = [];
+
+    public function getSyncWarnings(): array
+    {
+        return $this->syncWarnings;
+    }
+
+    private function recordActionSyncWarnings(array $warnings): void
+    {
+        $this->syncWarnings = $warnings;
+        foreach ($warnings as $warning) {
+            $this->log('PartnerSync', 'WARN ' . json_encode($warning, JSON_UNESCAPED_SLASHES));
+        }
+    }
 
     private function tableColumnExists(string $table, string $column): bool
     {
@@ -201,9 +217,17 @@ class ModelExtensionModuleQiqo extends Model
         return new \Agmedia\Api\Connection\Soap\Qiqo();
     }
 
+    /** Complete ERP snapshot: add active SKUs and hide false/missing ones, preserving IDs/orders. */
+    public function reconcileCompleteCatalog(bool $apply = false, array $options = []): array
+    {
+        $options['complete_snapshot'] = true;
+        return $this->reconcileCatalog($apply, '-2 years', $options);
+    }
+
     /**
-     * Reconcile only rows actually returned by ERP. IDs, introduction dates,
-     * local images, brands, category links and absent products are preserved.
+     * Reconcile ERP rows while preserving product IDs, dates, usable local images
+     * and brands. Missing products are hidden only by the separately confirmed
+     * complete-snapshot mode. Clearance owns its exclusive category assignment.
      * A dry run never creates schema, categories or products.
      */
     public function reconcileCatalog(bool $apply = false, string $since = '-2 years', array $options = []): array
@@ -214,6 +238,28 @@ class ModelExtensionModuleQiqo extends Model
             'missing_erp_names' => 0, 'unresolved_names' => 0, 'retained_local_names' => 0,
             'missing_partner_refs' => 0, 'skipped_missing_names' => 0, 'skipped_skus' => [],
             'transactional' => false, 'partial' => false, 'error' => '', 'since' => $since];
+        $completeSnapshot = !empty($options['complete_snapshot']);
+        $policy = [];
+        if ($completeSnapshot) {
+            $policy = QiqoCatalogSync::policy($this->config, $apply, $options);
+            $result += ['complete_snapshot' => true, 'snapshot_confirmed' => $policy['confirmed'],
+                'missing' => 0, 'missing_active' => 0, 'missing_skus' => [], 'new_inactive_skipped' => 0,
+                'local_active' => 0, 'snapshot_active' => 0, 'would_disable' => 0,
+                'classification_changes' => 0, 'category_changes' => 0, 'has_changes' => false,
+                'missing_name_skus' => [], 'ignored_inactive_duplicate_groups' => 0,
+                'ignored_inactive_duplicate_rows' => 0, 'ignored_inactive_duplicate_skus' => [],
+                'deferred_unnamed_count' => 0, 'deferred_unnamed_skus' => [], 'warnings' => []];
+            $result['since'] = $since = $policy['since'];
+            if ($policy['error'] !== '') {
+                $result['error'] = $policy['error'];
+                return $result;
+            }
+            // A complete run must account for every active ERP product.
+            if (!empty($options['skip_unnamed_new'])) {
+                $result['error'] = 'complete_catalog_cannot_skip_active_products';
+                return $result;
+            }
+        }
         $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
         if (!$this->acquireQiqoWriteLock($lockName)) {
             $result['error'] = 'sync_busy';
@@ -242,8 +288,15 @@ class ModelExtensionModuleQiqo extends Model
             $result['fetched'] = count($normalized['rows']);
             $result['missing_partner_refs'] = $normalized['missing_partner_refs'];
             if (!$normalized['rows']) {
+                if ($completeSnapshot) {
+                    $result['error'] = 'catalog_snapshot_empty';
+                    return $result;
+                }
                 $result['success'] = true;
-                if ($apply) $this->invalidateCatalogCache();
+                if ($apply) {
+                    $this->syncArticleClassifications($articleRows);
+                    $this->invalidateCatalogCache();
+                }
                 return $result;
             }
             // Runtime DDL would implicitly commit a transaction. Missing
@@ -268,7 +321,7 @@ class ModelExtensionModuleQiqo extends Model
             }
             $languageId = (int)$language->row['language_id'];
             $duplicates = $this->db->query("SELECT sku FROM `" . DB_PREFIX . "product` WHERE sku <> '' GROUP BY sku HAVING COUNT(*) > 1 LIMIT 1");
-            if ($duplicates->num_rows) {
+            if ($duplicates->num_rows && !$completeSnapshot) {
                 $result['error'] = 'duplicate_local_sku';
                 return $result;
             }
@@ -278,18 +331,56 @@ class ModelExtensionModuleQiqo extends Model
                 FROM `" . DB_PREFIX . "product` p
                 LEFT JOIN `" . DB_PREFIX . "product_description` pd ON pd.product_id = p.product_id AND pd.language_id = '" . $languageId . "'
                 WHERE p.sku <> ''");
+            $returnedKeys = [];
+            if ($completeSnapshot) {
+                foreach ($normalized['rows'] as $data) $returnedKeys['sku:' . strtolower($data['sku'])] = true;
+            }
+            $localGroups = [];
             foreach ($localRows->rows as $local) {
                 $key = 'sku:' . strtolower(trim((string)$local['sku']));
-                if (isset($existing[$key])) {
-                    $result['error'] = 'duplicate_local_sku';
-                    return $result;
+                $localGroups[$key][] = $local;
+            }
+            foreach ($localGroups as $key => $locals) {
+                if (count($locals) > 1) {
+                    $allInactive = !array_filter($locals, static function ($local) { return (int)$local['status'] !== 0; });
+                    if (!$completeSnapshot || !$allInactive || isset($returnedKeys[$key])) {
+                        $result['error'] = 'duplicate_local_sku';
+                        $result['duplicate_sku'] = (string)$locals[0]['sku'];
+                        return $result;
+                    }
+                    // Preserve every inactive legacy row/ID; none belongs to this complete ERP snapshot.
+                    $result['ignored_inactive_duplicate_groups']++;
+                    $result['ignored_inactive_duplicate_rows'] += count($locals);
+                    $result['ignored_inactive_duplicate_skus'][] = (string)$locals[0]['sku'];
+                    continue;
                 }
-                $existing[$key] = $local;
+                $existing[$key] = $locals[0];
+            }
+            $seen = [];
+            $missingPlan = [];
+            if ($completeSnapshot) {
+                foreach ($normalized['rows'] as $data) {
+                    $seen['sku:' . strtolower($data['sku'])] = true;
+                    $result['snapshot_active'] += (int)$data['status'];
+                }
+                foreach ($existing as $key => $local) {
+                    $result['local_active'] += (int)$local['status'] === 1 ? 1 : 0;
+                    if (isset($seen[$key])) continue;
+                    $result['missing']++;
+                    $result['missing_skus'][] = (string)$local['sku'];
+                    if ((int)$local['status'] === 1) $missingPlan[] = $local;
+                }
+                $result['missing_active'] = count($missingPlan);
             }
             // Resolve every missing ERP label before planning any write. An
             // existing SKU may still receive stock/status updates without a
             // supplied title; a new SKU must never be created without a name.
             foreach ($normalized['rows'] as &$data) {
+                if ($completeSnapshot && !$data['status'] && !isset($existing['sku:' . strtolower($data['sku'])])) {
+                    $data['skip_new_inactive'] = true;
+                    $result['new_inactive_skipped']++;
+                    continue;
+                }
                 $data['meta_title'] = $data['name'];
                 if ($data['name'] !== '') {
                     continue;
@@ -297,6 +388,17 @@ class ModelExtensionModuleQiqo extends Model
                 $result['missing_erp_names']++;
                 $local = $existing['sku:' . strtolower($data['sku'])] ?? null;
                 if (!$local) {
+                    if ($completeSnapshot) {
+                        if ($data['status'] && in_array($data['sku'], $policy['deferred_unnamed_skus'], true)) {
+                            $data['skip_deferred_name'] = true;
+                            $result['deferred_unnamed_skus'][] = $data['sku'];
+                            $result['deferred_unnamed_count']++;
+                            $result['warnings'][] = ['code' => 'deferred_catalog_name', 'article' => $data['sku']];
+                            continue;
+                        }
+                        $result['missing_name_skus'][] = $data['sku'];
+                        continue;
+                    }
                     if (!empty($options['skip_unnamed_new'])) {
                         $data['skip_missing_name'] = true;
                         $result['skipped_missing_names']++;
@@ -318,9 +420,14 @@ class ModelExtensionModuleQiqo extends Model
                 }
             }
             unset($data);
+            if ($completeSnapshot && $result['missing_name_skus']) {
+                $result['error'] = 'missing_catalog_name';
+                $result['missing_name_sku'] = $result['missing_name_skus'][0];
+                return $result;
+            }
             $plan = [];
             foreach ($normalized['rows'] as $data) {
-                if (!empty($data['skip_missing_name'])) continue;
+                if (!empty($data['skip_missing_name']) || !empty($data['skip_new_inactive']) || !empty($data['skip_deferred_name'])) continue;
                 $data = $this->normalizeCatalogStorageRow($data, $quantityType);
                 $data['language_id'] = $languageId;
                 $key = 'sku:' . strtolower($data['sku']);
@@ -338,23 +445,55 @@ class ModelExtensionModuleQiqo extends Model
                 }
                 $plan[] = ['local' => $local, 'data' => $data];
             }
+            if ($completeSnapshot) {
+                $result['disabled'] += count($missingPlan);
+                $result['would_disable'] = $result['disabled'];
+                // Archived local rows outside ERP are not evidence of a truncated active catalog.
+                $result['snapshot_reference_count'] = $result['local_active'];
+                $result['error'] = QiqoCatalogSync::guard($policy, $result['fetched'], $result['local_active'],
+                    $result['local_active'], $result['would_disable']);
+                if ($result['error'] !== '') return $result;
+            }
             $tables = ['product', 'product_description'];
             if ($result['added']) {
                 $tables = array_merge($tables, ['product_to_category', 'product_to_store', 'category', 'category_description', 'category_to_store']);
+            }
+            if ($completeSnapshot) {
+                $tables = array_unique(array_merge($tables, ['product_to_category', 'product_to_store',
+                    'category', 'category_description', 'category_to_store', 'qiqo_article_classification']));
             }
             $tableNames = [];
             foreach ($tables as $table) {
                 $tableNames[] = "'" . $this->db->escape(DB_PREFIX . $table) . "'";
             }
             $engines = $this->db->query('SHOW TABLE STATUS WHERE Name IN (' . implode(',', $tableNames) . ')');
+            if ($completeSnapshot && $engines->num_rows !== count($tables)) {
+                $result['error'] = 'missing_catalog_table';
+                return $result;
+            }
+            if ($completeSnapshot) {
+                $categoryPlan = $this->planCompleteCatalogCategories($normalized['rows'], $existing, $languageId);
+                if (!$categoryPlan['valid']) {
+                    $result['error'] = 'catalog_category_mapping_failed';
+                    $result['category_mapping_errors'] = $categoryPlan['errors'];
+                    return $result;
+                }
+                $drift = $this->completeCatalogClassificationDrift($normalized['rows'], $existing, $categoryPlan['ids']);
+                $result = array_merge($result, $drift);
+                $result['has_changes'] = $result['added'] > 0 || $result['updated'] > 0 || $result['disabled'] > 0
+                    || $result['classification_changes'] > 0 || $result['category_changes'] > 0;
+            }
             $transactional = $engines->num_rows === count($tables);
             foreach ($engines->rows as $table) {
                 $transactional = $transactional && strcasecmp((string)$table['Engine'], 'InnoDB') === 0;
             }
             $result['transactional'] = $transactional;
-            if (!$apply || !$plan) {
+            if (!$apply || (!$plan && !$completeSnapshot)) {
                 $result['success'] = true;
-                if ($apply) $this->invalidateCatalogCache();
+                if ($apply) {
+                    $this->syncArticleClassifications($articleRows);
+                    $this->invalidateCatalogCache();
+                }
                 return $result;
             }
             if (!$transactional && !$this->hasCatalogMaintenanceBackup($options, $result)) {
@@ -371,14 +510,28 @@ class ModelExtensionModuleQiqo extends Model
                     $this->updateCatalogProduct($item['local'], $item['data']);
                 } else {
                     $data = $item['data'];
-                    $data['category_id'] = $this->resolveOrCreateCategory($data['gid']);
+                    $data['category_id'] = $completeSnapshot ? $categoryPlan['ids']['sku:' . strtolower($data['sku'])]
+                        : $this->resolveOrCreateCategory($data['gid']);
                     $this->createProduct($data);
                 }
+            }
+            foreach ($missingPlan as $local) {
+                $writesStarted = true;
+                $this->db->query("UPDATE `" . DB_PREFIX . "product` SET status = '0', date_modified = NOW()"
+                    . " WHERE product_id = '" . (int)$local['product_id'] . "' AND status <> '0'");
+            }
+            if ($completeSnapshot) {
+                $writesStarted = true;
+                $classificationValues = $this->normalizeCatalogClassifications($articleRows);
+                foreach ($result['deferred_unnamed_skus'] as $sku) unset($classificationValues[$sku]);
+                $this->persistCatalogClassifications($classificationValues);
+                $this->applyCompleteCatalogCategories($categoryPlan['ids']);
             }
             if ($transaction) {
                 $this->db->query('COMMIT');
                 $transaction = false;
             }
+            if (!$completeSnapshot) $this->syncArticleClassifications($articleRows);
             $result['success'] = true;
             $this->invalidateCatalogCache();
             $this->log('Catalog', 'END reconciliation added=' . $result['added'] . ' updated=' . $result['updated']
@@ -387,6 +540,7 @@ class ModelExtensionModuleQiqo extends Model
                 . ' skipped_missing_names=' . $result['skipped_missing_names'] . ' missing_partner_refs=' . $result['missing_partner_refs']);
             return $result;
         } catch (\Throwable $error) {
+            $result['success'] = false;
             if ($transaction) {
                 try {
                     $this->db->query('ROLLBACK');
@@ -404,6 +558,87 @@ class ModelExtensionModuleQiqo extends Model
                 $this->log('Catalog', 'ABORT reason=' . $result['error']);
             }
             $this->releaseQiqoWriteLock($lockName);
+        }
+    }
+
+    /** Read-only inventory used to avoid unnecessary maintenance/backup cycles. */
+    private function completeCatalogClassificationDrift(array $articles, array $existing, array $categoryIds): array
+    {
+        $current = [];
+        foreach ($this->db->query('SELECT article_code,classification FROM `' . DB_PREFIX . 'qiqo_article_classification`')->rows as $row) {
+            $current['sku:' . strtolower(trim((string)$row['article_code']))] = (int)$row['classification'];
+        }
+        $classificationChanges = 0;
+        foreach ($articles as $article) {
+            if (!empty($article['skip_deferred_name'])) continue;
+            $key = 'sku:' . strtolower($article['sku']);
+            if (!isset($current[$key]) || $current[$key] !== $article['gid']) $classificationChanges++;
+        }
+        $links = [];
+        foreach ($this->db->query('SELECT product_id,category_id FROM `' . DB_PREFIX . 'product_to_category`')->rows as $row) {
+            $links[(int)$row['product_id']][(int)$row['category_id']] = true;
+        }
+        $categoryChanges = 0;
+        foreach ($categoryIds as $key => $categoryId) {
+            $local = $existing[$key] ?? null;
+            $categories = $local ? ($links[(int)$local['product_id']] ?? []) : [];
+            if (count($categories) !== 1 || !isset($categories[$categoryId])) $categoryChanges++;
+        }
+        return ['classification_changes' => $classificationChanges, 'category_changes' => $categoryChanges];
+    }
+
+    /** FULL uses a single unambiguous, enabled/store-visible category from the configured ERP map. */
+    private function planCompleteCatalogCategories(array $articles, array $existing, int $languageId): array
+    {
+        $map = agconf('qiqo.categories');
+        $needed = [800 => true]; // Classification persistence always needs the shared clearance category.
+        foreach ($articles as $article) {
+            if (!empty($article['skip_deferred_name'])) continue;
+            if ($article['status'] || isset($existing['sku:' . strtolower($article['sku'])])) $needed[$article['gid']] = true;
+        }
+        $targets = [];
+        $errors = [];
+        foreach ($needed as $gid => $_) {
+            $name = in_array((int)$gid, [800, 801], true) ? 'Rasprodaja' : (is_array($map) ? ($map[$gid] ?? '') : '');
+            if (!is_string($name) || trim($name) === '' || preg_match('/[\x00-\x1F\x7F]/', $name)) {
+                $errors[] = ['classification' => (int)$gid, 'reason' => 'missing_configured_category'];
+                continue;
+            }
+            $categories = $this->db->query("SELECT DISTINCT cd.category_id FROM `" . DB_PREFIX . "category_description` cd JOIN `"
+                . DB_PREFIX . "category` c ON c.category_id=cd.category_id WHERE cd.name='" . $this->db->escape($name)
+                . "' AND cd.language_id=" . $languageId . " AND c.status=1 AND EXISTS (SELECT 1 FROM `" . DB_PREFIX
+                . "category_to_store` cs WHERE cs.category_id=c.category_id AND cs.store_id=0)");
+            if ($categories->num_rows !== 1 || (int)$categories->row['category_id'] <= 0) {
+                $errors[] = ['classification' => (int)$gid, 'reason' => $categories->num_rows > 1 ? 'ambiguous_category' : 'missing_visible_category'];
+                continue;
+            }
+            $targets[(int)$gid] = (int)$categories->row['category_id'];
+        }
+        $ids = [];
+        if (!$errors) {
+            foreach ($articles as $article) {
+                if (!empty($article['skip_deferred_name'])) continue;
+                $key = 'sku:' . strtolower($article['sku']);
+                if ($article['status'] || isset($existing[$key])) $ids[$key] = $targets[$article['gid']];
+            }
+        }
+        return ['valid' => !$errors, 'ids' => $ids, 'errors' => $errors];
+    }
+
+    private function applyCompleteCatalogCategories(array $categoryIds): void
+    {
+        $groups = [];
+        foreach ($categoryIds as $key => $categoryId) $groups[$categoryId][] = substr($key, 4);
+        foreach ($groups as $categoryId => $skus) {
+            foreach (array_chunk($skus, 500) as $batch) {
+                $quoted = [];
+                foreach ($batch as $sku) $quoted[] = "'" . $this->db->escape($sku) . "'";
+                $in = implode(',', $quoted);
+                $this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "product_to_category` (product_id,category_id) SELECT p.product_id,"
+                    . (int)$categoryId . " FROM `" . DB_PREFIX . "product` p WHERE p.sku IN (" . $in . ')');
+                $this->db->query("DELETE pc FROM `" . DB_PREFIX . "product_to_category` pc JOIN `" . DB_PREFIX
+                    . "product` p ON p.product_id=pc.product_id WHERE p.sku IN (" . $in . ') AND pc.category_id<>' . (int)$categoryId);
+            }
         }
     }
 
@@ -553,6 +788,15 @@ class ModelExtensionModuleQiqo extends Model
             || $path === $webRoot || strpos($path, $webRoot . DIRECTORY_SEPARATOR) === 0) {
             return false;
         }
+        if (!empty($options['complete_snapshot'])) {
+            try {
+                $verified = QiqoCatalogBackup::verify($path, null, $webRoot);
+                $result['backup_sha256'] = $verified['sha256'];
+                return true;
+            } catch (\Throwable $error) {
+                return false;
+            }
+        }
         $result['backup_sha256'] = hash_file('sha256', $path);
         return (bool)$result['backup_sha256'];
     }
@@ -645,6 +889,80 @@ class ModelExtensionModuleQiqo extends Model
     }
 
 
+    private function normalizeCatalogClassifications(array $articles): array
+    {
+        $values = [];
+        foreach ($articles as $article) {
+            if (!array_key_exists('gid', $article)) continue;
+            $sku = trim((string)($article['id'] ?? ''));
+            $gid = trim((string)$article['gid']);
+            if ($sku === '' || strlen($sku) > 64 || !preg_match('/^[0-9]+$/D', $gid) || (float)$gid > 2147483647) {
+                throw new \UnexpectedValueException('Invalid ERP classification.');
+            }
+            if (isset($values[$sku]) && $values[$sku] !== (int)$gid) {
+                throw new \UnexpectedValueException('Conflicting ERP classification.');
+            }
+            $values[$sku] = (int)$gid;
+        }
+        return $values;
+    }
+
+    protected function persistCatalogClassifications(array $values): void
+    {
+        if (!$values) return;
+        $ready = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_article_classification') . "'");
+        if (!$ready->num_rows) throw new \RuntimeException('Apply the Rev3.3 classification migration first.');
+        foreach (array_chunk($values, 500, true) as $batch) {
+            $tuples = [];
+            foreach ($batch as $sku => $gid) $tuples[] = "('" . $this->db->escape((string)$sku) . "'," . $gid . ")";
+            $this->db->query("INSERT INTO `" . DB_PREFIX . "qiqo_article_classification` (article_code,classification) VALUES "
+                . implode(',', $tuples) . ' ON DUPLICATE KEY UPDATE classification=VALUES(classification)');
+        }
+    }
+
+    /** Delta updates retain regular categories; clearance always owns its one category. */
+    public function syncArticleClassifications(array $articles): int
+    {
+        $values = $this->normalizeCatalogClassifications($articles);
+        if (!$values) return 0;
+        $category = $this->db->query("SELECT category_id FROM `" . DB_PREFIX . "category_description` WHERE name = 'Rasprodaja' ORDER BY category_id LIMIT 1");
+        if (!$category->num_rows) throw new \RuntimeException('Rasprodaja category is missing.');
+        $categoryId = (int)$category->row['category_id'];
+        $this->persistCatalogClassifications($values);
+        // Clearance products belong exclusively to the shared public category.
+        $this->db->query("INSERT IGNORE INTO `" . DB_PREFIX . "product_to_category` (product_id,category_id) SELECT p.product_id,"
+            . $categoryId . " FROM `" . DB_PREFIX . "product` p JOIN `" . DB_PREFIX
+            . "qiqo_article_classification` c ON c.article_code=p.sku WHERE c.classification IN (800,801)");
+        $this->db->query("DELETE pc FROM `" . DB_PREFIX . "product_to_category` pc JOIN `" . DB_PREFIX
+            . "product` p ON p.product_id=pc.product_id JOIN `" . DB_PREFIX
+            . "qiqo_article_classification` c ON c.article_code=p.sku WHERE c.classification IN (800,801)"
+            . " AND pc.category_id<>" . $categoryId);
+        // Leaving clearance uses the current ERP classification, never old assignments.
+        $leaving = $this->db->query("SELECT p.product_id,c.classification FROM `" . DB_PREFIX
+            . "qiqo_article_classification` c JOIN `" . DB_PREFIX . "product` p ON p.sku=c.article_code JOIN `"
+            . DB_PREFIX . "product_to_category` pc ON pc.product_id=p.product_id WHERE pc.category_id="
+            . $categoryId . " AND c.classification NOT IN (800,801)");
+        $leavingByClassification = [];
+        foreach ($leaving->rows as $row) {
+            $leavingByClassification[(int)$row['classification']][] = (int)$row['product_id'];
+        }
+        foreach ($leavingByClassification as $classification => $productIds) {
+            $regularCategoryId = $this->resolveOrCreateCategory($classification);
+            foreach (array_chunk($productIds, 500) as $batch) {
+                $tuples = [];
+                foreach ($batch as $productId) $tuples[] = '(' . $productId . ',' . $regularCategoryId . ')';
+                $this->db->query("INSERT IGNORE INTO `" . DB_PREFIX
+                    . "product_to_category` (product_id,category_id) VALUES " . implode(',', $tuples));
+            }
+        }
+        $this->db->query("DELETE pc FROM `" . DB_PREFIX . "product_to_category` pc JOIN `" . DB_PREFIX
+            . "product` p ON p.product_id=pc.product_id JOIN `" . DB_PREFIX
+            . "qiqo_article_classification` c ON c.article_code=p.sku WHERE pc.category_id=" . $categoryId
+            . " AND c.classification NOT IN (800,801)");
+        $this->invalidateCatalogCache();
+        return count($values);
+    }
+
     public function updateQuantities(): int
     {
         $lockName = DB_PREFIX . 'qiqo_product_catalog_write';
@@ -665,19 +983,31 @@ class ModelExtensionModuleQiqo extends Model
                 return 0;
             }
             $quantityType = $this->getCatalogQuantityType();
-            $hasPakColumn = $this->ensureProductPakColumn();
-            $hasJmColumn = $this->ensureProductJmColumn();
-            $hasPakkolColumn = $this->ensureProductPakkolColumn();
+            // Read existing columns before any schema/classification write so an
+            // ambiguous returned SKU cannot partially change the catalog.
+            $hasPakColumn = $this->tableColumnExists('product', 'pak');
+            $hasJmColumn = $this->tableColumnExists('product', 'jm');
+            $hasPakkolColumn = $this->tableColumnExists('product', 'pakkol');
             $fields = ['product_id', 'sku', 'quantity', 'minimum', 'ean', 'sort_order', 'status'];
             if ($hasPakColumn) $fields[] = 'pak';
             if ($hasJmColumn) $fields[] = 'jm';
             if ($hasPakkolColumn) $fields[] = 'pakkol';
             $products = $this->db->query('SELECT ' . implode(', ', $fields) . ' FROM `' . DB_PREFIX . 'product`');
             $productsBySku = [];
+            $returnedSkus = [];
+            foreach ($normalized['rows'] as $article) $returnedSkus['sku:' . strtolower(trim($article['sku']))] = true;
             foreach ($products->rows as $product) {
                 $key = 'sku:' . strtolower(trim((string)$product['sku']));
+                if (isset($productsBySku[$key], $returnedSkus[$key])) {
+                    $this->log('Quantities', 'ABORT returned ERP article has duplicate local SKU; stock/status preserved.');
+                    return -1;
+                }
                 if (!isset($productsBySku[$key])) $productsBySku[$key] = $product;
             }
+            $hasPakColumn = $this->ensureProductPakColumn();
+            $hasJmColumn = $this->ensureProductJmColumn();
+            $hasPakkolColumn = $this->ensureProductPakkolColumn();
+            $this->syncArticleClassifications($rows);
             foreach ($normalized['rows'] as $a) {
                 $a = $this->normalizeCatalogStorageRow($a, $quantityType);
                 $key = 'sku:' . strtolower($a['sku']);
@@ -691,9 +1021,9 @@ class ModelExtensionModuleQiqo extends Model
                 $changed = false;
                 foreach ($values as $field => $value) {
                     if (in_array($field, ['ean', 'jm'], true)) {
-                        $changed = $changed || (string)$product[$field] !== (string)$value;
+                        $changed = $changed || (string)($product[$field] ?? '') !== (string)$value;
                     } else {
-                        $changed = $changed || (float)$product[$field] !== (float)$value;
+                        $changed = $changed || (float)($product[$field] ?? 0) !== (float)$value;
                     }
                 }
                 if (!$changed) continue;
@@ -759,16 +1089,24 @@ class ModelExtensionModuleQiqo extends Model
             return 0;
         }
 
-        $hasVpcColumn = $this->ensureProductVpcColumn();
+        $hasVpcColumn = $this->tableColumnExists('product', 'vpc');
         $updated  = 0;
         $fields = ['product_id', 'sku', 'price', 'cent'];
         if ($hasVpcColumn) $fields[] = 'vpc';
         $products = $this->db->query('SELECT ' . implode(', ', $fields) . ' FROM `' . DB_PREFIX . 'product`');
         $productsBySku = [];
+        $returnedSkus = [];
+        foreach ($articles['rows'] as $article) $returnedSkus['sku:' . strtolower(trim($article['sku']))] = true;
         foreach ($products->rows as $product) {
             $key = 'sku:' . strtolower(trim((string)$product['sku']));
+            if (isset($productsBySku[$key], $returnedSkus[$key])) {
+                $this->log('Prices', 'ABORT returned ERP article has duplicate local SKU; prices preserved.');
+                return -1;
+            }
             if (!isset($productsBySku[$key])) $productsBySku[$key] = $product;
         }
+        $hasVpcColumn = $this->ensureProductVpcColumn();
+        $this->syncArticleClassifications($articleRows);
 
         $this->log('Prices', '=== START UPDATE PRICES (with cent factor) ===');
 
@@ -781,7 +1119,7 @@ class ModelExtensionModuleQiqo extends Model
                 if ($hasVpcColumn) $values['vpc'] = number_format((float)$a['vpc'], 7, '.', '');
                 $changed = (string)$product['cent'] !== $a['cent']
                     || abs((float)$product['price'] - $a['price']) > 0.00000005
-                    || ($hasVpcColumn && abs((float)$product['vpc'] - $a['vpc']) > 0.00000005);
+                    || ($hasVpcColumn && abs((float)($product['vpc'] ?? 0) - $a['vpc']) > 0.00000005);
                 if (!$changed) continue;
                 $assignments = [];
                 foreach ($values as $field => $value) {
@@ -2162,7 +2500,7 @@ class ModelExtensionModuleQiqo extends Model
         // Kategorije se definiraju u env.php
         $map = agconf('qiqo.categories');
 
-        $category_name = $map[$gid] ?? 'Nepoznata kategorija';
+        $category_name = in_array($gid, [800, 801], true) ? 'Rasprodaja' : ($map[$gid] ?? 'Nepoznata kategorija');
 
         // postoji li već?
         $query = $this->db->query("SELECT category_id FROM " . DB_PREFIX . "category_description WHERE name = '" . $this->db->escape($category_name) . "' LIMIT 1");
@@ -2351,6 +2689,7 @@ class ModelExtensionModuleQiqo extends Model
 
     public function syncPartnerBaseData(string $defaultSince = '-30 days', bool $forceDefaultSince = false): array
     {
+        $this->syncWarnings = [];
         @set_time_limit(0);
         $this->ensurePartnerSyncTables();
 
@@ -2402,9 +2741,16 @@ class ModelExtensionModuleQiqo extends Model
             ],
         ];
 
-        $result = [];
+        $result = ['_success' => true];
 
         foreach ($feeds as $feed) {
+            if ($feed['key'] === 'action_prices' && QiqoSyncGuard::hasConfirmedFullSnapshotConfiguration(
+                true, trim((string)$this->config->get('qiqo_action_snapshot_since'))
+            )) {
+                $result['action_prices'] = $this->syncActionPrices();
+                if ($result['action_prices'] <= 0) $result['_success'] = false;
+                continue;
+            }
             $this->log('PartnerSync', "START {$feed['label']} since={$feed['since']}");
             $rows = $qiqo->{$feed['fetcher']}($feed['since']);
             $fetchResult = $qiqo->getLastFetchResult();
@@ -2412,12 +2758,14 @@ class ModelExtensionModuleQiqo extends Model
                 $error = isset($fetchResult['error']) ? (string)$fetchResult['error'] : 'unknown_fetch_error';
                 $this->log('PartnerSync', "ABORT {$feed['label']} error={$error}; cache and last_sync preserved.");
                 $result[$feed['key']] = 0;
+                $result['_success'] = false;
                 continue;
             }
 
             if ($feed['key'] === 'action_prices' && $forceDefaultSince && !QiqoSyncGuard::canReplaceFullCache($fetchResult, $rows)) {
                 $this->log('PartnerSync', 'EMPTY qAkcijskiCjenikWeb full feed; live cache and last_sync preserved.');
                 $result[$feed['key']] = 0;
+                $result['_success'] = false;
                 continue;
             }
 
@@ -2426,6 +2774,7 @@ class ModelExtensionModuleQiqo extends Model
 					$count = $this->replaceActionPricesFull($rows);
 					if ($count <= 0) {
 						$result[$feed['key']] = 0;
+                $result['_success'] = false;
 						continue;
 					}
 				} else {
@@ -2434,6 +2783,7 @@ class ModelExtensionModuleQiqo extends Model
 			} catch (\Throwable $error) {
 				$this->log('PartnerSync', "ABORT {$feed['label']} validation/write failed; cache and last_sync preserved.");
 				$result[$feed['key']] = 0;
+                $result['_success'] = false;
 				continue;
 			}
 
@@ -2460,6 +2810,7 @@ class ModelExtensionModuleQiqo extends Model
 
     public function syncActionPrices(string $defaultSince = '-30 days', bool $forceDefaultSince = false): int
     {
+        $this->syncWarnings = [];
         @set_time_limit(0);
         $this->ensurePartnerSyncTables();
 
@@ -2472,9 +2823,12 @@ class ModelExtensionModuleQiqo extends Model
             $defaultSince = trim((string)$this->config->get('qiqo_full_snapshot_since'));
         }
 
-        $qiqo = new \Agmedia\Api\Connection\Soap\Qiqo();
+        $qiqo = $this->createCatalogConnection();
         $now = date('Y-m-d H:i:s');
-        $since = $this->resolveSince('action_prices', $defaultSince, $forceDefaultSince);
+        $snapshotSince = trim((string)$this->config->get('qiqo_action_snapshot_since'));
+        $replaceSnapshot = $forceDefaultSince || QiqoSyncGuard::hasConfirmedFullSnapshotConfiguration(true, $snapshotSince);
+        $since = $snapshotSince !== '' && $replaceSnapshot ? $snapshotSince
+            : $this->resolveSince('action_prices', $defaultSince, $forceDefaultSince);
 
         $this->log('PartnerSync', "START qAkcijskiCjenikWeb since={$since}");
         $rows = $qiqo->getActionPriceList($since);
@@ -2485,13 +2839,13 @@ class ModelExtensionModuleQiqo extends Model
             return 0;
         }
 
-        if ($forceDefaultSince && !QiqoSyncGuard::canReplaceFullCache($fetchResult, $rows)) {
+        if ($replaceSnapshot && !QiqoSyncGuard::canReplaceFullCache($fetchResult, $rows)) {
             $this->log('PartnerSync', 'EMPTY qAkcijskiCjenikWeb full feed; live cache and last_sync preserved.');
             return 0;
         }
 
 		try {
-			$count = $forceDefaultSince
+			$count = $replaceSnapshot
 				? $this->replaceActionPricesFull($rows)
 				: $this->upsertActionPrices($rows);
 		} catch (\Throwable $error) {
@@ -2499,14 +2853,14 @@ class ModelExtensionModuleQiqo extends Model
 			return 0;
 		}
 
-		if ($forceDefaultSince && $count <= 0) {
+		if ($replaceSnapshot && $count <= 0) {
 			return 0;
 		}
 
 		try {
 			$this->setFeedLastSync('action_prices', $now);
 		} catch (\Throwable $watermarkError) {
-			if ($forceDefaultSince) {
+			if ($replaceSnapshot) {
 				$this->log('PartnerSync', 'WARN qAkcijskiCjenikWeb live cache swapped, but last_sync was not updated.');
 			} else {
 				throw $watermarkError;
@@ -2515,6 +2869,7 @@ class ModelExtensionModuleQiqo extends Model
 
         $this->log('PartnerSync', "END qAkcijskiCjenikWeb rows=" . count($rows) . " upserted={$count}");
 
+        $this->invalidateCatalogCache();
         return $count;
     }
 
@@ -3045,6 +3400,7 @@ class ModelExtensionModuleQiqo extends Model
 	private function upsertActionPrices(array $rows): int
 	{
 		$normalized = QiqoSyncGuard::normalizeActionRows($rows);
+        $this->recordActionSyncWarnings($normalized['warnings']);
 		if (!$normalized['valid']) {
 			throw new \UnexpectedValueException('qAkcijskiCjenikWeb contains invalid rows.');
 		}
@@ -3083,6 +3439,7 @@ class ModelExtensionModuleQiqo extends Model
 	private function replaceActionPricesFull(array $rows): int
 	{
 		$normalized = QiqoSyncGuard::normalizeActionRows($rows);
+        $this->recordActionSyncWarnings($normalized['warnings']);
 		if (!$normalized['valid']) {
 			$this->log('PartnerSync', 'ABORT qAkcijskiCjenikWeb full invalid_rows=' . (int)$normalized['invalid_rows'] . '; live cache preserved.');
 			return 0;

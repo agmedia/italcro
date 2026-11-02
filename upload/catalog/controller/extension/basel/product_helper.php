@@ -36,12 +36,8 @@
 	}
 	if ($this->config->get('product_layout') == 'full-width') $this->document->addScript('catalog/view/theme/basel/js/theia-sticky-sidebar.min.js');
 	
-	if ( (float)$product_info['special'] && ($this->config->get('salebadge_status')) ) {
-		if ($this->config->get('salebadge_status') == '2') {
-			$data['sale_badge'] = '-' . number_format(((($this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax')))-($this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax'))))/(($this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax')))/100)), 0, ',', '.') . '%';
-		} else {
-			$data['sale_badge'] = $this->language->get('basel_text_sale');
-		}		
+	if (!empty($data['is_single_article']) && (float)($data['qiqo_discount_percent'] ?? 0) > 0 && $this->config->get('salebadge_status')) {
+		$data['sale_badge'] = '-' . number_format((float)$data['qiqo_discount_percent'], 0, ',', '.') . '%';
 	} else {
 		$data['sale_badge'] = false;
 	}

@@ -5554,6 +5554,17 @@ a.button-circle {
 	background:#179a94;
 	color:#ffffff;
 }
+.clearance_badge,
+.clearance_mark {
+	background:#c62828;
+	color:#ffffff;
+}
+.clearance_mark {
+	display:inline-block;
+	padding:2px 6px;
+	font-weight:600;
+	line-height:18px;
+}
 .new_badge {
 	background:#ffffff;
 	color:#00243d;

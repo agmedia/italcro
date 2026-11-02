@@ -44,6 +44,7 @@ class ControllerExtensionModuleFeatured extends Controller {
 				}
 			}
 
+			$qiqo_clearance_map = $this->model_catalog_product->getQiqoClearanceMap($product_info_map);
 			$qiqo_price_map = array();
 			if ($this->customer->isLogged() && $sku_quantities) {
 				$qiqo_price_map = $this->model_catalog_product->getQiqoPricingMap(
@@ -137,6 +138,7 @@ class ControllerExtensionModuleFeatured extends Controller {
 						'is_single_article' => $is_single_article,
 						'qiqo_discount_percent' => $qiqo_discount_percent,
 						'qiqo_action' => $is_single_article && $sku !== '' && !empty($qiqo_action_map[$sku]),
+						'qiqo_clearance' => !empty($qiqo_clearance_map[(int)$product_info['product_id']]),
 						'tax'         => $tax,
 						'rating'      => $rating,
 						'href'        => $this->url->link('product/product', 'product_id=' . $product_info['product_id'])

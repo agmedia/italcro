@@ -3,6 +3,7 @@
   <div class="product-layout col-lg-3 col-md-3 col-sm-6 col-xs-12">
     <div class="product-thumb transition">
       <div class="image"><a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" class="img-responsive" /></a></div>
+      {% if product.qiqo_clearance is defined and product.qiqo_clearance %}<span class="label label-danger" title="Rasprodaja" aria-label="Rasprodaja">R</span>{% endif %}
       <div class="caption">
         <h4><a href="{{ product.href }}">{{ product.name }}</a></h4>
         <p>{{ product.description }}</p>

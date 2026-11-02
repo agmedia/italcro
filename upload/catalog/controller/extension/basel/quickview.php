@@ -101,6 +101,8 @@ class ControllerExtensionBaselQuickview extends Controller {
 						$display_special_unit = 0.0;
 						$has_display_special = false;
 					$data['qiqo_discount_percent'] = 0.0;
+				$clearance_map = $this->model_catalog_product->getQiqoClearanceMap(array($product_info));
+				$data['qiqo_clearance'] = !empty($clearance_map[(int)$product_info['product_id']]);
 
 				$sku = trim((string)$product_info['sku']);
 					if ($data['is_single_article'] && $this->customer->isLogged() && $sku !== '' && $display_price_unit > 0) {

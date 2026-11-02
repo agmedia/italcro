@@ -155,6 +155,7 @@ class ControllerProductManufacturer extends Controller {
 
 				$results = $this->model_catalog_product->getProducts($filter_data);
 
+				$qiqo_clearance_map = $this->model_catalog_product->getQiqoClearanceMap($results);
 				$qiqo_price_map = array();
 				$qiqo_action_article_map = array();
 				$qiqo_action_mpn_map = array();
@@ -349,6 +350,7 @@ class ControllerProductManufacturer extends Controller {
 					'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($result),
 					'qiqo_discount_percent' => $qiqo_discount_percent,
 					'qiqo_action' => $qiqo_action,
+					'qiqo_clearance' => !empty($qiqo_clearance_map[(int)$result['product_id']]),
 					'rating'      => $result['rating'],
 					'href'        => $this->url->link('product/product', 'manufacturer_id=' . $result['manufacturer_id'] . '&product_id=' . $result['product_id'] . $url)
 				);

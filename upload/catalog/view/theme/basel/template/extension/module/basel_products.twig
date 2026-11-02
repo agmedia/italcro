@@ -31,7 +31,7 @@
     <div class="grid-holder grid{{ columns }} prod_module{{ module }}{% if carousel %} carousel{% endif %}{% if carousel_a and rows > 1 %} sticky-arrows{% endif %}">
         {% for product in tab.products %}
             {% set is_single_article = product.is_single_article is defined ? product.is_single_article : (product.mpn_count is not defined or product.mpn_count == 1) %}
-            {% set show_sale_badge = is_single_article and salebadge_status and ((product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0) or (product.price and product.special)) %}
+            {% set show_sale_badge = is_single_article and salebadge_status and product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}
             <div class="item single-product">
                 <div class="edge">
                 <div class="image" {% if columns == 'list' %}style="width:{{ img_width }}px"{% endif %}>
@@ -41,19 +41,18 @@
                             <img class="thumb2" src="{{ product.thumb2 }}" alt="{{ product.name }}" title="{{ product.name }}" />
                         {% endif %}
                     </a>
+                    {% if product.qiqo_clearance is defined and product.qiqo_clearance %}
+                        <span class="badge clearance_badge" title="Rasprodaja" aria-label="Rasprodaja"><i>R</i></span>
+                    {% endif %}
                     {% if show_sale_badge %}
                         <div class="sale-counter id{{ product.product_id }}"></div>
                         <span class="badge sale_badge">
                             <i>
-                                {% if product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}
-                                    -{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%
-                                {% else %}
-                                    {{ product.sale_badge }}
-                                {% endif %}
+                                -{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%
                             </i>
                         </span>
                     {% endif %}
-                    {% if product.qiqo_action is defined and product.qiqo_action %}
+                    {% if product.qiqo_action is defined and product.qiqo_action and (not is_single_article or not product.qiqo_clearance) %}
                         <span class="badge action_badge{% if show_sale_badge %} action_badge_after_sale{% endif %}"><i>A</i></span>
                     {% endif %}
                     {% if product.new_label %}

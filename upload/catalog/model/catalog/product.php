@@ -1,5 +1,6 @@
 <?php
 require_once(DIR_SYSTEM . 'library/qiqo/pricing_resolver.php');
+require_once(DIR_SYSTEM . 'library/qiqo/article_rules.php');
 require_once(DIR_SYSTEM . 'library/qiqo/new_product.php');
 require_once(DIR_SYSTEM . 'library/qiqo/catalog_search.php');
 
@@ -7,6 +8,7 @@ class ModelCatalogProduct extends Model {
 	private $qiqo_base_tables_ready = null;
 	private $qiqo_partner_article_table_ready = null;
 	private $qiqo_action_price_table_ready = null;
+	private $qiqo_classification_table_ready = null;
 	private $product_pak_column_ready = null;
 	private $product_vpc_column_ready = null;
 	private $product_jm_column_ready = null;
@@ -368,7 +370,7 @@ class ModelCatalogProduct extends Model {
 	}
 
 	private function getQiqoActionProducts($data = array()) {
-			$sql = "SELECT p.product_id, (SELECT AVG(rating) FROM " . DB_PREFIX . "review r1 WHERE r1.product_id = p.product_id AND r1.status = '1' GROUP BY r1.product_id) AS rating, p.price AS qiqo_sort_price FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND UPPER(qap.indicator) <> 'X' GROUP BY p.product_id";
+			$sql = "SELECT p.product_id, (SELECT AVG(rating) FROM " . DB_PREFIX . "review r1 WHERE r1.product_id = p.product_id AND r1.status = '1' GROUP BY r1.product_id) AS rating, p.price AS qiqo_sort_price FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND UPPER(qap.indicator) <> 'X' AND (qap.price > 0 OR qap.discount > 0)" . $this->qiqoActionClearanceExclusion() . " GROUP BY p.product_id";
 
 		$sort_data = array(
 			'pd.name',
@@ -703,7 +705,7 @@ class ModelCatalogProduct extends Model {
 
 	public function getTotalProductSpecials() {
         if ($this->hasQiqoActionPriceTable()) {
-            $query = $this->db->query("SELECT COUNT(DISTINCT p.product_id) AS total FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND UPPER(qap.indicator) <> 'X'");
+            $query = $this->db->query("SELECT COUNT(DISTINCT p.product_id) AS total FROM " . DB_PREFIX . "product p INNER JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) INNER JOIN " . DB_PREFIX . "product_to_store p2s ON (p.product_id = p2s.product_id) INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku) WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "' AND p.status = '1' AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "' AND UPPER(qap.indicator) <> 'X' AND (qap.price > 0 OR qap.discount > 0)" . $this->qiqoActionClearanceExclusion());
 
             if (isset($query->row['total'])) {
                 return $query->row['total'];
@@ -810,6 +812,8 @@ class ModelCatalogProduct extends Model {
 
 	public function getQiqoPricingMap($customer_id, $sku_quantities = array(), $base_unit_prices = array(), $is_proforma = false, $include_action_discount = false) {
 		$map = array();
+		// Catalog callers use the best customer/article rebate. Only cart and
+		// checkout callers opt into quantity and payment-dependent actions.
 		$customer_id = (int)$customer_id;
 
 		if (!$customer_id || !$sku_quantities || !$this->hasQiqoBasePricingTables()) {
@@ -841,6 +845,7 @@ class ModelCatalogProduct extends Model {
 
 		$in = $this->buildEscapedInList($sku_list);
 
+		$classifications = QiqoArticleRules::classifications($this->db, $sku_list);
 		$article_discounts = array();
 		if ($this->hasQiqoPartnerArticleDiscountTable()) {
 			$article_q = $this->db->query("SELECT article_code, discount
@@ -895,8 +900,9 @@ class ModelCatalogProduct extends Model {
 			}
 
 			$has_article_discount = array_key_exists($sku, $article_discounts);
-			$base_discount = $has_article_discount ? (float)$article_discounts[$sku] : $partner_discount;
-			$base_source = $has_article_discount ? 'article' : 'partner';
+			$base = QiqoPricingResolver::baseDiscount($partner_discount, $has_article_discount ? $article_discounts[$sku] : null);
+			$base_discount = $base['discount'];
+			$base_source = $base['source'];
 
 			$map[$sku] = QiqoPricingResolver::resolve(
 				$base_unit,
@@ -906,10 +912,52 @@ class ModelCatalogProduct extends Model {
 				$qty,
 				$include_action_discount,
 				$is_proforma,
-				isset($product_cents[$sku]) ? $product_cents[$sku] : ''
+				isset($product_cents[$sku]) ? $product_cents[$sku] : '',
+				$classifications[$sku] ?? null
 			);
 		}
 
+		return $map;
+	}
+
+	public function getQiqoClearanceMap($products = array()) {
+		$map = array();
+		$skus = array();
+		$mpns = array();
+		foreach ($products as $product) {
+			if (!$product) continue;
+			$sku = trim((string)($product['sku'] ?? ''));
+			if ($sku !== '') $skus[] = $sku;
+			if (!empty($product['mpn']) && (int)($product['mpn_count'] ?? 1) > 1) {
+				$mpns[] = (string)$product['mpn'];
+			}
+		}
+		if (!$skus && !$mpns) return $map;
+		$ready = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_article_classification') . "'");
+		if (!$ready->num_rows) return $map;
+		$where = array();
+		if ($skus) $where[] = 'p.sku IN (' . $this->buildEscapedInList(array_unique($skus)) . ')';
+		if ($mpns) $where[] = 'p.mpn IN (' . $this->buildEscapedInList(array_unique($mpns)) . ')';
+		$query = $this->db->query("SELECT p.sku, p.mpn FROM `" . DB_PREFIX . "product` p
+			INNER JOIN `" . DB_PREFIX . "qiqo_article_classification` ac ON ac.article_code = p.sku
+			INNER JOIN `" . DB_PREFIX . "product_to_store` p2s ON p2s.product_id = p.product_id
+			WHERE ac.classification IN (800, 801) AND p.status = '1'
+			AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'
+			AND (" . implode(' OR ', $where) . ")");
+		$clearance_skus = array();
+		$clearance_mpns = array();
+		foreach ($query->rows as $row) {
+			$clearance_skus[(string)$row['sku']] = true;
+			if ((string)$row['mpn'] !== '') $clearance_mpns[(string)$row['mpn']] = true;
+		}
+		foreach ($products as $product) {
+			if (!$product || !isset($product['product_id'])) continue;
+			$grouped = !empty($product['mpn']) && (int)($product['mpn_count'] ?? 1) > 1;
+			if (!empty($clearance_skus[(string)($product['sku'] ?? '')])
+				|| ($grouped && !empty($clearance_mpns[(string)$product['mpn']]))) {
+				$map[(int)$product['product_id']] = true;
+			}
+		}
 		return $map;
 	}
 
@@ -936,9 +984,9 @@ class ModelCatalogProduct extends Model {
 		$in = $this->buildEscapedInList($clean);
 
 		$query = $this->db->query("SELECT DISTINCT article_code
-			FROM `" . DB_PREFIX . "qiqo_action_price`
+			FROM `" . DB_PREFIX . "qiqo_action_price` qap
 			WHERE article_code IN (" . $in . ")
-			  AND UPPER(indicator) <> 'X'");
+			  AND UPPER(indicator) <> 'X' AND (price > 0 OR discount > 0)" . $this->qiqoActionClearanceExclusion());
 
 		foreach ($query->rows as $row) {
 			$map[(string)$row['article_code']] = true;
@@ -970,9 +1018,9 @@ class ModelCatalogProduct extends Model {
 		$in = $this->buildEscapedInList($clean);
 
 		$query = $this->db->query("SELECT article_code, indicator, quantity, price, discount
-			FROM `" . DB_PREFIX . "qiqo_action_price`
+			FROM `" . DB_PREFIX . "qiqo_action_price` qap
 			WHERE article_code IN (" . $in . ")
-			  AND UPPER(indicator) <> 'X'
+			  AND UPPER(indicator) <> 'X' AND (price > 0 OR discount > 0)" . $this->qiqoActionClearanceExclusion() . "
 			ORDER BY article_code ASC, indicator ASC, quantity ASC");
 
 		foreach ($query->rows as $row) {
@@ -1020,10 +1068,10 @@ class ModelCatalogProduct extends Model {
 			INNER JOIN `" . DB_PREFIX . "qiqo_action_price` qap ON (qap.article_code = p.sku)
 			INNER JOIN `" . DB_PREFIX . "product_to_store` p2s ON (p.product_id = p2s.product_id)
 			WHERE p.mpn IN (" . $in . ")
-			  AND UPPER(qap.indicator) <> 'X'
+			  AND UPPER(qap.indicator) <> 'X' AND (qap.price > 0 OR qap.discount > 0)
 			  AND p.status = '1'
 			  AND p.date_available <= NOW()
-			  AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'");
+			  AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'" . $this->qiqoActionClearanceExclusion());
 
 		foreach ($query->rows as $row) {
 			$map[(string)$row['mpn']] = true;
@@ -1088,9 +1136,9 @@ class ModelCatalogProduct extends Model {
 		$in = $this->buildEscapedInList($clean);
 
 		$query = $this->db->query("SELECT article_code, MAX(discount) AS extra_discount
-			FROM `" . DB_PREFIX . "qiqo_action_price`
+			FROM `" . DB_PREFIX . "qiqo_action_price` qap
 			WHERE indicator = 'X'
-			  AND article_code IN (" . $in . ")
+			  AND article_code IN (" . $in . ")" . $this->qiqoActionClearanceExclusion() . "
 			GROUP BY article_code");
 
 		foreach ($query->rows as $row) {
@@ -1098,6 +1146,16 @@ class ModelCatalogProduct extends Model {
 		}
 
 		return $map;
+	}
+
+	private function qiqoActionClearanceExclusion() {
+		if ($this->qiqo_classification_table_ready === null) {
+			$ready = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_article_classification') . "'");
+			$this->qiqo_classification_table_ready = (bool)$ready->num_rows;
+		}
+		return $this->qiqo_classification_table_ready
+			? " AND NOT EXISTS (SELECT 1 FROM `" . DB_PREFIX . "qiqo_article_classification` qac WHERE qac.article_code=qap.article_code AND qac.classification IN (800,801))"
+			: '';
 	}
 
 	private function buildEscapedInList($values) {

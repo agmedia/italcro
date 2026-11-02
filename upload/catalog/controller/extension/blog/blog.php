@@ -205,6 +205,7 @@ class ControllerExtensionBlogBlog extends Controller {
 			$results = $this->model_extension_blog_blog->getProductRelated($this->request->get['blog_id']);
 			$this->load->model('catalog/product');
 
+			$related_clearance_map = $this->model_catalog_product->getQiqoClearanceMap($results);
 			$related_price_map = array();
 			$related_action_article_map = array();
 			$related_action_mpn_map = array();
@@ -355,6 +356,7 @@ class ControllerExtensionBlogBlog extends Controller {
 						'preview_price_alt' => ($is_single_article && $has_display_special) ? $this->currency->format($this->tax->calculate($display_price * $preview_price_basis, $result['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']) : false,
 					'qiqo_discount_percent' => $qiqo_discount_percent,
 					'qiqo_action' => $qiqo_action,
+					'qiqo_clearance' => !empty($related_clearance_map[(int)$result['product_id']]),
 					'tax'         => $tax,
 					'sale_badge' => $sale_badge,
 					'new_label'  => $is_new,

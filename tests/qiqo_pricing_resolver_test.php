@@ -101,3 +101,27 @@ assertClose(0.0774, $c100['final_unit_price'], 'C-100 action net must normalize 
 assertClose(0.0774, $c100['action_net_price'], 'C-100 action snapshot must be normalized');
 
 echo "Qiqo pricing resolver tests passed.\n";
+
+// Rev3.3: the larger customer/article rebate wins, including explicit zero.
+foreach ([[12,10,12,'partner'],[12,18,18,'article'],[12,0,12,'partner'],[12,null,12,'partner']] as $case) {
+    $base = QiqoPricingResolver::baseDiscount($case[0], $case[1]);
+    assertClose($case[2], $base['discount'], 'Best base rebate');
+    assertSameValue($case[3], $base['source'], 'Best base rebate source');
+}
+foreach ([800,801] as $classification) {
+    foreach ([false,true] as $proforma) {
+        $clearance = QiqoPricingResolver::resolve(0.66,20,'partner',[
+            ['indicator'=>'C','quantity'=>0,'price'=>0.4,'discount'=>0],
+            ['indicator'=>'X','quantity'=>0,'price'=>0,'discount'=>3]
+        ],1,true,$proforma,'',$classification);
+        assertClose(0.66,$clearance['final_unit_price'],'Clearance retains ERP net price');
+        assertClose(0,$clearance['discount_percent'],'Clearance has no rebate');
+        assertSameValue(false,$clearance['action_applied'],'Clearance excludes actions');
+    }
+}
+$action442076 = QiqoPricingResolver::resolve(1.42,12,'partner',[
+    ['indicator'=>'C','quantity'=>0,'price'=>0,'discount'=>0],
+    ['indicator'=>'P','quantity'=>0,'price'=>0,'discount'=>25]
+],1,true,false);
+assertClose(1.065,$action442076['final_unit_price'],'ERP P action applies alongside a zero C row');
+echo "Rev3.3 pricing regressions passed.\n";

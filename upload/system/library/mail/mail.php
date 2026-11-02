@@ -78,9 +78,12 @@ class Mail extends \stdClass {
 		ini_set('sendmail_from', $this->from);
 
 		if ($this->parameter) {
-			mail($to, '=?UTF-8?B?' . base64_encode($this->subject) . '?=', $message, $header, $this->parameter);
+			$accepted = mail($to, '=?UTF-8?B?' . base64_encode($this->subject) . '?=', $message, $header, $this->parameter);
 		} else {
-			mail($to, '=?UTF-8?B?' . base64_encode($this->subject) . '?=', $message, $header);
+			$accepted = mail($to, '=?UTF-8?B?' . base64_encode($this->subject) . '?=', $message, $header);
+		}
+		if (!$accepted) {
+			throw new \RuntimeException('Mail transport did not accept the message.');
 		}
 	}
 }

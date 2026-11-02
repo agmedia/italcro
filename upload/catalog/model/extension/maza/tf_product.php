@@ -1,6 +1,7 @@
 <?php
 class ModelExtensionMazaTfProduct extends Model {
     private $qiqo_action_price_table_ready = null;
+    private $qiqo_classification_table_ready = null;
 
     public function getProducts($data = array()) {
                 // Get sort order list
@@ -570,6 +571,16 @@ class ModelExtensionMazaTfProduct extends Model {
                 return "CASE WHEN UPPER(qap.indicator) = 'C' AND qap.price > 0 THEN qap.price WHEN qap.discount > 0 THEN (" . $base_price_sql . " * (1 - (qap.discount / 100))) ELSE " . $base_price_sql . " END";
         }
 
+        private function qiqoActionClearanceExclusion() {
+                if ($this->qiqo_classification_table_ready === null) {
+                    $ready = $this->db->query("SHOW TABLES LIKE '" . $this->db->escape(DB_PREFIX . 'qiqo_article_classification') . "'");
+                    $this->qiqo_classification_table_ready = (bool)$ready->num_rows;
+                }
+                return $this->qiqo_classification_table_ready
+                    ? " AND NOT EXISTS (SELECT 1 FROM `" . DB_PREFIX . "qiqo_article_classification` qac WHERE qac.article_code=qap.article_code AND qac.classification IN (800,801))"
+                    : '';
+        }
+
         private function getQiqoActionSpecialSql($base_price_sql = 'p.price', $include_tax = false) {
                 $price_case = $this->getQiqoActionPriceCaseSql($base_price_sql);
 
@@ -577,7 +588,7 @@ class ModelExtensionMazaTfProduct extends Model {
                     $price_case = "(" . $price_case . " + IFNULL(ftax.total,0) + ((IFNULL(ptax.total,0) * " . $price_case . ") / 100))";
                 }
 
-                return "(SELECT MIN(" . $price_case . ") FROM `" . DB_PREFIX . "qiqo_action_price` qap WHERE qap.article_code = p.sku AND UPPER(qap.indicator) <> 'X')";
+                return "(SELECT MIN(" . $price_case . ") FROM `" . DB_PREFIX . "qiqo_action_price` qap WHERE qap.article_code = p.sku AND UPPER(qap.indicator) <> 'X' AND (qap.price > 0 OR qap.discount > 0)" . $this->qiqoActionClearanceExclusion() . ")";
         }
 
         private function getQiqoActionSpecialPercentSql($base_price_sql = 'p.price') {
@@ -592,7 +603,7 @@ class ModelExtensionMazaTfProduct extends Model {
                 }
 
                 $base_price = (float)$base_price;
-                $query = $this->db->query("SELECT MIN(CASE WHEN UPPER(indicator) = 'C' AND price > 0 THEN price WHEN discount > 0 THEN (" . $base_price . " * (1 - (discount / 100))) ELSE " . $base_price . " END) AS special FROM `" . DB_PREFIX . "qiqo_action_price` WHERE article_code = '" . $this->db->escape($sku) . "' AND UPPER(indicator) <> 'X'");
+                $query = $this->db->query("SELECT MIN(CASE WHEN UPPER(indicator) = 'C' AND price > 0 THEN price WHEN discount > 0 THEN (" . $base_price . " * (1 - (discount / 100))) ELSE " . $base_price . " END) AS special FROM `" . DB_PREFIX . "qiqo_action_price` qap WHERE article_code = '" . $this->db->escape($sku) . "' AND UPPER(indicator) <> 'X' AND (price > 0 OR discount > 0)" . $this->qiqoActionClearanceExclusion());
 
                 if (!isset($query->row['special']) || $query->row['special'] === null) {
                     return null;

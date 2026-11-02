@@ -1,6 +1,7 @@
 <?php
 namespace Cart;
 require_once(DIR_SYSTEM . 'library/qiqo/pricing_resolver.php');
+require_once(DIR_SYSTEM . 'library/qiqo/article_rules.php');
 
 class Cart {
 	private $data = array();
@@ -372,11 +373,10 @@ class Cart {
 		$article_discount = $this->hasQiqoPartnerArticleDiscountTable()
 			? $this->getQiqoArticleDiscount($partner_id, $sku)
 			: null;
-		$base_source = 'partner';
-		if ($article_discount !== null) {
-			$base_discount = (float)$article_discount;
-			$base_source = 'article';
-		}
+		$base = \QiqoPricingResolver::baseDiscount($base_discount, $article_discount);
+		$base_discount = $base['discount'];
+		$base_source = $base['source'];
+		$classifications = \QiqoArticleRules::classifications($this->db, [$sku]);
 
 		$pricing = \QiqoPricingResolver::resolve(
 			$base_price,
@@ -386,7 +386,8 @@ class Cart {
 			$qty,
 			true,
 			$this->isQiqoProformaPayment(),
-			$cent
+			$cent,
+			$classifications[$sku] ?? null
 		);
 
 		return (float)$pricing['final_unit_price'];

@@ -488,7 +488,7 @@ Primijenjeni uvoz automatski čisti cache prefikse `product` i `megamenu` u webu
 
 ### Početni rabati i datum novih artikala
 
-Pravilo cijene ostaje: partner–artikl rabat ima prednost, uključujući eksplicitnih 0%; ako zapisa nema, koristi se rabat partnera. Prazan cache nije dokaz da ERP nema posebne rabate.
+Od Revizije 3.3 primjenjuje se veći od općeg rabata kupca i rabata kupac–artikl. Eksplicitnih 0% na artiklu ne poništava veći rabat kupca. Klasifikacije 800 i 801 izuzete su od svih rabata i akcija: cijena iz ERP-a već je neto. Prazan cache nije dokaz da ERP nema posebne rabate.
 
 Za provjereni početni CSV/XML izvoz, opcionalno gzip, dodan je importer koji obrađuje redove postupno i puni privremeni staging. Potreban je ERP manifest: točan broj redaka, SHA-256, početni datum i watermark izvoza. Ne izmišljati te vrijednosti iz procjene od dva milijuna redaka.
 
@@ -557,3 +557,25 @@ php74 tests/local_leaflet_http_test.php
 ```
 
 Za provjeru prvog lista kroz poseban lokalni `pdftoppm` test podržava `--renderer=/stvarna/putanja/pdftoppm`. Nakon postavljanja na server provjeriti objavljeni i budući/isključeni letak, stvarno preuzimanje PDF-a, automatsku naslovnicu i ručni odabir slike.
+
+## 9. Revizija 3.3 — 2026-10-22
+
+Primijeniti `2026-10-22_rev33_classifications.sql`, postaviti kod i regenerirati OCMOD uz privatnu sigurnosnu kopiju. Izvorne lokalne prilagodbe servera sačuvati. Migracija dodaje zasebnu InnoDB tablicu ERP klasifikacija i `qiqo_action_snapshot_since=2000-01-01`; ne uključuje globalni FULL kataloga.
+
+ERP `gid` se sprema uz redovno ažuriranje količina/statusa, cijena i uvoz kataloga. Klasifikacije 800 i 801 koriste jednu postojeću kategoriju Rasprodaja. Postojeće druge kategorije se čuvaju. Cijena klasifikacija 800/801 ostaje ERP neto bez rabata kupca, rabata artikla, akcije i dodatka za predračun. Za ostale artikle veći rabat kupca ili artikla koristi se jednako u katalogu i košarici.
+
+Akcijski cjenik se pri redovnom ažuriranju čita od izričito postavljenog početnog datuma i zamjenjuje tek nakon provjere odgovora i staginga. Izostale akcije tako se uklanjaju; prazni, neispravni i proturječni postotni retci čuvaju prethodni cjenik. Višestruke apsolutne C neto cijene bez rabata koriste postojeće resolver pravilo najniže neto cijene. Nulti C/P retci nisu oznaka akcije. Akcije se primjenjuju i na cijenu u katalogu/proizvodu.
+
+Produkcijska provjera: 12402 ERP artikla i 1593 akcijska retka (1590 jedinstvenih ključeva). Uvoz je prije ispravka odbijao tri višestruke C neto cijene za 330470, 330481 i 400610. Količine/status promijenjeni na 1303 artikla, redovne cijene na 23. Klasifikacija 800 povezana je sa 108 postojećih artikala u jednoj Rasprodaji; 801 nema u odgovoru. Konkretne prijavljene šifre 486025, 487710 i 503628 nisu u povijesnom pozivu qArtikliWeb od 2000-01-01 pa su ciljano deaktivirane, uz zapis izvornog statusa. Globalno deaktiviranje svih izostalih šifri ostaje odvojeno i isključeno.
+
+Na serveru su provjereni katalog i metoda obračuna košarice za partnera 1050054: 301012 = 12%, neto 1.6368; 442076 = 25%, neto 1.065; 513056 = 0%, neto 0.66. U stvarnom Firefox prikazu kao Denis Bakša 442076 prikazuje 25% i 1,07 EUR.
+
+### Aktivan redovni raspored
+
+`run_qiqo_scheduled_sync.php --task=stock|prices|actions|partners|discounts` poziva isključivo postojeće uvoze, uz zajednički lock, poštovanje održavanja i privatni zapis rezultata. Nema automatskog početnog uvoza rabata ni slanja narudžbi. `upload/qiqo_cron.php` prihvaća samo HTTPS POST s odvojenim ključem zadatka u zaglavlju `X-Qiqo-Cron-Key`; na serveru se spremaju samo SHA-256 hashovi u `.qiqo-private/cron/auth.json`. Ključeve ne stavljati u Git, URL ili izvještaj.
+
+Aktivan EasyCron raspored (Europe/Zagreb): količine/status u minutama 2,17,32,47; cijene u minuti 7 svakog sata; akcije u minuti 12 svakog sata; partneri u 00:22, 06:22, 12:22 i 18:22; posebni rabati u minuti 37 svakog sata. Puni katalog na MyISAM i automatske slike/dokumenti nisu dio ovog rutinskog rasporeda bez njihove zasebne provjere izvora i održavanja.
+
+EasyCron grupa Italcro 96490: stock 11623039, prices 11623048, actions 11623066, partners 11623069, discounts 11623072. Svih pet zadataka uključeno. Pet autentificiranih HTTP poziva prošlo je s HTTP 200 i success=true; EasyCron ručni test zaliha (5,43 s) i cijena (3,12 s) potvrdio je HTTP 200 / Succeeded.
+
+Dodatna provjera iz EasyCron UI: actions 11623066 — 14:24:57 CEST, HTTP 200 / Succeeded, 1.356803 s, 1590 redaka; partners 11623069 — 14:26:10, HTTP 200 / Succeeded, 3.210966 s; discounts 11623072 — 14:26:36, HTTP 200 / Succeeded, 5.727070 s. Sva tri tijela odgovora potvrđuju success=true i counts, bez skipped. Time je svih pet spremljenih zadataka potvrđeno iz EasyCrona.

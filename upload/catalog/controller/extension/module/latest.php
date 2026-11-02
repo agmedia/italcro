@@ -12,6 +12,7 @@ class ControllerExtensionModuleLatest extends Controller {
 		$results = $this->model_catalog_product->getLatestProducts($setting['limit']);
 
 		if ($results) {
+			$qiqo_clearance_map = $this->model_catalog_product->getQiqoClearanceMap($results);
 			$qiqo_price_map = array();
 			$sku_quantities = array();
 			$base_unit_prices = array();
@@ -97,6 +98,7 @@ class ControllerExtensionModuleLatest extends Controller {
 					'is_single_article' => $is_single_article,
 					'qiqo_discount_percent' => $qiqo_discount_percent,
 					'qiqo_action' => $sku !== '' && !empty($qiqo_action_map[$sku]),
+					'qiqo_clearance' => !empty($qiqo_clearance_map[(int)$result['product_id']]),
 					'tax'         => $tax,
 					'rating'      => $rating,
 					'href'        => $this->url->link('product/product', 'product_id=' . $result['product_id'])

@@ -4,6 +4,7 @@
   <div class="product-layout col-lg-3 col-md-3 col-sm-6 col-xs-12">
     <div class="product-thumb transition">
       <div class="image"><a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" class="img-responsive" /></a></div>
+      {% if product.qiqo_clearance is defined and product.qiqo_clearance %}<span class="label label-danger" title="Rasprodaja" aria-label="Rasprodaja">R</span>{% endif %}
       <div class="caption">
         <h4><a href="{{ product.href }}">{{ product.name }}</a></h4>
         <p>{{ product.description }}</p>
@@ -26,7 +27,7 @@
 		  <span class="price-new">{{ product.special }}</span> <span class="price-old">{{ product.price }}</span>
 		  {% endif %}
 		  {% if product.qiqo_discount_percent is defined and product.qiqo_discount_percent > 0 %}<span class="label label-info">-{{ product.qiqo_discount_percent|number_format(0, '.', '') }}%</span>{% endif %}
-		  {% if product.qiqo_action is defined and product.qiqo_action %}<span class="label label-primary">A</span>{% endif %}
+		  {% if product.qiqo_action is defined and product.qiqo_action and ((product.is_single_article is defined and not product.is_single_article) or not product.qiqo_clearance) %}<span class="label label-primary">A</span>{% endif %}
 		  {% if product.tax %}
           <span class="price-tax">{{ text_tax }} {{ product.tax }}</span>
           {% endif %}

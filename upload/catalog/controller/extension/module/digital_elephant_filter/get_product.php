@@ -130,6 +130,7 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
         $results = $this->model_extension_module_digitalElephantFilter->getProducts($data_filter);
 
         $products = array();
+        $qiqo_clearance_map = $this->model_catalog_product->getQiqoClearanceMap($results);
         $qiqo_price_map = array();
         $qiqo_action_article_map = array();
         $qiqo_action_mpn_map = array();
@@ -363,6 +364,7 @@ class ControllerExtensionModuleDigitalElephantFilterGetProduct extends Controlle
                 'decimal_quantity' => $this->qiqoAllowsDecimalQuantity($result),
                 'qiqo_discount_percent' => $qiqo_discount_percent,
                 'qiqo_action' => $qiqo_action,
+                'qiqo_clearance' => !empty($qiqo_clearance_map[(int)$result['product_id']]),
                 'tax'         => $tax,
                 'minimum'     => $minimum,
                 'rating'      => $result['rating'],

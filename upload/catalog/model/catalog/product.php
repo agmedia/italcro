@@ -939,7 +939,7 @@ class ModelCatalogProduct extends Model {
 		if ($skus) $where[] = 'p.sku IN (' . $this->buildEscapedInList(array_unique($skus)) . ')';
 		if ($mpns) $where[] = 'p.mpn IN (' . $this->buildEscapedInList(array_unique($mpns)) . ')';
 		$query = $this->db->query("SELECT p.sku, p.mpn FROM `" . DB_PREFIX . "product` p
-			INNER JOIN `" . DB_PREFIX . "qiqo_article_classification` ac ON ac.article_code COLLATE utf8mb4_unicode_ci = p.sku COLLATE utf8mb4_unicode_ci
+			INNER JOIN `" . DB_PREFIX . "qiqo_article_classification` ac ON CONVERT(ac.article_code USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(p.sku USING utf8mb4) COLLATE utf8mb4_unicode_ci
 			INNER JOIN `" . DB_PREFIX . "product_to_store` p2s ON p2s.product_id = p.product_id
 			WHERE ac.classification IN (800, 801) AND p.status = '1'
 			AND p.date_available <= NOW() AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'
@@ -1154,7 +1154,7 @@ class ModelCatalogProduct extends Model {
 			$this->qiqo_classification_table_ready = (bool)$ready->num_rows;
 		}
 		return $this->qiqo_classification_table_ready
-			? " AND NOT EXISTS (SELECT 1 FROM `" . DB_PREFIX . "qiqo_article_classification` qac WHERE qac.article_code COLLATE utf8mb4_unicode_ci=qap.article_code COLLATE utf8mb4_unicode_ci AND qac.classification IN (800,801))"
+			? " AND NOT EXISTS (SELECT 1 FROM `" . DB_PREFIX . "qiqo_article_classification` qac WHERE CONVERT(qac.article_code USING utf8mb4) COLLATE utf8mb4_unicode_ci=CONVERT(qap.article_code USING utf8mb4) COLLATE utf8mb4_unicode_ci AND qac.classification IN (800,801))"
 			: '';
 	}
 

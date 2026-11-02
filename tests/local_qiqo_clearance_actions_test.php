@@ -34,11 +34,11 @@ final class ClearanceActionsProductModel extends ModelCatalogProduct {
 }
 $db = new ClearanceActionsDb();
 $p = DB_PREFIX;
-// Existing production tables can use different utf8mb4 collations. Joining
-// their implicit string columns must not cause MySQL error 1267.
+// Existing production tables use mixed utf8mb3/utf8mb4 character sets as well
+// as different collations. New joins must avoid MySQL errors 1253 and 1267.
 $db->query("CREATE TEMPORARY TABLE `{$p}qiqo_article_classification` (article_code VARCHAR(64) PRIMARY KEY, classification INT) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
 $db->query("CREATE TEMPORARY TABLE `{$p}qiqo_action_price` (article_code VARCHAR(64), indicator CHAR(1), quantity DECIMAL(12,4), price DECIMAL(12,7), discount DECIMAL(9,4)) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-$db->query("CREATE TEMPORARY TABLE `{$p}product` (product_id INT PRIMARY KEY, sku VARCHAR(64), mpn VARCHAR(64), status INT, date_available DATE, price DECIMAL(12,7), sort_order INT) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+$db->query("CREATE TEMPORARY TABLE `{$p}product` (product_id INT PRIMARY KEY, sku VARCHAR(64), mpn VARCHAR(64), status INT, date_available DATE, price DECIMAL(12,7), sort_order INT) DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci");
 $db->query("CREATE TEMPORARY TABLE `{$p}product_to_store` (product_id INT, store_id INT)");
 $db->query("CREATE TEMPORARY TABLE `{$p}product_description` (product_id INT, language_id INT, name VARCHAR(64))");
 $db->query("CREATE TEMPORARY TABLE `{$p}review` (product_id INT, status INT, rating INT)");
